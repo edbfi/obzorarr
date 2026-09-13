@@ -27,7 +27,7 @@
 		"postinstall": "prek install || true"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.12",
+		"@biomejs/biome": "2.5.13",
 		"@internationalized/date": "^3.12.0",
 		"@j178/prek": "^0.4.0",
 		"@playwright/test": "^1.60.0",
