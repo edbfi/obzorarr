@@ -22,7 +22,8 @@ jobs:
       issues: write
       actions: write
       checks: read
+      statuses: read
     steps:
-      - uses: edbfi/automation/actions/merge@v1.1.0
+      - uses: edbfi/automation/actions/merge@v1.1.2
         with:
           token: ${{ github.token }}
