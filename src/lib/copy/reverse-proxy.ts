@@ -364,7 +364,7 @@ export const REVERSE_PROXY_DOCUMENTATION: ReverseProxyDocumentationLink[] = [
 	{
 		id: 'obzorarr-trust-proxy',
 		provider: 'Obzorarr',
-		url: 'https://github.com/engels74/obzorarr#reverse-proxy-header-trust',
+		url: 'https://github.com/edbfi/obzorarr#running-behind-a-reverse-proxy',
 		purpose: 'obzorarr-configuration',
 		applicabilityLabel: 'Obzorarr TRUST_PROXY and restart guidance'
 	}
