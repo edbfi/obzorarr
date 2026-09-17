@@ -1,8 +1,11 @@
-import 'node:process';
-
-declare module 'node:process' {
-	interface ProcessEventMap {
-		/** Emitted by svelte-adapter-bun after it stops accepting requests. */
-		'sveltekit:shutdown': [];
+declare global {
+	namespace NodeJS {
+		interface Process {
+			/** Emitted by svelte-adapter-bun after it stops accepting requests. */
+			once(event: 'sveltekit:shutdown', listener: () => void): this;
+			emit(event: 'sveltekit:shutdown'): boolean;
+		}
 	}
 }
+
+export {};
