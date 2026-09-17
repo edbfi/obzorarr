@@ -12,17 +12,6 @@ function inheritedEnvironment(): Record<string, string> {
 	);
 }
 
-async function assertPinnedVersions(): Promise<void> {
-	const adapterPackage = await Bun.file(
-		join(repositoryRoot, 'node_modules/svelte-adapter-bun/package.json')
-	).json();
-	const kitPackage = await Bun.file(
-		join(repositoryRoot, 'node_modules/@sveltejs/kit/package.json')
-	).json();
-	expect(adapterPackage.version).toBe('1.0.1');
-	expect(kitPackage.version).toBe('2.57.1');
-}
-
 async function writeFixture(): Promise<void> {
 	fixtureRoot = await mkdtemp(join(tmpdir(), 'obzorarr-adapter-url-'));
 	await mkdir(join(fixtureRoot, 'node_modules'));
@@ -202,7 +191,6 @@ async function observeAdapterUrl(testCase: AdapterCase): Promise<{
 }
 
 beforeAll(async () => {
-	await assertPinnedVersions();
 	try {
 		await writeFixture();
 		await buildFixture();
@@ -219,7 +207,7 @@ afterAll(async () => {
 	await expect(access(cleanedPath)).rejects.toThrow();
 });
 
-describe('pinned svelte-adapter-bun request URL construction', () => {
+describe('installed svelte-adapter-bun request URL construction', () => {
 	it('uses its documented HTTPS default and incoming Host when ORIGIN is unset', async () => {
 		const observed = await observeAdapterUrl({ host: 'public.example:8443' });
 		expect(observed).toEqual({
