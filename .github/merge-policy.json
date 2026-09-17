@@ -15,7 +15,24 @@
 		"login": "renovate[bot]",
 		"id": 29139614
 	},
-	"renovate_comment": "/merge-when-green",
+	"renovate_comment": "/merge-when-green v2",
 	"minimum_approvals": 0,
-	"deploy_workflows": []
+	"deploy_workflows": [],
+	"repair_recovery": {
+		"enabled": true,
+		"automation_ref": "v2.0.0",
+		"package_directory": ".",
+		"config_files": ["biome.json"],
+		"source_roots": [
+			"src",
+			"tests",
+			"scripts",
+			"vite.config.ts",
+			"svelte.config.js",
+			"uno.config.ts",
+			"drizzle.config.ts",
+			"components.json",
+			"tsconfig.json"
+		]
+	}
 }
