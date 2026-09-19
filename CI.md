@@ -3,7 +3,10 @@
 Every pull request and default-branch push runs read-only Biome and Svelte checks,
 the full Bun unit/property/integration suite with its existing 80% line/function
 coverage thresholds, a production build and real-server smoke using a fresh temporary
-SQLite database, and prek hygiene/secrets checks. No Plex credentials are needed.
+SQLite database, and prek hygiene/secrets checks. The smoke requires the expected
+setup route, HTML content type, Obzorarr title, claim heading and required bootstrap
+token form with its submit action; an arbitrary HTTP 200 no longer passes. No Plex
+credentials are needed.
 The aggregate `ci / required` rejects missing, skipped, cancelled or failed jobs.
 
 Local checks use Bun 1.4.2 and `bun install --frozen-lockfile`, then
@@ -16,23 +19,33 @@ also propagates SvelteKit preparation failures instead of masking them.
 Shared workflows and actions use immutable full version tags in `edbfi/automation`.
 Renovate's shared preset preserves grouped non-major updates, handles Biome package
 and schema versions through the official manager, and updates actions, hooks and Bun.
-The v1.1.0 default and automerge presets make all update types eligible, including
-majors and shared-policy updates, without dashboard approval. All five current-head
-checks in `.github/merge-policy.json` must pass; Svelte checks remain required to
-test TypeScript compatibility. The checked merge preserves genuine sign-offs and
-dispatches full CI for the exact merged commit.
+The v3 default preset is installed with explicit `automerge: false`; the optional
+automerge preset is absent until protection and the hosted native Renovate canary
+are verified. Test checking remains enabled and native platform automerge is off.
+Svelte checks remain mandatory for TypeScript compatibility.
+
+The custom checked merger and maintainer `/merge` commands are retired. Require
+`ci / required` and the emitted `policy / ci / policy` context from GitHub Actions,
+current branches and native review restrictions before enabling Renovate merges.
+The read-only policy check preserves Conventional Commit titles, author-matching
+DCO, authentic Renovate provenance, outstanding review requests and objections.
+Hold labels apply to every PR; label/review events refresh policy independently.
+GitHub metadata events are asynchronous, so this does not claim an atomic label
+lock. Choose a normal merge method that preserves genuine commit sign-offs.
 
 The previous CI could rewrite and push code, ignore formatting errors, and skip
 fresh workflow execution after a token-authenticated push. Biome repair now computes
-in isolation with read-only permissions, then publishes only allowlisted changes and
+with read-only permissions using only the exact isolated official formatter, then
+publishes allowlisted changes through the repository-scoped repair App and
 explicitly dispatches full CI for the exact repaired SHA. It cannot edit workflows,
 package manifests or lockfiles. Broad repairs beyond the shared size limits are manual.
 
-Other changes retain manual review of the exact head/base, full diff, authors/DCO,
-all expected CI and relevant artifacts before merging through ghmerge. No branch
-protections or repository rulesets are configured. CI has read-only permissions,
-timeouts, lockfile/runtime caches and cancellation for superseded runs; repair and
-checked merging use separate privileged jobs.
+Recovery settings move unchanged to `.github/repair-policy.json`, with the v3
+publication reference. Workflow-token heads missing a policy event remain blocked
+until a supported Renovate/App update produces complete CI and policy evidence.
+CI has read-only permissions, timeouts, frozen installs and cancellation for
+superseded runs. Normal default-branch push CI is preserved; there were no
+helper-dispatched deployment workflows to replace.
 The large offline suite covers server behavior but does not replace real Plex
 integration or visual browser checks. Installed Playwright tooling alone is not
 claimed as browser coverage; no browser test suite is configured in this repository.

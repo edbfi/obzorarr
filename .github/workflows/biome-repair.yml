@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   repair:
-    uses: edbfi/automation/.github/workflows/biome-repair.yml@v2.0.0
+    uses: edbfi/automation/.github/workflows/biome-repair.yml@v3.0.0
     secrets:
       repair-app-private-key: ${{ secrets.RENOVATE_REPAIR_APP_PRIVATE_KEY }}
     with:

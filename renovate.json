@@ -1,9 +1,9 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": [
-		"github>edbfi/automation//default.json#v2.0.0",
-		"github>edbfi/automation//automerge.json#v2.0.0"
-	],
+	"extends": ["github>edbfi/automation//default.json#v3.0.0"],
 	"gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"],
-	"automergeComment": "/merge-when-green v2"
+	"automerge": false,
+	"automergeType": "pr",
+	"platformAutomerge": false,
+	"ignoreTests": false
 }

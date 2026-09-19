@@ -15,7 +15,7 @@ name: ci
         type: string
         default: ''
       expected-default-sha:
-        description: Exact default-branch commit requested after a checked merge
+        description: Exact current default-branch commit for guarded dispatch
         type: string
         default: ''
 permissions:
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-    - uses: edbfi/automation/actions/dispatch-guard@v2.0.0
+    - uses: edbfi/automation/actions/dispatch-guard@v3.0.0
       with:
         token: ${{ github.token }}
         pr-number: ${{ inputs.pr-number }}
@@ -37,21 +37,21 @@ jobs:
         expected-default-sha: ${{ inputs.expected-default-sha }}
   quality:
     needs: guard
-    uses: edbfi/automation/.github/workflows/bun.yml@v2.0.0
+    uses: edbfi/automation/.github/workflows/bun.yml@v3.0.0
     with:
       # renovate: datasource=npm depName=bun
       version: 1.4.2
       command: bun run check:biome && bun run check
   test-build:
     needs: guard
-    uses: edbfi/automation/.github/workflows/bun.yml@v2.0.0
+    uses: edbfi/automation/.github/workflows/bun.yml@v3.0.0
     with:
       # renovate: datasource=npm depName=bun
       version: 1.4.2
       command: bash .github/scripts/check.sh
   hygiene:
     needs: guard
-    uses: edbfi/automation/.github/workflows/bun.yml@v2.0.0
+    uses: edbfi/automation/.github/workflows/bun.yml@v3.0.0
     with:
       # renovate: datasource=npm depName=bun
       version: 1.4.2
@@ -67,13 +67,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-    - uses: edbfi/automation/actions/dispatch-guard@v2.0.0
+    - uses: edbfi/automation/actions/dispatch-guard@v3.0.0
       with:
         token: ${{ github.token }}
         pr-number: ${{ inputs.pr-number }}
         expected-head-sha: ${{ inputs.expected-head-sha }}
         expected-default-sha: ${{ inputs.expected-default-sha }}
-    - uses: edbfi/automation/actions/gate@v2.0.0
+    - uses: edbfi/automation/actions/gate@v3.0.0
       with:
         needs: ${{ toJSON(needs) }}
         required: guard quality test-build hygiene
