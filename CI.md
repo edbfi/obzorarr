@@ -51,3 +51,14 @@ helper-dispatched deployment workflows to replace.
 The large offline suite covers server behavior but does not replace real Plex
 integration or visual browser checks. Installed Playwright tooling alone is not
 claimed as browser coverage; no browser test suite is configured in this repository.
+
+## TypeScript compiler compatibility
+
+`typescript` retains the 6.x JavaScript compiler API for framework tooling.
+`@typescript/native` aliases the stable TypeScript 7 package for the documented
+`svelte-check --tsgo` path. The required `check` command runs both the existing
+checker and native mode; neither may fail or be skipped. Keep the direct TS7
+replacement PR on hold: replacing `typescript` removes the API used by the
+existing tooling. Native checker updates are independently locked and frozen.
+
+Upstream setup: https://github.com/sveltejs/language-tools/tree/master/packages/svelte-check#typescript-7-supports
