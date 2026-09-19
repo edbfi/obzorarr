@@ -19,10 +19,12 @@ also propagates SvelteKit preparation failures instead of masking them.
 Shared workflows and actions use immutable full version tags in `edbfi/automation`.
 Renovate's shared preset preserves grouped non-major updates, handles Biome package
 and schema versions through the official manager, and updates actions, hooks and Bun.
-The v3 default preset is installed with explicit `automerge: false`; the optional
-automerge preset is absent until protection and the hosted native Renovate canary
-are verified. Test checking remains enabled and native platform automerge is off.
-Svelte checks remain mandatory for TypeScript compatibility.
+Renovate owns ongoing dependency merging after the protected native canary
+[automation#39](https://github.com/edbfi/automation/pull/39). Root-level automerge
+uses PR rebase merges with test checking enabled and platform automerge off.
+Complete current-head CI and policy checks, up-to-date branches, release ages,
+reviews and hold labels remain required. Shared automation configuration updates
+remain manual. Svelte compatibility checks and the TypeScript 7 hold remain in place.
 
 The custom checked merger and maintainer `/merge` commands are retired. Require
 `ci / required` and the emitted `policy / ci / policy` context from GitHub Actions,
@@ -31,7 +33,7 @@ The read-only policy check preserves Conventional Commit titles, author-matching
 DCO, authentic Renovate provenance, outstanding review requests and objections.
 Hold labels apply to every PR; label/review events refresh policy independently.
 GitHub metadata events are asynchronous, so this does not claim an atomic label
-lock. Choose a normal merge method that preserves genuine commit sign-offs.
+lock. PR rebase merges preserve genuine commit sign-offs.
 
 The previous CI could rewrite and push code, ignore formatting errors, and skip
 fresh workflow execution after a token-authenticated push. Biome repair now computes
