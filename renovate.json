@@ -2,8 +2,9 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": ["github>edbfi/automation//default.json#v3.0.1"],
 	"gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"],
-	"automerge": false,
+	"automerge": true,
 	"automergeType": "pr",
 	"platformAutomerge": false,
-	"ignoreTests": false
+	"ignoreTests": false,
+	"automergeStrategy": "rebase"
 }
