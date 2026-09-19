@@ -1,3 +1,4 @@
+import { assertSetupHtml } from './smoke-content';
 import { stopSubprocess } from './subprocess';
 
 const databasePath = process.env.DATABASE_PATH;
@@ -46,6 +47,7 @@ const stdout = new Response(server.stdout).text();
 const stderr = new Response(server.stderr).text();
 const deadline = Date.now() + timeoutMs;
 let ready = false;
+let readinessError = 'No successful HTTP response';
 const shutdownTimeoutMs = 2_000;
 
 try {
@@ -59,14 +61,25 @@ try {
 				signal: AbortSignal.timeout(2_000)
 			});
 			if (response.ok) {
+				const destination = new URL(response.url);
+				if (
+					destination.origin !== `http://127.0.0.1:${port}` ||
+					destination.pathname !== '/onboarding/claim'
+				) {
+					throw new Error('Fresh production server did not load the setup claim route');
+				}
+				if (!response.headers.get('content-type')?.includes('text/html')) {
+					throw new Error('Setup claim response is not HTML');
+				}
+				await assertSetupHtml(await response.text());
 				await Bun.sleep(50);
 				if (server.exitCode === null) {
 					ready = true;
 					break;
 				}
 			}
-		} catch {
-			// The listener may not be ready yet.
+		} catch (cause) {
+			readinessError = cause instanceof Error ? cause.message : String(cause);
 		}
 
 		await Bun.sleep(250);
@@ -76,7 +89,7 @@ try {
 }
 
 if (!ready) {
-	console.error(`Production server did not become ready within ${timeoutMs}ms`);
+	console.error(`Production server did not become ready within ${timeoutMs}ms: ${readinessError}`);
 	const [stdoutText, stderrText] = await Promise.all([stdout, stderr]);
 	if (stdoutText) console.error(stdoutText);
 	if (stderrText) console.error(stderrText);
@@ -87,4 +100,4 @@ if (server.exitCode !== 0) {
 	throw new Error(`Production server did not shut down cleanly (exit ${server.exitCode})`);
 }
 
-console.log(`Production server became ready on port ${port} and shut down cleanly`);
+console.log(`Production setup content passed on port ${port}; server shut down cleanly`);
