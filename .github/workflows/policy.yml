@@ -12,4 +12,4 @@ concurrency:
   cancel-in-progress: true
 jobs:
   policy:
-    uses: edbfi/automation/.github/workflows/pr-policy.yml@v3.0.0
+    uses: edbfi/automation/.github/workflows/pr-policy.yml@v3.0.1

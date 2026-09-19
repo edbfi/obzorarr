@@ -3,7 +3,7 @@
 	"ci_workflow": "ci.yml",
 	"repair_recovery": {
 		"enabled": true,
-		"automation_ref": "v3.0.0",
+		"automation_ref": "v3.0.1",
 		"package_directory": ".",
 		"config_files": ["biome.json"],
 		"source_roots": [

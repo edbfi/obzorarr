@@ -41,6 +41,6 @@ jobs:
           version: latest
           enable-cache: false
       - run: uv --version && python --version
-      - uses: edbfi/automation/actions/ci-recovery@v3.0.0
+      - uses: edbfi/automation/actions/ci-recovery@v3.0.1
         with:
           token: ${{ github.token }}
