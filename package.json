@@ -52,7 +52,7 @@
 		"@typescript/native": "npm:typescript@7.0.2"
 	},
 	"dependencies": {
-		"@lucide/svelte": "1.46.0",
+		"@lucide/svelte": "1.47.0",
 		"bits-ui": "2.19.2",
 		"clsx": "2.1.1",
 		"croner": "10.0.1",
