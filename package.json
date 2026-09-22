@@ -40,7 +40,7 @@
 		"fast-check": "4.10.1",
 		"formsnap": "2.0.1",
 		"rollup-plugin-visualizer": "7.1.1",
-		"svelte": "5.57.0",
+		"svelte": "5.57.1",
 		"svelte-adapter-bun": "1.0.1",
 		"svelte-check": "4.7.6",
 		"sveltekit-superforms": "2.30.2",
