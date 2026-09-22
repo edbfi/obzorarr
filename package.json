@@ -37,7 +37,7 @@
 		"@types/sanitize-html": "2.16.1",
 		"@unocss/reset": "66.10.5",
 		"drizzle-kit": "0.31.10",
-		"fast-check": "4.10.1",
+		"fast-check": "4.10.2",
 		"formsnap": "2.0.1",
 		"rollup-plugin-visualizer": "7.1.1",
 		"svelte": "5.57.1",
