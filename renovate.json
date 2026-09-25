@@ -1,12 +1,10 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["github>edbfi/automation//default.json#v3.0.1"],
+	"extends": [
+		"github>edbfi/automation//default.json#v4.0.0",
+		"github>edbfi/automation//automerge.json#v4.0.0"
+	],
 	"gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"],
-	"automerge": true,
-	"automergeType": "pr",
-	"platformAutomerge": false,
-	"ignoreTests": false,
-	"automergeStrategy": "rebase",
 	"packageRules": [
 		{
 			"description": "Keep direct npm versions exact: post-artifact minimumReleaseAge re-extraction is unavailable (renovatebot/renovate#45284).",
