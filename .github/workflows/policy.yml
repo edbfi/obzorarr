@@ -9,4 +9,4 @@ permissions:
   pull-requests: read
 jobs:
   policy:
-    uses: edbfi/automation/.github/workflows/pr-policy.yml@v3.0.1
+    uses: edbfi/automation/.github/workflows/pr-policy.yml@v3.1.0
