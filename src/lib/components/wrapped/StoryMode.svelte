@@ -383,6 +383,7 @@ function handleSlideAnimationComplete(): void {}
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- The application handles arrow keys through svelte:window and exposes explicit navigation buttons. -->
 <div
 	bind:this={container}
 	class="story-mode {klass}"
@@ -436,12 +437,18 @@ function handleSlideAnimationComplete(): void {}
 				type="button"
 				class="nav-arrow nav-arrow-prev"
 				onclick={(e) => {
-					e.stopPropagation();
-					goToPrevious();
-				}}
+	e.stopPropagation();
+	goToPrevious();
+}}
 				aria-label="Previous slide"
 			>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					aria-hidden="true"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M15 18l-6-6 6-6" />
 				</svg>
 			</button>
@@ -451,12 +458,18 @@ function handleSlideAnimationComplete(): void {}
 				type="button"
 				class="nav-arrow nav-arrow-next"
 				onclick={(e) => {
-					e.stopPropagation();
-					goToNext();
-				}}
+	e.stopPropagation();
+	goToNext();
+}}
 				aria-label="Next slide"
 			>
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg
+					aria-hidden="true"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+				>
 					<path d="M9 18l6-6-6-6" />
 				</svg>
 			</button>
@@ -468,12 +481,18 @@ function handleSlideAnimationComplete(): void {}
 			type="button"
 			class="close-button"
 			onclick={(e) => {
-				e.stopPropagation();
-				onClose?.();
-			}}
+	e.stopPropagation();
+	onClose?.();
+}}
 			aria-label="Close presentation"
 		>
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<svg
+				aria-hidden="true"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="2"
+			>
 				<path d="M18 6L6 18M6 6l12 12" />
 			</svg>
 		</button>
@@ -483,274 +502,271 @@ function handleSlideAnimationComplete(): void {}
 </div>
 
 <style>
-	.story-mode {
-			position: fixed;
-			inset: 0;
-			width: 100%;
-			height: 100dvh;
-			background: var(
-				--slide-bg-gradient,
-				linear-gradient(
-					135deg,
-					oklch(var(--slide-bg-start)) 0%,
-					oklch(var(--slide-bg-end)) 100%
-				)
-			);
-			overflow: hidden;
-			outline: none;
-			touch-action: pan-y pinch-zoom;
-			user-select: none;
-			-webkit-user-select: none;
-		}
+.story-mode {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100dvh;
+	background: var(
+		--slide-bg-gradient,
+		linear-gradient(135deg, oklch(var(--slide-bg-start)) 0%, oklch(var(--slide-bg-end)) 100%)
+	);
+	overflow: hidden;
+	outline: none;
+	touch-action: pan-y pinch-zoom;
+	user-select: none;
+	-webkit-user-select: none;
+}
 
-		.story-mode:focus-visible {
-			outline: none;
-		}
+.story-mode:focus-visible {
+	outline: none;
+}
 
-		.focus-ring {
-			position: absolute;
-			inset: 0;
-			z-index: 100;
-			pointer-events: none;
-			opacity: 0;
-			box-shadow:
-				inset 0 0 0 3px #ffffff,
-				inset 0 0 0 6px var(--primary, #dc2626),
-				inset 0 0 0 9px rgba(0, 0, 0, 0.85);
-		}
+.focus-ring {
+	position: absolute;
+	inset: 0;
+	z-index: 100;
+	pointer-events: none;
+	opacity: 0;
+	box-shadow:
+		inset 0 0 0 3px #ffffff,
+		inset 0 0 0 6px var(--primary, #dc2626),
+		inset 0 0 0 9px rgba(0, 0, 0, 0.85);
+}
 
-		.story-mode:focus-visible .focus-ring {
-			opacity: 1;
-		}
+.story-mode:focus-visible .focus-ring {
+	opacity: 1;
+}
 
-		.story-mode::before {
-			content: '';
-			position: absolute;
-			inset: 0;
-			background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-			opacity: var(--slide-noise-opacity, 0.03);
-			pointer-events: none;
-			mix-blend-mode: overlay;
-			z-index: 1;
-		}
+.story-mode::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+	opacity: var(--slide-noise-opacity, 0.03);
+	pointer-events: none;
+	mix-blend-mode: overlay;
+	z-index: 1;
+}
 
-		.story-mode::after {
-			content: '';
-			position: absolute;
-			inset: 0;
-			background: radial-gradient(
-				ellipse 80% 80% at 50% 50%,
-				transparent 0%,
-				oklch(0 0 0 / var(--slide-vignette-opacity, 0.4)) 100%
-			);
-			pointer-events: none;
-			z-index: 2;
-		}
+.story-mode::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		ellipse 80% 80% at 50% 50%,
+		transparent 0%,
+		oklch(0 0 0 / var(--slide-vignette-opacity, 0.4)) 100%
+	);
+	pointer-events: none;
+	z-index: 2;
+}
 
-		.slides-container {
-			position: absolute;
-			inset: 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			z-index: 3;
-		}
+.slides-container {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 3;
+}
 
-		.slide {
-			position: absolute;
-			inset: 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding: 3rem 1.5rem;
-			padding-top: 4rem;
-			overflow-y: auto;
-		}
+.slide {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 1.5rem;
+	padding-top: 4rem;
+	overflow-y: auto;
+}
 
-		.previous-slide {
-			z-index: 1;
-		}
+.previous-slide {
+	z-index: 1;
+}
 
-		.current-slide {
-			z-index: 2;
-		}
+.current-slide {
+	z-index: 2;
+}
 
-		.navigation-hint {
-			position: absolute;
-			bottom: 2rem;
-			left: 50%;
-			transform: translateX(-50%);
-			z-index: 10;
-			padding: 0.5rem 1rem;
-			background: rgba(255, 255, 255, 0.1);
-			border-radius: 2rem;
-			font-size: 0.875rem;
-			color: var(--muted-foreground, rgba(255, 255, 255, 0.6));
-			animation: fadeInOut 3s ease-in-out infinite;
-			pointer-events: none;
-		}
+.navigation-hint {
+	position: absolute;
+	bottom: 2rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 10;
+	padding: 0.5rem 1rem;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 2rem;
+	font-size: 0.875rem;
+	color: var(--muted-foreground, rgba(255, 255, 255, 0.6));
+	animation: fadeInOut 3s ease-in-out infinite;
+	pointer-events: none;
+}
 
-		@keyframes fadeInOut {
-			0%,
-			100% {
-				opacity: 0.6;
-			}
-			50% {
-				opacity: 1;
-			}
-		}
+@keyframes fadeInOut {
+	0%,
+	100% {
+		opacity: 0.6;
+	}
+	50% {
+		opacity: 1;
+	}
+}
 
-		.close-button {
-			position: absolute;
-			top: 1rem;
-			right: 1rem;
-			z-index: 101;
-			width: var(--min-tap-size);
-			height: var(--min-tap-size);
-			min-width: var(--min-tap-size);
-			min-height: var(--min-tap-size);
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background: rgba(0, 0, 0, 0.5);
-			border: none;
-			border-radius: 50%;
-			color: var(--foreground, white);
-			cursor: pointer;
-			transition:
-				background-color 0.2s,
-				transform 0.2s;
-		}
+.close-button {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	z-index: 101;
+	width: var(--min-tap-size);
+	height: var(--min-tap-size);
+	min-width: var(--min-tap-size);
+	min-height: var(--min-tap-size);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.5);
+	border: none;
+	border-radius: 50%;
+	color: var(--foreground, white);
+	cursor: pointer;
+	transition:
+		background-color 0.2s,
+		transform 0.2s;
+}
 
-		.close-button:hover {
-			background: rgba(0, 0, 0, 0.7);
-			transform: scale(1.1);
-		}
+.close-button:hover {
+	background: rgba(0, 0, 0, 0.7);
+	transform: scale(1.1);
+}
 
-		.close-button:focus-visible {
-			outline: 2px solid var(--primary, #dc2626);
-			outline-offset: 2px;
-		}
+.close-button:focus-visible {
+	outline: 2px solid var(--primary, #dc2626);
+	outline-offset: 2px;
+}
 
-		.close-button svg {
-			width: 1.25rem;
-			height: 1.25rem;
-		}
+.close-button svg {
+	width: 1.25rem;
+	height: 1.25rem;
+}
 
-		@media (max-width: 767px) {
-			.slide {
-				padding: 2rem 1rem;
-				padding-top: 3rem;
-			}
+@media (max-width: 767px) {
+	.slide {
+		padding: 2rem 1rem;
+		padding-top: 3rem;
+	}
 
-			.navigation-hint {
-				bottom: 1.5rem;
-				font-size: 0.75rem;
-			}
+	.navigation-hint {
+		bottom: 1.5rem;
+		font-size: 0.75rem;
+	}
 
-			.close-button {
-				top: 0.75rem;
-				right: 0.75rem;
-				/* Hold the tap-target floor on mobile too — the previous 2rem
+	.close-button {
+		top: 0.75rem;
+		right: 0.75rem;
+		/* Hold the tap-target floor on mobile too — the previous 2rem
 				   square (32px) failed WCAG 2.1 SC 2.5.5. */
-				width: var(--min-tap-size);
-				height: var(--min-tap-size);
-			}
+		width: var(--min-tap-size);
+		height: var(--min-tap-size);
+	}
 
-			.close-button svg {
-				width: 1.25rem;
-				height: 1.25rem;
-			}
-		}
+	.close-button svg {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+}
 
+.nav-arrows {
+	display: none;
+}
 
-		.nav-arrows {
-			display: none;
-		}
+@media (max-width: 767px) {
+	.nav-arrows {
+		display: flex;
+		justify-content: space-between;
+		position: absolute;
+		top: 50%;
+		left: 0;
+		right: 0;
+		transform: translateY(-50%);
+		z-index: 10;
+		pointer-events: none;
+	}
 
-		@media (max-width: 767px) {
-			.nav-arrows {
-				display: flex;
-				justify-content: space-between;
-				position: absolute;
-				top: 50%;
-				left: 0;
-				right: 0;
-				transform: translateY(-50%);
-				z-index: 10;
-				pointer-events: none;
-			}
+	.nav-arrow {
+		pointer-events: auto;
+		width: 3rem;
+		height: 3rem;
+		background: rgba(0, 0, 0, 0.5);
+		border: none;
+		border-radius: 50%;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0.7;
+		transition:
+			opacity 0.15s,
+			transform 0.15s;
+	}
 
-			.nav-arrow {
-				pointer-events: auto;
-				width: 3rem;
-				height: 3rem;
-				background: rgba(0, 0, 0, 0.5);
-				border: none;
-				border-radius: 50%;
-				color: white;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				cursor: pointer;
-				opacity: 0.7;
-				transition: opacity 0.15s, transform 0.15s;
-			}
+	.nav-arrow:hover {
+		opacity: 1;
+		transform: scale(1.1);
+	}
 
-			.nav-arrow:hover {
-				opacity: 1;
-				transform: scale(1.1);
-			}
+	.nav-arrow-prev {
+		margin-left: 0.5rem;
+	}
 
-			.nav-arrow-prev {
-				margin-left: 0.5rem;
-			}
+	.nav-arrow-next {
+		margin-right: 0.5rem;
+	}
 
-			.nav-arrow-next {
-				margin-right: 0.5rem;
-			}
+	.nav-arrow svg {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+}
+@media (min-width: 768px) {
+	.slide {
+		padding: 3rem 2rem;
+		padding-top: 4rem;
+	}
+}
 
-			.nav-arrow svg {
-				width: 1.5rem;
-				height: 1.5rem;
-			}
-		}
-		@media (min-width: 768px) {
-			.slide {
-				padding: 3rem 2rem;
-				padding-top: 4rem;
-			}
-		}
+@media (min-width: 1024px) {
+	.slide {
+		padding: 4rem 3rem;
+		padding-top: 4.5rem;
+	}
 
-		@media (min-width: 1024px) {
-			.slide {
-				padding: 4rem 3rem;
-				padding-top: 4.5rem;
-			}
+	.close-button {
+		width: var(--min-tap-size);
+		height: var(--min-tap-size);
+	}
 
-			.close-button {
-				width: var(--min-tap-size);
-				height: var(--min-tap-size);
-			}
+	.close-button svg {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+}
 
-			.close-button svg {
-				width: 1.5rem;
-				height: 1.5rem;
-			}
-		}
+@media (prefers-reduced-motion: reduce) {
+	.navigation-hint {
+		animation: none;
+		opacity: 0.8;
+	}
 
-		@media (prefers-reduced-motion: reduce) {
-			.navigation-hint {
-				animation: none;
-				opacity: 0.8;
-			}
+	.close-button {
+		transition: none;
+	}
 
-			.close-button {
-				transition: none;
-			}
-
-			.close-button:hover {
-				transform: none;
-			}
-		}
+	.close-button:hover {
+		transform: none;
+	}
+}
 </style>

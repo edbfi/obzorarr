@@ -49,7 +49,7 @@ $effect(() => {
 </script>
 
 <svelte:head>
-	<link rel="icon" href={obzorarrIcon} />
+	<link rel="icon" href={obzorarrIcon}>
 	<title>Obzorarr - Year in Review</title>
 </svelte:head>
 

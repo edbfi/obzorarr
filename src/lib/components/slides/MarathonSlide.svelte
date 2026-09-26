@@ -156,12 +156,7 @@ $effect(() => {
 						{#each marathonDay.items.slice(0, 6) as item, i}
 							<div bind:this={items[i]} class="item">
 								{#if item.thumb}
-									<img
-										src={getThumbUrl(item.thumb) ?? ''}
-										alt=""
-										class="item-thumb"
-										loading="lazy"
-									/>
+									<img src={getThumbUrl(item.thumb) ?? ''} alt="" class="item-thumb" loading="lazy">
 								{:else}
 									<div class="item-placeholder"></div>
 								{/if}
@@ -187,182 +182,182 @@ $effect(() => {
 </BaseSlide>
 
 <style>
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	z-index: 1;
+	width: 100%;
+	max-width: var(--content-max-md, 600px);
+}
+
+.title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
+}
+
+.date-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 1.5rem 2rem;
+	background: var(--slide-glass-bg);
+	backdrop-filter: blur(var(--slide-glass-blur, 20px));
+	-webkit-backdrop-filter: blur(var(--slide-glass-blur, 20px));
+	border: 1px solid oklch(var(--primary) / 0.3);
+	border-radius: calc(var(--radius) * 2);
+	box-shadow: 0 0 30px oklch(var(--primary) / 0.2);
+}
+
+.date-icon {
+	font-size: 2.5rem;
+}
+
+.date-text {
+	font-size: 1.375rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+}
+
+.stats-row {
+	display: flex;
+	gap: 2rem;
+}
+
+.stat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.125rem;
+}
+
+.stat-value {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: oklch(var(--foreground));
+}
+
+.stat-label {
+	font-size: 0.6875rem;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.items-list {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.list-label {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.items-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.5rem;
+	width: 100%;
+	max-width: 400px;
+}
+
+.item {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.5rem;
+	background: var(--slide-glass-bg);
+	border-radius: var(--radius);
+	transition: transform 0.2s ease;
+}
+
+.item:hover {
+	transform: scale(1.02);
+}
+
+.item-thumb {
+	width: 60px;
+	height: 60px;
+	object-fit: cover;
+	border-radius: calc(var(--radius) * 0.5);
+}
+
+.item-placeholder {
+	width: 60px;
+	height: 60px;
+	background: oklch(var(--muted) / 0.3);
+	border-radius: calc(var(--radius) * 0.5);
+}
+
+.item-title {
+	font-size: 0.6875rem;
+	color: oklch(var(--foreground));
+	text-align: center;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+
+.more-items {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+	font-style: italic;
+}
+
+.empty-message {
+	color: oklch(var(--muted-foreground));
+	font-style: italic;
+	font-size: 1.125rem;
+}
+
+.extra {
+	margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
 	.content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			z-index: 1;
-			width: 100%;
-			max-width: var(--content-max-md, 600px);
-		}
+		gap: 1rem;
+	}
 
-		.title {
-			font-size: 1.75rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
-		}
+	.title {
+		font-size: 1.5rem;
+	}
 
-		.date-card {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.75rem;
-			padding: 1.5rem 2rem;
-			background: var(--slide-glass-bg);
-			backdrop-filter: blur(var(--slide-glass-blur, 20px));
-			-webkit-backdrop-filter: blur(var(--slide-glass-blur, 20px));
-			border: 1px solid oklch(var(--primary) / 0.3);
-			border-radius: calc(var(--radius) * 2);
-			box-shadow: 0 0 30px oklch(var(--primary) / 0.2);
-		}
+	.date-card {
+		padding: 1rem 1.5rem;
+	}
 
-		.date-icon {
-			font-size: 2.5rem;
-		}
+	.date-icon {
+		font-size: 2rem;
+	}
 
-		.date-text {
-			font-size: 1.375rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-		}
+	.date-text {
+		font-size: 1.125rem;
+	}
 
-		.stats-row {
-			display: flex;
-			gap: 2rem;
-		}
+	.items-grid {
+		grid-template-columns: repeat(2, 1fr);
+		max-width: 280px;
+	}
 
-		.stat {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.125rem;
-		}
-
-		.stat-value {
-			font-size: 1.25rem;
-			font-weight: 700;
-			color: oklch(var(--foreground));
-		}
-
-		.stat-label {
-			font-size: 0.6875rem;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-		}
-
-		.items-list {
-			width: 100%;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.75rem;
-		}
-
-		.list-label {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.1em;
-		}
-
-		.items-grid {
-			display: grid;
-			grid-template-columns: repeat(3, 1fr);
-			gap: 0.5rem;
-			width: 100%;
-			max-width: 400px;
-		}
-
-		.item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.375rem;
-			padding: 0.5rem;
-			background: var(--slide-glass-bg);
-			border-radius: var(--radius);
-			transition: transform 0.2s ease;
-		}
-
-		.item:hover {
-			transform: scale(1.02);
-		}
-
-		.item-thumb {
-			width: 60px;
-			height: 60px;
-			object-fit: cover;
-			border-radius: calc(var(--radius) * 0.5);
-		}
-
-		.item-placeholder {
-			width: 60px;
-			height: 60px;
-			background: oklch(var(--muted) / 0.3);
-			border-radius: calc(var(--radius) * 0.5);
-		}
-
-		.item-title {
-			font-size: 0.6875rem;
-			color: oklch(var(--foreground));
-			text-align: center;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			max-width: 100%;
-		}
-
-		.more-items {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-			font-style: italic;
-		}
-
-		.empty-message {
-			color: oklch(var(--muted-foreground));
-			font-style: italic;
-			font-size: 1.125rem;
-		}
-
-		.extra {
-			margin-top: 1rem;
-		}
-
-		@media (max-width: 767px) {
-			.content {
-				gap: 1rem;
-			}
-
-			.title {
-				font-size: 1.5rem;
-			}
-
-			.date-card {
-				padding: 1rem 1.5rem;
-			}
-
-			.date-icon {
-				font-size: 2rem;
-			}
-
-			.date-text {
-				font-size: 1.125rem;
-			}
-
-			.items-grid {
-				grid-template-columns: repeat(2, 1fr);
-				max-width: 280px;
-			}
-
-			.item-thumb,
-			.item-placeholder {
-				width: 50px;
-				height: 50px;
-			}
-		}
+	.item-thumb,
+	.item-placeholder {
+		width: 50px;
+		height: 50px;
+	}
+}
 </style>

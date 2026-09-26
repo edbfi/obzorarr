@@ -35,63 +35,63 @@ const statusText = $derived.by(() => {
 {/if}
 
 <style>
+.sync-indicator {
+	position: fixed;
+	bottom: 1rem;
+	right: 1rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1rem;
+	background: oklch(var(--card));
+	border: 1px solid oklch(var(--border));
+	border-radius: 0.5rem;
+	box-shadow: 0 2px 8px oklch(0 0 0 / 0.2);
+	font-size: 0.875rem;
+	color: oklch(var(--muted-foreground));
+	z-index: 50;
+	animation: slideIn 0.3s ease-out;
+}
+
+.sync-spinner {
+	width: 1rem;
+	height: 1rem;
+	border: 2px solid oklch(var(--primary) / 0.3);
+	border-top-color: oklch(var(--primary));
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+.sync-text {
+	font-family: inherit;
+	white-space: nowrap;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(1rem);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sync-spinner {
+		animation: none;
+		border-style: dotted;
+	}
+
 	.sync-indicator {
-			position: fixed;
-			bottom: 1rem;
-			right: 1rem;
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			padding: 0.75rem 1rem;
-			background: oklch(var(--card));
-			border: 1px solid oklch(var(--border));
-			border-radius: 0.5rem;
-			box-shadow: 0 2px 8px oklch(0 0 0 / 0.2);
-			font-size: 0.875rem;
-			color: oklch(var(--muted-foreground));
-			z-index: 50;
-			animation: slideIn 0.3s ease-out;
-		}
-
-		.sync-spinner {
-			width: 1rem;
-			height: 1rem;
-			border: 2px solid oklch(var(--primary) / 0.3);
-			border-top-color: oklch(var(--primary));
-			border-radius: 50%;
-			animation: spin 1s linear infinite;
-		}
-
-		.sync-text {
-			font-family: inherit;
-			white-space: nowrap;
-		}
-
-		@keyframes spin {
-			to {
-				transform: rotate(360deg);
-			}
-		}
-
-		@keyframes slideIn {
-			from {
-				opacity: 0;
-				transform: translateY(1rem);
-			}
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
-		}
-
-		@media (prefers-reduced-motion: reduce) {
-			.sync-spinner {
-				animation: none;
-				border-style: dotted;
-			}
-
-			.sync-indicator {
-				animation: none;
-			}
-		}
+		animation: none;
+	}
+}
 </style>

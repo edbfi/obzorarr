@@ -147,7 +147,9 @@ function formatUptime(seconds: number): string {
 				>
 					<Form.Field form={timezoneForm} name="timezone">
 						<Form.Control>
-							{#snippet children({ props })}
+							{#snippet children({
+	props
+})}
 								<Form.Label>Timezone</Form.Label>
 								<Input
 									type="text"
@@ -172,11 +174,7 @@ function formatUptime(seconds: number): string {
 						<Form.FieldErrors />
 					</Form.Field>
 
-					<input
-						type="hidden"
-						name="settingsVersion"
-						bind:value={$timezoneData.settingsVersion}
-					/>
+					<input type="hidden" name="settingsVersion" bind:value={$timezoneData.settingsVersion}>
 
 					<SettingsActionBar>
 						<Button type="submit" class="tap-target" disabled={$timezoneSubmitting}>
@@ -199,7 +197,9 @@ function formatUptime(seconds: number): string {
 			<form method="POST" action="?/updateLogSettings" use:enhance class="space-y-4">
 				<Form.Field {form} name="retentionDays">
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({
+	props
+})}
 							<Form.Label>Retention period (days)</Form.Label>
 							<Input
 								type="number"
@@ -220,7 +220,9 @@ function formatUptime(seconds: number): string {
 
 				<Form.Field {form} name="maxCount">
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({
+	props
+})}
 							<Form.Label>Maximum log count</Form.Label>
 							<Input
 								type="number"
@@ -232,7 +234,10 @@ function formatUptime(seconds: number): string {
 							/>
 						{/snippet}
 					</Form.Control>
-					<Form.Description>Obzorarr drops older entries once the count reaches this ceiling. Range 1,000–1,000,000.</Form.Description>
+					<Form.Description
+						>Obzorarr drops older entries once the count reaches this ceiling. Range
+						1,000–1,000,000.</Form.Description
+					>
 					<Form.FieldErrors />
 					{#if maxCountError}
 						<p class="text-sm text-destructive">{maxCountError}</p>
@@ -241,12 +246,14 @@ function formatUptime(seconds: number): string {
 
 				<Form.Field {form} name="debugEnabled">
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({
+	props
+})}
 							<input
 								type="hidden"
 								name="debugEnabled"
 								value={$formData.debugEnabled ? 'true' : 'false'}
-							/>
+							>
 							<SettingsToggleRow
 								id={props.id}
 								title="DEBUG-level logging"
@@ -266,14 +273,10 @@ function formatUptime(seconds: number): string {
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<input type="hidden" name="settingsVersion" bind:value={$formData.settingsVersion} />
+				<input type="hidden" name="settingsVersion" bind:value={$formData.settingsVersion}>
 
 				<SettingsActionBar>
-					<Button
-						type="submit"
-						class="tap-target"
-						disabled={$submitting || isLoggingFormInvalid}
-					>
+					<Button type="submit" class="tap-target" disabled={$submitting || isLoggingFormInvalid}>
 						{$submitting ? 'Saving…' : 'Save logging settings'}
 					</Button>
 				</SettingsActionBar>

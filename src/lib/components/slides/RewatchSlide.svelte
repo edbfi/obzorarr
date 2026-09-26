@@ -133,7 +133,7 @@ $effect(() => {
 					<div bind:this={cards[i]} class="rewatch-card">
 						<div class="thumb-container">
 							{#if item.thumb}
-								<img src={getThumbUrl(item.thumb) ?? ''} alt="" class="thumb" loading="lazy" />
+								<img src={getThumbUrl(item.thumb) ?? ''} alt="" class="thumb" loading="lazy">
 							{:else}
 								<div class="thumb-placeholder">
 									{item.type === 'movie' ? '🎬' : item.type === 'episode' ? '📺' : '🎵'}
@@ -171,171 +171,171 @@ $effect(() => {
 </BaseSlide>
 
 <style>
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	z-index: 1;
+	width: 100%;
+	max-width: var(--content-max-md, 600px);
+}
+
+.title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
+}
+
+.rewatch-list {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.rewatch-card {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 0.75rem 1rem;
+	background: var(--slide-glass-bg);
+	backdrop-filter: blur(var(--slide-glass-blur, 12px));
+	-webkit-backdrop-filter: blur(var(--slide-glass-blur, 12px));
+	border: 1px solid var(--slide-glass-border);
+	border-radius: calc(var(--radius) * 1.5);
+	transition:
+		transform 0.3s ease,
+		border-color 0.3s ease;
+}
+
+.rewatch-card:hover {
+	transform: translateX(4px);
+	border-color: oklch(var(--primary) / 0.3);
+}
+
+.thumb-container {
+	width: 50px;
+	height: 50px;
+	border-radius: var(--radius);
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+.thumb {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.thumb-placeholder {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: oklch(var(--muted) / 0.3);
+	font-size: 1.5rem;
+}
+
+.card-info {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+
+.title-text {
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.type-badge {
+	font-size: 0.6875rem;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.rewatch-badge {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.375rem 0.625rem;
+	background: oklch(var(--primary) / 0.15);
+	border-radius: var(--radius);
+}
+
+.rewatch-icon {
+	font-size: 0.875rem;
+}
+
+.rewatch-count {
+	font-size: 0.875rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+}
+
+.personality-badge {
+	padding: 0.75rem 1.5rem;
+	background: linear-gradient(135deg, oklch(var(--primary) / 0.2), oklch(var(--primary) / 0.1));
+	border: 1px solid oklch(var(--primary) / 0.3);
+	border-radius: 2rem;
+}
+
+.badge-text {
+	font-size: 1rem;
+	font-weight: 600;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.empty-message {
+	color: oklch(var(--muted-foreground));
+	font-style: italic;
+	font-size: 1.125rem;
+}
+
+.empty-hint {
+	color: oklch(var(--muted-foreground));
+	font-size: 0.875rem;
+	opacity: 0.7;
+}
+
+.extra {
+	margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
 	.content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			z-index: 1;
-			width: 100%;
-			max-width: var(--content-max-md, 600px);
-		}
+		gap: 1rem;
+	}
 
-		.title {
-			font-size: 1.75rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
-		}
+	.title {
+		font-size: 1.5rem;
+	}
 
-		.rewatch-list {
-			width: 100%;
-			display: flex;
-			flex-direction: column;
-			gap: 0.75rem;
-		}
+	.rewatch-card {
+		padding: 0.625rem 0.75rem;
+		gap: 0.75rem;
+	}
 
-		.rewatch-card {
-			display: flex;
-			align-items: center;
-			gap: 1rem;
-			padding: 0.75rem 1rem;
-			background: var(--slide-glass-bg);
-			backdrop-filter: blur(var(--slide-glass-blur, 12px));
-			-webkit-backdrop-filter: blur(var(--slide-glass-blur, 12px));
-			border: 1px solid var(--slide-glass-border);
-			border-radius: calc(var(--radius) * 1.5);
-			transition:
-				transform 0.3s ease,
-				border-color 0.3s ease;
-		}
+	.thumb-container {
+		width: 40px;
+		height: 40px;
+	}
 
-		.rewatch-card:hover {
-			transform: translateX(4px);
-			border-color: oklch(var(--primary) / 0.3);
-		}
-
-		.thumb-container {
-			width: 50px;
-			height: 50px;
-			border-radius: var(--radius);
-			overflow: hidden;
-			flex-shrink: 0;
-		}
-
-		.thumb {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-
-		.thumb-placeholder {
-			width: 100%;
-			height: 100%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background: oklch(var(--muted) / 0.3);
-			font-size: 1.5rem;
-		}
-
-		.card-info {
-			flex: 1;
-			display: flex;
-			flex-direction: column;
-			gap: 0.25rem;
-			min-width: 0;
-		}
-
-		.title-text {
-			font-size: 0.9375rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-		}
-
-		.type-badge {
-			font-size: 0.6875rem;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-		}
-
-		.rewatch-badge {
-			display: flex;
-			align-items: center;
-			gap: 0.25rem;
-			padding: 0.375rem 0.625rem;
-			background: oklch(var(--primary) / 0.15);
-			border-radius: var(--radius);
-		}
-
-		.rewatch-icon {
-			font-size: 0.875rem;
-		}
-
-		.rewatch-count {
-			font-size: 0.875rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-		}
-
-		.personality-badge {
-			padding: 0.75rem 1.5rem;
-			background: linear-gradient(135deg, oklch(var(--primary) / 0.2), oklch(var(--primary) / 0.1));
-			border: 1px solid oklch(var(--primary) / 0.3);
-			border-radius: 2rem;
-		}
-
-		.badge-text {
-			font-size: 1rem;
-			font-weight: 600;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.1em;
-		}
-
-		.empty-message {
-			color: oklch(var(--muted-foreground));
-			font-style: italic;
-			font-size: 1.125rem;
-		}
-
-		.empty-hint {
-			color: oklch(var(--muted-foreground));
-			font-size: 0.875rem;
-			opacity: 0.7;
-		}
-
-		.extra {
-			margin-top: 1rem;
-		}
-
-		@media (max-width: 767px) {
-			.content {
-				gap: 1rem;
-			}
-
-			.title {
-				font-size: 1.5rem;
-			}
-
-			.rewatch-card {
-				padding: 0.625rem 0.75rem;
-				gap: 0.75rem;
-			}
-
-			.thumb-container {
-				width: 40px;
-				height: 40px;
-			}
-
-			.title-text {
-				font-size: 0.875rem;
-			}
-		}
+	.title-text {
+		font-size: 0.875rem;
+	}
+}
 </style>

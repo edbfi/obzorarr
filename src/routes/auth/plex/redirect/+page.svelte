@@ -166,21 +166,21 @@ function handleRetry(): void {
 </div>
 
 <style>
-	.redirect-container {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		min-height: 100vh;
-		padding: 1rem;
-		background: linear-gradient(135deg, oklch(0.12 0 0) 0%, oklch(0.18 0.04 270) 100%);
-	}
+.redirect-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	padding: 1rem;
+	background: linear-gradient(135deg, oklch(0.12 0 0) 0%, oklch(0.18 0.04 270) 100%);
+}
 
-	:global(.redirect-card) {
-		max-width: 400px;
-		width: 100%;
-	}
+:global(.redirect-card) {
+	max-width: 400px;
+	width: 100%;
+}
 
-	:global(.text-success) {
-		color: oklch(0.72 0.18 145);
-	}
+:global(.text-success) {
+	color: oklch(0.72 0.18 145);
+}
 </style>

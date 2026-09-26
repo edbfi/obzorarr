@@ -23,14 +23,14 @@ const sidebar = useSidebar();
 	data-slot="sidebar-trigger"
 	variant="ghost"
 	size="icon-sm"
-	class={cn("cn-sidebar-trigger tap-target", className)}
+	class={cn('cn-sidebar-trigger tap-target', className)}
 	type="button"
 	onclick={(e) => {
-		onclick?.(e);
-		sidebar.toggle();
-	}}
+	onclick?.(e);
+	sidebar.toggle();
+}}
 	{...restProps}
 >
-	<PanelLeftIcon  />
+	<PanelLeftIcon />
 	<span class="sr-only">Toggle Sidebar</span>
 </Button>

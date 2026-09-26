@@ -5,24 +5,27 @@
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": [
+			"**",
+			"!!**/build",
+			"!**/.svelte-kit",
+			"!!**/.omc",
+			"!!**/.gjc",
+			"!**/node_modules",
+			"!!**/data",
+			"!!**/dogfood-output",
+			"!!**/drizzle",
+			"!**/*.db",
+			"!src/lib/assets/obzorarr-icon.svg",
+			"!**/bun.lock"
+		]
+	},
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab",
 		"lineWidth": 100
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "single",
-			"trailingCommas": "none"
-		}
-	},
-	"css": {
-		"parser": {
-			"cssModules": true
-		},
-		"linter": {
-			"enabled": true
-		}
 	},
 	"linter": {
 		"enabled": true,
@@ -44,37 +47,79 @@
 			}
 		}
 	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"preset": "recommended"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"trailingCommas": "none",
+			"semicolons": "always"
+		}
+	},
+	"css": {
+		"parser": {
+			"cssModules": true
+		},
+		"linter": {
+			"enabled": true
+		}
+	},
+	"html": {
+		"experimentalFullSupportEnabled": true,
+		"formatter": {
+			"enabled": true
+		}
+	},
 	"overrides": [
 		{
-			"includes": ["**/*.svelte"],
+			"includes": [
+				"src/lib/components/onboarding/StepIndicator.svelte",
+				"src/lib/components/slides/DecadeSlide.svelte",
+				"src/lib/components/slides/SeriesCompletionSlide.svelte",
+				"src/lib/components/slides/TopViewersSlide.svelte",
+				"src/lib/components/slides/WeekdayPatternsSlide.svelte",
+				"src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
+				"src/routes/admin/+layout.svelte",
+				"src/routes/admin/logs/+page.svelte",
+				"src/routes/admin/settings/+layout.svelte",
+				"src/routes/admin/settings/+page.svelte",
+				"src/routes/admin/settings/privacy/+page.svelte",
+				"src/routes/dashboard/+layout.svelte",
+				"src/routes/onboarding/plex/+page.svelte",
+				"src/routes/onboarding/settings/+page.svelte"
+			],
+			"formatter": {
+				"enabled": false
+			}
+		},
+		{
+			"includes": ["src/lib/components/wrapped/StoryMode.svelte"],
 			"linter": {
 				"rules": {
-					"correctness": {
-						"noUnusedVariables": "off",
-						"noUnusedImports": "off"
-					},
-					"style": {
-						"useImportType": "off",
-						"useConst": "off"
+					"a11y": {
+						"useKeyWithClickEvents": "off",
+						"noNoninteractiveTabindex": "off"
+					}
+				}
+			}
+		},
+		{
+			"includes": ["src/routes/admin/slides/+page.svelte"],
+			"linter": {
+				"rules": {
+					"a11y": {
+						"noRedundantRoles": "off",
+						"useKeyWithClickEvents": "off",
+						"noStaticElementInteractions": "off"
 					}
 				}
 			}
 		}
-	],
-	"files": {
-		"includes": [
-			"**",
-			"!**/build",
-			"!**/.svelte-kit",
-			"!**/.omc",
-			"!**/.gjc",
-			"!**/node_modules",
-			"!/data",
-			"!**/dogfood-output",
-			"!**/drizzle",
-			"!**/*.db",
-			"!src/lib/assets/obzorarr-icon.svg",
-			"!**/bun.lock"
-		]
-	}
+	]
 }

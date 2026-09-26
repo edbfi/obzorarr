@@ -163,145 +163,145 @@ $effect(() => {
 </BaseSlide>
 
 <style>
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	max-width: var(--content-max-sm, 600px);
+	z-index: 1;
+}
+
+.title {
+	font-size: 1rem;
+	font-weight: 600;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	opacity: 0.9;
+}
+
+.stat-number {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin: 0.5rem 0;
+	line-height: 1;
+}
+
+.stat-value {
+	font-size: clamp(3rem, 12vw, 7rem);
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	background: linear-gradient(
+		180deg,
+		oklch(var(--primary)) 0%,
+		oklch(var(--primary-grad-plus-15)) 100%
+	);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	filter: drop-shadow(0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
+		drop-shadow(0 0 60px var(--slide-accent-glow, oklch(var(--primary) / 0.3)));
+}
+
+.stat-unit {
+	font-size: clamp(2rem, 8vw, 5rem);
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	background: linear-gradient(
+		180deg,
+		oklch(var(--primary)) 0%,
+		oklch(var(--primary-grad-plus-15)) 100%
+	);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	filter: drop-shadow(0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
+		drop-shadow(0 0 60px var(--slide-accent-glow, oklch(var(--primary) / 0.3)));
+}
+
+.subtitle {
+	font-size: 1.25rem;
+	color: oklch(var(--muted-foreground));
+	font-style: italic;
+	opacity: 0.85;
+}
+
+.extra {
+	margin-top: 2rem;
+}
+
+@media (max-width: 767px) {
 	.content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			max-width: var(--content-max-sm, 600px);
-			z-index: 1;
-		}
+		gap: 1.25rem;
+	}
 
-		.title {
-			font-size: 1rem;
-			font-weight: 600;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.1em;
-			opacity: 0.9;
-		}
+	.title {
+		font-size: 0.875rem;
+	}
 
-		.stat-number {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin: 0.5rem 0;
-			line-height: 1;
-		}
+	.stat-value {
+		font-size: clamp(2.5rem, 14vw, 4rem);
+		filter: drop-shadow(0 0 20px var(--slide-glow-color, oklch(var(--primary) / 0.4)))
+			drop-shadow(0 0 40px var(--slide-accent-glow, oklch(var(--primary) / 0.2)));
+	}
 
-		.stat-value {
-			font-size: clamp(3rem, 12vw, 7rem);
-			font-weight: 800;
-			letter-spacing: -0.03em;
-			background: linear-gradient(
-				180deg,
-				oklch(var(--primary)) 0%,
-				oklch(var(--primary-grad-plus-15)) 100%
-			);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			filter: drop-shadow(0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
-				drop-shadow(0 0 60px var(--slide-accent-glow, oklch(var(--primary) / 0.3)));
-		}
+	.stat-unit {
+		font-size: clamp(1.5rem, 10vw, 2.5rem);
+		filter: drop-shadow(0 0 20px var(--slide-glow-color, oklch(var(--primary) / 0.4)))
+			drop-shadow(0 0 40px var(--slide-accent-glow, oklch(var(--primary) / 0.2)));
+	}
 
-		.stat-unit {
-			font-size: clamp(2rem, 8vw, 5rem);
-			font-weight: 800;
-			letter-spacing: -0.03em;
-			background: linear-gradient(
-				180deg,
-				oklch(var(--primary)) 0%,
-				oklch(var(--primary-grad-plus-15)) 100%
-			);
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
-			background-clip: text;
-			filter: drop-shadow(0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
-				drop-shadow(0 0 60px var(--slide-accent-glow, oklch(var(--primary) / 0.3)));
-		}
+	.subtitle {
+		font-size: 1rem;
+	}
+}
 
-		.subtitle {
-			font-size: 1.25rem;
-			color: oklch(var(--muted-foreground));
-			font-style: italic;
-			opacity: 0.85;
-		}
+@media (min-width: 768px) and (max-width: 1023px) {
+	.title {
+		font-size: 1.125rem;
+	}
 
-		.extra {
-			margin-top: 2rem;
-		}
+	.stat-value {
+		font-size: clamp(3.5rem, 10vw, 5.5rem);
+	}
 
-		@media (max-width: 767px) {
-			.content {
-				gap: 1.25rem;
-			}
+	.stat-unit {
+		font-size: clamp(2rem, 7vw, 3.5rem);
+	}
 
-			.title {
-				font-size: 0.875rem;
-			}
+	.subtitle {
+		font-size: 1.375rem;
+	}
+}
 
-			.stat-value {
-				font-size: clamp(2.5rem, 14vw, 4rem);
-				filter: drop-shadow(0 0 20px var(--slide-glow-color, oklch(var(--primary) / 0.4)))
-					drop-shadow(0 0 40px var(--slide-accent-glow, oklch(var(--primary) / 0.2)));
-			}
+@media (min-width: 1024px) {
+	.content {
+		gap: 2rem;
+	}
 
-			.stat-unit {
-				font-size: clamp(1.5rem, 10vw, 2.5rem);
-				filter: drop-shadow(0 0 20px var(--slide-glow-color, oklch(var(--primary) / 0.4)))
-					drop-shadow(0 0 40px var(--slide-accent-glow, oklch(var(--primary) / 0.2)));
-			}
+	.title {
+		font-size: 1.25rem;
+		letter-spacing: 0.12em;
+	}
 
-			.subtitle {
-				font-size: 1rem;
-			}
-		}
+	.stat-value {
+		font-size: clamp(4rem, 12vw, 8rem);
+		filter: drop-shadow(0 0 40px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
+			drop-shadow(0 0 80px var(--slide-accent-glow, oklch(var(--primary) / 0.35)))
+			drop-shadow(0 0 120px oklch(var(--primary) / 0.2));
+	}
 
-		@media (min-width: 768px) and (max-width: 1023px) {
-			.title {
-				font-size: 1.125rem;
-			}
+	.stat-unit {
+		font-size: clamp(2.5rem, 8vw, 5.5rem);
+		filter: drop-shadow(0 0 40px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
+			drop-shadow(0 0 80px var(--slide-accent-glow, oklch(var(--primary) / 0.35)))
+			drop-shadow(0 0 120px oklch(var(--primary) / 0.2));
+	}
 
-			.stat-value {
-				font-size: clamp(3.5rem, 10vw, 5.5rem);
-			}
-
-			.stat-unit {
-				font-size: clamp(2rem, 7vw, 3.5rem);
-			}
-
-			.subtitle {
-				font-size: 1.375rem;
-			}
-		}
-
-		@media (min-width: 1024px) {
-			.content {
-				gap: 2rem;
-			}
-
-			.title {
-				font-size: 1.25rem;
-				letter-spacing: 0.12em;
-			}
-
-			.stat-value {
-				font-size: clamp(4rem, 12vw, 8rem);
-				filter: drop-shadow(0 0 40px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
-					drop-shadow(0 0 80px var(--slide-accent-glow, oklch(var(--primary) / 0.35)))
-					drop-shadow(0 0 120px oklch(var(--primary) / 0.2));
-			}
-
-			.stat-unit {
-				font-size: clamp(2.5rem, 8vw, 5.5rem);
-				filter: drop-shadow(0 0 40px var(--slide-glow-color, oklch(var(--primary) / 0.5)))
-					drop-shadow(0 0 80px var(--slide-accent-glow, oklch(var(--primary) / 0.35)))
-					drop-shadow(0 0 120px oklch(var(--primary) / 0.2));
-			}
-
-			.subtitle {
-				font-size: 1.5rem;
-			}
-		}
+	.subtitle {
+		font-size: 1.5rem;
+	}
+}
 </style>

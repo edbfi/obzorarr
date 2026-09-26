@@ -25,7 +25,6 @@ const attrs = $derived({
 {#if child}
 	{@render child({ props: attrs })}
 {:else}
-	<a bind:this={ref} {...attrs}>
-		{@render children?.()}
-	</a>
+	<!-- biome-ignore lint/a11y/useValidAnchor: The polymorphic component receives href through its merged props. -->
+	<a bind:this={ref} {...attrs}> {@render children?.()} </a>
 {/if}

@@ -130,7 +130,7 @@ function handleShare(): void {
 
 <svelte:head>
 	<title>Server Wrapped {data.year} - Obzorarr</title>
-	<meta name="description" content="Year in Review statistics for {data.year}" />
+	<meta name="description" content="Year in Review statistics for {data.year}">
 </svelte:head>
 
 <div class="wrapped-page">
@@ -169,37 +169,37 @@ function handleShare(): void {
 		{/if}
 
 		{#if showSummary}
-		<SummaryPage
-			stats={data.stats}
-			year={data.year}
-			onRestart={handleRestart}
-			onHome={handleHome}
-			onShare={handleShare}
-		/>
-	{:else if viewMode === 'story'}
-		{#key storyKey}
-			<StoryMode
+			<SummaryPage
+				stats={data.stats}
+				year={data.year}
+				onRestart={handleRestart}
+				onHome={handleHome}
+				onShare={handleShare}
+			/>
+		{:else if viewMode === 'story'}
+			{#key storyKey}
+				<StoryMode
+					stats={data.stats}
+					slides={data.slides}
+					customSlides={data.customSlidesMap}
+					initialSlideIndex={currentSlideIndex}
+					onSlideChange={(index) => (currentSlideIndex = index)}
+					onComplete={handleComplete}
+					onClose={handleClose}
+					{messagingContext}
+				/>
+			{/key}
+		{:else}
+			<ScrollMode
 				stats={data.stats}
 				slides={data.slides}
 				customSlides={data.customSlidesMap}
 				initialSlideIndex={currentSlideIndex}
-				onSlideChange={(index) => (currentSlideIndex = index)}
-				onComplete={handleComplete}
+				onModeSwitch={handleScrollModeSwitch}
 				onClose={handleClose}
 				{messagingContext}
 			/>
-		{/key}
-	{:else}
-		<ScrollMode
-			stats={data.stats}
-			slides={data.slides}
-			customSlides={data.customSlidesMap}
-			initialSlideIndex={currentSlideIndex}
-			onModeSwitch={handleScrollModeSwitch}
-			onClose={handleClose}
-			{messagingContext}
-		/>
-	{/if}
+		{/if}
 
 		<ShareModal
 			bind:open={showShareModal}
@@ -213,105 +213,103 @@ function handleShare(): void {
 </div>
 
 <style>
-	.wrapped-page {
-			position: relative;
-			width: 100%;
-			min-height: 100vh;
-			min-height: 100dvh;
-			background: var(
-				--slide-bg-gradient,
-				linear-gradient(
-					135deg,
-					oklch(var(--slide-bg-start)) 0%,
-					oklch(var(--slide-bg-end)) 100%
-				)
-			);
-		}
+.wrapped-page {
+	position: relative;
+	width: 100%;
+	min-height: 100vh;
+	/* biome-ignore lint/suspicious/noDuplicateProperties: Keep the vh fallback for browsers without dynamic viewport units. */
+	min-height: 100dvh;
+	background: var(
+		--slide-bg-gradient,
+		linear-gradient(135deg, oklch(var(--slide-bg-start)) 0%, oklch(var(--slide-bg-end)) 100%)
+	);
+}
 
-		.logo-watermark {
-			position: fixed;
-			top: 1rem;
-			left: 1rem;
-			z-index: 99;
-			opacity: 0.8;
-			pointer-events: none;
-		}
+.logo-watermark {
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	z-index: 99;
+	opacity: 0.8;
+	pointer-events: none;
+}
 
-		.mode-toggle-container {
-			position: fixed;
-			top: 1rem;
-			right: 1rem;
-			z-index: 100;
-		}
+.mode-toggle-container {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	z-index: 100;
+}
 
-		.empty-state {
-			position: relative;
-			z-index: 1;
-			min-height: 100vh;
-			min-height: 100dvh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding: 2rem;
-		}
+.empty-state {
+	position: relative;
+	z-index: 1;
+	min-height: 100vh;
+	/* biome-ignore lint/suspicious/noDuplicateProperties: Keep the vh fallback for browsers without dynamic viewport units. */
+	min-height: 100dvh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+}
 
-		.empty-card {
-			max-width: 480px;
-			width: 100%;
-			text-align: center;
-			background: oklch(var(--card));
-			border: 1px solid oklch(var(--border));
-			border-radius: var(--radius);
-			padding: 2.5rem 2rem;
-		}
+.empty-card {
+	max-width: 480px;
+	width: 100%;
+	text-align: center;
+	background: oklch(var(--card));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	padding: 2.5rem 2rem;
+}
 
-		.empty-card h1 {
-			font-size: 1.5rem;
-			font-weight: 600;
-			margin: 0 0 0.75rem;
-			color: oklch(var(--foreground));
-		}
+.empty-card h1 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin: 0 0 0.75rem;
+	color: oklch(var(--foreground));
+}
 
-		.empty-card p {
-			color: oklch(var(--muted-foreground));
-			margin: 0 0 2rem;
-			line-height: 1.5;
-		}
+.empty-card p {
+	color: oklch(var(--muted-foreground));
+	margin: 0 0 2rem;
+	line-height: 1.5;
+}
 
-		.empty-actions {
-			display: flex;
-			gap: 0.75rem;
-			justify-content: center;
-			flex-wrap: wrap;
-		}
+.empty-actions {
+	display: flex;
+	gap: 0.75rem;
+	justify-content: center;
+	flex-wrap: wrap;
+}
 
-		.btn {
-			padding: 0.625rem 1.25rem;
-			border-radius: var(--radius);
-			font-size: 0.875rem;
-			font-weight: 500;
-			cursor: pointer;
-			border: 1px solid oklch(var(--border));
-			transition: opacity 0.15s ease;
-			text-decoration: none;
-			display: inline-flex;
-			align-items: center;
-			justify-content: center;
-			line-height: 1;
-		}
+.btn {
+	padding: 0.625rem 1.25rem;
+	border-radius: var(--radius);
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid oklch(var(--border));
+	transition: opacity 0.15s ease;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
 
-		.btn:hover {
-			opacity: 0.85;
-		}
+.btn:hover {
+	opacity: 0.85;
+}
 
-		.btn.primary {
-			background: oklch(var(--primary));
-			color: oklch(var(--primary-foreground));
-			border-color: oklch(var(--primary));
-		}
+.btn.primary {
+	background: oklch(var(--primary));
+	color: oklch(var(--primary-foreground));
+	border-color: oklch(var(--primary));
+}
 
-		.btn.secondary {
-			background: oklch(var(--muted));
-			color: oklch(var(--foreground));
-		}
+.btn.secondary {
+	background: oklch(var(--muted));
+	color: oklch(var(--foreground));
+}
 </style>

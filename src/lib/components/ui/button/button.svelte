@@ -49,17 +49,17 @@ export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 </script>
 
 <script lang="ts">
-	let {
-		class: className,
-		variant = "default",
-		size = "default",
-		ref = $bindable(null),
-		href = undefined,
-		type = "button",
-		disabled,
-		children,
-		...restProps
-	}: ButtonProps = $props();
+let {
+	class: className,
+	variant = 'default',
+	size = 'default',
+	ref = $bindable(null),
+	href = undefined,
+	type = 'button',
+	disabled,
+	children,
+	...restProps
+}: ButtonProps = $props();
 </script>
 
 {#if href}
@@ -69,7 +69,7 @@ export type ButtonProps = WithElementRef<HTMLButtonAttributes> &
 		class={cn(buttonVariants({ variant, size }), className)}
 		href={disabled ? undefined : href}
 		aria-disabled={disabled}
-		role={disabled ? "link" : undefined}
+		role={disabled ? 'link' : undefined}
 		tabindex={disabled ? -1 : undefined}
 		{...restProps}
 	>

@@ -1,7 +1,7 @@
 <script lang="ts" module>
 import { getContext, setContext } from 'svelte';
 import type { VariantProps } from 'tailwind-variants';
-import { toggleVariants } from '$lib/components/ui/toggle/index.js';
+import type { toggleVariants } from '$lib/components/ui/toggle/index.js';
 
 type ToggleVariants = VariantProps<typeof toggleVariants>;
 
@@ -20,41 +20,41 @@ export function getToggleGroupCtx() {
 </script>
 
 <script lang="ts">
-	import { ToggleGroup as ToggleGroupPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+import { ToggleGroup as ToggleGroupPrimitive } from 'bits-ui';
+import { cn } from '$lib/utils.js';
 
-	let {
-		ref = $bindable(null),
-		value = $bindable(),
-		class: className,
-		size = "default",
-		spacing = 0,
-		orientation = "horizontal",
-		variant = "default",
-		...restProps
-	}: ToggleGroupPrimitive.RootProps &
-		ToggleVariants & {
-			spacing?: number;
-			orientation?: "horizontal" | "vertical";
-		} = $props();
+let {
+	ref = $bindable(null),
+	value = $bindable(),
+	class: className,
+	size = 'default',
+	spacing = 0,
+	orientation = 'horizontal',
+	variant = 'default',
+	...restProps
+}: ToggleGroupPrimitive.RootProps &
+	ToggleVariants & {
+		spacing?: number;
+		orientation?: 'horizontal' | 'vertical';
+	} = $props();
 
-	setToggleGroupCtx({
-		get variant() {
-			return variant;
-		},
-		get size() {
-			return size;
-		},
-		get spacing() {
-			return spacing;
-		},
-		get orientation() {
-			return orientation;
-		},
-	});
+setToggleGroupCtx({
+	get variant() {
+		return variant;
+	},
+	get size() {
+		return size;
+	},
+	get spacing() {
+		return spacing;
+	},
+	get orientation() {
+		return orientation;
+	}
+});
 </script>
 
-	<!--
+<!--
 	Bits UI's discriminated union type does not compose with Svelte's
 	bindable destructuring here, so the bind target is narrowed manually.
 	-->
@@ -68,8 +68,8 @@ export function getToggleGroupCtx() {
 	data-spacing={spacing}
 	style={`--gap: ${spacing}`}
 	class={cn(
-		"rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch",
-		className
-	)}
+	'rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] data-vertical:flex-col data-vertical:items-stretch',
+	className
+)}
 	{...restProps}
 />

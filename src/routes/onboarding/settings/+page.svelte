@@ -364,7 +364,7 @@ function getThemeColors(themeValue: string) {
 		<div class="settings-container">
 			{#if visibleError}
 				<div class="error-banner" role="alert" aria-live="polite">
-					<svg
+					<svg aria-hidden="true"
 						class="error-icon"
 						viewBox="0 0 24 24"
 						fill="none"
@@ -395,7 +395,7 @@ function getThemeColors(themeValue: string) {
 							aria-label="Go to {step.label}"
 						>
 							{#if index < currentSubStep}
-								<svg
+								<svg aria-hidden="true"
 									class="dot-check"
 									viewBox="0 0 24 24"
 									fill="none"
@@ -515,7 +515,7 @@ function getThemeColors(themeValue: string) {
 					{#if currentStepData.id === 'appearance'}
 						<div class="step-header">
 							<div class="step-icon appearance-icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+								<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 									<circle cx="12" cy="12" r="3" />
 									<path
 										d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
@@ -584,7 +584,7 @@ function getThemeColors(themeValue: string) {
 					{:else if currentStepData.id === 'privacy'}
 						<div class="step-header">
 							<div class="step-icon privacy-icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+								<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
 									<path d="M9 12l2 2 4-4" />
 								</svg>
@@ -604,7 +604,8 @@ function getThemeColors(themeValue: string) {
 								<div class="preset-grid" role="radiogroup" aria-label="Privacy preset">
 									{#each PRIVACY_PRESETS as preset, i (preset.id)}
 										{@const PresetIcon = presetIcons[preset.id]}
-										<button
+										<!-- biome-ignore lint/a11y/useSemanticElements: These rich radio cards implement the radiogroup keyboard pattern. -->
+<button
 											type="button"
 											class="preset-card"
 											class:selected={selectedPresetCard === preset.id}
@@ -640,7 +641,8 @@ function getThemeColors(themeValue: string) {
 									     the final roving-tabindex slot (CUSTOM_PRESET_INDEX) and carries no
 									     exposureSummary — the live "What this means" panel below already
 									     states what the current fields expose. -->
-									<button
+									<!-- biome-ignore lint/a11y/useSemanticElements: These rich radio cards implement the radiogroup keyboard pattern. -->
+<button
 										type="button"
 										class="preset-card"
 										class:selected={selectedPresetCard === 'custom'}
@@ -954,7 +956,7 @@ function getThemeColors(themeValue: string) {
 					{:else if currentStepData.id === 'slides'}
 						<div class="step-header">
 							<div class="step-icon slides-icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+								<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 									<rect x="2" y="3" width="20" height="14" rx="2" />
 									<path d="M8 21h8M12 17v4" />
 								</svg>
@@ -993,7 +995,7 @@ function getThemeColors(themeValue: string) {
 					{:else if currentStepData.id === 'ai'}
 						<div class="step-header">
 							<div class="step-icon ai-icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+								<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 									<path
 										d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"
 									/>

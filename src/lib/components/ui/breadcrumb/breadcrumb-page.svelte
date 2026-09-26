@@ -10,13 +10,14 @@ let {
 }: WithElementRef<HTMLAttributes<HTMLSpanElement>> = $props();
 </script>
 
+<!-- biome-ignore lint/a11y/useFocusableInteractive lint/a11y/useSemanticElements: The current breadcrumb is a disabled link and must remain outside the tab order. -->
 <span
 	bind:this={ref}
 	data-slot="breadcrumb-page"
 	role="link"
 	aria-disabled="true"
 	aria-current="page"
-	class={cn("text-foreground font-normal", className)}
+	class={cn('text-foreground font-normal', className)}
 	{...restProps}
 >
 	{@render children?.()}

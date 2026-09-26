@@ -15,17 +15,16 @@ const pixelSize = $derived(typeof size === 'number' ? size : sizeMap[size]);
 <img
 	src={obzorarrIcon}
 	alt=""
-	role="presentation"
 	aria-hidden="true"
 	width={pixelSize}
 	height={pixelSize}
 	class="logo {klass}"
-/>
+>
 
 <style>
-	.logo {
-			display: inline-block;
-			vertical-align: middle;
-			flex-shrink: 0;
-		}
+.logo {
+	display: inline-block;
+	vertical-align: middle;
+	flex-shrink: 0;
+}
 </style>

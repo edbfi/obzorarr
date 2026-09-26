@@ -206,14 +206,14 @@ function handleCsrfWarningDismissed() {
 	</header>
 
 	{#if sidebarOpen}
-		<div
+		<button
+			type="button"
 			class="sidebar-overlay"
 			onclick={closeSidebar}
 			onkeydown={(e) => e.key === 'Escape' && closeSidebar()}
-			role="button"
 			tabindex="-1"
 			aria-label="Close sidebar"
-		></div>
+		></button>
 	{/if}
 
 	<aside

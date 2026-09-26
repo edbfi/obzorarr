@@ -1,77 +1,87 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<!-- Google Fonts preconnect for theme fonts -->
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 		%sveltekit.head%
 		<script nonce="%sveltekit.nonce%">
-			(() => {
+		(() => {
+			try {
+				const validThemes = [
+					'modern-minimal',
+					'supabase',
+					'doom-64',
+					'amber-minimal',
+					'soviet-red',
+					'obsidian-premium',
+					'aurora-premium',
+					'champagne-premium'
+				];
+				const cookies = document.cookie || '';
+				const ui = (cookies.match(/(?:^|;\s*)ui_theme=([^;]+)/) || [])[1];
+				const wrapped = (cookies.match(/(?:^|;\s*)wrapped_theme=([^;]+)/) || [])[1];
+				const isWrapped = location.pathname.indexOf('/wrapped') === 0;
+				const raw = (isWrapped ? wrapped : ui) || ui || '';
+				let theme = 'modern-minimal';
 				try {
-					const validThemes = ['modern-minimal','supabase','doom-64','amber-minimal','soviet-red','obsidian-premium','aurora-premium','champagne-premium'];
-					const cookies = document.cookie || '';
-					const ui = (cookies.match(/(?:^|;\s*)ui_theme=([^;]+)/) || [])[1];
-					const wrapped = (cookies.match(/(?:^|;\s*)wrapped_theme=([^;]+)/) || [])[1];
-					const isWrapped = location.pathname.indexOf('/wrapped') === 0;
-					const raw = (isWrapped ? wrapped : ui) || ui || '';
-					let theme = 'modern-minimal';
-					try { theme = decodeURIComponent(raw) || 'modern-minimal'; } catch {}
-					if (validThemes.indexOf(theme) === -1) theme = 'modern-minimal';
-					document.documentElement.setAttribute('data-theme', theme);
-					if (isWrapped) {
-						document.documentElement.setAttribute('data-wrapped-route', '1');
-					}
+					theme = decodeURIComponent(raw) || 'modern-minimal';
+				} catch {}
+				if (validThemes.indexOf(theme) === -1) theme = 'modern-minimal';
+				document.documentElement.setAttribute('data-theme', theme);
+				if (isWrapped) {
+					document.documentElement.setAttribute('data-wrapped-route', '1');
+				}
 
-					/* A3 step 5 — legacy-tokens pre-paint resolution.
+				/* A3 step 5 — legacy-tokens pre-paint resolution.
 					   Source precedence: URL search param > cookie. The search-param
 					   branch also writes the cookie so subsequent navigations persist
 					   the override. Doing this here (before CSS loads) prevents an
 					   OKLCH→HSL FOUC. Scheduled removal: PR-4 (see LEGACY_REMOVAL.md). */
-					const params = (location.search || '').match(/[?&]legacy-tokens=([^&]+)/);
-					const legacyCookie = (cookies.match(/(?:^|;\s*)legacy_tokens=([^;]+)/) || [])[1];
-					// Evaluate the URL override FIRST so "URL search param > cookie"
-					// holds in both directions: ?legacy-tokens=0 must be able to clear
-					// an existing legacy_tokens=1 cookie, not just set it.
-					if (params && params[1] === '0') {
+				const params = (location.search || '').match(/[?&]legacy-tokens=([^&]+)/);
+				const legacyCookie = (cookies.match(/(?:^|;\s*)legacy_tokens=([^;]+)/) || [])[1];
+				// Evaluate the URL override FIRST so "URL search param > cookie"
+				// holds in both directions: ?legacy-tokens=0 must be able to clear
+				// an existing legacy_tokens=1 cookie, not just set it.
+				if (params && params[1] === '0') {
+					// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is async + not Safari-stable; pre-paint inline script needs sync document.cookie
+					document.cookie = 'legacy_tokens=; Max-Age=0; Path=/; SameSite=Lax';
+				} else if ((params && params[1] === '1') || legacyCookie === '1') {
+					document.documentElement.setAttribute('data-legacy-tokens', '1');
+					if (params && params[1] === '1' && legacyCookie !== '1') {
 						// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is async + not Safari-stable; pre-paint inline script needs sync document.cookie
-						document.cookie = 'legacy_tokens=; Max-Age=0; Path=/; SameSite=Lax';
-					} else if ((params && params[1] === '1') || legacyCookie === '1') {
-						document.documentElement.setAttribute('data-legacy-tokens', '1');
-						if (params && params[1] === '1' && legacyCookie !== '1') {
-							// biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is async + not Safari-stable; pre-paint inline script needs sync document.cookie
-							document.cookie = 'legacy_tokens=1; Max-Age=86400; Path=/; SameSite=Lax';
-						}
-						console.warn('[obzorarr] legacy HSL token override active — scheduled removal: PR-4');
+						document.cookie = 'legacy_tokens=1; Max-Age=86400; Path=/; SameSite=Lax';
 					}
-				} catch {}
-			})();
+					console.warn('[obzorarr] legacy HSL token override active — scheduled removal: PR-4');
+				}
+			} catch {}
+		})();
 		</script>
-		<link rel="stylesheet" href="/app-legacy.css" data-legacy-tokens-link disabled />
+		<link rel="stylesheet" href="/app-legacy.css" data-legacy-tokens-link disabled>
 		<script nonce="%sveltekit.nonce%">
-			(() => {
-				try {
-					if (document.documentElement.getAttribute('data-legacy-tokens') === '1') {
-						const link = document.querySelector('link[data-legacy-tokens-link]');
-						if (link) link.removeAttribute('disabled');
-					}
-				} catch {}
-			})();
+		(() => {
+			try {
+				if (document.documentElement.getAttribute('data-legacy-tokens') === '1') {
+					const link = document.querySelector('link[data-legacy-tokens-link]');
+					if (link) link.removeAttribute('disabled');
+				}
+			} catch {}
+		})();
 		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
 		<script nonce="%sveltekit.nonce%">
-			(() => {
-				try {
-					const theme = document.documentElement.getAttribute('data-theme');
-					const isWrapped =
-						document.documentElement.getAttribute('data-wrapped-route') === '1';
-					if (theme) document.body.classList.add(`theme-${theme}`);
-					if (isWrapped) document.body.classList.add('wrapped-route');
-				} catch {}
-			})();
+		(() => {
+			try {
+				const theme = document.documentElement.getAttribute('data-theme');
+				const isWrapped = document.documentElement.getAttribute('data-wrapped-route') === '1';
+				if (theme) document.body.classList.add(`theme-${theme}`);
+				if (isWrapped) document.body.classList.add('wrapped-route');
+			} catch {}
+		})();
 		</script>
 	</body>
 </html>

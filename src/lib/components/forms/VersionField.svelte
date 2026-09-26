@@ -15,4 +15,4 @@
 let { version }: { version: string } = $props();
 </script>
 
-<input type="hidden" name="settingsVersion" value={version} />
+<input type="hidden" name="settingsVersion" value={version}>
