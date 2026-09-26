@@ -39,6 +39,7 @@ function handleCancel(): void {
 		<AlertDialog.Header>
 			<div class="header-icon">
 				<svg
+					aria-hidden="true"
 					xmlns="http://www.w3.org/2000/svg"
 					width="24"
 					height="24"
@@ -63,6 +64,7 @@ function handleCancel(): void {
 		<div class="info-card">
 			<div class="info-icon">
 				<svg
+					aria-hidden="true"
 					xmlns="http://www.w3.org/2000/svg"
 					width="16"
 					height="16"
@@ -95,60 +97,60 @@ function handleCancel(): void {
 </AlertDialog.Root>
 
 <style>
-	:global(.popup-blocked-modal) {
-			max-width: 26rem !important;
-		}
+:global(.popup-blocked-modal) {
+	max-width: 26rem !important;
+}
 
-		:global(.popup-blocked-modal [data-slot='alert-dialog-header']) {
-			text-align: center;
-		}
+:global(.popup-blocked-modal [data-slot="alert-dialog-header"]) {
+	text-align: center;
+}
 
-		:global(.popup-blocked-modal [data-slot='alert-dialog-title']) {
-			text-align: center;
-		}
+:global(.popup-blocked-modal [data-slot="alert-dialog-title"]) {
+	text-align: center;
+}
 
-		:global(.popup-blocked-modal [data-slot='alert-dialog-description']) {
-			text-align: center;
-		}
+:global(.popup-blocked-modal [data-slot="alert-dialog-description"]) {
+	text-align: center;
+}
 
-		.header-icon {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 3rem;
-			height: 3rem;
-			margin: 0 auto 0.75rem;
-			border-radius: 12px;
-			background: oklch(var(--primary) / 0.1);
-			color: oklch(var(--primary));
-		}
+.header-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	margin: 0 auto 0.75rem;
+	border-radius: 12px;
+	background: oklch(var(--primary) / 0.1);
+	color: oklch(var(--primary));
+}
 
-		.info-card {
-			display: flex;
-			align-items: flex-start;
-			gap: 0.75rem;
-			padding: 0.875rem 1rem;
-			margin: 0.5rem 0 0.25rem;
-			background: oklch(var(--muted) / 0.5);
-			border: 1px solid oklch(var(--border));
-			border-radius: 8px;
-		}
+.info-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding: 0.875rem 1rem;
+	margin: 0.5rem 0 0.25rem;
+	background: oklch(var(--muted) / 0.5);
+	border: 1px solid oklch(var(--border));
+	border-radius: 8px;
+}
 
-		.info-icon {
-			flex-shrink: 0;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 1.5rem;
-			height: 1.5rem;
-			margin-top: 0.0625rem;
-			color: oklch(var(--muted-foreground));
-		}
+.info-icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	margin-top: 0.0625rem;
+	color: oklch(var(--muted-foreground));
+}
 
-		.info-card p {
-			margin: 0;
-			font-size: 0.8125rem;
-			line-height: 1.5;
-			color: oklch(var(--muted-foreground));
-		}
+.info-card p {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+	color: oklch(var(--muted-foreground));
+}
 </style>

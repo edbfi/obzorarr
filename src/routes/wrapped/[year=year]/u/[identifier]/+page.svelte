@@ -137,7 +137,7 @@ function handleLogoToggle(): void {
 
 <svelte:head>
 	<title>{data.username}'s Wrapped {data.year} - Obzorarr</title>
-	<meta name="description" content="{data.username}'s Year in Review statistics for {data.year}" />
+	<meta name="description" content="{data.username}'s Year in Review statistics for {data.year}">
 </svelte:head>
 
 <div class="wrapped-page">
@@ -158,26 +158,27 @@ function handleLogoToggle(): void {
 				method="POST"
 				action="{data.currentUrl}?/toggleLogo"
 				use:enhance={() => {
-					handleLogoToggle();
-					return async ({ result, update }) => {
-						let payload: { showLogo?: boolean } | undefined;
-						if (result.type === 'success') {
-							payload = result.data as { showLogo?: boolean } | undefined;
-							if (typeof payload?.showLogo === 'boolean') {
-								showLogoOverride = payload.showLogo;
-							}
-						} else {
-							showLogoOverride = null;
-						}
-						await update();
-						showLogoOverride = null;
-					};
-				}}
+	handleLogoToggle();
+	return async ({ result, update }) => {
+		let payload: { showLogo?: boolean } | undefined;
+		if (result.type === 'success') {
+			payload = result.data as { showLogo?: boolean } | undefined;
+			if (typeof payload?.showLogo === 'boolean') {
+				showLogoOverride = payload.showLogo;
+			}
+		} else {
+			showLogoOverride = null;
+		}
+		await update();
+		showLogoOverride = null;
+	};
+}}
 			>
-				<input type="hidden" name="showLogo" value={!showLogo} />
+				<input type="hidden" name="showLogo" value={!showLogo}>
 				<button type="submit" class="logo-toggle" title={showLogo ? 'Hide logo' : 'Show logo'}>
 					{#if showLogo}
 						<svg
+							aria-hidden="true"
 							xmlns="http://www.w3.org/2000/svg"
 							width="16"
 							height="16"
@@ -193,6 +194,7 @@ function handleLogoToggle(): void {
 						</svg>
 					{:else}
 						<svg
+							aria-hidden="true"
 							xmlns="http://www.w3.org/2000/svg"
 							width="16"
 							height="16"
@@ -256,9 +258,7 @@ function handleLogoToggle(): void {
 			<div class="empty-content">
 				<p class="empty-eyebrow">{data.year} Wrapped</p>
 				<h2>No viewing history for {data.year} yet</h2>
-				<p>
-					Once {data.username} has Plex activity for the year, their Wrapped will appear here.
-				</p>
+				<p>Once {data.username} has Plex activity for the year, their Wrapped will appear here.</p>
 				<div class="empty-actions">
 					<button type="button" class="empty-btn secondary" onclick={handleHome}>Home</button>
 					{#if data.isOwner || data.isAdmin}
@@ -305,171 +305,169 @@ function handleLogoToggle(): void {
 </div>
 
 <style>
-	.wrapped-page {
-			position: relative;
-			width: 100%;
-			min-height: 100vh;
-			min-height: 100dvh;
-			background: var(
-				--slide-bg-gradient,
-				linear-gradient(
-					135deg,
-					oklch(var(--slide-bg-start)) 0%,
-					oklch(var(--slide-bg-end)) 100%
-				)
-			);
-		}
+.wrapped-page {
+	position: relative;
+	width: 100%;
+	min-height: 100vh;
+	/* biome-ignore lint/suspicious/noDuplicateProperties: Keep the vh fallback for browsers without dynamic viewport units. */
+	min-height: 100dvh;
+	background: var(
+		--slide-bg-gradient,
+		linear-gradient(135deg, oklch(var(--slide-bg-start)) 0%, oklch(var(--slide-bg-end)) 100%)
+	);
+}
 
-		.logo-watermark {
-			position: fixed;
-			top: 1rem;
-			left: 1rem;
-			z-index: 99;
-			opacity: 0.8;
-			pointer-events: none;
-		}
+.logo-watermark {
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	z-index: 99;
+	opacity: 0.8;
+	pointer-events: none;
+}
 
-		.controls-container {
-			position: fixed;
-			top: 1rem;
-			right: 1rem;
-			z-index: 100;
-			display: flex;
-			gap: 0.5rem;
-			align-items: center;
-		}
+.controls-container {
+	position: fixed;
+	top: 1rem;
+	right: 1rem;
+	z-index: 100;
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
 
-		.logo-toggle,
-		.share-toggle {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			min-width: 2rem;
-			height: 2rem;
-			padding: 0 0.65rem;
-			border: none;
-			border-radius: 0.375rem;
-			background: var(--card);
-			color: var(--foreground);
-			cursor: pointer;
-			opacity: 0.8;
-			transition:
-				opacity 0.2s,
-				background 0.2s;
-		}
+.logo-toggle,
+.share-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2rem;
+	height: 2rem;
+	padding: 0 0.65rem;
+	border: none;
+	border-radius: 0.375rem;
+	background: var(--card);
+	color: var(--foreground);
+	cursor: pointer;
+	opacity: 0.8;
+	transition:
+		opacity 0.2s,
+		background 0.2s;
+}
 
-		.logo-toggle {
-			width: 2rem;
-			padding: 0;
-		}
+.logo-toggle {
+	width: 2rem;
+	padding: 0;
+}
 
-		.share-toggle {
-			font-size: 0.8125rem;
-			font-weight: 600;
-		}
+.share-toggle {
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
 
-		.logo-toggle:hover,
-		.share-toggle:hover {
-			opacity: 1;
-			background: var(--muted);
-		}
+.logo-toggle:hover,
+.share-toggle:hover {
+	opacity: 1;
+	background: var(--muted);
+}
 
-		.user-header {
-			position: fixed;
-			top: 1rem;
-			left: 1rem;
-			z-index: 100;
-			pointer-events: none;
-		}
+.user-header {
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	z-index: 100;
+	pointer-events: none;
+}
 
-		.user-header.with-logo {
-			left: 3.5rem;
-		}
+.user-header.with-logo {
+	left: 3.5rem;
+}
 
-		.user-title {
-			font-size: 1rem;
-			font-weight: 600;
-			color: var(--foreground);
-			opacity: 0.8;
-			margin: 0;
-		}
+.user-title {
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--foreground);
+	opacity: 0.8;
+	margin: 0;
+}
 
-		.visibility-note {
-			font-size: 0.6875rem;
-			font-weight: 500;
-			color: var(--foreground);
-			opacity: 0.55;
-			margin: 0.125rem 0 0;
-			letter-spacing: 0.01em;
-		}
+.visibility-note {
+	font-size: 0.6875rem;
+	font-weight: 500;
+	color: var(--foreground);
+	opacity: 0.55;
+	margin: 0.125rem 0 0;
+	letter-spacing: 0.01em;
+}
 
-		.empty-wrapped-state {
-			min-height: 100vh;
-			min-height: 100dvh;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			padding: 6rem 1.5rem 3rem;
-			color: var(--foreground);
-		}
+.empty-wrapped-state {
+	min-height: 100vh;
+	/* biome-ignore lint/suspicious/noDuplicateProperties: Keep the vh fallback for browsers without dynamic viewport units. */
+	min-height: 100dvh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6rem 1.5rem 3rem;
+	color: var(--foreground);
+}
 
-		.empty-content {
-			width: min(100%, 36rem);
-			text-align: center;
-		}
+.empty-content {
+	width: min(100%, 36rem);
+	text-align: center;
+}
 
-		.empty-eyebrow {
-			margin: 0 0 0.75rem;
-			font-size: 0.8125rem;
-			font-weight: 700;
-			letter-spacing: 0.12em;
-			text-transform: uppercase;
-			color: var(--muted-foreground);
-		}
+.empty-eyebrow {
+	margin: 0 0 0.75rem;
+	font-size: 0.8125rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--muted-foreground);
+}
 
-		.empty-content h2 {
-			margin: 0 0 1rem;
-			font-size: clamp(2rem, 8vw, 3.5rem);
-			line-height: 1;
-		}
+.empty-content h2 {
+	margin: 0 0 1rem;
+	font-size: clamp(2rem, 8vw, 3.5rem);
+	line-height: 1;
+}
 
-		.empty-content p {
-			margin: 0 auto;
-			max-width: 30rem;
-			color: var(--muted-foreground);
-			line-height: 1.6;
-		}
+.empty-content p {
+	margin: 0 auto;
+	max-width: 30rem;
+	color: var(--muted-foreground);
+	line-height: 1.6;
+}
 
-		.empty-actions {
-			display: flex;
-			justify-content: center;
-			gap: 0.75rem;
-			margin-top: 1.75rem;
-			flex-wrap: wrap;
-		}
+.empty-actions {
+	display: flex;
+	justify-content: center;
+	gap: 0.75rem;
+	margin-top: 1.75rem;
+	flex-wrap: wrap;
+}
 
-		.empty-btn {
-			border: none;
-			border-radius: 8px;
-			padding: 0.75rem 1.1rem;
-			font-weight: 700;
-			cursor: pointer;
-		}
+.empty-btn {
+	border: none;
+	border-radius: 8px;
+	padding: 0.75rem 1.1rem;
+	font-weight: 700;
+	cursor: pointer;
+}
 
-		.empty-btn.primary {
-			background: oklch(var(--primary));
-			color: oklch(var(--primary-foreground));
-		}
+.empty-btn.primary {
+	background: oklch(var(--primary));
+	color: oklch(var(--primary-foreground));
+}
 
-		.empty-btn.secondary {
-			background: var(--card);
-			color: var(--foreground);
-		}
+.empty-btn.secondary {
+	background: var(--card);
+	color: var(--foreground);
+}
 
-		@media (prefers-reduced-motion: reduce) {
-			.logo-toggle,
-			.share-toggle {
-				transition: none;
-			}
-		}
+@media (prefers-reduced-motion: reduce) {
+	.logo-toggle,
+	.share-toggle {
+		transition: none;
+	}
+}
 </style>

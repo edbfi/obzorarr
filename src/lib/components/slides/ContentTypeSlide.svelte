@@ -151,7 +151,7 @@ $effect(() => {
 		<h2 class="title">{possessive} Content Mix</h2>
 
 		<div class="chart-container">
-			<svg viewBox="0 0 200 200" class="donut-chart">
+			<svg aria-hidden="true" viewBox="0 0 200 200" class="donut-chart">
 				<circle
 					class="donut-segment movies"
 					cx="100"
@@ -234,223 +234,223 @@ $effect(() => {
 </BaseSlide>
 
 <style>
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	z-index: 1;
+	width: 100%;
+	max-width: var(--content-max-md, 600px);
+}
+
+.title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
+}
+
+.chart-container {
+	position: relative;
+	width: 180px;
+	height: 180px;
+}
+
+.donut-chart {
+	width: 100%;
+	height: 100%;
+	transform: rotate(-90deg);
+}
+
+.donut-segment {
+	fill: none;
+	stroke-width: 25;
+	transition: stroke-dasharray 0.5s ease;
+}
+
+.donut-segment.movies {
+	stroke: oklch(0.5716 0.1737 262.35);
+}
+
+.donut-segment.episodes {
+	stroke: oklch(0.5797 0.2102 312.33);
+}
+
+.donut-segment.tracks {
+	stroke: oklch(0.6931 0.1535 156.04);
+}
+
+.chart-center {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+}
+
+.total-label {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.total-count {
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: oklch(var(--foreground));
+}
+
+.stat-cards {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.stat-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 1rem 1.25rem;
+	background: var(--slide-glass-bg);
+	backdrop-filter: blur(var(--slide-glass-blur, 12px));
+	-webkit-backdrop-filter: blur(var(--slide-glass-blur, 12px));
+	border: 1px solid var(--slide-glass-border);
+	border-radius: calc(var(--radius) * 1.5);
+	min-width: 100px;
+	transition:
+		transform 0.3s ease,
+		border-color 0.3s ease;
+}
+
+.stat-card:hover {
+	transform: translateY(-2px);
+}
+
+.stat-card.dominant {
+	border-color: oklch(var(--primary) / 0.5);
+	box-shadow: 0 0 20px oklch(var(--primary) / 0.2);
+}
+
+.stat-card.movies.dominant {
+	border-color: oklch(0.5716 0.1737 262.35 / 0.5);
+	box-shadow: 0 0 20px oklch(0.5716 0.1737 262.35 / 0.2);
+}
+
+.stat-card.episodes.dominant {
+	border-color: oklch(0.5797 0.2102 312.33 / 0.5);
+	box-shadow: 0 0 20px oklch(0.5797 0.2102 312.33 / 0.2);
+}
+
+.stat-card.tracks.dominant {
+	border-color: oklch(0.6931 0.1535 156.04 / 0.5);
+	box-shadow: 0 0 20px oklch(0.6931 0.1535 156.04 / 0.2);
+}
+
+.stat-icon {
+	font-size: 1.5rem;
+}
+
+.stat-label {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.stat-count {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: oklch(var(--foreground));
+}
+
+.stat-time {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+}
+
+.stat-percent {
+	font-size: 0.875rem;
+	font-weight: 600;
+	color: oklch(var(--primary));
+}
+
+.personality-badge {
+	padding: 0.75rem 1.5rem;
+	background: linear-gradient(135deg, oklch(var(--primary) / 0.2), oklch(var(--primary) / 0.1));
+	border: 1px solid oklch(var(--primary) / 0.3);
+	border-radius: 2rem;
+}
+
+.badge-text {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+.extra {
+	margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
 	.content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			z-index: 1;
-			width: 100%;
-			max-width: var(--content-max-md, 600px);
-		}
+		gap: 1rem;
+	}
 
-		.title {
-			font-size: 1.75rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
-		}
+	.title {
+		font-size: 1.5rem;
+	}
 
-		.chart-container {
-			position: relative;
-			width: 180px;
-			height: 180px;
-		}
+	.chart-container {
+		width: 150px;
+		height: 150px;
+	}
 
-		.donut-chart {
-			width: 100%;
-			height: 100%;
-			transform: rotate(-90deg);
-		}
+	.stat-cards {
+		gap: 0.75rem;
+	}
 
-		.donut-segment {
-			fill: none;
-			stroke-width: 25;
-			transition: stroke-dasharray 0.5s ease;
-		}
+	.stat-card {
+		padding: 0.75rem 1rem;
+		min-width: 85px;
+	}
 
-		.donut-segment.movies {
-			stroke: oklch(0.5716 0.1737 262.35);
-		}
+	.stat-icon {
+		font-size: 1.25rem;
+	}
 
-		.donut-segment.episodes {
-			stroke: oklch(0.5797 0.2102 312.33);
-		}
+	.stat-count {
+		font-size: 1rem;
+	}
 
-		.donut-segment.tracks {
-			stroke: oklch(0.6931 0.1535 156.04);
-		}
+	.personality-badge {
+		padding: 0.5rem 1rem;
+	}
 
-		.chart-center {
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.25rem;
-		}
+	.badge-text {
+		font-size: 1rem;
+	}
+}
 
-		.total-label {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.1em;
-		}
+@media (min-width: 1024px) {
+	.chart-container {
+		width: 200px;
+		height: 200px;
+	}
 
-		.total-count {
-			font-size: 1.5rem;
-			font-weight: 700;
-			color: oklch(var(--foreground));
-		}
-
-		.stat-cards {
-			display: flex;
-			gap: 1rem;
-			flex-wrap: wrap;
-			justify-content: center;
-		}
-
-		.stat-card {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.25rem;
-			padding: 1rem 1.25rem;
-			background: var(--slide-glass-bg);
-			backdrop-filter: blur(var(--slide-glass-blur, 12px));
-			-webkit-backdrop-filter: blur(var(--slide-glass-blur, 12px));
-			border: 1px solid var(--slide-glass-border);
-			border-radius: calc(var(--radius) * 1.5);
-			min-width: 100px;
-			transition:
-				transform 0.3s ease,
-				border-color 0.3s ease;
-		}
-
-		.stat-card:hover {
-			transform: translateY(-2px);
-		}
-
-		.stat-card.dominant {
-			border-color: oklch(var(--primary) / 0.5);
-			box-shadow: 0 0 20px oklch(var(--primary) / 0.2);
-		}
-
-		.stat-card.movies.dominant {
-			border-color: oklch(0.5716 0.1737 262.35 / 0.5);
-			box-shadow: 0 0 20px oklch(0.5716 0.1737 262.35 / 0.2);
-		}
-
-		.stat-card.episodes.dominant {
-			border-color: oklch(0.5797 0.2102 312.33 / 0.5);
-			box-shadow: 0 0 20px oklch(0.5797 0.2102 312.33 / 0.2);
-		}
-
-		.stat-card.tracks.dominant {
-			border-color: oklch(0.6931 0.1535 156.04 / 0.5);
-			box-shadow: 0 0 20px oklch(0.6931 0.1535 156.04 / 0.2);
-		}
-
-		.stat-icon {
-			font-size: 1.5rem;
-		}
-
-		.stat-label {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-		}
-
-		.stat-count {
-			font-size: 1.25rem;
-			font-weight: 700;
-			color: oklch(var(--foreground));
-		}
-
-		.stat-time {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-		}
-
-		.stat-percent {
-			font-size: 0.875rem;
-			font-weight: 600;
-			color: oklch(var(--primary));
-		}
-
-		.personality-badge {
-			padding: 0.75rem 1.5rem;
-			background: linear-gradient(135deg, oklch(var(--primary) / 0.2), oklch(var(--primary) / 0.1));
-			border: 1px solid oklch(var(--primary) / 0.3);
-			border-radius: 2rem;
-		}
-
-		.badge-text {
-			font-size: 1.125rem;
-			font-weight: 600;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.1em;
-		}
-
-		.extra {
-			margin-top: 1rem;
-		}
-
-		@media (max-width: 767px) {
-			.content {
-				gap: 1rem;
-			}
-
-			.title {
-				font-size: 1.5rem;
-			}
-
-			.chart-container {
-				width: 150px;
-				height: 150px;
-			}
-
-			.stat-cards {
-				gap: 0.75rem;
-			}
-
-			.stat-card {
-				padding: 0.75rem 1rem;
-				min-width: 85px;
-			}
-
-			.stat-icon {
-				font-size: 1.25rem;
-			}
-
-			.stat-count {
-				font-size: 1rem;
-			}
-
-			.personality-badge {
-				padding: 0.5rem 1rem;
-			}
-
-			.badge-text {
-				font-size: 1rem;
-			}
-		}
-
-		@media (min-width: 1024px) {
-			.chart-container {
-				width: 200px;
-				height: 200px;
-			}
-
-			.stat-card {
-				padding: 1.25rem 1.5rem;
-				min-width: 120px;
-			}
-		}
+	.stat-card {
+		padding: 1.25rem 1.5rem;
+		min-width: 120px;
+	}
+}
 </style>

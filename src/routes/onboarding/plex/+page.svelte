@@ -502,7 +502,7 @@ function formatServerUrl(url: string | null): string {
 		<div class="plex-icon-wrapper animate-item" bind:this={iconRef}>
 			<div class="plex-icon-glow"></div>
 			<div class="plex-icon">
-				<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<svg aria-hidden="true" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<defs>
 						<linearGradient id="plex-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
 							<stop offset="0%" stop-color="#E5A00D" />
@@ -535,7 +535,7 @@ function formatServerUrl(url: string | null): string {
 		{#if data.hasEnvConfig}
 			<div class="preconfigured-card animate-item">
 				<div class="preconfigured-icon">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+					<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 						<rect x="2" y="3" width="20" height="14" rx="2" />
 						<line x1="8" y1="21" x2="16" y2="21" />
 						<line x1="12" y1="17" x2="12" y2="21" />
@@ -555,7 +555,7 @@ function formatServerUrl(url: string | null): string {
 								{data.plexServerUrlLocked ? '(set by environment)' : formatServerUrl(data.plexServerUrl)}
 							</span>
 							{#if data.plexServerUrlLocked}
-								<span class="preconfigured-badge" aria-label="Set by environment variable">
+								<span class="preconfigured-badge" role="img" aria-label="Set by environment variable">
 									<svg
 										class="lock-icon"
 										viewBox="0 0 24 24"
@@ -577,7 +577,7 @@ function formatServerUrl(url: string | null): string {
 							<span class="preconfigured-field-label">Token</span>
 							<span class="preconfigured-url">{data.plexTokenHasValue ? '••••••••' : '(not set)'}</span>
 							{#if data.plexTokenLocked}
-								<span class="preconfigured-badge" aria-label="Set by environment variable">
+								<span class="preconfigured-badge" role="img" aria-label="Set by environment variable">
 									<svg
 										class="lock-icon"
 										viewBox="0 0 24 24"
@@ -596,7 +596,7 @@ function formatServerUrl(url: string | null): string {
 					{/if}
 				</div>
 				<div class="preconfigured-check">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+					<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 						<path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
 					</svg>
 				</div>
@@ -605,7 +605,7 @@ function formatServerUrl(url: string | null): string {
 			{#if !data.configuredUrlReachable}
 				<div class="error-card animate-item">
 					<div class="error-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="12" cy="12" r="10" />
 							<line x1="12" y1="8" x2="12" y2="12" />
 							<line x1="12" y1="16" x2="12.01" y2="16" />
@@ -631,7 +631,7 @@ function formatServerUrl(url: string | null): string {
 			{#if membershipFailure.membershipReason === 'not_in_resources' && membershipFailure.configuredMachineId}
 				<div class="error-card animate-item">
 					<div class="error-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="12" cy="12" r="10" />
 							<line x1="12" y1="8" x2="12" y2="12" />
 							<line x1="12" y1="16" x2="12.01" y2="16" />
@@ -714,7 +714,7 @@ function formatServerUrl(url: string | null): string {
 			{:else if isNonAdminUser}
 				<div class="error-card animate-item">
 					<div class="error-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="12" cy="12" r="10" />
 							<line x1="12" y1="8" x2="12" y2="12" />
 							<line x1="12" y1="16" x2="12.01" y2="16" />
@@ -730,7 +730,7 @@ function formatServerUrl(url: string | null): string {
 			{:else}
 				<div class="success-card animate-item">
 					<div class="success-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+						<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
 							<path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round" />
 						</svg>
 					</div>
@@ -784,7 +784,7 @@ function formatServerUrl(url: string | null): string {
 			{:else if isNonAdminUser}
 				<div class="error-card animate-item">
 					<div class="error-icon">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<circle cx="12" cy="12" r="10" />
 							<line x1="12" y1="8" x2="12" y2="12" />
 							<line x1="12" y1="16" x2="12.01" y2="16" />
@@ -828,7 +828,7 @@ function formatServerUrl(url: string | null): string {
 										disabled={isSavingServer}
 									>
 										<div class="server-icon">
-											<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+											<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 												<rect x="2" y="3" width="20" height="14" rx="2" />
 												<line x1="8" y1="21" x2="16" y2="21" />
 												<line x1="12" y1="17" x2="12" y2="21" />
@@ -843,7 +843,7 @@ function formatServerUrl(url: string | null): string {
 										</div>
 										{#if isSelected && serverSaved}
 											<div class="server-check">
-												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+												<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
 													<path
 														d="M20 6L9 17l-5-5"
 														stroke-linecap="round"
@@ -853,7 +853,7 @@ function formatServerUrl(url: string | null): string {
 											</div>
 										{:else}
 											<div class="server-expand" class:rotated={isExpanded}>
-												<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 													<path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
 												</svg>
 											</div>
@@ -930,7 +930,7 @@ function formatServerUrl(url: string | null): string {
 																			<div class="tooltip-inner">
 																				{#if info.isSSL}
 																					<div class="tooltip-header ssl">
-																						<svg
+																						<svg aria-hidden="true"
 																							class="tooltip-icon"
 																							viewBox="0 0 24 24"
 																							fill="none"
@@ -967,7 +967,7 @@ function formatServerUrl(url: string | null): string {
 																	{#if isSavingServer}
 																		<span class="check-spinner"></span>
 																	{:else}
-																		<svg
+																		<svg aria-hidden="true"
 																			viewBox="0 0 24 24"
 																			fill="none"
 																			stroke="currentColor"
@@ -1007,7 +1007,7 @@ function formatServerUrl(url: string | null): string {
 												disabled={isSavingServer || isTestingCustomUrl}
 											>
 												<span>Enter a custom URL for a reverse proxy</span>
-												<svg
+												<svg aria-hidden="true"
 													class="toggle-chevron"
 													class:rotated={showCustomUrl}
 													viewBox="0 0 24 24"
@@ -1075,7 +1075,7 @@ function formatServerUrl(url: string | null): string {
 															aria-live="polite"
 														>
 															{#if customUrlTestResult.success}
-																<svg
+																<svg aria-hidden="true"
 																	class="status-icon"
 																	viewBox="0 0 24 24"
 																	fill="none"
@@ -1093,7 +1093,7 @@ function formatServerUrl(url: string | null): string {
 																		'Plex Server'}</span
 																>
 															{:else}
-																<svg
+																<svg aria-hidden="true"
 																	class="status-icon"
 																	viewBox="0 0 24 24"
 																	fill="none"
@@ -1122,7 +1122,7 @@ function formatServerUrl(url: string | null): string {
 
 		{#if oauthError || form?.error}
 			<div class="error-banner animate-item">
-				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 					<circle cx="12" cy="12" r="10" />
 					<line x1="15" y1="9" x2="9" y2="15" />
 					<line x1="9" y1="9" x2="15" y2="15" />

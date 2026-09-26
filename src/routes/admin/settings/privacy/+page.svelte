@@ -654,7 +654,8 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 			>
 				{#each PRIVACY_PRESETS as preset, i (preset.id)}
 					{@const PresetIcon = presetIcons[preset.id]}
-					<button
+					<!-- biome-ignore lint/a11y/useSemanticElements: These rich radio cards implement the radiogroup keyboard pattern. -->
+<button
 						bind:this={presetButtons[i]}
 						type="button"
 						role="radio"
@@ -679,7 +680,8 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 				     final roving-tabindex slot (CUSTOM_PRESET_INDEX) and carries no
 				     exposureSummary — the Preview card below already states what the staged
 				     fields expose. -->
-				<button
+				<!-- biome-ignore lint/a11y/useSemanticElements: These rich radio cards implement the radiogroup keyboard pattern. -->
+<button
 					bind:this={presetButtons[CUSTOM_PRESET_INDEX]}
 					type="button"
 					role="radio"

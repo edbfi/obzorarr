@@ -188,28 +188,26 @@ function getLogoModeDescription(): string {
 		<Tabs.Content value="privacy">
 			<section class="section">
 				<h2>Sharing Settings</h2>
-				<p class="section-description">
-					Choose who can view your {data.currentYear} Wrapped page.
-				</p>
+				<p class="section-description">Choose who can view your {data.currentYear} Wrapped page.</p>
 
 				{#if data.shareSettings.canUserControl}
 					<form
 						method="POST"
 						action="?/updateShareMode"
 						use:enhance={({ cancel }) => {
-							if (isUpdating) {
-								cancel();
-								return;
-							}
-							isUpdating = true;
-							return async ({ result, update }) => {
-								try {
-									await update({ reset: false });
-								} finally {
-									isUpdating = false;
-								}
-							};
-						}}
+	if (isUpdating) {
+		cancel();
+		return;
+	}
+	isUpdating = true;
+	return async ({ result, update }) => {
+		try {
+			await update({ reset: false });
+		} finally {
+			isUpdating = false;
+		}
+	};
+}}
 						class="share-form"
 					>
 						<div class="privacy-card-grid three-col">
@@ -225,13 +223,15 @@ function getLogoModeDescription(): string {
 									value="public"
 									bind:group={selectedShareMode}
 									disabled={isBelowFloor('public') || isUpdating}
-								/>
+								>
 								<span class="card-icon">{getShareIcon('public')}</span>
 								<span class="card-title">Public</span>
 								<span class="card-desc">{shareModeDescriptions.public}</span>
 								{#if isBelowFloor('public')}
 									<span class="floor-note">
-										Your administrator requires at least {shareModeLabels[data.globalFloor ?? ''] ?? data.globalFloor} privacy.
+										Your administrator requires at least
+										{shareModeLabels[data.globalFloor ?? ''] ?? data.globalFloor}
+										privacy.
 									</span>
 								{/if}
 							</label>
@@ -248,16 +248,16 @@ function getLogoModeDescription(): string {
 									value="private-link"
 									bind:group={selectedShareMode}
 									disabled={isBelowFloor('private-link') || isUpdating}
-								/>
+								>
 								<span class="card-icon">{getShareIcon('private-link')}</span>
 								<span class="card-title">Private Link</span>
 								<span class="card-desc">{shareModeDescriptions['private-link']}</span>
 								{#if isBelowFloor('private-link')}
 									<span class="floor-note">
-										Private links and token regeneration are unavailable while your
-										administrator limits sharing to at least {shareModeLabels[
-											data.globalFloor ?? ''
-										] ?? data.globalFloor} privacy.
+										Private links and token regeneration are unavailable while your administrator
+										limits sharing to at least
+										{shareModeLabels[data.globalFloor ?? ''] ?? data.globalFloor}
+										privacy.
 									</span>
 								{/if}
 							</label>
@@ -274,13 +274,15 @@ function getLogoModeDescription(): string {
 									value="private-oauth"
 									bind:group={selectedShareMode}
 									disabled={isBelowFloor('private-oauth') || isUpdating}
-								/>
+								>
 								<span class="card-icon">{getShareIcon('private-oauth')}</span>
 								<span class="card-title">Server Members</span>
 								<span class="card-desc">{shareModeDescriptions['private-oauth']}</span>
 								{#if isBelowFloor('private-oauth')}
 									<span class="floor-note">
-										Your administrator requires at least {shareModeLabels[data.globalFloor ?? ''] ?? data.globalFloor} privacy.
+										Your administrator requires at least
+										{shareModeLabels[data.globalFloor ?? ''] ?? data.globalFloor}
+										privacy.
 									</span>
 								{/if}
 							</label>
@@ -306,10 +308,11 @@ function getLogoModeDescription(): string {
 					<div class="share-url-section">
 						<h3>Your Wrapped URL</h3>
 						<div class="url-container">
-							<input type="text" readonly value={getShareUrl()} class="url-input" />
+							<input type="text" readonly value={getShareUrl()} class="url-input">
 							<button type="button" class="copy-button" class:copied onclick={copyShareUrl}>
 								{#if copied}
 									<svg
+										aria-hidden="true"
 										xmlns="http://www.w3.org/2000/svg"
 										width="18"
 										height="18"
@@ -325,6 +328,7 @@ function getLogoModeDescription(): string {
 									Copied!
 								{:else}
 									<svg
+										aria-hidden="true"
 										xmlns="http://www.w3.org/2000/svg"
 										width="18"
 										height="18"
@@ -365,13 +369,14 @@ function getLogoModeDescription(): string {
 						<div class="info-content">
 							<strong>Your server administrator manages sharing settings</strong>
 							<p>
-								Your current sharing mode is: <span class="mode-badge"
+								Your current sharing mode is:
+								<span class="mode-badge"
 									>{getShareIcon(data.shareSettings.mode)}
 									{data.shareSettings.mode === 'private-oauth'
-										? 'Server Members Only'
-										: data.shareSettings.mode === 'private-link'
-											? 'Private Link'
-											: 'Public'}</span
+	? 'Server Members Only'
+	: data.shareSettings.mode === 'private-link'
+		? 'Private Link'
+		: 'Public'}</span
 								>
 							</p>
 							<!-- DF-007: explain WHY this control is locked — the admin's global
@@ -380,8 +385,7 @@ function getLogoModeDescription(): string {
 							     editable. Copy/discoverability only; no gate-logic change. -->
 							<p class="locked-reason">
 								This control is locked because your server administrator hasn't granted you
-								permission to change it. Ask them to enable per-user share control for your
-								account.
+								permission to change it. Ask them to enable per-user share control for your account.
 							</p>
 						</div>
 					</div>
@@ -389,10 +393,11 @@ function getLogoModeDescription(): string {
 					<div class="share-url-section readonly">
 						<h3>Your Wrapped URL</h3>
 						<div class="url-container">
-							<input type="text" readonly value={getShareUrl()} class="url-input" />
+							<input type="text" readonly value={getShareUrl()} class="url-input">
 							<button type="button" class="copy-button" class:copied onclick={copyShareUrl}>
 								{#if copied}
 									<svg
+										aria-hidden="true"
 										xmlns="http://www.w3.org/2000/svg"
 										width="18"
 										height="18"
@@ -408,6 +413,7 @@ function getLogoModeDescription(): string {
 									Copied!
 								{:else}
 									<svg
+										aria-hidden="true"
 										xmlns="http://www.w3.org/2000/svg"
 										width="18"
 										height="18"
@@ -442,16 +448,16 @@ function getLogoModeDescription(): string {
 						method="POST"
 						action="?/updateLogoPreference"
 						use:enhance={({ cancel }) => {
-							if (isUpdating) {
-								cancel();
-								return;
-							}
-							isUpdating = true;
-							return async ({ update }) => {
-								await update();
-								isUpdating = false;
-							};
-						}}
+	if (isUpdating) {
+		cancel();
+		return;
+	}
+	isUpdating = true;
+	return async ({ update }) => {
+		await update();
+		isUpdating = false;
+	};
+}}
 						class="logo-form"
 					>
 						<div
@@ -467,7 +473,7 @@ function getLogoModeDescription(): string {
 									aria-label="Show logo"
 									bind:group={selectedLogoPreference}
 									disabled={isUpdating}
-								/>
+								>
 								<span class="card-icon" aria-hidden="true">✅</span>
 								<span class="card-title">Show logo</span>
 								<span class="card-desc">Show the Obzorarr logo on your Wrapped page</span>
@@ -481,7 +487,7 @@ function getLogoModeDescription(): string {
 									aria-label="Hide logo"
 									bind:group={selectedLogoPreference}
 									disabled={isUpdating}
-								/>
+								>
 								<span class="card-icon" aria-hidden="true">🚫</span>
 								<span class="card-title">Hide logo</span>
 								<span class="card-desc">Hide the Obzorarr logo on your Wrapped page</span>
@@ -514,7 +520,7 @@ function getLogoModeDescription(): string {
 				<div class="profile-card">
 					<div class="profile-header">
 						{#if data.user.thumb}
-							<img src={data.user.thumb} alt="Profile" class="profile-avatar" />
+							<img src={data.user.thumb} alt="Profile" class="profile-avatar">
 						{:else}
 							<div class="profile-avatar-placeholder">
 								<span>{data.user.username.charAt(0).toUpperCase()}</span>
@@ -592,38 +598,35 @@ function getLogoModeDescription(): string {
 					method="POST"
 					action="?/regenerateToken"
 					use:enhance={({ cancel }) => {
-						if (isRegenerating) {
-							cancel();
-							return;
-						}
-						isRegenerating = true;
-						return async ({ result, update }) => {
-							try {
-								if (result.type === 'success') {
-									const payload = (result.data ?? {}) as RegenerateTokenActionData;
-									if (
-										payload.action === 'regenerateToken' &&
-										typeof payload.wrappedHref === 'string'
-									) {
-										wrappedHrefOverride = payload.wrappedHref;
-									}
-								} else if (result.type === 'error') {
-									handleFormToast({
-										error: result.error?.message ?? 'Could not regenerate the share link.'
-									});
-								}
+	if (isRegenerating) {
+		cancel();
+		return;
+	}
+	isRegenerating = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success') {
+				const payload = (result.data ?? {}) as RegenerateTokenActionData;
+				if (payload.action === 'regenerateToken' && typeof payload.wrappedHref === 'string') {
+					wrappedHrefOverride = payload.wrappedHref;
+				}
+			} else if (result.type === 'error') {
+				handleFormToast({
+					error: result.error?.message ?? 'Could not regenerate the share link.'
+				});
+			}
 
-								await update({ reset: result.type !== 'failure' });
+			await update({ reset: result.type !== 'failure' });
 
-								if (result.type === 'success') {
-									regenerateDialogOpen = false;
-									await invalidateAll();
-								}
-							} finally {
-								isRegenerating = false;
-							}
-						};
-					}}
+			if (result.type === 'success') {
+				regenerateDialogOpen = false;
+				await invalidateAll();
+			}
+		} finally {
+			isRegenerating = false;
+		}
+	};
+}}
 					style="display: contents;"
 				>
 					<AlertDialog.Action type="submit" disabled={isRegenerating}>
@@ -640,526 +643,526 @@ function getLogoModeDescription(): string {
 </div>
 
 <style>
+.settings-page {
+	max-width: 700px;
+	margin: 0 auto;
+	padding: 2rem;
+}
+
+.page-header {
+	margin-bottom: 2rem;
+}
+
+.page-header h1 {
+	font-size: 2rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+	margin: 0 0 0.5rem;
+}
+
+.subtitle {
+	color: oklch(var(--muted-foreground));
+	margin: 0;
+}
+
+/* Tabs.Root receives these classes via props, so the selectors must escape Svelte scope. */
+:global(.settings-tabs) {
+	margin-top: 1.5rem;
+}
+
+:global(.tabs-list) {
+	display: flex;
+	gap: 0.25rem;
+	border-bottom: 1px solid oklch(var(--border));
+	margin-bottom: 1.5rem;
+	overflow-x: auto;
+	scrollbar-width: thin;
+}
+
+:global(.tabs-list button) {
+	padding: 0.75rem 1.25rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: oklch(var(--muted-foreground));
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: all 0.15s ease;
+}
+
+:global(.tabs-list button:hover) {
+	color: oklch(var(--foreground));
+}
+
+:global(.tabs-list button[data-state="active"]) {
+	color: oklch(var(--primary));
+	border-bottom-color: oklch(var(--primary));
+}
+
+.section {
+	background: oklch(var(--card));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	padding: 1.5rem;
+	margin-bottom: 1.5rem;
+}
+
+.section h2 {
+	font-size: 1.125rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+	margin: 0 0 0.5rem;
+}
+
+.section h3 {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+	margin: 1.5rem 0 0.75rem;
+}
+
+.section-description {
+	color: oklch(var(--muted-foreground));
+	font-size: 0.875rem;
+	margin: 0 0 1.25rem;
+}
+
+.privacy-card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 0.75rem;
+	margin-bottom: 1rem;
+}
+
+.privacy-card-grid.two-col {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+.privacy-card-grid.three-col {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+.privacy-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem 0.75rem;
+	background: oklch(var(--muted));
+	border: 2px solid oklch(var(--border));
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: all 0.15s ease;
+	text-align: center;
+	min-height: 120px;
+}
+
+.privacy-card:hover {
+	border-color: oklch(var(--primary) / 0.5);
+	background: oklch(var(--muted) / 0.8);
+}
+
+.privacy-card.selected {
+	border-color: oklch(var(--primary));
+	background: oklch(var(--primary) / 0.1);
+}
+
+.privacy-card.below-floor {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.privacy-card.below-floor:hover {
+	border-color: oklch(var(--border));
+	background: oklch(var(--muted));
+}
+
+.floor-note {
+	margin-top: 0.5rem;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.7rem;
+	line-height: 1.4;
+	color: oklch(0.869 0.1467 90.38);
+	background: rgba(250, 204, 21, 0.08);
+	border-left: 2px solid rgba(250, 204, 21, 0.5);
+	border-radius: 4px;
+	text-align: left;
+}
+
+.privacy-card input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.privacy-card .card-icon {
+	font-size: 1.5rem;
+	margin-bottom: 0.5rem;
+	line-height: 1;
+}
+
+.privacy-card .card-title {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: oklch(var(--foreground));
+	margin-bottom: 0.25rem;
+}
+
+.privacy-card .card-desc {
+	font-size: 0.7rem;
+	color: oklch(var(--muted-foreground));
+	line-height: 1.4;
+}
+
+.form-actions {
+	margin-top: 1.25rem;
+}
+
+.save-button {
+	padding: 0.625rem 1.25rem;
+	background: oklch(var(--primary));
+	color: oklch(var(--primary-foreground));
+	border: none;
+	border-radius: var(--radius);
+	font-weight: 500;
+	font-size: 0.875rem;
+	cursor: pointer;
+	transition: opacity 0.15s ease;
+}
+
+.save-button:hover:not(:disabled) {
+	opacity: 0.9;
+}
+
+.save-button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.share-url-section {
+	margin-top: 1.5rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid oklch(var(--border));
+}
+
+.share-url-section.readonly {
+	margin-top: 1.25rem;
+}
+
+.url-container {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.url-input {
+	flex: 1;
+	padding: 0.625rem 0.875rem;
+	background: oklch(var(--muted));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	color: oklch(var(--foreground));
+	font-size: 0.8rem;
+	font-family: monospace;
+}
+
+.copy-button {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.625rem 1rem;
+	background: oklch(var(--secondary));
+	color: oklch(var(--foreground));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	font-size: 0.8rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	white-space: nowrap;
+}
+
+.copy-button:hover {
+	background: oklch(var(--muted));
+}
+
+.copy-button.copied {
+	background: oklch(0.6318 0.1589 149.73);
+	color: white;
+	border-color: oklch(0.6318 0.1589 149.73);
+}
+
+.token-actions {
+	margin-top: 1rem;
+}
+
+.token-hint {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+	margin: 0 0 0.75rem;
+}
+
+.regenerate-button {
+	padding: 0.5rem 0.875rem;
+	background: oklch(var(--secondary));
+	color: oklch(var(--foreground));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	font-size: 0.8rem;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+
+.regenerate-button:hover {
+	background: oklch(var(--destructive));
+	color: oklch(var(--destructive-foreground));
+	border-color: oklch(var(--destructive));
+}
+
+.info-banner {
+	display: flex;
+	gap: 1rem;
+	padding: 1rem 1.25rem;
+	background: oklch(0.5883 0.1391 251.44 / 0.1);
+	border: 1px solid oklch(0.5883 0.1391 251.44 / 0.25);
+	border-left: 3px solid oklch(var(--primary));
+	border-radius: var(--radius);
+	margin-bottom: 1rem;
+}
+
+.info-icon {
+	font-size: 1.25rem;
+	flex-shrink: 0;
+}
+
+.info-content {
+	flex: 1;
+}
+
+.info-content strong {
+	display: block;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+	margin-bottom: 0.25rem;
+}
+
+.info-content p {
+	font-size: 0.8rem;
+	color: oklch(var(--muted-foreground));
+	margin: 0;
+}
+
+/* DF-007: secondary explanatory line under the locked-mode badge. */
+.info-content .locked-reason {
+	margin-top: 0.5rem;
+	font-size: 0.75rem;
+	line-height: 1.5;
+}
+
+.mode-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.125rem 0.5rem;
+	background: oklch(var(--muted));
+	border-radius: calc(var(--radius) / 2);
+	font-weight: 500;
+}
+
+.profile-card {
+	background: oklch(var(--muted));
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+
+.profile-header {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	padding: 1.25rem;
+	background: linear-gradient(
+		135deg,
+		oklch(var(--primary) / 0.15) 0%,
+		oklch(var(--primary) / 0.05) 100%
+	);
+	border-bottom: 1px solid oklch(var(--border));
+}
+
+.profile-avatar {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 3px solid oklch(var(--primary));
+}
+
+.profile-avatar-placeholder {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: oklch(var(--primary));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: 3px solid oklch(var(--primary) / 0.5);
+}
+
+.profile-avatar-placeholder span {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: oklch(var(--primary-foreground));
+}
+
+.profile-info {
+	flex: 1;
+}
+
+.profile-name {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+	margin: 0 0 0.25rem;
+}
+
+.profile-email {
+	font-size: 0.875rem;
+	color: oklch(var(--muted-foreground));
+	margin: 0;
+}
+
+.profile-details {
+	padding: 1rem 1.25rem;
+}
+
+.detail-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.625rem 0;
+	border-bottom: 1px solid oklch(var(--border) / 0.5);
+}
+
+.detail-row:last-child {
+	border-bottom: none;
+}
+
+.detail-label {
+	font-size: 0.8rem;
+	color: oklch(var(--muted-foreground));
+}
+
+.detail-value {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: oklch(var(--foreground));
+}
+
+.detail-value.mono {
+	font-family: monospace;
+	font-size: 0.8rem;
+}
+
+.session-expiry {
+	padding: 0.25rem 0.5rem;
+	background: oklch(var(--primary) / 0.15);
+	border-radius: calc(var(--radius) / 2);
+	font-size: 0.8rem;
+}
+
+.account-actions {
+	margin-top: 1.5rem;
+}
+
+.view-wrapped-link {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.75rem 1.25rem;
+	background: oklch(var(--primary));
+	color: oklch(var(--primary-foreground));
+	border-radius: var(--radius);
+	font-weight: 500;
+	font-size: 0.875rem;
+	text-decoration: none;
+	transition: opacity 0.15s ease;
+}
+
+.view-wrapped-link:hover {
+	opacity: 0.9;
+}
+
+.logout-form {
+	margin: 0;
+}
+
+.logout-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.75rem 1.25rem;
+	background: oklch(var(--destructive) / 0.1);
+	color: oklch(var(--destructive));
+	border: 1px solid oklch(var(--destructive) / 0.3);
+	border-radius: var(--radius);
+	font-weight: 500;
+	font-size: 0.875rem;
+	cursor: pointer;
+	transition: background 0.15s ease;
+}
+
+.logout-button:hover {
+	background: oklch(var(--destructive) / 0.18);
+}
+
+.logout-button :global(.logout-icon) {
+	width: 1rem;
+	height: 1rem;
+}
+
+@media (max-width: 640px) {
 	.settings-page {
-			max-width: 700px;
-			margin: 0 auto;
-			padding: 2rem;
-		}
-
-		.page-header {
-			margin-bottom: 2rem;
-		}
-
-		.page-header h1 {
-			font-size: 2rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-			margin: 0 0 0.5rem;
-		}
-
-		.subtitle {
-			color: oklch(var(--muted-foreground));
-			margin: 0;
-		}
-
-		/* Tabs.Root receives these classes via props, so the selectors must escape Svelte scope. */
-		:global(.settings-tabs) {
-			margin-top: 1.5rem;
-		}
-
-		:global(.tabs-list) {
-			display: flex;
-			gap: 0.25rem;
-			border-bottom: 1px solid oklch(var(--border));
-			margin-bottom: 1.5rem;
-			overflow-x: auto;
-			scrollbar-width: thin;
-		}
-
-		:global(.tabs-list button) {
-			padding: 0.75rem 1.25rem;
-			font-size: 0.875rem;
-			font-weight: 500;
-			color: oklch(var(--muted-foreground));
-			background: transparent;
-			border: none;
-			border-bottom: 2px solid transparent;
-			cursor: pointer;
-			white-space: nowrap;
-			transition: all 0.15s ease;
-		}
-
-		:global(.tabs-list button:hover) {
-			color: oklch(var(--foreground));
-		}
-
-		:global(.tabs-list button[data-state='active']) {
-			color: oklch(var(--primary));
-			border-bottom-color: oklch(var(--primary));
-		}
-
-		.section {
-			background: oklch(var(--card));
-			border: 1px solid oklch(var(--border));
-			border-radius: var(--radius);
-			padding: 1.5rem;
-			margin-bottom: 1.5rem;
-		}
-
-		.section h2 {
-			font-size: 1.125rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-			margin: 0 0 0.5rem;
-		}
-
-		.section h3 {
-			font-size: 0.95rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-			margin: 1.5rem 0 0.75rem;
-		}
-
-		.section-description {
-			color: oklch(var(--muted-foreground));
-			font-size: 0.875rem;
-			margin: 0 0 1.25rem;
-		}
-
-		.privacy-card-grid {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-			gap: 0.75rem;
-			margin-bottom: 1rem;
-		}
-
-		.privacy-card-grid.two-col {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.privacy-card-grid.three-col {
-			grid-template-columns: repeat(3, 1fr);
-		}
-
-		.privacy-card {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			padding: 1rem 0.75rem;
-			background: oklch(var(--muted));
-			border: 2px solid oklch(var(--border));
-			border-radius: var(--radius);
-			cursor: pointer;
-			transition: all 0.15s ease;
-			text-align: center;
-			min-height: 120px;
-		}
-
-		.privacy-card:hover {
-			border-color: oklch(var(--primary) / 0.5);
-			background: oklch(var(--muted) / 0.8);
-		}
-
-		.privacy-card.selected {
-			border-color: oklch(var(--primary));
-			background: oklch(var(--primary) / 0.1);
-		}
-
-		.privacy-card.below-floor {
-			opacity: 0.55;
-			cursor: not-allowed;
-		}
-
-		.privacy-card.below-floor:hover {
-			border-color: oklch(var(--border));
-			background: oklch(var(--muted));
-		}
-
-		.floor-note {
-			margin-top: 0.5rem;
-			padding: 0.375rem 0.5rem;
-			font-size: 0.7rem;
-			line-height: 1.4;
-			color: oklch(0.869 0.1467 90.38);
-			background: rgba(250, 204, 21, 0.08);
-			border-left: 2px solid rgba(250, 204, 21, 0.5);
-			border-radius: 4px;
-			text-align: left;
-		}
-
-		.privacy-card input[type='radio'] {
-			position: absolute;
-			opacity: 0;
-			pointer-events: none;
-		}
-
-		.privacy-card .card-icon {
-			font-size: 1.5rem;
-			margin-bottom: 0.5rem;
-			line-height: 1;
-		}
-
-		.privacy-card .card-title {
-			font-weight: 600;
-			font-size: 0.875rem;
-			color: oklch(var(--foreground));
-			margin-bottom: 0.25rem;
-		}
-
-		.privacy-card .card-desc {
-			font-size: 0.7rem;
-			color: oklch(var(--muted-foreground));
-			line-height: 1.4;
-		}
-
-		.form-actions {
-			margin-top: 1.25rem;
-		}
-
-		.save-button {
-			padding: 0.625rem 1.25rem;
-			background: oklch(var(--primary));
-			color: oklch(var(--primary-foreground));
-			border: none;
-			border-radius: var(--radius);
-			font-weight: 500;
-			font-size: 0.875rem;
-			cursor: pointer;
-			transition: opacity 0.15s ease;
-		}
-
-		.save-button:hover:not(:disabled) {
-			opacity: 0.9;
-		}
-
-		.save-button:disabled {
-			opacity: 0.6;
-			cursor: not-allowed;
-		}
-
-		.share-url-section {
-			margin-top: 1.5rem;
-			padding-top: 1.5rem;
-			border-top: 1px solid oklch(var(--border));
-		}
-
-		.share-url-section.readonly {
-			margin-top: 1.25rem;
-		}
-
-		.url-container {
-			display: flex;
-			gap: 0.5rem;
-		}
-
-		.url-input {
-			flex: 1;
-			padding: 0.625rem 0.875rem;
-			background: oklch(var(--muted));
-			border: 1px solid oklch(var(--border));
-			border-radius: var(--radius);
-			color: oklch(var(--foreground));
-			font-size: 0.8rem;
-			font-family: monospace;
-		}
-
-		.copy-button {
-			display: flex;
-			align-items: center;
-			gap: 0.375rem;
-			padding: 0.625rem 1rem;
-			background: oklch(var(--secondary));
-			color: oklch(var(--foreground));
-			border: 1px solid oklch(var(--border));
-			border-radius: var(--radius);
-			font-size: 0.8rem;
-			font-weight: 500;
-			cursor: pointer;
-			transition: all 0.15s ease;
-			white-space: nowrap;
-		}
-
-		.copy-button:hover {
-			background: oklch(var(--muted));
-		}
-
-		.copy-button.copied {
-			background: oklch(0.6318 0.1589 149.73);
-			color: white;
-			border-color: oklch(0.6318 0.1589 149.73);
-		}
-
-		.token-actions {
-			margin-top: 1rem;
-		}
-
-		.token-hint {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-			margin: 0 0 0.75rem;
-		}
-
-		.regenerate-button {
-			padding: 0.5rem 0.875rem;
-			background: oklch(var(--secondary));
-			color: oklch(var(--foreground));
-			border: 1px solid oklch(var(--border));
-			border-radius: var(--radius);
-			font-size: 0.8rem;
-			cursor: pointer;
-			transition: all 0.15s ease;
-		}
-
-		.regenerate-button:hover {
-			background: oklch(var(--destructive));
-			color: oklch(var(--destructive-foreground));
-			border-color: oklch(var(--destructive));
-		}
-
-		.info-banner {
-			display: flex;
-			gap: 1rem;
-			padding: 1rem 1.25rem;
-			background: oklch(0.5883 0.1391 251.44 / 0.1);
-			border: 1px solid oklch(0.5883 0.1391 251.44 / 0.25);
-			border-left: 3px solid oklch(var(--primary));
-			border-radius: var(--radius);
-			margin-bottom: 1rem;
-		}
-
-		.info-icon {
-			font-size: 1.25rem;
-			flex-shrink: 0;
-		}
-
-		.info-content {
-			flex: 1;
-		}
-
-		.info-content strong {
-			display: block;
-			font-size: 0.9375rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-			margin-bottom: 0.25rem;
-		}
-
-		.info-content p {
-			font-size: 0.8rem;
-			color: oklch(var(--muted-foreground));
-			margin: 0;
-		}
-
-		/* DF-007: secondary explanatory line under the locked-mode badge. */
-		.info-content .locked-reason {
-			margin-top: 0.5rem;
-			font-size: 0.75rem;
-			line-height: 1.5;
-		}
-
-		.mode-badge {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.25rem;
-			padding: 0.125rem 0.5rem;
-			background: oklch(var(--muted));
-			border-radius: calc(var(--radius) / 2);
-			font-weight: 500;
-		}
-
-		.profile-card {
-			background: oklch(var(--muted));
-			border-radius: var(--radius);
-			overflow: hidden;
-		}
-
-		.profile-header {
-			display: flex;
-			align-items: center;
-			gap: 1rem;
-			padding: 1.25rem;
-			background: linear-gradient(
-				135deg,
-				oklch(var(--primary) / 0.15) 0%,
-				oklch(var(--primary) / 0.05) 100%
-			);
-			border-bottom: 1px solid oklch(var(--border));
-		}
-
-		.profile-avatar {
-			width: 64px;
-			height: 64px;
-			border-radius: 50%;
-			object-fit: cover;
-			border: 3px solid oklch(var(--primary));
-		}
-
-		.profile-avatar-placeholder {
-			width: 64px;
-			height: 64px;
-			border-radius: 50%;
-			background: oklch(var(--primary));
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border: 3px solid oklch(var(--primary) / 0.5);
-		}
-
-		.profile-avatar-placeholder span {
-			font-size: 1.75rem;
-			font-weight: 700;
-			color: oklch(var(--primary-foreground));
-		}
-
-		.profile-info {
-			flex: 1;
-		}
-
-		.profile-name {
-			font-size: 1.25rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-			margin: 0 0 0.25rem;
-		}
-
-		.profile-email {
-			font-size: 0.875rem;
-			color: oklch(var(--muted-foreground));
-			margin: 0;
-		}
-
-		.profile-details {
-			padding: 1rem 1.25rem;
-		}
-
-		.detail-row {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 0.625rem 0;
-			border-bottom: 1px solid oklch(var(--border) / 0.5);
-		}
-
-		.detail-row:last-child {
-			border-bottom: none;
-		}
-
-		.detail-label {
-			font-size: 0.8rem;
-			color: oklch(var(--muted-foreground));
-		}
-
-		.detail-value {
-			font-size: 0.875rem;
-			font-weight: 500;
-			color: oklch(var(--foreground));
-		}
-
-		.detail-value.mono {
-			font-family: monospace;
-			font-size: 0.8rem;
-		}
-
-		.session-expiry {
-			padding: 0.25rem 0.5rem;
-			background: oklch(var(--primary) / 0.15);
-			border-radius: calc(var(--radius) / 2);
-			font-size: 0.8rem;
-		}
-
-		.account-actions {
-			margin-top: 1.5rem;
-		}
-
-		.view-wrapped-link {
-			display: inline-flex;
-			align-items: center;
-			padding: 0.75rem 1.25rem;
-			background: oklch(var(--primary));
-			color: oklch(var(--primary-foreground));
-			border-radius: var(--radius);
-			font-weight: 500;
-			font-size: 0.875rem;
-			text-decoration: none;
-			transition: opacity 0.15s ease;
-		}
-
-		.view-wrapped-link:hover {
-			opacity: 0.9;
-		}
-
-		.logout-form {
-			margin: 0;
-		}
-
-		.logout-button {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.5rem;
-			padding: 0.75rem 1.25rem;
-			background: oklch(var(--destructive) / 0.1);
-			color: oklch(var(--destructive));
-			border: 1px solid oklch(var(--destructive) / 0.3);
-			border-radius: var(--radius);
-			font-weight: 500;
-			font-size: 0.875rem;
-			cursor: pointer;
-			transition: background 0.15s ease;
-		}
-
-		.logout-button:hover {
-			background: oklch(var(--destructive) / 0.18);
-		}
-
-		.logout-button :global(.logout-icon) {
-			width: 1rem;
-			height: 1rem;
-		}
-
-		@media (max-width: 640px) {
-			.settings-page {
-				padding: 1.25rem;
-			}
-
-			.privacy-card-grid,
-			.privacy-card-grid.two-col,
-			.privacy-card-grid.three-col {
-				grid-template-columns: 1fr;
-			}
-
-			.privacy-card {
-				flex-direction: row;
-				align-items: flex-start;
-				text-align: left;
-				min-height: auto;
-				padding: 1rem;
-				gap: 0.875rem;
-			}
-
-			.privacy-card .card-icon {
-				flex-shrink: 0;
-				margin-bottom: 0;
-			}
-
-			.privacy-card .card-title,
-			.privacy-card .card-desc {
-				text-align: left;
-			}
-
-			.url-container {
-				flex-direction: column;
-			}
-
-			.profile-header {
-				flex-direction: column;
-				text-align: center;
-			}
-
-			.detail-row {
-				flex-direction: column;
-				align-items: flex-start;
-				gap: 0.25rem;
-			}
-		}
+		padding: 1.25rem;
+	}
+
+	.privacy-card-grid,
+	.privacy-card-grid.two-col,
+	.privacy-card-grid.three-col {
+		grid-template-columns: 1fr;
+	}
+
+	.privacy-card {
+		flex-direction: row;
+		align-items: flex-start;
+		text-align: left;
+		min-height: auto;
+		padding: 1rem;
+		gap: 0.875rem;
+	}
+
+	.privacy-card .card-icon {
+		flex-shrink: 0;
+		margin-bottom: 0;
+	}
+
+	.privacy-card .card-title,
+	.privacy-card .card-desc {
+		text-align: left;
+	}
+
+	.url-container {
+		flex-direction: column;
+	}
+
+	.profile-header {
+		flex-direction: column;
+		text-align: center;
+	}
+
+	.detail-row {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.25rem;
+	}
+}
 </style>

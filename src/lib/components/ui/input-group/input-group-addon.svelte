@@ -21,20 +21,21 @@ export type InputGroupAddonAlign = VariantProps<typeof inputGroupAddonVariants>[
 </script>
 
 <script lang="ts">
-	import { cn, type WithElementRef } from "$lib/utils.js";
-	import type { HTMLAttributes } from "svelte/elements";
+import type { HTMLAttributes } from 'svelte/elements';
+import { cn, type WithElementRef } from '$lib/utils.js';
 
-	let {
-		ref = $bindable(null),
-		class: className,
-		children,
-		align = "inline-start",
-		...restProps
-	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
-		align?: InputGroupAddonAlign;
-	} = $props();
+let {
+	ref = $bindable(null),
+	class: className,
+	children,
+	align = 'inline-start',
+	...restProps
+}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
+	align?: InputGroupAddonAlign;
+} = $props();
 </script>
 
+<!-- biome-ignore lint/a11y/useSemanticElements lint/a11y/useKeyWithClickEvents: This visual group forwards pointer clicks to the input, which has its own keyboard focus. -->
 <div
 	bind:this={ref}
 	role="group"
@@ -42,11 +43,11 @@ export type InputGroupAddonAlign = VariantProps<typeof inputGroupAddonVariants>[
 	data-align={align}
 	class={cn(inputGroupAddonVariants({ align }), className)}
 	onclick={(e) => {
-		if ((e.target as HTMLElement).closest("button")) {
-			return;
-		}
-		e.currentTarget.parentElement?.querySelector("input")?.focus();
-	}}
+	if ((e.target as HTMLElement).closest('button')) {
+		return;
+	}
+	e.currentTarget.parentElement?.querySelector('input')?.focus();
+}}
 	{...restProps}
 >
 	{@render children?.()}

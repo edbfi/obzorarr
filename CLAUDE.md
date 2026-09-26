@@ -104,3 +104,11 @@ return { form, success: true, message: `Scheduler timezone set to ${timezone}` }
 - Theme ids are hard-coded in about ten places, including the inline `validThemes` script in `src/app.html`, `src/app.css`, `src/lib/utils/theme-fonts.ts`, `ThemePresets` and the appearance `ThemeEnum`. Run `grep -rn "soviet-red" src tests` to find every site before adding or renaming a theme.
 - UnoCSS may miss classes that only appear in portalled bits-ui content, and they then silently render unstyled. Add them to `safelist` in `uno.config.ts`.
 - `DEV_BYPASS_AUTH=true` (and `DEV_BYPASS_ONBOARDING=true`) only take effect in dev mode, via `bun run dev:env`. On a fresh DB, onboarding's claim token prints to the server console, never the browser.
+
+## Biome configuration
+
+Biome is pinned to 2.5.14. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
+
+The exact-file formatter overrides protect components containing `{@const ...}`: Biome 2.5.14 inserts parentheses that Svelte rejects with `expected_pattern`. These files still receive lint and import checks. Recheck them with the Svelte compiler when upgrading Biome before removing the exceptions. Do not run a formatter with these overrides bypassed.
+
+The narrow accessibility overrides retain the story player’s window-level keyboard handling and the custom slide dialog’s focus trap, Escape handler and styled-list semantics. Inline suppressions explain polymorphic component props, rendered control snippets, rich radio cards and CSS browser fallbacks. Generated Drizzle files are excluded from scanning.

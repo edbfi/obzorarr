@@ -60,64 +60,64 @@ const secondaryText = $derived.by(() => {
 {/if}
 
 <style>
-	.sync-loading-overlay {
-			position: fixed;
-			inset: 0;
-			z-index: 200;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			background: oklch(var(--background));
-		}
+.sync-loading-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 200;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: oklch(var(--background));
+}
 
-		.loading-content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			text-align: center;
-			padding: 2rem;
-		}
+.loading-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	text-align: center;
+	padding: 2rem;
+}
 
-		.spinner-container {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
+.spinner-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
 
-		.spinner {
-			width: 3rem;
-			height: 3rem;
-			border: 3px solid oklch(var(--primary) / 0.2);
-			border-top-color: oklch(var(--primary));
-			border-radius: 50%;
-			animation: spin 1s linear infinite;
-		}
+.spinner {
+	width: 3rem;
+	height: 3rem;
+	border: 3px solid oklch(var(--primary) / 0.2);
+	border-top-color: oklch(var(--primary));
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
 
-		.status-text {
-			font-size: 1.25rem;
-			font-weight: 500;
-			color: oklch(var(--foreground));
-			margin: 0;
-		}
+.status-text {
+	font-size: 1.25rem;
+	font-weight: 500;
+	color: oklch(var(--foreground));
+	margin: 0;
+}
 
-		.secondary-text {
-			font-size: 0.875rem;
-			color: oklch(var(--muted-foreground));
-			margin: 0;
-		}
+.secondary-text {
+	font-size: 0.875rem;
+	color: oklch(var(--muted-foreground));
+	margin: 0;
+}
 
-		@keyframes spin {
-			to {
-				transform: rotate(360deg);
-			}
-		}
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
 
-		@media (prefers-reduced-motion: reduce) {
-			.spinner {
-				animation: none;
-				border-style: dotted;
-				border-width: 4px;
-			}
-		}
+@media (prefers-reduced-motion: reduce) {
+	.spinner {
+		animation: none;
+		border-style: dotted;
+		border-width: 4px;
+	}
+}
 </style>

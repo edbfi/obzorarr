@@ -311,7 +311,7 @@ $effect(() => {
 					placeholder={controlsDisabled ? 'Refreshing link...' : undefined}
 					class="url-input"
 					onclick={(e) => e.currentTarget.select()}
-				/>
+				>
 				<button
 					type="button"
 					class="copy-btn"
@@ -321,6 +321,7 @@ $effect(() => {
 				>
 					{#if copied}
 						<svg
+							aria-hidden="true"
 							xmlns="http://www.w3.org/2000/svg"
 							width="18"
 							height="18"
@@ -336,6 +337,7 @@ $effect(() => {
 						</svg>
 					{:else}
 						<svg
+							aria-hidden="true"
 							xmlns="http://www.w3.org/2000/svg"
 							width="18"
 							height="18"
@@ -375,8 +377,8 @@ $effect(() => {
 						<path d="M7 11V7a5 5 0 0 1 10 0v4" />
 					</svg>
 					<p class="members-only-text">
-						Visible to Plex server members only. Recipients must sign in with their Plex
-						account to open this Wrapped.
+						Visible to Plex server members only. Recipients must sign in with their Plex account to
+						open this Wrapped.
 					</p>
 				</div>
 			{:else if displayMode === 'private-link'}
@@ -398,8 +400,8 @@ $effect(() => {
 						<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
 					</svg>
 					<p class="members-only-text">
-						Shared via private link. Anyone with this link can open this Wrapped without
-						signing in, so treat it like a password and share it only with people you trust.
+						Shared via private link. Anyone with this link can open this Wrapped without signing in,
+						so treat it like a password and share it only with people you trust.
 					</p>
 				</div>
 			{/if}
@@ -413,33 +415,33 @@ $effect(() => {
 					method="POST"
 					action="?/updateShareMode"
 					use:enhance={() => {
-						isUpdating = true;
-						return async ({ result, update }) => {
-							try {
-								if (result.type === 'success') {
-									applyShareActionData(result.data);
-									if (await navigateAfterTokenRouteUpdate(result.data)) return;
-								} else {
-									if (result.type === 'failure') {
-										applyShareActionData(result.data);
-									} else {
-										restoreLocalShareState();
-									}
-									try {
-										await invalidateAll();
-									} catch (error) {
-										console.warn('Failed to refresh share data after share mode update:', error);
-									}
-								}
-								// DF-11: reset:false keeps the native <form> from reverting the
-								// radios to their authored `checked` attribute for a frame, which
-								// flashed the selection off before the optimistic localMode re-applied.
-								await update({ reset: false });
-							} finally {
-								isUpdating = false;
-							}
-						};
-					}}
+	isUpdating = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success') {
+				applyShareActionData(result.data);
+				if (await navigateAfterTokenRouteUpdate(result.data)) return;
+			} else {
+				if (result.type === 'failure') {
+					applyShareActionData(result.data);
+				} else {
+					restoreLocalShareState();
+				}
+				try {
+					await invalidateAll();
+				} catch (error) {
+					console.warn('Failed to refresh share data after share mode update:', error);
+				}
+			}
+			// DF-11: reset:false keeps the native <form> from reverting the
+			// radios to their authored `checked` attribute for a frame, which
+			// flashed the selection off before the optimistic localMode re-applied.
+			await update({ reset: false });
+		} finally {
+			isUpdating = false;
+		}
+	};
+}}
 				>
 					<div class="mode-options" role="radiogroup" aria-labelledby="visibility-label">
 						{#each availableModes as mode}
@@ -456,15 +458,15 @@ $effect(() => {
 									checked={displayMode === mode}
 									disabled={controlsDisabled || isBelowFloor(mode as ShareModeType)}
 									onchange={(e) => submitModeChange(e, mode as ShareModeType)}
-								/>
+								>
 								<div class="mode-content">
 									<span class="mode-label">{modeLabels[mode as ShareModeType].label}</span>
 									<span class="mode-desc">{modeLabels[mode as ShareModeType].description}</span>
 									{#if globalFloor && isBelowFloor(mode as ShareModeType)}
 										<span class="floor-note">
-											Disabled by the server-wide privacy floor: visibility can't be
-											more public than <strong>{modeLabels[globalFloor].label}</strong>.
-											Effective mode at access time will be
+											Disabled by the server-wide privacy floor: visibility can't be more public
+											than <strong>{modeLabels[globalFloor].label}</strong>. Effective mode at
+											access time will be
 											<strong>{modeLabels[globalFloor].label}</strong>.
 											{#if isAdmin}
 												Lower the server-wide floor in
@@ -477,7 +479,8 @@ $effect(() => {
 													Privacy settings
 												</a>
 												to self-share. That lowers the floor for
-												<strong>all users</strong> on the server, not only you.
+												<strong>all users</strong>
+												on the server, not only you.
 											{:else}
 												Contact your admin to change the server-wide floor.
 											{/if}
@@ -486,6 +489,7 @@ $effect(() => {
 								</div>
 								{#if displayMode === mode}
 									<svg
+										aria-hidden="true"
 										xmlns="http://www.w3.org/2000/svg"
 										width="16"
 										height="16"
@@ -510,28 +514,29 @@ $effect(() => {
 						method="POST"
 						action="?/regenerateToken"
 						use:enhance={() => {
-							isUpdating = true;
-							return async ({ result, update }) => {
-								try {
-									if (result.type === 'success') {
-										applyShareActionData(result.data);
-										if (await navigateAfterTokenRouteUpdate(result.data)) return;
-									} else {
-										restoreLocalShareState();
-									}
-									// DF-11: reset:false keeps the native <form> from reverting the
-								// radios to their authored `checked` attribute for a frame, which
-								// flashed the selection off before the optimistic localMode re-applied.
-								await update({ reset: false });
-								} finally {
-									isUpdating = false;
-								}
-							};
-						}}
+	isUpdating = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success') {
+				applyShareActionData(result.data);
+				if (await navigateAfterTokenRouteUpdate(result.data)) return;
+			} else {
+				restoreLocalShareState();
+			}
+			// DF-11: reset:false keeps the native <form> from reverting the
+			// radios to their authored `checked` attribute for a frame, which
+			// flashed the selection off before the optimistic localMode re-applied.
+			await update({ reset: false });
+		} finally {
+			isUpdating = false;
+		}
+	};
+}}
 						class="regenerate-form"
 					>
 						<button type="submit" class="btn-link" disabled={controlsDisabled}>
 							<svg
+								aria-hidden="true"
 								xmlns="http://www.w3.org/2000/svg"
 								width="14"
 								height="14"
@@ -555,8 +560,8 @@ $effect(() => {
 		{#if showNoControlNotice}
 			<div class="control-notice">
 				<p class="control-notice-text">
-					Your admin hasn't enabled per-user visibility control, so this Wrapped uses the
-					server default. Manage your account from
+					Your admin hasn't enabled per-user visibility control, so this Wrapped uses the server
+					default. Manage your account from
 					<a href="/dashboard/settings" class="control-notice-link">your settings</a>, or contact
 					your admin to request control.
 				</p>
@@ -571,45 +576,46 @@ $effect(() => {
 				rel="noopener noreferrer"
 				aria-label="Advanced sharing options (opens in a new tab)"
 			>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path
-							d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-						/>
-						<circle cx="12" cy="12" r="3" />
-					</svg>
-					Advanced sharing options
-					<!-- ISSUE-005: open in a new tab so the Wrapped page + this share
+				<svg
+					aria-hidden="true"
+					xmlns="http://www.w3.org/2000/svg"
+					width="14"
+					height="14"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path
+						d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+					/>
+					<circle cx="12" cy="12" r="3" />
+				</svg>
+				Advanced sharing options
+				<!-- ISSUE-005: open in a new tab so the Wrapped page + this share
 					     modal survive (a same-tab nav unmounted both). External-link glyph
 					     signals the new-tab behavior. -->
-					<svg
-						class="advanced-link-external"
-						xmlns="http://www.w3.org/2000/svg"
-						width="12"
-						height="12"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						aria-hidden="true"
-					>
-						<path d="M15 3h6v6" />
-						<path d="M10 14 21 3" />
-						<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-					</svg>
-				</a>
-			</div>
+				<svg
+					class="advanced-link-external"
+					xmlns="http://www.w3.org/2000/svg"
+					width="12"
+					height="12"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					aria-hidden="true"
+				>
+					<path d="M15 3h6v6" />
+					<path d="M10 14 21 3" />
+					<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+				</svg>
+			</a>
+		</div>
 
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>Close</AlertDialog.Cancel>
@@ -618,291 +624,291 @@ $effect(() => {
 </AlertDialog.Root>
 
 <style>
-	:global(.share-modal) {
-			max-width: 28rem !important;
-			/* ISSUE-003: under the privacy floor the modal grows tall enough that the
+:global(.share-modal) {
+	max-width: 28rem !important;
+	/* ISSUE-003: under the privacy floor the modal grows tall enough that the
 			   "Regenerate share link" action fell below the viewport with no way to
 			   reach it. Cap the height and scroll INSIDE the dialog so every control
 			   (incl. Regenerate) is reachable without dismissing the modal. */
-			max-height: calc(100dvh - 4rem) !important;
-			overflow-y: auto !important;
-		}
+	max-height: calc(100dvh - 4rem) !important;
+	overflow-y: auto !important;
+}
 
-		.url-section {
-			margin-top: 0.5rem;
-			margin-bottom: 1.25rem;
-		}
+.url-section {
+	margin-top: 0.5rem;
+	margin-bottom: 1.25rem;
+}
 
-		.label {
-			display: block;
-			font-size: 0.875rem;
-			font-weight: 500;
-			color: oklch(var(--foreground));
-			margin-bottom: 0.5rem;
-		}
+.label {
+	display: block;
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: oklch(var(--foreground));
+	margin-bottom: 0.5rem;
+}
 
-		.url-row {
-			display: flex;
-			gap: 0.5rem;
-		}
+.url-row {
+	display: flex;
+	gap: 0.5rem;
+}
 
-		.url-input {
-			flex: 1;
-			padding: 0.625rem 0.75rem;
-			font-size: 0.875rem;
-			border: 1px solid oklch(var(--border));
-			border-radius: 6px;
-			background-color: oklch(var(--background));
-			color: oklch(var(--foreground));
-			font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, monospace;
-		}
+.url-input {
+	flex: 1;
+	padding: 0.625rem 0.75rem;
+	font-size: 0.875rem;
+	border: 1px solid oklch(var(--border));
+	border-radius: 6px;
+	background-color: oklch(var(--background));
+	color: oklch(var(--foreground));
+	font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+}
 
-		.url-input:focus {
-			outline: none;
-			border-color: oklch(var(--primary));
-			box-shadow: 0 0 0 2px oklch(var(--primary) / 0.1);
-		}
+.url-input:focus {
+	outline: none;
+	border-color: oklch(var(--primary));
+	box-shadow: 0 0 0 2px oklch(var(--primary) / 0.1);
+}
 
-		.copy-btn {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			width: 2.5rem;
-			height: 2.5rem;
-			border: 1px solid oklch(var(--border));
-			border-radius: 6px;
-			background-color: oklch(var(--background));
-			color: oklch(var(--foreground));
-			cursor: pointer;
-			transition:
-				background-color 0.15s ease,
-				border-color 0.15s ease;
-		}
+.copy-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	border: 1px solid oklch(var(--border));
+	border-radius: 6px;
+	background-color: oklch(var(--background));
+	color: oklch(var(--foreground));
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease;
+}
 
-		.copy-btn:hover {
-			background-color: rgba(255, 255, 255, 0.1);
-			border-color: oklch(var(--primary));
-		}
+.copy-btn:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-color: oklch(var(--primary));
+}
 
-		.copy-btn:disabled {
-			cursor: not-allowed;
-			opacity: 0.6;
-		}
+.copy-btn:disabled {
+	cursor: not-allowed;
+	opacity: 0.6;
+}
 
-		.copy-btn:disabled:hover {
-			background-color: oklch(var(--background));
-			border-color: oklch(var(--border));
-		}
+.copy-btn:disabled:hover {
+	background-color: oklch(var(--background));
+	border-color: oklch(var(--border));
+}
 
-		.copy-btn .icon.check {
-			color: #22c55e;
-		}
+.copy-btn .icon.check {
+	color: #22c55e;
+}
 
-		.copied-feedback {
-			display: block;
-			margin-top: 0.375rem;
-			font-size: 0.75rem;
-			color: #22c55e;
-		}
+.copied-feedback {
+	display: block;
+	margin-top: 0.375rem;
+	font-size: 0.75rem;
+	color: #22c55e;
+}
 
-		.members-only-notice {
-			display: flex;
-			align-items: flex-start;
-			gap: 0.625rem;
-			margin-top: 0.625rem;
-			padding: 0.75rem 0.875rem;
-			border: 1px solid oklch(var(--border));
-			border-radius: 8px;
-			background-color: oklch(var(--muted) / 0.4);
-		}
+.members-only-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.625rem;
+	margin-top: 0.625rem;
+	padding: 0.75rem 0.875rem;
+	border: 1px solid oklch(var(--border));
+	border-radius: 8px;
+	background-color: oklch(var(--muted) / 0.4);
+}
 
-		.members-only-icon {
-			flex-shrink: 0;
-			margin-top: 0.0625rem;
-			color: oklch(var(--muted-foreground));
-		}
+.members-only-icon {
+	flex-shrink: 0;
+	margin-top: 0.0625rem;
+	color: oklch(var(--muted-foreground));
+}
 
-		.members-only-text {
-			margin: 0;
-			font-size: 0.8125rem;
-			line-height: 1.45;
-			color: oklch(var(--muted-foreground));
-		}
+.members-only-text {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: oklch(var(--muted-foreground));
+}
 
-		.share-modes {
-			margin-bottom: 1.25rem;
-			padding-top: 1rem;
-			border-top: 1px solid oklch(var(--border));
-		}
+.share-modes {
+	margin-bottom: 1.25rem;
+	padding-top: 1rem;
+	border-top: 1px solid oklch(var(--border));
+}
 
-		.mode-options {
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-		}
+.mode-options {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
 
-		.mode-option {
-			display: flex;
-			align-items: center;
-			gap: 0.75rem;
-			padding: 0.75rem 1rem;
-			border: 1px solid oklch(var(--border));
-			border-radius: 8px;
-			cursor: pointer;
-			transition:
-				background-color 0.15s ease,
-				border-color 0.15s ease;
-		}
+.mode-option {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.75rem 1rem;
+	border: 1px solid oklch(var(--border));
+	border-radius: 8px;
+	cursor: pointer;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease;
+}
 
-		.mode-option:hover {
-			background-color: rgba(255, 255, 255, 0.05);
-		}
+.mode-option:hover {
+	background-color: rgba(255, 255, 255, 0.05);
+}
 
-		.mode-option.active {
-			border-color: oklch(var(--primary));
-			background-color: oklch(var(--primary) / 0.08);
-		}
+.mode-option.active {
+	border-color: oklch(var(--primary));
+	background-color: oklch(var(--primary) / 0.08);
+}
 
-		.mode-option.below-floor {
-			opacity: 0.55;
-			cursor: not-allowed;
-		}
+.mode-option.below-floor {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
 
-		.mode-option.below-floor:hover {
-			background-color: transparent;
-		}
+.mode-option.below-floor:hover {
+	background-color: transparent;
+}
 
-		.mode-option input[type='radio'] {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			padding: 0;
-			margin: -1px;
-			overflow: hidden;
-			clip: rect(0, 0, 0, 0);
-			white-space: nowrap;
-			border: 0;
-		}
+.mode-option input[type="radio"] {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
 
-		.mode-option:focus-within {
-			outline: 2px solid oklch(var(--primary));
-			outline-offset: 2px;
-		}
+.mode-option:focus-within {
+	outline: 2px solid oklch(var(--primary));
+	outline-offset: 2px;
+}
 
-		.mode-content {
-			flex: 1;
-			display: flex;
-			flex-direction: column;
-			gap: 0.125rem;
-		}
+.mode-content {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+}
 
-		.mode-label {
-			font-size: 0.875rem;
-			font-weight: 500;
-			color: oklch(var(--foreground));
-		}
+.mode-label {
+	font-size: 0.875rem;
+	font-weight: 500;
+	color: oklch(var(--foreground));
+}
 
-		.mode-desc {
-			font-size: 0.75rem;
-			color: oklch(var(--muted-foreground));
-		}
+.mode-desc {
+	font-size: 0.75rem;
+	color: oklch(var(--muted-foreground));
+}
 
-		.floor-note {
-			margin-top: 0.375rem;
-			padding: 0.375rem 0.5rem;
-			font-size: 0.7rem;
-			line-height: 1.4;
-			color: oklch(0.869 0.1467 90.38);
-			background: rgba(250, 204, 21, 0.08);
-			border-left: 2px solid rgba(250, 204, 21, 0.5);
-			border-radius: 4px;
-		}
+.floor-note {
+	margin-top: 0.375rem;
+	padding: 0.375rem 0.5rem;
+	font-size: 0.7rem;
+	line-height: 1.4;
+	color: oklch(0.869 0.1467 90.38);
+	background: rgba(250, 204, 21, 0.08);
+	border-left: 2px solid rgba(250, 204, 21, 0.5);
+	border-radius: 4px;
+}
 
-		.floor-note-link {
-			color: inherit;
-			font-weight: 600;
-			text-decoration: underline;
-		}
+.floor-note-link {
+	color: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+}
 
-		.floor-note-link:hover {
-			text-decoration: none;
-		}
+.floor-note-link:hover {
+	text-decoration: none;
+}
 
-		.check-icon {
-			color: oklch(var(--primary));
-		}
+.check-icon {
+	color: oklch(var(--primary));
+}
 
-		.regenerate-form {
-			margin-top: 0.75rem;
-		}
+.regenerate-form {
+	margin-top: 0.75rem;
+}
 
-		.btn-link {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.375rem;
-			padding: 0.375rem 0;
-			font-size: 0.8125rem;
-			color: oklch(var(--muted-foreground));
-			background: none;
-			border: none;
-			cursor: pointer;
-			transition: color 0.15s ease;
-		}
+.btn-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	padding: 0.375rem 0;
+	font-size: 0.8125rem;
+	color: oklch(var(--muted-foreground));
+	background: none;
+	border: none;
+	cursor: pointer;
+	transition: color 0.15s ease;
+}
 
-		.btn-link:hover {
-			color: oklch(var(--foreground));
-		}
+.btn-link:hover {
+	color: oklch(var(--foreground));
+}
 
-		.btn-link:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
+.btn-link:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
 
-		.control-notice {
-			padding: 0.75rem 0.875rem;
-			margin-bottom: 1.25rem;
-			border: 1px solid oklch(var(--border));
-			border-radius: 8px;
-			background-color: oklch(var(--muted) / 0.4);
-		}
+.control-notice {
+	padding: 0.75rem 0.875rem;
+	margin-bottom: 1.25rem;
+	border: 1px solid oklch(var(--border));
+	border-radius: 8px;
+	background-color: oklch(var(--muted) / 0.4);
+}
 
-		.control-notice-text {
-			margin: 0;
-			font-size: 0.8125rem;
-			line-height: 1.45;
-			color: oklch(var(--muted-foreground));
-		}
+.control-notice-text {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.45;
+	color: oklch(var(--muted-foreground));
+}
 
-		.control-notice-link {
-			color: oklch(var(--primary));
-			text-decoration: none;
-		}
+.control-notice-link {
+	color: oklch(var(--primary));
+	text-decoration: none;
+}
 
-		.control-notice-link:hover {
-			text-decoration: underline;
-		}
+.control-notice-link:hover {
+	text-decoration: underline;
+}
 
-		.advanced-section {
-			padding-top: 1rem;
-			border-top: 1px solid oklch(var(--border));
-			margin-bottom: 0.5rem;
-		}
+.advanced-section {
+	padding-top: 1rem;
+	border-top: 1px solid oklch(var(--border));
+	margin-bottom: 0.5rem;
+}
 
-		.advanced-link {
-			display: inline-flex;
-			align-items: center;
-			gap: 0.375rem;
-			font-size: 0.8125rem;
-			color: oklch(var(--muted-foreground));
-			text-decoration: none;
-			transition: color 0.15s ease;
-		}
+.advanced-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.375rem;
+	font-size: 0.8125rem;
+	color: oklch(var(--muted-foreground));
+	text-decoration: none;
+	transition: color 0.15s ease;
+}
 
-		.advanced-link:hover {
-			color: oklch(var(--foreground));
-		}
+.advanced-link:hover {
+	color: oklch(var(--foreground));
+}
 
-		.advanced-link-external {
-			opacity: 0.7;
-		}
+.advanced-link-external {
+	opacity: 0.7;
+}
 </style>

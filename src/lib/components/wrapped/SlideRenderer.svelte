@@ -199,19 +199,19 @@ const topViewers = $derived(!isUserStats(stats) ? stats.topViewers : []);
 </div>
 
 <style>
-	.slide-renderer {
-			width: 100%;
-			height: 100%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-		}
+.slide-renderer {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
 
-		.unknown-slide {
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			color: var(--muted-foreground);
-			font-size: 1rem;
-		}
+.unknown-slide {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--muted-foreground);
+	font-size: 1rem;
+}
 </style>

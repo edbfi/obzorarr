@@ -178,7 +178,7 @@ function getThemeDescription(theme: string): string {
 					{/each}
 				</RadioGroup>
 
-				<input type="hidden" name="settingsVersion" bind:value={$uiThemeData.settingsVersion} />
+				<input type="hidden" name="settingsVersion" bind:value={$uiThemeData.settingsVersion}>
 
 				<SettingsActionBar>
 					<Button type="submit" class="tap-target" disabled={$uiThemeSubmitting}>
@@ -216,11 +216,7 @@ function getThemeDescription(theme: string): string {
 					{/each}
 				</RadioGroup>
 
-				<input
-					type="hidden"
-					name="settingsVersion"
-					bind:value={$wrappedThemeData.settingsVersion}
-				/>
+				<input type="hidden" name="settingsVersion" bind:value={$wrappedThemeData.settingsVersion}>
 
 				<SettingsActionBar>
 					<Button type="submit" class="tap-target" disabled={$wrappedThemeSubmitting}>
@@ -257,7 +253,7 @@ function getThemeDescription(theme: string): string {
 					type="hidden"
 					name="settingsVersion"
 					bind:value={$wrappedLogoModeData.settingsVersion}
-				/>
+				>
 
 				<SettingsActionBar>
 					<Button type="submit" class="tap-target" disabled={$wrappedLogoModeSubmitting}>

@@ -99,32 +99,29 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 				method="POST"
 				action="?/updateApiConfig"
 				use:enhance={({ cancel }) => {
-					if (isSavingPlex) {
-						cancel();
-						return;
-					}
-					isSavingPlex = true;
-					return async ({ result, update }) => {
-						try {
-							if (result.type === 'success' || result.type === 'failure') {
-								handleFormToast(
-									result.data as { success?: boolean; message?: string; error?: string }
-								);
-							}
-							await update({ reset: false });
-							if (result.type === 'success') {
-								// The sibling panel can save next without waiting for invalidateAll.
-								const freshVersion = (result.data as { apiConfigVersion?: string })
-									?.apiConfigVersion;
-								if (freshVersion) apiConfigVersion = freshVersion;
-								plexTokenInput = '';
-								await invalidateAll();
-							}
-						} finally {
-							isSavingPlex = false;
-						}
-					};
-				}}
+	if (isSavingPlex) {
+		cancel();
+		return;
+	}
+	isSavingPlex = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
+			}
+			await update({ reset: false });
+			if (result.type === 'success') {
+				// The sibling panel can save next without waiting for invalidateAll.
+				const freshVersion = (result.data as { apiConfigVersion?: string })?.apiConfigVersion;
+				if (freshVersion) apiConfigVersion = freshVersion;
+				plexTokenInput = '';
+				await invalidateAll();
+			}
+		} finally {
+			isSavingPlex = false;
+		}
+	};
+}}
 				class="space-y-4"
 			>
 				<div class="space-y-2">
@@ -189,9 +186,9 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					type="hidden"
 					name="plexAllowInsecureLocalHttp"
 					value={plexAllowInsecureLocalHttp ? 'true' : 'false'}
-				/>
+				>
 
-				<input type="hidden" name="apiConfigVersion" value={apiConfigVersion} />
+				<input type="hidden" name="apiConfigVersion" value={apiConfigVersion}>
 			</form>
 
 			<SettingsActionBar>
@@ -199,32 +196,27 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					method="POST"
 					action="?/testPlexConnection"
 					use:enhance={({ cancel, formData }) => {
-						if (isTestingPlex) {
-							cancel();
-							return;
-						}
-						isTestingPlex = true;
-						// Connection tests should exercise unsaved edits, not only loaded data.
-						// Mirror the token pattern: skip the set when ENV-locked so the
-						// server-side `submittedUrl || storedUrl` fallback uses the stored URL.
-						if (!plexServerUrlLocked) formData.set('plexServerUrl', plexServerUrl);
-						if (plexTokenInput) formData.set('plexToken', plexTokenInput);
-						formData.set(
-							'plexAllowInsecureLocalHttp',
-							plexAllowInsecureLocalHttp ? 'true' : 'false'
-						);
-						return async ({ result }) => {
-							try {
-								if (result.type === 'success' || result.type === 'failure') {
-									handleFormToast(
-										result.data as { success?: boolean; message?: string; error?: string }
-									);
-								}
-							} finally {
-								isTestingPlex = false;
-							}
-						};
-					}}
+	if (isTestingPlex) {
+		cancel();
+		return;
+	}
+	isTestingPlex = true;
+	// Connection tests should exercise unsaved edits, not only loaded data.
+	// Mirror the token pattern: skip the set when ENV-locked so the
+	// server-side `submittedUrl || storedUrl` fallback uses the stored URL.
+	if (!plexServerUrlLocked) formData.set('plexServerUrl', plexServerUrl);
+	if (plexTokenInput) formData.set('plexToken', plexTokenInput);
+	formData.set('plexAllowInsecureLocalHttp', plexAllowInsecureLocalHttp ? 'true' : 'false');
+	return async ({ result }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
+			}
+		} finally {
+			isTestingPlex = false;
+		}
+	};
+}}
 				>
 					<Button type="submit" variant="outline" class="tap-target" disabled={isTestingPlex}>
 						<FlaskConicalIcon />
@@ -254,8 +246,8 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 				     DB-only by design — set once in the onboarding wizard. A post-install
 				     selector UI is a tracked follow-up; edit these directly in app_settings /
 				     slide_config until then. -->
-				The AI persona and per-slide configuration are set during onboarding and are
-				database-only for now (no post-install selector yet).
+				The AI persona and per-slide configuration are set during onboarding and are database-only
+				for now (no post-install selector yet).
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
@@ -265,46 +257,44 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 				method="POST"
 				action="?/updateApiConfig"
 				use:enhance={({ cancel }) => {
-					if (isSavingOpenai) {
-						cancel();
-						return;
-					}
-					isSavingOpenai = true;
+	if (isSavingOpenai) {
+		cancel();
+		return;
+	}
+	isSavingOpenai = true;
+	openaiBaseUrlError = undefined;
+	openaiModelError = undefined;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				const data = result.data as {
+					success?: boolean;
+					message?: string;
+					error?: string;
+					fieldErrors?: Record<string, string[] | undefined>;
+					apiConfigVersion?: string;
+				};
+				if (result.type === 'failure') {
+					openaiBaseUrlError = data?.fieldErrors?.openaiBaseUrl?.[0];
+					openaiModelError = data?.fieldErrors?.openaiModel?.[0];
+				} else {
 					openaiBaseUrlError = undefined;
 					openaiModelError = undefined;
-					return async ({ result, update }) => {
-						try {
-							if (result.type === 'success' || result.type === 'failure') {
-								const data = result.data as {
-									success?: boolean;
-									message?: string;
-									error?: string;
-									fieldErrors?: Record<string, string[] | undefined>;
-									apiConfigVersion?: string;
-								};
-								if (result.type === 'failure') {
-									openaiBaseUrlError = data?.fieldErrors?.openaiBaseUrl?.[0];
-									openaiModelError = data?.fieldErrors?.openaiModel?.[0];
-								} else {
-									openaiBaseUrlError = undefined;
-									openaiModelError = undefined;
-								}
-								handleFormToast(data);
-							}
-							await update({ reset: false });
-							if (result.type === 'success') {
-								const freshVersion = (
-									result.data as { apiConfigVersion?: string }
-								)?.apiConfigVersion;
-								if (freshVersion) apiConfigVersion = freshVersion;
-								openaiApiKeyInput = '';
-								await invalidateAll();
-							}
-						} finally {
-							isSavingOpenai = false;
-						}
-					};
-				}}
+				}
+				handleFormToast(data);
+			}
+			await update({ reset: false });
+			if (result.type === 'success') {
+				const freshVersion = (result.data as { apiConfigVersion?: string })?.apiConfigVersion;
+				if (freshVersion) apiConfigVersion = freshVersion;
+				openaiApiKeyInput = '';
+				await invalidateAll();
+			}
+		} finally {
+			isSavingOpenai = false;
+		}
+	};
+}}
 				class="space-y-4"
 			>
 				<div class="space-y-2">
@@ -378,7 +368,7 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					{/if}
 				</div>
 
-				<input type="hidden" name="apiConfigVersion" value={apiConfigVersion} />
+				<input type="hidden" name="apiConfigVersion" value={apiConfigVersion}>
 			</form>
 
 			<SettingsActionBar>
@@ -386,26 +376,24 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					method="POST"
 					action="?/testAIConnection"
 					use:enhance={({ cancel, formData }) => {
-						if (isTestingOpenai) {
-							cancel();
-							return;
-						}
-						isTestingOpenai = true;
-						if (openaiApiKeyInput) formData.set('openaiApiKey', openaiApiKeyInput);
-						formData.set('openaiBaseUrl', openaiBaseUrl);
-						formData.set('openaiModel', openaiModel);
-						return async ({ result }) => {
-							try {
-								if (result.type === 'success' || result.type === 'failure') {
-									handleFormToast(
-										result.data as { success?: boolean; message?: string; error?: string }
-									);
-								}
-							} finally {
-								isTestingOpenai = false;
-							}
-						};
-					}}
+	if (isTestingOpenai) {
+		cancel();
+		return;
+	}
+	isTestingOpenai = true;
+	if (openaiApiKeyInput) formData.set('openaiApiKey', openaiApiKeyInput);
+	formData.set('openaiBaseUrl', openaiBaseUrl);
+	formData.set('openaiModel', openaiModel);
+	return async ({ result }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
+			}
+		} finally {
+			isTestingOpenai = false;
+		}
+	};
+}}
 				>
 					<Button type="submit" variant="outline" class="tap-target" disabled={isTestingOpenai}>
 						<FlaskConicalIcon />
@@ -418,29 +406,32 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 						method="POST"
 						action="?/clearOpenaiKey"
 						use:enhance={({ cancel }) => {
-							if (isClearingOpenaiKey) {
-								cancel();
-								return;
-							}
-							isClearingOpenaiKey = true;
-							return async ({ result, update }) => {
-								try {
-									if (result.type === 'success' || result.type === 'failure') {
-										handleFormToast(
-											result.data as { success?: boolean; message?: string; error?: string }
-										);
-									}
-									await update({ reset: false });
-									if (result.type === 'success') {
-										await invalidateAll();
-									}
-								} finally {
-									isClearingOpenaiKey = false;
-								}
-							};
-						}}
+	if (isClearingOpenaiKey) {
+		cancel();
+		return;
+	}
+	isClearingOpenaiKey = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
+			}
+			await update({ reset: false });
+			if (result.type === 'success') {
+				await invalidateAll();
+			}
+		} finally {
+			isClearingOpenaiKey = false;
+		}
+	};
+}}
 					>
-						<Button type="submit" variant="destructive" class="tap-target" disabled={isClearingOpenaiKey}>
+						<Button
+							type="submit"
+							variant="destructive"
+							class="tap-target"
+							disabled={isClearingOpenaiKey}
+						>
 							<KeyRoundIcon />
 							{isClearingOpenaiKey ? 'Clearing…' : 'Clear API key'}
 						</Button>
@@ -452,28 +443,26 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 						method="POST"
 						action="?/clearOpenaiModel"
 						use:enhance={({ cancel }) => {
-							if (isClearingOpenaiModel) {
-								cancel();
-								return;
-							}
-							isClearingOpenaiModel = true;
-							return async ({ result, update }) => {
-								try {
-									if (result.type === 'success' || result.type === 'failure') {
-										handleFormToast(
-											result.data as { success?: boolean; message?: string; error?: string }
-										);
-									}
-									await update({ reset: false });
-									if (result.type === 'success') {
-										openaiModel = '';
-										await invalidateAll();
-									}
-								} finally {
-									isClearingOpenaiModel = false;
-								}
-							};
-						}}
+	if (isClearingOpenaiModel) {
+		cancel();
+		return;
+	}
+	isClearingOpenaiModel = true;
+	return async ({ result, update }) => {
+		try {
+			if (result.type === 'success' || result.type === 'failure') {
+				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
+			}
+			await update({ reset: false });
+			if (result.type === 'success') {
+				openaiModel = '';
+				await invalidateAll();
+			}
+		} finally {
+			isClearingOpenaiModel = false;
+		}
+	};
+}}
 					>
 						<Button
 							type="submit"
@@ -500,21 +489,21 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 </div>
 
 <style>
-	/* ISSUE-016: visible AI-key-missing notice. Uses the same warning palette as
+/* ISSUE-016: visible AI-key-missing notice. Uses the same warning palette as
 	   the security tab's `.status-card.warning` (theme OKLCH tokens) so it reads
 	   as a real alert rather than muted helper copy. */
-	.ai-key-warning {
-		margin: 0.5rem 0 0;
-		padding: 0.625rem 0.75rem;
-		font-size: 0.8rem;
-		line-height: 1.5;
-		border-radius: 8px;
-		color: oklch(var(--foreground));
-		background: oklch(0.79 0.1606 79.6 / 0.1);
-		border: 1px solid oklch(0.79 0.1606 79.6 / 0.3);
-	}
+.ai-key-warning {
+	margin: 0.5rem 0 0;
+	padding: 0.625rem 0.75rem;
+	font-size: 0.8rem;
+	line-height: 1.5;
+	border-radius: 8px;
+	color: oklch(var(--foreground));
+	background: oklch(0.79 0.1606 79.6 / 0.1);
+	border: 1px solid oklch(0.79 0.1606 79.6 / 0.3);
+}
 
-	.ai-key-warning code {
-		font-size: 0.75rem;
-	}
+.ai-key-warning code {
+	font-size: 0.75rem;
+}
 </style>

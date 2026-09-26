@@ -61,80 +61,80 @@ function goBack(): void {
 </div>
 
 <style>
-	.error-page {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-		background: oklch(var(--background));
-	}
+.error-page {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+	background: oklch(var(--background));
+}
 
-	.error-card {
-		max-width: 480px;
-		width: 100%;
-		text-align: center;
-		background: oklch(var(--card));
-		border: 1px solid oklch(var(--border));
-		border-radius: var(--radius);
-		padding: 2.5rem 2rem;
-	}
+.error-card {
+	max-width: 480px;
+	width: 100%;
+	text-align: center;
+	background: oklch(var(--card));
+	border: 1px solid oklch(var(--border));
+	border-radius: var(--radius);
+	padding: 2.5rem 2rem;
+}
 
-	.status-code {
-		font-size: 4rem;
-		font-weight: 800;
-		color: oklch(var(--primary));
-		line-height: 1;
-		margin-bottom: 0.5rem;
-	}
+.status-code {
+	font-size: 4rem;
+	font-weight: 800;
+	color: oklch(var(--primary));
+	line-height: 1;
+	margin-bottom: 0.5rem;
+}
 
-	h1 {
-		font-size: 1.5rem;
-		font-weight: 600;
-		margin: 0 0 0.75rem;
-		color: oklch(var(--foreground));
-	}
+h1 {
+	font-size: 1.5rem;
+	font-weight: 600;
+	margin: 0 0 0.75rem;
+	color: oklch(var(--foreground));
+}
 
-	p {
-		color: oklch(var(--muted-foreground));
-		margin: 0 0 2rem;
-		line-height: 1.5;
-	}
+p {
+	color: oklch(var(--muted-foreground));
+	margin: 0 0 2rem;
+	line-height: 1.5;
+}
 
-	.actions {
-		display: flex;
-		gap: 0.75rem;
-		justify-content: center;
-		flex-wrap: wrap;
-	}
+.actions {
+	display: flex;
+	gap: 0.75rem;
+	justify-content: center;
+	flex-wrap: wrap;
+}
 
-	.btn {
-		padding: 0.625rem 1.25rem;
-		border-radius: var(--radius);
-		font-size: 0.875rem;
-		font-weight: 500;
-		cursor: pointer;
-		border: 1px solid oklch(var(--border));
-		transition: opacity 0.15s ease;
-		text-decoration: none;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		line-height: 1;
-	}
+.btn {
+	padding: 0.625rem 1.25rem;
+	border-radius: var(--radius);
+	font-size: 0.875rem;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid oklch(var(--border));
+	transition: opacity 0.15s ease;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
+}
 
-	.btn:hover {
-		opacity: 0.85;
-	}
+.btn:hover {
+	opacity: 0.85;
+}
 
-	.btn.primary {
-		background: oklch(var(--primary));
-		color: oklch(var(--primary-foreground));
-		border-color: oklch(var(--primary));
-	}
+.btn.primary {
+	background: oklch(var(--primary));
+	color: oklch(var(--primary-foreground));
+	border-color: oklch(var(--primary));
+}
 
-	.btn.secondary {
-		background: oklch(var(--muted));
-		color: oklch(var(--foreground));
-	}
+.btn.secondary {
+	background: oklch(var(--muted));
+	color: oklch(var(--foreground));
+}
 </style>

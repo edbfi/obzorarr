@@ -18,17 +18,17 @@ export type TabsListVariant = VariantProps<typeof tabsListVariants>['variant'];
 </script>
 
 <script lang="ts">
-	import { Tabs as TabsPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+import { Tabs as TabsPrimitive } from 'bits-ui';
+import { cn } from '$lib/utils.js';
 
-	let {
-		ref = $bindable(null),
-		variant = "default",
-		class: className,
-		...restProps
-	}: TabsPrimitive.ListProps & {
-		variant?: TabsListVariant;
-	} = $props();
+let {
+	ref = $bindable(null),
+	variant = 'default',
+	class: className,
+	...restProps
+}: TabsPrimitive.ListProps & {
+	variant?: TabsListVariant;
+} = $props();
 </script>
 
 <TabsPrimitive.List
