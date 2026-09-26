@@ -10,4 +10,4 @@ permissions:
   actions: write
 jobs:
   policy:
-    uses: edbfi/automation/.github/workflows/pr-policy.yml@v4.1.0
+    uses: edbfi/automation/.github/workflows/pr-policy.yml@v4.1.1
