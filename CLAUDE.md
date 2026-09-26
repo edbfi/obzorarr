@@ -15,7 +15,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 | All tests | `bun run test` (= `bun test --env-file=.env.test`) |
 | One file | `bun test --env-file=.env.test tests/unit/sync/scheduler.test.ts` |
 | One case | `bun test --env-file=.env.test tests/unit/sync/scheduler.test.ts -t "pause/resume"` |
-| CI test-build job | `bash .github/scripts/check.sh` (tests, build, production smoke on a temp DB) |
+| Production smoke | `bun run build`, then `DATABASE_PATH=<tmp db> bun run smoke:production` |
 | CI hygiene job | `SKIP=no-commit-to-branch,biome bunx --no-install prek run --all-files --hook-stage manual` |
 | New migration | `bun run db:generate` (see workflow below) |
 
