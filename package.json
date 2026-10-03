@@ -10,7 +10,7 @@
 		"smoke:production": "bun run scripts/smoke-production.ts",
 		"qa:wrapped-lookup": "bun run scripts/verify-wrapped-lookup.ts",
 		"preview": "bun --bun vite preview",
-		"start": "NODE_ENV=production bun ./build/index.js",
+		"start": "NODE_ENV=production bun ./scripts/serve.ts",
 		"prepare": "svelte-kit sync",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && svelte-check --tsgo --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
