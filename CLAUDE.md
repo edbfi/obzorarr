@@ -26,7 +26,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 
 - `.agents/rules/svelte5-sveltekit-app.md`: generic Svelte 5 runes / SvelteKit / UnoCSS / shadcn-svelte / Biome conventions. Read it before writing components or routes.
 - Where it disagrees with this repo's config, follow the repo and don't migrate toward the rules file. This repo uses `bun:test`, not Vitest (`tests/unit/test-architecture.test.ts` fails on `vitest` or `@jest/globals` imports). It uses `svelte-adapter-bun`, not adapter-node. UnoCSS uses `presetWind4`. `svelte-check --tsgo` is required. Kit config (CSP, adapter, csrf) lives in `svelte.config.js`.
-- The rules file is right about `$app/state`. The 8 remaining `$app/stores` imports are legacy, so don't copy them.
+- The rules file is right about `$app/state`. Read `page` from `$app/state`; `$app/stores` is not used in this repo and SvelteKit 3 removes it, so don't reintroduce it.
 
 ## Layout and boundaries
 

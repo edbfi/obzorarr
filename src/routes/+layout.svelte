@@ -2,16 +2,16 @@
 import 'virtual:uno.css';
 import '../app.css';
 import { Toaster } from 'svelte-sonner';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import obzorarrIcon from '$lib/assets/obzorarr-icon.svg';
 import { loadThemeFonts } from '$lib/utils/theme-fonts';
 
 let { children } = $props();
 
-const isWrappedRoute = $derived($page.url?.pathname?.startsWith('/wrapped') ?? false);
+const isWrappedRoute = $derived(page.url?.pathname?.startsWith('/wrapped') ?? false);
 
 const effectiveTheme = $derived.by(() => {
-	const data = $page.data as { wrappedTheme?: string; uiTheme?: string };
+	const data = page.data as { wrappedTheme?: string; uiTheme?: string };
 	if (isWrappedRoute && data.wrappedTheme) {
 		return data.wrappedTheme;
 	}

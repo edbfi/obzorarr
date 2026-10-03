@@ -1,9 +1,9 @@
 <script lang="ts">
 import { goto } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 
-const status = $derived($page.status);
-const rawMessage = $derived($page.error?.message ?? '');
+const status = $derived(page.status);
+const rawMessage = $derived(page.error?.message ?? '');
 // Suppress bare generic messages that SvelteKit emits for unmatched routes so
 // the friendly status-based copy is used instead.
 const GENERIC_MESSAGES = new Set(['Not found', 'Not Found']);

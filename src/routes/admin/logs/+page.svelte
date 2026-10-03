@@ -2,7 +2,7 @@
 import { browser } from '$app/environment';
 import { enhance } from '$app/forms';
 import { goto, invalidateAll } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import SubmitButton from '$lib/components/forms/SubmitButton.svelte';
 import * as AlertDialog from '$lib/components/ui/alert-dialog';
 import { Button } from '$lib/components/ui/button';
@@ -147,7 +147,7 @@ function getLevelClass(level: LogLevelType): string {
 
 // Export must use the same filters the operator is currently viewing.
 const exportAction = $derived.by(() => {
-	const search = $page.url.searchParams.toString();
+	const search = page.url.searchParams.toString();
 	return search ? `?${search}&/exportLogs` : '?/exportLogs';
 });
 
@@ -603,7 +603,7 @@ $effect(() => {
 			{#if lastLog}
 				<div class="load-more">
 					<Button
-						href="/admin/logs?cursor={lastLog.id}&{$page.url.searchParams.toString()}"
+						href="/admin/logs?cursor={lastLog.id}&{page.url.searchParams.toString()}"
 						class="load-more-button tap-target"
 					>
 						Load More

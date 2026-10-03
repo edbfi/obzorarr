@@ -15,7 +15,7 @@ import { type Component, type Snippet, tick } from 'svelte';
 import { browser } from '$app/environment';
 import { enhance } from '$app/forms';
 import { goto, invalidateAll } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import Logo from '$lib/components/Logo.svelte';
 import CsrfWarningBanner from '$lib/components/security/CsrfWarningBanner.svelte';
 import * as AlertDialog from '$lib/components/ui/alert-dialog';
@@ -39,7 +39,7 @@ const navItems: Array<{ href: string; label: string; icon: Component }> = [
 ];
 
 const isActive = $derived((href: string) => {
-	const currentPath = $page.url.pathname;
+	const currentPath = page.url.pathname;
 	if (href === '/admin') {
 		return currentPath === '/admin';
 	}

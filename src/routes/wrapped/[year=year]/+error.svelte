@@ -1,10 +1,10 @@
 <script lang="ts">
 import { goto } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 
-const status = $derived($page.status);
-const message = $derived($page.error?.message ?? '');
-const year = $derived($page.params.year ?? '');
+const status = $derived(page.status);
+const message = $derived(page.error?.message ?? '');
+const year = $derived(page.params.year ?? '');
 
 // The recap loader throws this exact 404 message when a year has no synced data
 // yet (src/routes/wrapped/[year=year]/+page.server.ts). Detect that one case so we can

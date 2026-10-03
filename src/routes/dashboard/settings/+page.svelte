@@ -2,7 +2,7 @@
 import LogOut from '@lucide/svelte/icons/log-out';
 import { enhance } from '$app/forms';
 import { invalidateAll } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import * as AlertDialog from '$lib/components/ui/alert-dialog';
 import * as Tabs from '$lib/components/ui/tabs';
 import { ShareModePrivacyLevel } from '$lib/sharing/types';
@@ -22,7 +22,7 @@ type TabValue = (typeof validTabs)[number];
 
 function getInitialTab(): TabValue {
 	if (typeof window === 'undefined') return 'privacy';
-	const urlTab = $page.url.searchParams.get('tab');
+	const urlTab = page.url.searchParams.get('tab');
 	if (urlTab && validTabs.includes(urlTab as TabValue)) {
 		return urlTab as TabValue;
 	}
