@@ -17,8 +17,15 @@ import { formatWatchHours } from '$lib/stats/format';
 import { formatDuration, maskEmail } from '$lib/utils/format';
 import { getThumbUrl } from '$lib/utils/plex-thumb';
 import pkg from '../../package.json';
-import { match as matchYear } from '../../src/params/year';
+import { params } from '../../src/params';
 import { sharedTestDbTables } from '../helpers/db';
+
+// SvelteKit 3 normalizes each matcher to a Standard Schema; a rejected segment yields issues.
+function matchYear(segment: string): boolean {
+	const result = params.year['~standard'].validate(segment);
+	if (result instanceof Promise) throw new Error('year matcher must be synchronous');
+	return !result.issues;
+}
 
 const { isOccConflict, isPostValidationFailure } = await import('$lib/utils/occ-form');
 const envAny = env as Record<string, string | undefined>;
