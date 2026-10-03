@@ -54,7 +54,7 @@ export const GET: RequestHandler = async ({ cookies, url, request, setHeaders })
 		parsePinForwardUrl(redirectUrl, url);
 
 		const pin = await requestPin();
-		const state = await createPinTransaction(pin.id, cookies);
+		const state = await createPinTransaction(pin.id, cookies, url);
 		const forwardUrl = appendPinStateToForwardUrl(redirectUrl, url, state);
 		// The recurring `[Parser] Unable to parse JSON: "undefined"` console noise
 		// (~5x/page) originates in Plex's bundled OAuth/auth JS reached via

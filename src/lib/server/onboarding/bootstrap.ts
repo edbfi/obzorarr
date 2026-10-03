@@ -1,5 +1,4 @@
 import type { Cookies } from '@sveltejs/kit';
-import { dev } from '$app/env';
 import {
 	AppSettingsKey,
 	deleteAppSetting,
@@ -8,6 +7,7 @@ import {
 	setAppSetting
 } from '$lib/server/admin/settings.service';
 import { logger } from '$lib/server/logging';
+import { isSecureRequest } from '$lib/server/security/cookie-security';
 
 const BOOTSTRAP_TOKEN_TTL_MS = 15 * 60 * 1000;
 /**
@@ -202,12 +202,6 @@ function createClaimProof(): string {
 		.join('');
 }
 
-function shouldSecureClaimCookie(context: OnboardingClaimCookieContext = {}): boolean {
-	if (dev) return false;
-	if (context.requestUrl) return context.requestUrl.protocol === 'https:';
-	return true;
-}
-
 function setClaimCookie(
 	cookies: Cookies,
 	proof: string,
@@ -216,14 +210,14 @@ function setClaimCookie(
 	cookies.set(ONBOARDING_CLAIM_COOKIE, proof, {
 		path: '/',
 		httpOnly: true,
-		secure: shouldSecureClaimCookie(context),
+		secure: isSecureRequest(context.requestUrl),
 		sameSite: 'strict',
 		maxAge: CLAIM_TTL_SECONDS
 	});
 }
 
-export function clearOnboardingClaimCookie(cookies: Cookies): void {
-	cookies.delete(ONBOARDING_CLAIM_COOKIE, { path: '/' });
+export function clearOnboardingClaimCookie(cookies: Cookies, requestUrl?: URL): void {
+	cookies.delete(ONBOARDING_CLAIM_COOKIE, { path: '/', secure: isSecureRequest(requestUrl) });
 }
 
 async function getActiveStoredClaimHash(): Promise<string | null> {

@@ -1,12 +1,9 @@
 import type { Cookies } from '@sveltejs/kit';
 import { logger } from '$lib/server/logging';
+import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { invalidateSession } from './session';
 
-const COOKIE_OPTIONS = {
-	path: '/'
-};
-
-export async function logout(cookies: Cookies): Promise<void> {
+export async function logout(cookies: Cookies, requestUrl?: URL): Promise<void> {
 	const sessionId = cookies.get('session');
 
 	if (sessionId) {
@@ -17,5 +14,5 @@ export async function logout(cookies: Cookies): Promise<void> {
 		}
 	}
 
-	cookies.delete('session', COOKIE_OPTIONS);
+	cookies.delete('session', { path: '/', secure: isSecureRequest(requestUrl) });
 }

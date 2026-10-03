@@ -548,13 +548,20 @@ describe('auth routes and browser login flow', () => {
 				const action =
 					_name === 'GET load'
 						? () => logoutLoad({ cookies } as never)
-						: () => logoutActions.default!({ cookies } as never);
+						: () =>
+								logoutActions.default!({
+									cookies,
+									url: new URL('http://obzorarr.lan/auth/logout')
+								} as never);
 
 				await expectRedirect(action, '/');
 
 				expect(cookies.deletes).toHaveLength(deletes);
 				if (deletes)
-					expect(cookies.deletes[0]).toEqual({ name: 'session', options: { path: '/' } });
+					expect(cookies.deletes[0]).toEqual({
+						name: 'session',
+						options: { path: '/', secure: false }
+					});
 			}
 		);
 	});

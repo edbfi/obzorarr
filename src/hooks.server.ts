@@ -5,7 +5,6 @@ import {
 	type ServerInit,
 	sequence
 } from '@sveltejs/kit/hooks';
-import { dev } from '$app/env';
 import { isSafeReturnPath } from '$lib/client/plex-login';
 import { ensurePublicLandingLookupDefault } from '$lib/server/admin/settings.service';
 import { getOrCreateDevSession, isDevBypassEnabled } from '$lib/server/auth/dev-bypass';
@@ -36,6 +35,7 @@ import {
 	rateLimitHandle,
 	requestFilterHandle
 } from '$lib/server/security';
+import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { initializeServer } from '$lib/server/startup';
 
 export const init: ServerInit = initializeServer;
@@ -58,17 +58,21 @@ function redirectResponse(event: { url: URL }, location: string): Response {
 	);
 }
 
-const COOKIE_DELETE_OPTIONS = {
-	path: '/'
-};
+// The session cookie, and every deletion of it, is Secure only on an https origin (M13):
+// a Secure cookie or deletion is refused by browsers over plain HTTP outside loopback.
+function sessionCookieOptions(url: URL) {
+	return {
+		path: '/',
+		httpOnly: true,
+		secure: isSecureRequest(url),
+		sameSite: 'lax' as const,
+		maxAge: Math.floor(SESSION_DURATION_MS / 1000)
+	};
+}
 
-const COOKIE_OPTIONS = {
-	path: '/',
-	httpOnly: true,
-	secure: !dev,
-	sameSite: 'lax' as const,
-	maxAge: Math.floor(SESSION_DURATION_MS / 1000)
-};
+function sessionCookieDeleteOptions(url: URL) {
+	return { path: '/', secure: isSecureRequest(url) };
+}
 
 let devBypassLogged = false;
 // Hot-path optimisation only: initializationHandle runs on every request, so this
@@ -104,7 +108,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
 
 		const existingSessionId = event.cookies.get('session');
 		if (existingSessionId !== devSessionId) {
-			event.cookies.set('session', devSessionId, COOKIE_OPTIONS);
+			event.cookies.set('session', devSessionId, sessionCookieOptions(event.url));
 		}
 
 		const session = await validateSession(devSessionId);
@@ -153,7 +157,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
 							'Revalidation'
 						);
 						await invalidateUserSessions(session.userId);
-						event.cookies.delete('session', COOKIE_DELETE_OPTIONS);
+						event.cookies.delete('session', sessionCookieDeleteOptions(event.url));
 						return resolve(event);
 					case 'error_grace_expired':
 						logger.warn(
@@ -161,7 +165,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
 							'Revalidation'
 						);
 						await invalidateSession(sessionId);
-						event.cookies.delete('session', COOKIE_DELETE_OPTIONS);
+						event.cookies.delete('session', sessionCookieDeleteOptions(event.url));
 						return resolve(event);
 					case 'error_within_grace':
 						break;
@@ -175,7 +179,7 @@ const authHandle: Handle = async ({ event, resolve }) => {
 				isAdmin: session.isAdmin
 			};
 		} else {
-			event.cookies.delete('session', COOKIE_DELETE_OPTIONS);
+			event.cookies.delete('session', sessionCookieDeleteOptions(event.url));
 		}
 	}
 

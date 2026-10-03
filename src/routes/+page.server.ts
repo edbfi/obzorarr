@@ -5,6 +5,7 @@ import { getPublicLandingLookupEnabled } from '$lib/server/admin/settings.servic
 import { db } from '$lib/server/db/client';
 import { playHistory } from '$lib/server/db/schema';
 import { logger } from '$lib/server/logging';
+import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { getEffectiveShareMode, getPublicShareIdentifier } from '$lib/server/sharing/service';
 import { ShareMode } from '$lib/server/sharing/types';
 import { createYearFilter } from '$lib/server/stats/utils';
@@ -38,7 +39,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	lookupUser: async ({ request, cookies }) => {
+	lookupUser: async ({ request, cookies, url }) => {
 		// Defense in depth: the template hides the form when the toggle is off, but
 		// a crafted POST would still reach this action. Refuse before doing any
 		// lookup work. The per-user getEffectiveShareMode 404 below remains the
@@ -108,6 +109,7 @@ export const actions: Actions = {
 				cookies.set(LOOKUP_LIVE_SYNC_COOKIE, '1', {
 					path: '/wrapped',
 					httpOnly: true,
+					secure: isSecureRequest(url),
 					sameSite: 'lax',
 					maxAge: LOOKUP_LIVE_SYNC_COOKIE_MAX_AGE_SECONDS
 				});
