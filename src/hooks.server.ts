@@ -1,6 +1,10 @@
-import type { Handle, HandleServerError, ServerInit } from '@sveltejs/kit';
 import { isHttpError, isRedirect } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
+import {
+	type Handle,
+	type HandleServerError,
+	type ServerInit,
+	sequence
+} from '@sveltejs/kit/hooks';
 import { dev } from '$app/env';
 import { env } from '$env/dynamic/private';
 import { isSafeReturnPath } from '$lib/client/plex-login';

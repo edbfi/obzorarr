@@ -1,4 +1,4 @@
-import type { ActionResult } from '@sveltejs/kit';
+import type { ActionResult } from '$app/forms';
 import { toast } from '$lib/services/toast';
 
 /**

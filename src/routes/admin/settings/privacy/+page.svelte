@@ -16,10 +16,10 @@ import UserCogIcon from '@lucide/svelte/icons/user-cog';
 import UsersIcon from '@lucide/svelte/icons/users';
 import UsersRoundIcon from '@lucide/svelte/icons/users-round';
 import VenetianMaskIcon from '@lucide/svelte/icons/venetian-mask';
-import type { ActionResult } from '@sveltejs/kit';
 import type { Component } from 'svelte';
 import { tick } from 'svelte';
 import { superForm } from 'sveltekit-superforms';
+import type { ActionResult } from '$app/forms';
 import { enhance } from '$app/forms';
 import { invalidateAll } from '$app/navigation';
 import {
