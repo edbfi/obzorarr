@@ -216,7 +216,7 @@ function setClaimCookie(
 	});
 }
 
-export function clearOnboardingClaimCookie(cookies: Cookies, requestUrl?: URL): void {
+export function clearOnboardingClaimCookie(cookies: Cookies, requestUrl: URL | undefined): void {
 	cookies.delete(ONBOARDING_CLAIM_COOKIE, { path: '/', secure: isSecureRequest(requestUrl) });
 }
 

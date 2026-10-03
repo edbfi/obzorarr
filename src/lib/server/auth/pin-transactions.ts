@@ -48,7 +48,7 @@ async function pruneExpired(now = Date.now()): Promise<void> {
 export async function createPinTransaction(
 	pinId: number,
 	cookies: Cookies,
-	requestUrl?: URL
+	requestUrl: URL | undefined
 ): Promise<string> {
 	await pruneExpired();
 
@@ -139,7 +139,7 @@ export async function getPinTransactionForRequest(
 export async function clearPinTransaction(
 	cookies: Cookies,
 	state: string,
-	requestUrl?: URL
+	requestUrl: URL | undefined
 ): Promise<void> {
 	try {
 		await db.delete(pinTransactions).where(eq(pinTransactions.state, state));
