@@ -219,7 +219,7 @@ export async function authorizeThumbnailPayload(
 		}
 
 		if (payload.userId === undefined) {
-			error(403, { message: 'Invalid thumbnail token' });
+			error(403, 'Invalid thumbnail token');
 		}
 
 		if (payload.shareTokenHash) {
@@ -234,7 +234,7 @@ export async function authorizeThumbnailPayload(
 				!settings?.shareToken ||
 				hashToken(settings.shareToken) !== payload.shareTokenHash
 			) {
-				error(403, { message: 'Thumbnail access denied' });
+				error(403, 'Thumbnail access denied');
 			}
 			return;
 		}
@@ -246,7 +246,7 @@ export async function authorizeThumbnailPayload(
 		});
 	} catch (err) {
 		if (err instanceof ShareAccessDeniedError || err instanceof InvalidShareTokenError) {
-			error(403, { message: 'Thumbnail access denied' });
+			error(403, 'Thumbnail access denied');
 		}
 		throw err;
 	}
