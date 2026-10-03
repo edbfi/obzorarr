@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Source: https://github.com/edbfi/edbfi-ci/blob/main/templates/pullfrog.yml
+# Copy as .github/workflows/pullfrog.yml. Reviews dispatch on the default branch.
+name: Pullfrog
+run-name: ${{ inputs.name || github.workflow }}
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        type: string
+        description: Agent prompt
+      name:
+        type: string
+        description: Run name
+permissions: {}
+jobs:
+  pullfrog:
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Review with Claude subscription
+        uses: pullfrog/pullfrog@ed800018463e1b84e8e3377f662173aed1da98b0 # v0.1.95
+        with:
+          prompt: ${{ inputs.prompt }}
+          model: anthropic/claude-sonnet
+          push: disabled
+          shell: restricted
+          timeout: 1h
