@@ -14,6 +14,8 @@ import {
 
 const PLEX_TV_URL = 'https://plex.tv';
 const PLEX_AUTH_URL = 'https://app.plex.tv/auth';
+/** The only external origin the sign-in redirect may target (SvelteKit 3 `redirect` allowlist). */
+export const PLEX_AUTH_ORIGIN = new URL(PLEX_AUTH_URL).origin;
 
 const PLEX_TV_HEADERS = {
 	Accept: 'application/json',

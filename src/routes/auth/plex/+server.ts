@@ -1,4 +1,4 @@
-import { error, isRedirect, json, redirect } from '@sveltejs/kit';
+import { error, isRedirect, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { completePlexPinLogin } from '$lib/server/auth/login-completion';
 import {
@@ -6,7 +6,7 @@ import {
 	createPinTransaction,
 	parsePinForwardUrl
 } from '$lib/server/auth/pin-transactions';
-import { buildPlexOAuthUrl, requestPin } from '$lib/server/auth/plex-oauth';
+import { buildPlexOAuthUrl, PLEX_AUTH_ORIGIN, requestPin } from '$lib/server/auth/plex-oauth';
 import { NotServerMemberError, PinExpiredError, PlexAuthApiError } from '$lib/server/auth/types';
 import { logger } from '$lib/server/logging';
 import { OnboardingClaimRequiredError } from '$lib/server/onboarding';
@@ -19,6 +19,10 @@ const PollRequestSchema = z.object({
 // The PIN JSON / OAuth URL carry short-lived credentials; keep them out of any
 // browser or proxy cache. Mirrors the NO_STORE_HEADERS pattern used by other
 // sensitive endpoints (see api/security/reverse-proxy-diagnostic/+server.ts).
+// Response.json would add `;charset=utf-8`; keep the exact header SvelteKit's
+// deprecated json() helper sent.
+const JSON_HEADERS = { headers: { 'content-type': 'application/json' } };
+
 const NO_STORE_HEADERS = { 'Cache-Control': 'no-store' };
 
 export const GET: RequestHandler = async ({ cookies, url, request, setHeaders }) => {
@@ -69,10 +73,11 @@ export const GET: RequestHandler = async ({ cookies, url, request, setHeaders })
 		// rendering JSON. SvelteKit's redirect() throws; it is rethrown past the
 		// catch below via isRedirect() so it is not mistaken for a 500.
 		if (isDocumentNavigation) {
-			redirect(303, pinInfo.authUrl);
+			// SvelteKit 3 rejects external redirects unless allowed; allow only Plex's sign-in origin.
+			redirect(303, pinInfo.authUrl, { external: [PLEX_AUTH_ORIGIN] });
 		}
 
-		return json(pinInfo);
+		return Response.json(pinInfo, JSON_HEADERS);
 	} catch (err) {
 		if (isRedirect(err)) {
 			throw err;
@@ -82,9 +87,7 @@ export const GET: RequestHandler = async ({ cookies, url, request, setHeaders })
 			err instanceof TypeError ||
 			(err instanceof Error && err.message.includes('redirect URL'))
 		) {
-			error(400, {
-				message: 'Invalid redirect URL'
-			});
+			error(400, 'Invalid redirect URL');
 		}
 
 		if (err instanceof PlexAuthApiError) {
@@ -92,17 +95,13 @@ export const GET: RequestHandler = async ({ cookies, url, request, setHeaders })
 				statusCode: err.statusCode,
 				endpoint: err.endpoint
 			});
-			error(502, {
-				message: 'Could not reach Plex. Try again.'
-			});
+			error(502, 'Could not reach Plex. Try again.');
 		}
 
 		logger.error('Unexpected error in PIN request', 'Auth', {
 			errorType: err instanceof Error ? err.name : typeof err
 		});
-		error(500, {
-			message: 'Something went wrong. Try again.'
-		});
+		error(500, 'Something went wrong. Try again.');
 	}
 };
 
@@ -111,25 +110,24 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		body = await request.json();
 	} catch {
-		error(400, { message: 'Invalid JSON body' });
+		error(400, 'Invalid JSON body');
 	}
 
 	const parseResult = PollRequestSchema.safeParse(body);
 	if (!parseResult.success) {
-		error(400, {
-			message: 'Invalid request: pinId is required and must be a positive integer'
-		});
+		error(400, 'Invalid request: pinId is required and must be a positive integer');
 	}
 
 	const { pinId } = parseResult.data;
 
 	try {
-		return json(await completePlexPinLogin(pinId, cookies, { requestUrl: url }));
+		return Response.json(
+			await completePlexPinLogin(pinId, cookies, { requestUrl: url }),
+			JSON_HEADERS
+		);
 	} catch (err) {
 		if (err instanceof PinExpiredError) {
-			error(401, {
-				message: err.message
-			});
+			error(401, err.message);
 		}
 
 		if (err instanceof PlexAuthApiError) {
@@ -137,28 +135,20 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 				statusCode: err.statusCode,
 				endpoint: err.endpoint
 			});
-			error(502, {
-				message: 'Could not reach Plex. Try again.'
-			});
+			error(502, 'Could not reach Plex. Try again.');
 		}
 
 		if (err instanceof NotServerMemberError) {
-			error(403, {
-				message: err.message
-			});
+			error(403, err.message);
 		}
 
 		if (err instanceof OnboardingClaimRequiredError) {
-			error(403, {
-				message: err.message
-			});
+			error(403, err.message);
 		}
 
 		logger.error('Unexpected error in PIN poll', 'Auth', {
 			errorType: err instanceof Error ? err.name : typeof err
 		});
-		error(500, {
-			message: 'Something went wrong. Try again.'
-		});
+		error(500, 'Something went wrong. Try again.');
 	}
 };
