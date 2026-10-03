@@ -3,7 +3,7 @@ export function applySecurityHeaders(response: Response, isHttps: boolean): Resp
 	response.headers.set('X-Content-Type-Options', 'nosniff');
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-	// Content-Security-Policy is managed by SvelteKit's kit.csp (svelte.config.js)
+	// Content-Security-Policy is managed by SvelteKit's kit csp option (`kitConfig` in vite.config.ts)
 	// using nonce mode, which eliminates the need for 'unsafe-inline' on script-src.
 
 	// Trust the protocol decision the caller made. proxyHandle is the single

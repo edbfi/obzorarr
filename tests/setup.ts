@@ -33,6 +33,10 @@ mock.module('$app/env', () => ({
 	version: 'test'
 }));
 
+// sveltekit-superforms 3 marks its /server entry server-only with a bare
+// `import '$app/server'`, a Kit virtual module bun test cannot resolve.
+mock.module('$app/server', () => ({}));
+
 // Mock app toasts globally so client utility tests don't pull the Svelte/Sonner runtime.
 mock.module('$lib/services/toast', () => ({
 	toast: testToast

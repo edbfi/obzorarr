@@ -5,8 +5,7 @@ import { csrfHandle } from '$lib/server/security/csrf-handle';
 import { isBlockedPath, isBlockedUserAgent } from '$lib/server/security/request-filter-patterns';
 import { applySecurityHeaders } from '$lib/server/security/security-headers';
 
-// @migration-task svelte.config was removed; switch to `import { loadConfig } from '@sveltejs/load-config'` to read your config
-import config from '../../../svelte.config.js';
+import { kitConfig } from '../../../vite.config';
 import { resetSharedTestDb } from '../../helpers/db';
 
 const readSource = (path: string) => Bun.file(path).text();
@@ -33,7 +32,7 @@ async function invokeCsrf(event: ReturnType<typeof makeCsrfEvent>): Promise<Resp
 describe('security configuration and guard basics', () => {
 	describe('CSP configuration', () => {
 		it('allows Plex and Gravatar avatar image sources', () => {
-			const imgSrc = config.kit?.csp?.directives?.['img-src'];
+			const imgSrc = kitConfig.csp?.directives?.['img-src'];
 
 			expect(imgSrc).toBeDefined();
 			expect(Array.isArray(imgSrc)).toBe(true);

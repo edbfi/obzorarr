@@ -20,7 +20,7 @@
 		"tests/**/*.js",
 		"tests/**/*.ts",
 		"tests/**/*.svelte",
-		"scripts/**/*.ts",
+		"scripts/serve.ts",
 		"vite.config.ts",
 		"drizzle.config.ts",
 		"uno.config.ts"
