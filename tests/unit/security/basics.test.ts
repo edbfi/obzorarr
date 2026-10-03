@@ -4,6 +4,8 @@ import { isAdminRouteId, requireAdminAction } from '$lib/server/auth/guards';
 import { csrfHandle } from '$lib/server/security/csrf-handle';
 import { isBlockedPath, isBlockedUserAgent } from '$lib/server/security/request-filter-patterns';
 import { applySecurityHeaders } from '$lib/server/security/security-headers';
+
+// @migration-task svelte.config was removed; switch to `import { loadConfig } from '@sveltejs/load-config'` to read your config
 import config from '../../../svelte.config.js';
 import { resetSharedTestDb } from '../../helpers/db';
 
