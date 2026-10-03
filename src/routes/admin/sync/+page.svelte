@@ -267,7 +267,7 @@ async function goToPage(page: number) {
 	} else {
 		url.searchParams.set('page', page.toString());
 	}
-	await goto(url.toString(), { keepFocus: true, noScroll: true });
+	await goto(url.toString(), { reset: false });
 	isNavigating = false;
 
 	document.querySelector('.history-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

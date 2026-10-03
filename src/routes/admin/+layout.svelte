@@ -134,7 +134,15 @@ async function handleAdminNavigation(event: MouseEvent) {
 		sidebarOpen = false;
 		await focusAfterRender('.menu-button');
 	}
-	void goto(href, { keepFocus: shouldRestoreFocus });
+	if (!shouldRestoreFocus) {
+		void goto(href);
+		return;
+	}
+	// Kit 2's `keepFocus` kept focus on the menu button but still scrolled to the top.
+	// Kit 3's `reset: false` keeps both, and has no focus-only mode (sveltejs/kit#16990),
+	// so reset the scroll position after the navigation.
+	await goto(href, { reset: false });
+	window.scrollTo({ top: 0, left: 0 });
 }
 
 function getSidebarFocusableElements(): HTMLElement[] {
