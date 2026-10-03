@@ -3,9 +3,12 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
+import { building } from '$app/env';
 import * as schema from './schema';
 
-const databasePath = process.env.DATABASE_PATH ?? 'data/obzorarr.db';
+// SvelteKit 3 loads server modules while it builds. Never open, create or migrate
+// the real database then: the build gets a throwaway in-memory database instead.
+const databasePath = building ? ':memory:' : (process.env.DATABASE_PATH ?? 'data/obzorarr.db');
 
 // Fail closed if a test run is not explicitly pointed at an in-memory/test database.
 if (
