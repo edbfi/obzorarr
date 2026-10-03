@@ -25,7 +25,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 ## Stack reference and where this repo differs
 
 - `.agents/rules/svelte5-sveltekit-app.md`: generic Svelte 5 runes / SvelteKit / UnoCSS / shadcn-svelte / Biome conventions. Read it before writing components or routes.
-- Where it disagrees with this repo's config, follow the repo and don't migrate toward the rules file. This repo uses `bun:test`, not Vitest (`tests/unit/test-architecture.test.ts` fails on `vitest` or `@jest/globals` imports). It uses `svelte-adapter-bun`, not adapter-node. UnoCSS uses `presetWind4`. `svelte-check --tsgo` is required. Kit config (CSP, adapter, csrf) lives in `svelte.config.js`.
+- Where it disagrees with this repo's config, follow the repo and don't migrate toward the rules file. This repo uses `bun:test`, not Vitest (`tests/unit/test-architecture.test.ts` fails on `vitest` or `@jest/globals` imports). It uses SvelteKit 3 with `@sveltejs/adapter-bun`, not adapter-node. UnoCSS uses `presetWind4`. `svelte-check --tsgo` is required. Kit config (CSP, adapter, csrf) lives in `kitConfig`, passed to `sveltekit()` in `vite.config.ts` (there is no `svelte.config.js`); `$lib` is an explicit alias there and in `tsconfig.json`. The production entry is `scripts/serve.ts`: it fronts the adapter over a private Unix socket only when `ORIGIN` is set, and plain-HTTP deployments must set `ORIGIN`.
 - The rules file is right about `$app/state`. Read `page` from `$app/state`; `$app/stores` is not used in this repo and SvelteKit 3 removes it, so don't reintroduce it.
 
 ## Layout and boundaries
@@ -34,6 +34,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 - Client-safe types and zod schemas shared with the server live in `src/lib/{stats,slides,sharing,sync}/types.ts`.
 - Runtime configuration is the `app_settings` key/value table, accessed only through `src/lib/server/admin/settings.service.ts` (`AppSettingsKey`, getters and setters, `set*Atomic` writers).
 - Read Plex/OpenAI config through `getPlexConfig()` / `getApiConfigWithSources()` in that service, never through `env.PLEX_*` / `env.OPENAI_*`. Env values override the DB and lock the UI field (the `ENV` badge).
+- Private env variables are read as `env.NAME` from `$lib/server/private-env` (it re-exports `$app/env/private`). SvelteKit 3 exposes only variables declared in `src/env.ts`; add a new one there (`tests/unit/env-declarations.test.ts` checks the list). Build flags (`browser`, `building`, `dev`) come from `$app/env`.
 - `src/hooks.server.ts` `handle` redirects every path to `/onboarding/<step>` until onboarding completes, except the `skipPaths` prefixes. A new endpoint that must work before onboarding needs a prefix there.
 - `src/lib/components/ui/` holds shadcn-svelte primitives (`components.json`). Add new ones with the shadcn-svelte CLI rather than writing them by hand. The exception is `ui/form/`: the shadcn form block depends on Formsnap, so these components are in-house (they read only superForm's stores). Don't re-add the block over them.
 
