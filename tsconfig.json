@@ -6,7 +6,23 @@
 		"strict": true,
 		"strictNullChecks": true,
 		"noUncheckedIndexedAccess": true,
-		"types": ["node", "bun", "$app/types"]
+		"types": ["node", "bun", "$app/types"],
+		// SvelteKit 3 no longer generates $lib; vite.config.ts declares the same alias.
+		"paths": {
+			"$lib": ["./src/lib"],
+			"$lib/*": ["./src/lib/*"]
+		}
 	},
-	"include": ["src"]
+	"include": [
+		"src/**/*.js",
+		"src/**/*.ts",
+		"src/**/*.svelte",
+		"tests/**/*.js",
+		"tests/**/*.ts",
+		"tests/**/*.svelte",
+		"scripts/**/*.ts",
+		"vite.config.ts",
+		"drizzle.config.ts",
+		"uno.config.ts"
+	]
 }

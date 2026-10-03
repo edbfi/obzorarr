@@ -1,7 +1,8 @@
+import { fileURLToPath } from 'node:url';
+import adapter from '@sveltejs/adapter-bun';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { visualizer } from 'rollup-plugin-visualizer';
-import adapter from 'svelte-adapter-bun';
 import UnoCSS from 'unocss/vite';
 import { defineConfig, type PluginOption } from 'vite';
 import {
@@ -48,6 +49,8 @@ function devRequestFilter(): PluginOption {
 }
 
 export default defineConfig({
+	// SvelteKit 3 no longer generates $lib; tsconfig.json declares the same path.
+	resolve: { alias: { $lib: fileURLToPath(new URL('./src/lib', import.meta.url)) } },
 	build: {
 		rollupOptions: {
 			checks: rolldownChecks
@@ -94,7 +97,6 @@ export default defineConfig({
 				trustedOrigins: ['*']
 			}
 		}),
-
 		process.env.ANALYZE
 			? visualizer({
 					filename: 'bundle-stats.html',
