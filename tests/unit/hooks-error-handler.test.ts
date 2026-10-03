@@ -1,25 +1,13 @@
 import { describe, expect, it, spyOn } from 'bun:test';
-import { error as svelteError } from '@sveltejs/kit';
 import { logger } from '$lib/server/logging';
 import { handleError } from '../../src/hooks.server';
 
-/** A real @sveltejs/kit HttpError of the given status (error() throws it). */
-function makeHttpError(status: number, message: string): unknown {
-	try {
-		svelteError(status, message);
-	} catch (e) {
-		return e;
-	}
-	throw new Error('error() did not throw');
-}
-
-// ISSUE-010: an unmatched route (including a param-matcher rejection like
-// /wrapped/abc) surfaces in handleError as a native SvelteKitError(404) whose
-// message is the path-suffixed `Not found: <pathname>` (see @sveltejs/kit
-// runtime/server/respond.js). It is NOT an HttpError, so it bypasses the
-// isHttpError(404) branch. Before the guard broadening it fell through to
-// logger.error('[ErrorHandler] ...') — polluting the error channel with routine
-// 404s. These tests pin that such routes log at info/[NotFound], never error.
+// SvelteKit 3 passes every error to handleError as `{ kind, error, event }`.
+// App, framework and validation errors carry their own safe status and message:
+// they pass through unchanged (the hook returns nothing) and are not logged, as
+// routine 404s and caller mistakes must not fill the error channel (ISSUE-009,
+// ISSUE-010). Only `unknown` errors are logged at error/[ErrorHandler] and mapped
+// to a generic message.
 
 type HandleErrorArgs = Parameters<typeof handleError>[0];
 
@@ -31,177 +19,105 @@ function makeEvent(pathname: string, routeId: string | null): HandleErrorArgs['e
 	} as unknown as HandleErrorArgs['event'];
 }
 
-describe('handleError — not-found demotion (ISSUE-010)', () => {
-	it('demotes a path-suffixed "Not found: <path>" on an unmatched route to info/[NotFound]', async () => {
-		const infoSpy = spyOn(logger, 'info').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
-		try {
-			// The exact shape SvelteKit produces for /wrapped/abc (param matcher
-			// rejects 'abc') — reproduced from the dev log line in the dogfood run.
-			const result = await handleError({
-				error: new Error('Not found: /wrapped/abc'),
-				event: makeEvent('/wrapped/abc', null),
-				status: 404,
-				message: 'Not Found'
-			} as HandleErrorArgs);
-
-			expect(errorSpy).not.toHaveBeenCalled();
-			expect(infoSpy).toHaveBeenCalledTimes(1);
-			expect(infoSpy.mock.calls[0]?.[1]).toBe('NotFound');
-			expect(result).toEqual({ message: 'Not found' });
-		} finally {
-			infoSpy.mockRestore();
-			errorSpy.mockRestore();
+function spyLogs() {
+	const spies = {
+		info: spyOn(logger, 'info').mockImplementation(() => {}),
+		warn: spyOn(logger, 'warn').mockImplementation(() => {}),
+		error: spyOn(logger, 'error').mockImplementation(() => {})
+	};
+	return {
+		...spies,
+		restore() {
+			for (const spy of Object.values(spies)) spy.mockRestore();
 		}
-	});
+	};
+}
 
-	it('demotes a bare "Not found" on an unmatched route to info/[NotFound]', async () => {
-		const infoSpy = spyOn(logger, 'info').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
+describe('handleError — expected errors pass through unlogged', () => {
+	const cases: Array<[string, HandleErrorArgs]> = [
+		[
+			'framework 404 for an unmatched route (/wrapped/abc)',
+			{
+				kind: 'framework',
+				error: { status: 404, message: 'Not Found' },
+				event: makeEvent('/wrapped/abc', null)
+			}
+		],
+		[
+			'framework 405',
+			{
+				kind: 'framework',
+				error: { status: 405, message: 'Method Not Allowed' },
+				event: makeEvent('/api/sync/status/stream', '/api/sync/status/stream')
+			}
+		],
+		...[400, 403, 404, 422, 500].map((status): [string, HandleErrorArgs] => [
+			`app error ${status}`,
+			{
+				kind: 'app',
+				error: { status, message: `app error ${status}` },
+				event: makeEvent('/admin/settings', '/admin/settings')
+			}
+		]),
+		[
+			'validation error',
+			{
+				kind: 'validation',
+				error: { status: 400, message: 'Bad Request' },
+				issues: [{ message: 'expected a string' }],
+				event: makeEvent('/admin', '/admin')
+			}
+		]
+	];
 
-		try {
-			const result = await handleError({
-				error: new Error('Not found'),
-				event: makeEvent('/does/not/exist', null),
-				status: 404,
-				message: 'Not Found'
-			} as HandleErrorArgs);
-
-			expect(errorSpy).not.toHaveBeenCalled();
-			expect(infoSpy).toHaveBeenCalledTimes(1);
-			expect(infoSpy.mock.calls[0]?.[1]).toBe('NotFound');
-			expect(result).toEqual({ message: 'Not found' });
-		} finally {
-			infoSpy.mockRestore();
-			errorSpy.mockRestore();
-		}
-	});
-
-	it('does NOT demote an app-thrown "Not found: ..." Error on a MATCHED route (route.id !== null)', async () => {
-		const infoSpy = spyOn(logger, 'info').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
-		try {
-			// A genuine application error that merely happens to start with the same
-			// prefix must still be treated as an unexpected error when the route
-			// matched — the route.id === null guard is what keeps these distinct.
-			const result = await handleError({
-				error: new Error('Not found: a record we genuinely failed to load'),
-				event: makeEvent('/dashboard', '/dashboard'),
-				status: 500,
-				message: 'Internal Error'
-			} as HandleErrorArgs);
-
-			expect(infoSpy).not.toHaveBeenCalled();
-			expect(errorSpy).toHaveBeenCalledTimes(1);
-			expect(errorSpy.mock.calls[0]?.[1]).toBe('ErrorHandler');
-			expect(result).toEqual({ message: 'Something went wrong. Try again.' });
-		} finally {
-			infoSpy.mockRestore();
-			errorSpy.mockRestore();
-		}
-	});
-});
-
-// ISSUE-009 (T3a): 4xx client errors are caller mistakes, not server faults, and
-// must log at WARN so the ERROR channel stays reserved for genuine 5xx/unexpected
-// failures. The 404 stays at info/[NotFound]; 5xx and non-HttpError throws stay at
-// error/[ErrorHandler].
-describe('handleError — 4xx demotion to WARN (ISSUE-009)', () => {
-	for (const status of [400, 403, 422]) {
-		it(`logs a ${status} HttpError at warn/[ClientError]`, async () => {
-			const infoSpy = spyOn(logger, 'info').mockImplementation(() => {});
-			const warnSpy = spyOn(logger, 'warn').mockImplementation(() => {});
-			const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
+	for (const [label, input] of cases) {
+		it(`keeps the ${label} unchanged and does not log it`, async () => {
+			const logs = spyLogs();
 			try {
-				const result = await handleError({
-					error: makeHttpError(status, `client error ${status}`),
-					event: makeEvent('/admin/settings', '/admin/settings'),
-					status,
-					message: 'Error'
-				} as HandleErrorArgs);
-
-				expect(errorSpy).not.toHaveBeenCalled();
-				expect(infoSpy).not.toHaveBeenCalled();
-				expect(warnSpy).toHaveBeenCalledTimes(1);
-				expect(warnSpy.mock.calls[0]?.[1]).toBe('ClientError');
-				expect(result).toEqual({ message: `client error ${status}` });
+				expect(await handleError(input)).toBeUndefined();
+				expect(logs.info).not.toHaveBeenCalled();
+				expect(logs.warn).not.toHaveBeenCalled();
+				expect(logs.error).not.toHaveBeenCalled();
 			} finally {
-				infoSpy.mockRestore();
-				warnSpy.mockRestore();
-				errorSpy.mockRestore();
+				logs.restore();
 			}
 		});
 	}
+});
 
-	it('keeps a 404 HttpError at info/[NotFound], not warn', async () => {
-		const infoSpy = spyOn(logger, 'info').mockImplementation(() => {});
-		const warnSpy = spyOn(logger, 'warn').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
+describe('handleError — unknown errors', () => {
+	it('logs an unknown error at error/[ErrorHandler] and returns the generic message', async () => {
+		const logs = spyLogs();
 		try {
 			const result = await handleError({
-				error: makeHttpError(404, 'nope'),
-				event: makeEvent('/wrapped/2026/u/abc', '/wrapped/[year=year]/u/[identifier]'),
-				status: 404,
-				message: 'Not Found'
-			} as HandleErrorArgs);
+				kind: 'unknown',
+				error: new Error('Not found: a record we genuinely failed to load'),
+				event: makeEvent('/dashboard', '/dashboard')
+			});
 
-			expect(warnSpy).not.toHaveBeenCalled();
-			expect(errorSpy).not.toHaveBeenCalled();
-			expect(infoSpy).toHaveBeenCalledTimes(1);
-			expect(infoSpy.mock.calls[0]?.[1]).toBe('NotFound');
-			expect(result).toEqual({ message: 'nope' });
+			expect(logs.info).not.toHaveBeenCalled();
+			expect(logs.error).toHaveBeenCalledTimes(1);
+			expect(logs.error.mock.calls[0]?.[1]).toBe('ErrorHandler');
+			expect(logs.error.mock.calls[0]?.[2]).toEqual({ route: '/dashboard', method: 'GET' });
+			expect(result).toEqual({ message: 'Something went wrong. Try again.' });
 		} finally {
-			infoSpy.mockRestore();
-			warnSpy.mockRestore();
-			errorSpy.mockRestore();
+			logs.restore();
 		}
 	});
 
-	it('keeps a 500 HttpError at error/[ErrorHandler]', async () => {
-		const warnSpy = spyOn(logger, 'warn').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
+	it('never returns details of an unknown error', async () => {
+		const logs = spyLogs();
 		try {
 			const result = await handleError({
-				error: makeHttpError(500, 'boom'),
-				event: makeEvent('/admin', '/admin'),
-				status: 500,
-				message: 'Error'
-			} as HandleErrorArgs);
+				kind: 'unknown',
+				error: new Error('database password is fake-secret-value'),
+				event: makeEvent('/admin', null)
+			});
 
-			expect(warnSpy).not.toHaveBeenCalled();
-			expect(errorSpy).toHaveBeenCalledTimes(1);
-			expect(errorSpy.mock.calls[0]?.[1]).toBe('ErrorHandler');
-			expect(result).toEqual({ message: 'Something went wrong. Try again.' });
+			expect(JSON.stringify(result)).not.toContain('fake-secret-value');
+			expect(logs.error.mock.calls[0]?.[2]).toEqual({ route: '<unmatched>', method: 'GET' });
 		} finally {
-			warnSpy.mockRestore();
-			errorSpy.mockRestore();
-		}
-	});
-
-	it('keeps a non-HttpError throw at error/[ErrorHandler]', async () => {
-		const warnSpy = spyOn(logger, 'warn').mockImplementation(() => {});
-		const errorSpy = spyOn(logger, 'error').mockImplementation(() => {});
-
-		try {
-			const result = await handleError({
-				error: new Error('unexpected'),
-				event: makeEvent('/admin', '/admin'),
-				status: 500,
-				message: 'Error'
-			} as HandleErrorArgs);
-
-			expect(warnSpy).not.toHaveBeenCalled();
-			expect(errorSpy).toHaveBeenCalledTimes(1);
-			expect(errorSpy.mock.calls[0]?.[1]).toBe('ErrorHandler');
-			expect(result).toEqual({ message: 'Something went wrong. Try again.' });
-		} finally {
-			warnSpy.mockRestore();
-			errorSpy.mockRestore();
+			logs.restore();
 		}
 	});
 });

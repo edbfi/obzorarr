@@ -1,4 +1,4 @@
-import { isHttpError, isRedirect } from '@sveltejs/kit';
+import { isRedirect } from '@sveltejs/kit';
 import {
 	type Handle,
 	type HandleServerError,
@@ -256,51 +256,20 @@ const authorizationHandle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handleError: HandleServerError = async ({ error, event }) => {
-	const metadata = {
+// SvelteKit 3 passes every error to this hook with a `kind`. App errors (thrown
+// with error()), framework errors (404 for unmatched routes or param-matcher
+// rejections such as /wrapped/abc, 405, 413, ...) and validation errors already
+// carry a safe status and message, so they pass through unchanged and are not
+// logged: they are routine, not faults. Only `unknown` errors (anything thrown by
+// our code or its dependencies) are logged at error level and mapped to a generic
+// message that never reveals the cause.
+export const handleError: HandleServerError = async ({ kind, error, event }) => {
+	if (kind !== 'unknown') return;
+
+	logger.error(`Unexpected error: ${error}`, 'ErrorHandler', {
 		route: event.route.id ?? '<unmatched>',
 		method: event.request.method
-	};
-
-	// Route-not-found and other expected HTTP errors are routine, not exceptions.
-	// Demote them to [NotFound] / info so they don't dominate error-channel triage.
-	if (isHttpError(error) && error.status === 404) {
-		logger.info(`Not found: ${event.url.pathname}`, 'NotFound', metadata);
-		return { message: error.body.message ?? 'Not found' };
-	}
-
-	// Unmatched routes (including param-matcher rejections like /wrapped/abc where
-	// [year=year] rejects 'abc') surface as a SvelteKitError(404) — not an HttpError,
-	// so it slips past the isHttpError branch above. SvelteKit produces two shapes:
-	// a bare 'Not found' and a path-suffixed 'Not found: <pathname>' (respond.js).
-	// Detect by the combination of: unmatched route (id === null) AND either message
-	// shape. Keeping the id === null guard is what prevents this from swallowing an
-	// app-thrown Error('Not found: …') on a *matched* route — only SvelteKit internals
-	// produce these strings on an unmatched route.
-	// NOTE: these strings are SvelteKit internals as of ^2.57.1, not a public API
-	// contract. If a future upgrade changes them the guard silently degrades — the
-	// error falls back to logger.error below, which is safe but noisy. Recheck after
-	// SvelteKit major upgrades.
-	if (
-		event.route.id === null &&
-		error instanceof Error &&
-		(error.message === 'Not found' || error.message.startsWith('Not found: '))
-	) {
-		logger.info(`Not found: ${event.url.pathname}`, 'NotFound', metadata);
-		return { message: 'Not found' };
-	}
-
-	// Remaining 4xx HttpErrors (403/422/etc — the 404 is handled above) are caller
-	// mistakes, not server faults, so log them at WARN to keep the ERROR channel
-	// reserved for genuine 5xx/unexpected failures (ISSUE-009). Placed after BOTH
-	// 404 guards so neither 404 path is mis-leveled. SvelteKitError is not an
-	// HttpError, so unmatched-route 404s never reach this branch.
-	if (isHttpError(error) && error.status >= 400 && error.status < 500) {
-		logger.warn(`Client error ${error.status}: ${event.url.pathname}`, 'ClientError', metadata);
-		return { message: error.body.message ?? 'Request error' };
-	}
-
-	logger.error(`Unexpected error: ${error}`, 'ErrorHandler', metadata);
+	});
 
 	return {
 		message: 'Something went wrong. Try again.'
