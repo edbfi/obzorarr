@@ -75,12 +75,14 @@ function resolveTrustProxy(): Promise<boolean> {
 // or trusting event.url.protocol — both of those would either bypass the
 // TRUST_PROXY gate or return the pre-rewrite protocol.
 //
-// A configured ORIGIN environment variable always wins: scripts/serve.ts fronts the
-// adapter and already sets event.url from it, so forwarded headers never override
-// it, even with TRUST_PROXY enabled. (The database CSRF origin is not considered
+// A configured ORIGIN always wins: when scripts/serve.ts fronts the adapter it sets
+// event.url from ORIGIN and exports OBZORARR_FRONT_ORIGIN, and forwarded headers
+// then never override it, even with TRUST_PROXY enabled. The marker, not ORIGIN
+// itself, is checked: build/index.js started directly (or vite dev) ignores ORIGIN,
+// and TRUST_PROXY keeps working there. (The database CSRF origin is not considered
 // here; it only governs csrfHandle.)
 async function resolveForwardedUrl(event: RequestEvent): Promise<URL | null> {
-	if (env.ORIGIN) return null;
+	if (env.OBZORARR_FRONT_ORIGIN) return null;
 
 	const trustProxy = await resolveTrustProxy();
 	if (!trustProxy) return null;

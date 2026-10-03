@@ -380,7 +380,8 @@ neither `ORIGIN` nor `PROTOCOL_HEADER` is set. It never takes its origin from th
 
 With `ORIGIN` set, `bun start` (`scripts/serve.ts`) listens on `HOST`/`PORT` and passes requests to the
 SvelteKit server over a private Unix socket, supplying `ORIGIN` itself; headers a client sends cannot
-change it. `IDLE_TIMEOUT` keeps working as the client idle timeout in seconds (it maps to
+change it. Start Obzorarr through `bun start` (or the container's command): `build/index.js` started on
+its own ignores `ORIGIN`. `IDLE_TIMEOUT` keeps working as the client idle timeout in seconds (it maps to
 `CONNECTION_IDLE_TIMEOUT`, which also works); event streams are exempt from it.
 
 `TRUST_PROXY` is a separate, optional switch for setups **without** `ORIGIN`: when enabled, Obzorarr

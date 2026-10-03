@@ -10,6 +10,7 @@ import { connect, createServer, type Server } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
+	FRONT_ORIGIN_MARKER,
 	HOST_HEADER,
 	MISSING_ORIGIN_WARNING,
 	PEER_HEADER,
@@ -211,8 +212,12 @@ describe('prepare', () => {
 	});
 
 	it('without ORIGIN sets nothing for a front, and warns unless PROTOCOL_HEADER is set', () => {
-		const environment: Record<string, string | undefined> = { PORT: '3000' };
+		const environment: Record<string, string | undefined> = {
+			PORT: '3000',
+			[FRONT_ORIGIN_MARKER]: 'http://stale.example'
+		};
 		expect(prepare(environment)).toEqual({ mode: 'direct', warning: MISSING_ORIGIN_WARNING });
+		// Only the front sets the marker; a value inherited from the environment is dropped.
 		expect(environment).toEqual({ PORT: '3000' });
 
 		expect(prepare({ PROTOCOL_HEADER: 'x-forwarded-proto' })).toEqual({
@@ -246,6 +251,7 @@ describe('prepare', () => {
 		expect(environment.ADDRESS_HEADER).toBe(PEER_HEADER);
 		expect(environment).not.toHaveProperty('PORT_HEADER');
 		expect(environment.CONNECTION_IDLE_TIMEOUT).toBe('0');
+		expect(environment[FRONT_ORIGIN_MARKER]).toBe('http://192.168.1.10:3000');
 	});
 
 	it("keeps an operator ADDRESS_HEADER and leaves Bun's idle default when none is set", () => {
@@ -285,7 +291,12 @@ describe('serve.ts process', () => {
 	it('without ORIGIN loads the adapter directly and warns exactly once', async () => {
 		const server = await start({});
 		const seen = await echo(server.port);
-		expect(seen.env).toMatchObject({ SOCKET_PATH: null, PROTOCOL_HEADER: null, HOST_HEADER: null });
+		expect(seen.env).toMatchObject({
+			SOCKET_PATH: null,
+			PROTOCOL_HEADER: null,
+			HOST_HEADER: null,
+			[FRONT_ORIGIN_MARKER]: null
+		});
 		expect(server.output().split(MISSING_ORIGIN_WARNING).length - 1).toBe(1);
 		expect(server.output()).not.toContain('Listening on http');
 	});
@@ -330,7 +341,8 @@ describe('serve.ts process', () => {
 			HOST_HEADER,
 			ADDRESS_HEADER: PEER_HEADER,
 			PORT_HEADER: null,
-			CONNECTION_IDLE_TIMEOUT: '0'
+			CONNECTION_IDLE_TIMEOUT: '0',
+			[FRONT_ORIGIN_MARKER]: `http://127.0.0.1:${port}`
 		});
 		expect(seen.env.SOCKET_PATH).toMatch(/obzorarr-[^/]+\/app\.sock$/);
 		expect(seen.headers[PROTOCOL_HEADER]).toBe('http');

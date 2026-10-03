@@ -9,6 +9,7 @@ import {
 	getCsrfConfigWithSource,
 	getTrustProxyConfigWithSource
 } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import { getForwardedHeaderNamesPresent, parseForwardedProtoHost } from './forwarded-headers';
 
 export type {
@@ -26,6 +27,8 @@ export interface ReverseProxyDiagnosticInput {
 export interface ReverseProxyDiagnosticBuildInput extends ReverseProxyDiagnosticInput {
 	trustProxy: ConfigValue<string>;
 	csrfOrigin: ConfigValue<string>;
+	/** scripts/serve.ts fronts the app with ORIGIN (OBZORARR_FRONT_ORIGIN is set). */
+	fronted?: boolean;
 }
 
 interface OriginDiagnostic {
@@ -132,7 +135,7 @@ function reasonForReview(
 }
 
 function recommendationFor(input: {
-	originEnvConfigured: boolean;
+	frontedWithOrigin: boolean;
 	trustEnabled: boolean;
 	trustSource: ReverseProxyDiagnostic['facts']['trustProxy']['source'];
 	browserOrigin: OriginDiagnostic;
@@ -150,9 +153,9 @@ function recommendationFor(input: {
 		input.forwardedPair.url?.origin ?? null
 	);
 
-	// With ORIGIN set in the environment, the effective origin is ORIGIN whatever
-	// TRUST_PROXY says (forwarded headers never override it), so proxy trust is moot.
-	if (input.originEnvConfigured) {
+	// Fronted with ORIGIN, the effective origin is ORIGIN whatever TRUST_PROXY says
+	// (forwarded headers never override it), so proxy trust is moot.
+	if (input.frontedWithOrigin) {
 		if (!input.browserOrigin.isValid) {
 			return { action: 'unable-to-determine', reasonCodes: ['browser-origin-invalid'] };
 		}
@@ -220,7 +223,7 @@ export function buildReverseProxyDiagnostic(
 	const configuredPublicOrigin = normalizeOrigin(input.csrfOrigin.value || null);
 	const trustEnabled = input.trustProxy.value === 'true';
 	const { action, reasonCodes } = recommendationFor({
-		originEnvConfigured: input.csrfOrigin.source === 'env' && Boolean(input.csrfOrigin.value),
+		frontedWithOrigin: input.fronted === true,
 		trustEnabled,
 		trustSource: input.trustProxy.source,
 		browserOrigin,
@@ -287,7 +290,8 @@ export async function createReverseProxyDiagnostic(
 	return buildReverseProxyDiagnostic({
 		...input,
 		trustProxy: trustProxy.trustProxy,
-		csrfOrigin: csrfOrigin.origin
+		csrfOrigin: csrfOrigin.origin,
+		fronted: Boolean(env.OBZORARR_FRONT_ORIGIN)
 	});
 }
 

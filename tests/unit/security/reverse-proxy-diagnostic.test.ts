@@ -29,6 +29,7 @@ function diagnosticFor({
 	headers = {},
 	csrfOrigin = '',
 	csrfSource = 'default',
+	fronted = false,
 	sourceAddress = '172.18.0.2'
 }: {
 	trustProxy?: string;
@@ -39,6 +40,7 @@ function diagnosticFor({
 	headers?: Readonly<Record<string, string>>;
 	csrfOrigin?: string;
 	csrfSource?: ReverseProxyConfigSource;
+	fronted?: boolean;
 	sourceAddress?: string;
 } = {}) {
 	return buildReverseProxyDiagnostic({
@@ -55,14 +57,16 @@ function diagnosticFor({
 			value: csrfOrigin,
 			source: csrfSource,
 			isLocked: csrfSource === 'env'
-		}
+		},
+		fronted
 	});
 }
 
-describe('reverse proxy diagnostic with ORIGIN configured in the environment', () => {
-	// SvelteKit 3: ORIGIN (env) is the effective origin and forwarded headers never
+describe('reverse proxy diagnostic when scripts/serve.ts fronts the app with ORIGIN', () => {
+	// SvelteKit 3: fronted, ORIGIN is the effective origin and forwarded headers never
 	// override it, so the diagnostic must not report TRUST_PROXY as what decides it.
 	const fronted = {
+		fronted: true,
 		csrfOrigin: 'http://obzorarr.lan:3000',
 		csrfSource: 'env' as const,
 		requestUrl: 'http://obzorarr.lan:3000/admin',
@@ -95,6 +99,18 @@ describe('reverse proxy diagnostic with ORIGIN configured in the environment', (
 		});
 		expect(diagnostic.action).toBe('unable-to-determine');
 		expect(diagnostic.reasonCodes).toEqual(['origin-env-mismatch']);
+	});
+
+	it('keeps the TRUST_PROXY logic when ORIGIN is set but the front is not running', () => {
+		const diagnostic = diagnosticFor({
+			csrfOrigin: 'https://browser.example.com',
+			csrfSource: 'env',
+			trustProxy: 'true',
+			trustSource: 'db',
+			headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'browser.example.com' },
+			effectiveAppUrl: 'https://browser.example.com/path'
+		});
+		expect(diagnostic.reasonCodes).toEqual(['trust-proxy-working']);
 	});
 
 	it('ignores a database CSRF origin for this decision', () => {

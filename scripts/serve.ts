@@ -15,6 +15,12 @@ type Environment = Record<string, string | undefined>;
 export const PROTOCOL_HEADER = 'x-obzorarr-origin-proto';
 export const HOST_HEADER = 'x-obzorarr-origin-host';
 export const PEER_HEADER = 'x-obzorarr-peer';
+/**
+ * Set by the front, and only by the front, to the origin it supplies. The app reads it to know
+ * that `event.url` already carries ORIGIN (proxyHandle then ignores forwarded headers);
+ * ORIGIN alone does not say that, because build/index.js started directly ignores ORIGIN.
+ */
+export const FRONT_ORIGIN_MARKER = 'OBZORARR_FRONT_ORIGIN';
 
 export const MISSING_ORIGIN_WARNING =
 	'ORIGIN is not set and no PROTOCOL_HEADER is configured: Obzorarr assumes https + Host, so ' +
@@ -80,6 +86,7 @@ export function prepare(environment: Environment): Plan {
 	// @sveltejs/adapter-bun renamed IDLE_TIMEOUT to CONNECTION_IDLE_TIMEOUT; keep the documented
 	// variable working. An explicit CONNECTION_IDLE_TIMEOUT wins.
 	if (environment.IDLE_TIMEOUT) environment.CONNECTION_IDLE_TIMEOUT ??= environment.IDLE_TIMEOUT;
+	delete environment[FRONT_ORIGIN_MARKER];
 
 	if (!environment.ORIGIN) {
 		// The origin is never derived from the request's Host header here (DNS rebinding).
@@ -109,6 +116,7 @@ export function prepare(environment: Environment): Plan {
 	// oven-sh/bun#43816), so the adapter side never times out and the public listener enforces
 	// the client idle timeout.
 	environment.CONNECTION_IDLE_TIMEOUT = '0';
+	environment[FRONT_ORIGIN_MARKER] = origin.origin;
 
 	return { mode: 'front', origin, hostname, port, idleTimeout, ownPeerHeader, directory, socket };
 }

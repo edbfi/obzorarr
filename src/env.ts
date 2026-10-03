@@ -15,6 +15,8 @@ export const variables = defineEnvVars({
 	DEV_PLEX_TOKEN: optional,
 	ENABLE_LIVE_SYNC: optional,
 	METADATA_CONCURRENCY: optional,
+	// Set by scripts/serve.ts when it fronts the adapter with ORIGIN; not an operator setting.
+	OBZORARR_FRONT_ORIGIN: optional,
 	OPENAI_API_KEY: optional,
 	OPENAI_API_URL: optional,
 	OPENAI_MODEL: optional,
