@@ -2,6 +2,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import type { Handle } from '@sveltejs/kit/hooks';
 import { getTrustProxyConfigWithSource } from '$lib/server/admin/settings.service';
 import { logger } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { buildForwardedUrl, parseForwardedProtoHost } from './forwarded-headers';
 
 let proxyStartupLogged = false;
@@ -73,7 +74,14 @@ function resolveTrustProxy(): Promise<boolean> {
 // Response) must consult this rather than reading x-forwarded-proto directly
 // or trusting event.url.protocol — both of those would either bypass the
 // TRUST_PROXY gate or return the pre-rewrite protocol.
+//
+// A configured ORIGIN environment variable always wins: scripts/serve.ts fronts the
+// adapter and already sets event.url from it, so forwarded headers never override
+// it, even with TRUST_PROXY enabled. (The database CSRF origin is not considered
+// here; it only governs csrfHandle.)
 async function resolveForwardedUrl(event: RequestEvent): Promise<URL | null> {
+	if (env.ORIGIN) return null;
+
 	const trustProxy = await resolveTrustProxy();
 	if (!trustProxy) return null;
 
@@ -93,7 +101,7 @@ export async function isProxiedHttps(event: RequestEvent): Promise<boolean> {
 }
 
 // NOTE: this handler does NOT touch event.getClientAddress(); the production
-// adapter (svelte-adapter-bun) resolves the client IP independently. Operators
+// adapter (@sveltejs/adapter-bun) resolves the client IP independently. Operators
 // who need IP trust must configure their adapter / runtime separately.
 export const proxyHandle: Handle = async ({ event, resolve }) => {
 	const forwardedUrl = await resolveForwardedUrl(event);

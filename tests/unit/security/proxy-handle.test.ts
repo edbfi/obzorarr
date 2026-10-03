@@ -4,6 +4,7 @@ import { env } from '$lib/server/private-env';
 import {
 	_resetProxyStartupLogged,
 	_resetTrustProxyCache,
+	isProxiedHttps,
 	proxyHandle
 } from '$lib/server/security/proxy-handle';
 import { resetSharedTestDb } from '../../helpers/db';
@@ -77,12 +78,14 @@ describe('proxyHandle', () => {
 		// The env mock from tests/setup.ts is a shared mutable object; clean any
 		// per-test mutations between runs.
 		delete (env as Record<string, string | undefined>).TRUST_PROXY;
+		delete (env as Record<string, string | undefined>).ORIGIN;
 		_resetProxyStartupLogged();
 		_resetTrustProxyCache();
 	});
 
 	afterEach(() => {
 		delete (env as Record<string, string | undefined>).TRUST_PROXY;
+		delete (env as Record<string, string | undefined>).ORIGIN;
 	});
 
 	describe('TRUST_PROXY=false (default)', () => {
@@ -325,6 +328,62 @@ describe('proxyHandle', () => {
 			});
 
 			expect(rewrittenUrl.host).toBe('localhost:5173');
+		});
+	});
+	// SvelteKit 3: with ORIGIN set, scripts/serve.ts fronts the adapter and event.url
+	// already carries ORIGIN. Forwarded headers must never override it, even with
+	// TRUST_PROXY enabled (a behaviour change from svelte-adapter-bun, where
+	// proxyHandle rewrote the ORIGIN-derived URL).
+	describe('configured ORIGIN', () => {
+		for (const [label, configure] of [
+			['TRUST_PROXY=true via DB', () => setAppSetting(AppSettingsKey.TRUST_PROXY, 'true')],
+			[
+				'TRUST_PROXY=true via env',
+				async () => {
+					(env as Record<string, string | undefined>).TRUST_PROXY = 'true';
+				}
+			]
+		] as const) {
+			it(`keeps event.url at ORIGIN with ${label} and usable forwarded headers`, async () => {
+				await configure();
+				(env as Record<string, string | undefined>).ORIGIN = 'http://obzorarr.lan:3000';
+
+				const { rewrittenUrl } = await invoke({
+					url: 'http://obzorarr.lan:3000/some/path',
+					headers: {
+						'x-forwarded-proto': 'https',
+						'x-forwarded-host': 'real.example.com'
+					}
+				});
+
+				expect(rewrittenUrl.href).toBe('http://obzorarr.lan:3000/some/path');
+			});
+		}
+
+		it('reports the protocol of ORIGIN, not the forwarded one, through isProxiedHttps', async () => {
+			await setAppSetting(AppSettingsKey.TRUST_PROXY, 'true');
+			(env as Record<string, string | undefined>).ORIGIN = 'http://obzorarr.lan:3000';
+			const request = new Request('http://obzorarr.lan:3000/', {
+				headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'real.example.com' }
+			});
+			const event = {
+				request,
+				url: new URL(request.url),
+				route: { id: null }
+			} as unknown as Parameters<typeof isProxiedHttps>[0];
+
+			expect(await isProxiedHttps(event)).toBe(false);
+		});
+
+		it('still rewrites from forwarded headers when ORIGIN is unset (direct, TRUST_PROXY=true)', async () => {
+			await setAppSetting(AppSettingsKey.TRUST_PROXY, 'true');
+
+			const { rewrittenUrl } = await invoke({
+				url: 'https://obzorarr.lan/some/path',
+				headers: { 'x-forwarded-proto': 'http', 'x-forwarded-host': 'obzorarr.lan:8080' }
+			});
+
+			expect(rewrittenUrl.href).toBe('http://obzorarr.lan:8080/some/path');
 		});
 	});
 });

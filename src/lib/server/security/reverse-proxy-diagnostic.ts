@@ -132,6 +132,7 @@ function reasonForReview(
 }
 
 function recommendationFor(input: {
+	originEnvConfigured: boolean;
 	trustEnabled: boolean;
 	trustSource: ReverseProxyDiagnostic['facts']['trustProxy']['source'];
 	browserOrigin: OriginDiagnostic;
@@ -148,6 +149,17 @@ function recommendationFor(input: {
 		input.browserOrigin.origin,
 		input.forwardedPair.url?.origin ?? null
 	);
+
+	// With ORIGIN set in the environment, the effective origin is ORIGIN whatever
+	// TRUST_PROXY says (forwarded headers never override it), so proxy trust is moot.
+	if (input.originEnvConfigured) {
+		if (!input.browserOrigin.isValid) {
+			return { action: 'unable-to-determine', reasonCodes: ['browser-origin-invalid'] };
+		}
+		return browserMatchesEffectiveApp === true
+			? { action: 'leave-disabled', reasonCodes: ['origin-env-configured'] }
+			: { action: 'unable-to-determine', reasonCodes: ['origin-env-mismatch'] };
+	}
 
 	if (input.trustSource === 'env') {
 		return {
@@ -208,6 +220,7 @@ export function buildReverseProxyDiagnostic(
 	const configuredPublicOrigin = normalizeOrigin(input.csrfOrigin.value || null);
 	const trustEnabled = input.trustProxy.value === 'true';
 	const { action, reasonCodes } = recommendationFor({
+		originEnvConfigured: input.csrfOrigin.source === 'env' && Boolean(input.csrfOrigin.value),
 		trustEnabled,
 		trustSource: input.trustProxy.source,
 		browserOrigin,
