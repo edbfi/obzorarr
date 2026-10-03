@@ -145,7 +145,7 @@ function formatUptime(seconds: number): string {
 					use:timezoneEnhance
 					class="space-y-4"
 				>
-					<Form.Field form={timezoneForm} name="timezone">
+					<Form.Field form={timezoneForm} name="timezone" description>
 						<Form.Control>
 							{#snippet children({
 	props
@@ -195,7 +195,7 @@ function formatUptime(seconds: number): string {
 		</CardHeader>
 		<CardContent>
 			<form method="POST" action="?/updateLogSettings" use:enhance class="space-y-4">
-				<Form.Field {form} name="retentionDays">
+				<Form.Field {form} name="retentionDays" description>
 					<Form.Control>
 						{#snippet children({
 	props
@@ -218,7 +218,7 @@ function formatUptime(seconds: number): string {
 					{/if}
 				</Form.Field>
 
-				<Form.Field {form} name="maxCount">
+				<Form.Field {form} name="maxCount" description>
 					<Form.Control>
 						{#snippet children({
 	props

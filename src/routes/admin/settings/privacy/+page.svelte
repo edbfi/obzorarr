@@ -840,9 +840,9 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 			>
 				<Form.Field form={serverWrappedForm} name="anonymizationMode">
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({ props, labelId })}
 							<Form.Label>Anonymization mode</Form.Label>
-							<RadioGroup bind:value={$serverWrappedData.anonymizationMode} {...props}>
+							<RadioGroup bind:value={$serverWrappedData.anonymizationMode} {...props} aria-labelledby={labelId}>
 								{#each data.anonymizationOptions as opt (opt.value)}
 									<SettingsOptionCard title={opt.label} description={opt.description}>
 										{#snippet control()}
@@ -865,11 +865,11 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field form={serverWrappedForm} name="serverWrappedShareMode">
+				<Form.Field form={serverWrappedForm} name="serverWrappedShareMode" description>
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({ props, labelId })}
 							<Form.Label>Server-wide share mode</Form.Label>
-							<RadioGroup bind:value={$serverWrappedData.serverWrappedShareMode} {...props}>
+							<RadioGroup bind:value={$serverWrappedData.serverWrappedShareMode} {...props} aria-labelledby={labelId}>
 								{#each data.serverWrappedShareModeOptions as opt (opt.value)}
 									<SettingsOptionCard title={opt.label} description={opt.description}>
 										{#snippet control()}
@@ -982,9 +982,9 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 			>
 				<Form.Field form={userDefaultsForm} name="defaultShareMode">
 					<Form.Control>
-						{#snippet children({ props })}
+						{#snippet children({ props, labelId })}
 							<Form.Label>Default share mode</Form.Label>
-							<RadioGroup bind:value={$userDefaultsData.defaultShareMode} {...props}>
+							<RadioGroup bind:value={$userDefaultsData.defaultShareMode} {...props} aria-labelledby={labelId}>
 								{#each data.shareModeOptions as opt (opt.value)}
 									<SettingsOptionCard title={opt.label} description={opt.description}>
 										{#snippet control()}
@@ -1007,7 +1007,7 @@ const presetIcons: Record<PrivacyPresetId, Component> = {
 					<Form.FieldErrors />
 				</Form.Field>
 
-				<Form.Field form={userDefaultsForm} name="allowUserControl">
+				<Form.Field form={userDefaultsForm} name="allowUserControl" description>
 					<Form.Control>
 						{#snippet children({ props })}
 							<input
