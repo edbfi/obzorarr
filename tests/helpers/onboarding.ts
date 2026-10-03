@@ -55,6 +55,10 @@ export function createOnboardingCookies(sessionId?: string): OnboardingTestCooki
 		},
 		serialize() {
 			return '';
+		},
+		// SvelteKit 3 adds Cookies.parse (Set-Cookie parsing); no onboarding code calls it.
+		parse(): never {
+			throw new Error('cookies.parse is not used by the onboarding flow');
 		}
 	} as OnboardingTestCookies;
 
