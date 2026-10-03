@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	getApiConfigWithSources,
 	getAppSetting,
 	setAppSetting
 } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/admin/settings/connections/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 

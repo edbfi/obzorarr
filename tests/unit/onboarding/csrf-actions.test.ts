@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	deleteAppSetting,
@@ -19,6 +18,7 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
+import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/csrf/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 

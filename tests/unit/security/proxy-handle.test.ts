@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import {
 	_resetProxyStartupLogged,
 	_resetTrustProxyCache,

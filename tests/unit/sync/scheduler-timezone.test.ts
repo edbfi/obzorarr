@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { env } from '$env/dynamic/private';
 // Namespace import so the persist-failure test can spy on the live `setAppSetting`
 // binding without `mock.module` (which is process-global and leaks across files).
 import * as settingsService from '$lib/server/admin/settings.service';
@@ -12,6 +11,7 @@ import {
 	setAppSetting,
 	setSchedulerTimezoneAtomic
 } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import {
 	getSchedulerStatus,
 	isSchedulerConfigured,

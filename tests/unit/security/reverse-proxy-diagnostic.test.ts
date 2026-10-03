@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import type {
 	ReverseProxyConfigSource,
 	ReverseProxyDiagnosticReasonCode,
 	ReverseProxyRecommendationAction
 } from '$lib/security/reverse-proxy';
 import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import { clearRateLimitStore } from '$lib/server/ratelimit';
 import {
 	assertEnableTrustProxyAllowed,

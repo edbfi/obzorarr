@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
 import { AppSettingsKey, getAppSetting, setAppSetting } from '$lib/server/admin/settings.service';
 import {
 	getOnboardingStep,
@@ -15,6 +14,7 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
+import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/proxy-trust/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 

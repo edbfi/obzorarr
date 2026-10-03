@@ -6,7 +6,6 @@ import {
 	sequence
 } from '@sveltejs/kit/hooks';
 import { dev } from '$app/env';
-import { env } from '$env/dynamic/private';
 import { isSafeReturnPath } from '$lib/client/plex-login';
 import { ensurePublicLandingLookupDefault } from '$lib/server/admin/settings.service';
 import { getOrCreateDevSession, isDevBypassEnabled } from '$lib/server/auth/dev-bypass';
@@ -29,6 +28,7 @@ import {
 	printOnboardingBootstrapBanner,
 	requiresOnboarding
 } from '$lib/server/onboarding';
+import { env } from '$lib/server/private-env';
 import {
 	applySecurityHeaders,
 	csrfHandle,

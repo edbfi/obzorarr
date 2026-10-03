@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import {
 	AnonymizationMode,
 	API_CONFIG_KEYS,
@@ -51,6 +50,7 @@ import {
 } from '$lib/server/admin/settings.service';
 import { db } from '$lib/server/db/client';
 import { appSettings, cachedStats, playHistory } from '$lib/server/db/schema';
+import { env } from '$lib/server/private-env';
 import { createYearFilter } from '$lib/server/stats/utils';
 import { resetSharedTestDb } from '../../helpers/db';
 

@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { and, between, eq, inArray, sql } from 'drizzle-orm';
-import { env } from '$env/dynamic/private';
 import { DEFAULT_TIMEZONE, normalizeTimezone, TIMEZONE_UNKNOWN_MESSAGE } from '$lib/cron/timezone';
 import { db } from '$lib/server/db/client';
 import { appSettings, cachedStats, playHistory, shareSettings } from '$lib/server/db/schema';
+import { env } from '$lib/server/private-env';
 import {
 	CredentialedUrlError,
 	envAllowsInsecureLocalPlexHttp,

@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	getAppSetting,
@@ -8,6 +7,7 @@ import {
 } from '$lib/server/admin/settings.service';
 import * as sessionModule from '$lib/server/auth/session';
 import { ONBOARDING_CLAIM_REQUIRED_MESSAGE } from '$lib/server/onboarding/bootstrap';
+import { env } from '$lib/server/private-env';
 import { POST as selectServerPost } from '../../../src/routes/api/onboarding/select-server/+server';
 import { GET as serversGet } from '../../../src/routes/api/onboarding/servers/+server';
 import { POST as testConnectionPost } from '../../../src/routes/api/onboarding/test-connection/+server';

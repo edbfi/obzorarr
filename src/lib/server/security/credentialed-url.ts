@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { env } from '$lib/server/private-env';
 
 export const OPENAI_HTTPS_REQUIRED_MESSAGE = 'OpenAI base URL must use HTTPS.';
 export const PLEX_HTTP_OPT_IN_REQUIRED_MESSAGE =

@@ -1,10 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { dev } from '$app/env';
-import { env } from '$env/dynamic/private';
 import { getPlexConfig } from '$lib/server/admin/settings.service';
 import { db } from '$lib/server/db/client';
 import { playHistory, sessions, users } from '$lib/server/db/schema';
 import { logger } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import {
 	getRandomNonOwnerUser,
 	getServerOwner,
