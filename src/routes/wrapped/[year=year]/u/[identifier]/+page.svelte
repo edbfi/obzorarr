@@ -1,5 +1,5 @@
 <script lang="ts">
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import { afterNavigate, goto, replaceState } from '$app/navigation';
 import Logo from '$lib/components/Logo.svelte';

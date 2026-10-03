@@ -3,7 +3,7 @@ import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 import { animate } from 'motion';
 import { tick } from 'svelte';
 import { prefersReducedMotion } from 'svelte/motion';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import { shouldUseRedirectAuth } from '$lib/client/auth-mode';
 import {

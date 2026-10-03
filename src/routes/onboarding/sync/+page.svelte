@@ -5,7 +5,7 @@ import RefreshCwIcon from '@lucide/svelte/icons/refresh-cw';
 import XIcon from '@lucide/svelte/icons/x';
 import { animate, stagger } from 'motion';
 import { untrack } from 'svelte';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import SubmitButton from '$lib/components/forms/SubmitButton.svelte';
 import OnboardingCard from '$lib/components/onboarding/OnboardingCard.svelte';

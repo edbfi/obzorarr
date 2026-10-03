@@ -1,5 +1,5 @@
 <script lang="ts">
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import { goto, invalidateAll } from '$app/navigation';
 import { page } from '$app/state';

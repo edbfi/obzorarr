@@ -1,5 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import {
 	AppSettingsKey,
 	getAppSetting,

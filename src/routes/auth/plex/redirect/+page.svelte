@@ -4,7 +4,7 @@ import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 import CircleXIcon from '@lucide/svelte/icons/circle-x';
 import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 import { onMount } from 'svelte';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { ServerPinFallback } from '$lib/client/plex-login';
 import {
 	LOGIN_TIMEOUT_MS,

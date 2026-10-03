@@ -22,10 +22,11 @@ mock.module('$env/static/private', () => ({
 	PLEX_TOKEN: 'test-plex-token'
 }));
 
-// Mock SvelteKit's $app/environment virtual module. Tests exercise production-mode
-// behavior (dev=false) by default; individual tests may re-mock this module if they
-// need to simulate the dev flag being true.
-mock.module('$app/environment', () => ({
+// Mock SvelteKit's $app/env virtual module (the app imports it instead of the
+// deprecated $app/environment alias). Tests exercise production-mode behavior
+// (dev=false) by default; individual tests may re-mock this module if they need to
+// simulate the dev flag being true.
+mock.module('$app/env', () => ({
 	dev: false,
 	browser: false,
 	building: false,
