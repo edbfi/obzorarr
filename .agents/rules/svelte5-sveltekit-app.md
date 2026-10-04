@@ -216,14 +216,15 @@ import { defineEnvVars } from '@sveltejs/kit/env';
 import * as v from 'valibot';
 
 export const variables = defineEnvVars({
-  DATABASE_URL: { schema: building ? v.optional(v.string()) : v.string() }, // absent at image build
-  LOG_LEVEL: {}, // optional: unset stays undefined
-  SITE_NAME: { public: true } // $app/env/public and %sveltekit.env.SITE_NAME%
+  DATABASE_URL: { schema: building ? v.optional(v.string()) : v.string() }, // required at startup, absent at image build
+  LOG_LEVEL: { schema: v.optional(v.string()) }, // optional: unset stays undefined
+  SITE_NAME: { public: true } // no validator: required (may be empty); $app/env/public and %sveltekit.env.SITE_NAME%
 });
 ```
 
 - Server code reads `$app/env/private` (`import * as env from '$app/env/private'` where code passes the env object around). `$env/*` is deprecated and untyped; `$env/dynamic/private` is a shim that exposes declared variables only.
-- **An undeclared variable silently reads as `undefined`** (an undeclared optional one silently switches its feature off). Add a test that compares the declared names with the names the code reads. Keep "unset" as `undefined`; no `?? ''` fallbacks that change semantics.
+- **An undeclared variable silently reads as `undefined`** (an undeclared optional one silently switches its feature off). Add a test that compares the declared names with the names the code reads.
+- **A declared variable without a `schema` is required:** unset fails startup or the build ("Value is missing"); an empty string passes. Give every optional variable a validator that accepts `undefined`, such as `v.optional(v.string())` or a function (`(value) => value`; returning `undefined` is valid), never `{}`. Keep "unset" as `undefined`; no `?? ''` fallbacks that change semantics.
 - Variables are dynamic unless `static: true` (inlined at build). Public ones need `public: true`, including every `%sveltekit.env.NAME%` in `app.html`. An invalid value fails startup or the build. `browser`, `building`, `dev`, `version` come from `$app/env`.
 
 ## Routing and the data layer
@@ -545,7 +546,7 @@ bun ./build     # Bun.serve server, or the app's front
 - **Runtime needs** the output directory, `package.json` and production `node_modules` (`bun install --production --frozen-lockfile`); Docker images copy `package.json` too. `dependencies` stay external; `devDependencies` (and Svelte libraries in `ssr.noExternal`) are bundled, so `@sveltejs/kit`, `svelte` and `vite` are `devDependencies` and runtime-only packages are `dependencies`. Bun auto-loads `.env` at runtime: no stray `.env` in any image or working directory.
 - **Options:** `out` (`build`), `precompress` (default `false`: set it explicitly), `envPrefix` (an unknown prefixed variable then fails startup), `serverOptions` (env vars win).
 - **Env:** `HOST`/`PORT` (`3000`); `SOCKET_PATH` (ignores TCP options); `BODY_SIZE_LIMIT` (`512K`, K/M/G, `Infinity`): size it from the app's real maximum (uploads) and let an operator value win; `CONNECTION_IDLE_TIMEOUT` (0–255 s, replaces `IDLE_TIMEOUT`; `text/event-stream` exempt, gets `X-Accel-Buffering: no`); `SHUTDOWN_TIMEOUT` (`30` s drain, then `sveltekit:shutdown`; a second signal exits 1); `PROTOCOL_HEADER` (`http`/`https` else 400), `HOST_HEADER`, `PORT_HEADER` (numeric else 400); `ADDRESS_HEADER` + `XFF_DEPTH` (`1`, from the right). Empty headers are ignored. `getClientAddress()` **throws** if `ADDRESS_HEADER` is set but absent or short of `XFF_DEPTH` hops: leave it unset where no proxy supplies it.
-- **Static assets** are native Bun routes (`GET`/`HEAD`, ETags, ranges, immutable caching); a literal `*` in a filename fails the build; test URL-encoded asset paths. No WebSocket hook.
+- **Static assets** are native Bun routes (`GET`/`HEAD`, ETags, ranges, immutable caching); a literal `*` in a filename fails the build; test URL-encoded asset paths (until sveltejs/kit#17123 lands they 404 or fall through to the app; do not patch the server for it). No WebSocket hook.
 
 **Public origin.** Runtime `ORIGIN` is gone in Kit 3 (adapter-node 6 too), `paths.origin` is build-time, and Kit's form CSRF check runs **before** `handle`, so no hook can rescue form actions or uploads. adapter-bun uses `paths.origin`, else the configured `PROTOCOL_HEADER`/`HOST_HEADER`/`PORT_HEADER`, else `Host` with an **assumed `https`**. Its docs: "Configure `paths.origin` or `PROTOCOL_HEADER` if that assumption is wrong, for example when serving plain HTTP directly", and "Only trust forwarded headers when requests can reach the server through a proxy you control. A direct client can spoof these headers."
 - Behind a TLS-terminating proxy that preserves `Host`, the default is correct. Plain HTTP with no front or proxy rejects same-origin writes with 403: it needs an explicit runtime origin, in edbfi an app-owned front enabled by setting `ORIGIN`.
@@ -556,9 +557,9 @@ bun ./build     # Bun.serve server, or the app's front
 - The adapter listens on `SOCKET_PATH` in a fresh `mkdtemp` directory; the front binds the public `HOST`/`PORT` (loopback only for a loopback app) and is the socket's only client.
 - On **every** request it **overwrites** the headers the adapter reads as `PROTOCOL_HEADER`/`HOST_HEADER` and deletes `PORT_HEADER` input; it sets the client address from the peer (`server.requestIP()`) unless the operator configured `ADDRESS_HEADER` behind a trusted proxy (then passed through).
 - A network front runs only when `ORIGIN` is set (else the adapter listens directly), validates it alone (a bare `http(s)` origin, else a startup error) and never compares it with its bind address (proxies and Docker port mapping differ legitimately). Only a **loopback** front may reject an `ORIGIN` that differs from its listener.
-- Forwarding: `redirect: 'manual'`, `decompress: false`, abort signal passed through, no body for GET/HEAD, 503 on a socket connection failure.
-- Shutdown: on the first SIGTERM/SIGINT fix a deadline from `SHUTDOWN_TIMEOUT` and start `listener.stop()` (keep the promise); the adapter drains its side and emits `sveltekit:shutdown`; await the public drain until the deadline, `listener.stop(true)` only when it expires, then remove the socket directory. Force-closing on `sveltekit:shutdown` truncates slow downloads.
-- Observed, unconfirmed upstream: on `SOCKET_PATH`, idle `text/event-stream` responses closed after about 12 s despite the exemption. Fronts set `CONNECTION_IDLE_TIMEOUT=0` on the socket side, enforce the client idle timeout, and call `server.timeout(req, 0)` for event streams.
+- Forwarding: `redirect: 'manual'`, `decompress: false`, abort signal passed through, no body for GET/HEAD, 503 on a socket connection failure. When the adapter force-closes a proxied event stream (its shutdown drain expired), end the public stream normally instead of passing the error on, which browsers see as a connection reset.
+- Shutdown: on the first SIGTERM/SIGINT fix a deadline from `SHUTDOWN_TIMEOUT` and start `listener.stop()` (keep the promise); the adapter drains its side and emits `sveltekit:shutdown`; await the public drain until the deadline, `listener.stop(true)` only when it expires, then remove the socket directory. Force-closing on `sveltekit:shutdown` truncates slow downloads. A front that binds its listener before loading the adapter re-delivers a signal received during the load once the adapter has loaded; otherwise `sveltekit:shutdown` never fires and the process hangs.
+- Observed (Bun 1.4.2, macOS and linux/arm64): on `SOCKET_PATH`, idle `text/event-stream` responses close after about 12 s despite the exemption, consistent with oven-sh/bun#43816 (`server.timeout(req, 0)`, which the exemption uses, is inert on unix listeners; a bare `Bun.serve({ unix })` closes at 12 s too). Fronts set `CONNECTION_IDLE_TIMEOUT=0` on the socket side, enforce the client idle timeout, and call `server.timeout(req, 0)` on their public TCP listener for event streams.
 
 Optional: `tracing.server` with `src/instrumentation.server.ts` (adapter-bun's docs don't cover it; verify first; leave `@opentelemetry/api` uninstalled).
 
