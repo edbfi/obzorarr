@@ -59,7 +59,8 @@ export function retiredTrustProxyWarning(source: {
 	const unset = source.fromEnvironment ? ', and remove TRUST_PROXY from the environment' : '';
 	return (
 		`TRUST_PROXY is no longer supported and is ignored${removed}. ` +
-		`Set ORIGIN to the address users open, for example ORIGIN=https://obzorarr.example.com${unset}. ` +
+		'Set ORIGIN to the address users open, with the scheme they use (http:// for plain HTTP), ' +
+		`for example ORIGIN=https://obzorarr.example.com${unset}. ` +
 		'Without ORIGIN, behind a proxy that every request passes through and that overwrites both ' +
 		'headers, PROTOCOL_HEADER=x-forwarded-proto and HOST_HEADER=x-forwarded-host take its place.'
 	);

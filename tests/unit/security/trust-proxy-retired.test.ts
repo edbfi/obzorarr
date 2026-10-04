@@ -148,6 +148,7 @@ describe('TRUST_PROXY is retired', () => {
 				const warning = retiredTrustProxyWarning(source) ?? '';
 				expect(warning).toStartWith('TRUST_PROXY is no longer supported and is ignored');
 				expect(warning).toContain('Set ORIGIN to the address users open');
+				expect(warning).toContain('with the scheme they use (http:// for plain HTTP)');
 				expect(warning).toContain(
 					'PROTOCOL_HEADER=x-forwarded-proto and HOST_HEADER=x-forwarded-host'
 				);
