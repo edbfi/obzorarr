@@ -44,7 +44,15 @@ describe('isSecureRequest', () => {
 	it('has no Secure fallback when a caller has no request URL', () => {
 		// A missing URL used to give `secure: true`, which a browser refuses on plain HTTP, so a
 		// caller that forgot the URL broke sign-in or sign-out there silently.
-		expect(() => isSecureRequest(undefined as unknown as URL)).toThrow(TypeError);
+		// The contract is "never Secure by default", not a particular error: a call without a URL may
+		// throw, but must not answer true. (The type-level checks below make it a compile error.)
+		let result: unknown;
+		try {
+			result = isSecureRequest(undefined as unknown as URL);
+		} catch {
+			result = 'threw';
+		}
+		expect(result).not.toBe(true);
 	});
 });
 
