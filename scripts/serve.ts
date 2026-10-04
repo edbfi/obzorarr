@@ -298,6 +298,10 @@ export async function serve(
 		clearTimeout(timer);
 		if (!drained) await listener.stop(true);
 		removeSocketDirectory();
+		// Work the app still has in flight (a request waiting on Plex, a running sync) would keep
+		// the process alive past the drain deadline, until a container stop kills it. Exit at the
+		// deadline unless the process has ended by itself before then.
+		setTimeout(() => process.exit(), Math.max(0, deadline - Date.now())).unref();
 	});
 
 	try {
