@@ -121,6 +121,32 @@ export function prepare(environment: Environment): Plan {
 	return { mode: 'front', origin, hostname, port, idleTimeout, ownPeerHeader, directory, socket };
 }
 
+/**
+ * An event stream has no length, so when the adapter force-closes it (at the end of its shutdown
+ * drain) the public stream ends normally and the browser's EventSource reconnects. Passing the
+ * upstream error on would reset the client connection instead. Other responses keep the error,
+ * so a truncated download never looks complete.
+ */
+function endCleanlyOnUpstreamError(
+	upstream: ReadableStream<Uint8Array>
+): ReadableStream<Uint8Array> {
+	const reader = upstream.getReader();
+	return new ReadableStream<Uint8Array>({
+		async pull(controller) {
+			try {
+				const { done, value } = await reader.read();
+				if (done) controller.close();
+				else controller.enqueue(value);
+			} catch {
+				controller.close();
+			}
+		},
+		cancel(reason) {
+			return reader.cancel(reason);
+		}
+	});
+}
+
 export async function serve(
 	environment: Environment = process.env,
 	importServer: () => Promise<unknown> = () => import(pathToFileURL(resolve('build/index.js')).href)
@@ -171,8 +197,12 @@ export async function serve(
 				} catch {
 					return new Response('Service Unavailable', { status: 503 });
 				}
-				if (response.headers.get('content-type')?.startsWith('text/event-stream')) {
+				if (
+					response.headers.get('content-type')?.startsWith('text/event-stream') &&
+					response.body
+				) {
 					server.timeout(request, 0);
+					return new Response(endCleanlyOnUpstreamError(response.body), response);
 				}
 				return response;
 			}

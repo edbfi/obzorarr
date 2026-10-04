@@ -57,6 +57,24 @@ async function handle(request) {
 			});
 			return new Response(stream, { headers: { 'content-type': 'text/event-stream' } });
 		}
+		case '/sse-open': {
+			// One event, then idle until the client leaves or the server force-closes the connection.
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('data: one\n\n'));
+				}
+			});
+			return new Response(stream, { headers: { 'content-type': 'text/event-stream' } });
+		}
+		case '/hold-open': {
+			// A plain (non-event-stream) body that never ends on its own.
+			const stream = new ReadableStream({
+				start(controller) {
+					controller.enqueue(new TextEncoder().encode('partial'));
+				}
+			});
+			return new Response(stream, { headers: { 'content-type': 'text/plain' } });
+		}
 		case '/hold': {
 			// Streams until the client goes away, then records the abort.
 			request.signal.addEventListener('abort', () => {

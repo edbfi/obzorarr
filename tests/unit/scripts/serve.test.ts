@@ -506,6 +506,46 @@ describe('serve.ts process', () => {
 		expect(socketDirectories(server.temp)).toEqual([]);
 	}, 30_000);
 
+	// At the end of its drain the adapter force-closes the streams still open. An event stream has
+	// no length, so the front ends it as a normal end of stream (EventSource reconnects) instead of
+	// passing the failure on, which clients see as a connection reset.
+	it('on SIGTERM ends an open event stream normally when the adapter force-closes it', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			SHUTDOWN_TIMEOUT: '1'
+		});
+		const response = await fetch(`http://127.0.0.1:${server.port}/sse-open`);
+		expect(response.headers.get('content-type')).toBe('text/event-stream');
+		const body = response.text();
+		await Bun.sleep(300);
+		server.child.kill('SIGTERM');
+
+		expect(await body).toBe('data: one\n\n');
+		expect(await server.exited).toEqual({ code: 0, signal: null });
+		expect(socketDirectories(server.temp)).toEqual([]);
+	}, 15_000);
+
+	it('on SIGTERM still breaks off any other body the adapter force-closes', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			SHUTDOWN_TIMEOUT: '1'
+		});
+		const response = await fetch(`http://127.0.0.1:${server.port}/hold-open`);
+		expect(response.headers.get('content-type')).toBe('text/plain');
+		const body = response.text();
+		await Bun.sleep(300);
+		server.child.kill('SIGTERM');
+
+		// A truncated body must never look complete.
+		await expect(body).rejects.toThrow();
+		expect(await server.exited).toEqual({ code: 0, signal: null });
+		expect(socketDirectories(server.temp)).toEqual([]);
+	}, 15_000);
+
 	it('shuts down cleanly when SIGTERM arrives while the adapter is still loading', async () => {
 		const port = await freePort();
 		const server = await start(
