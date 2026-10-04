@@ -26,7 +26,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 
 - `.agents/rules/svelte5-sveltekit-app.md`: generic Svelte 5 runes / SvelteKit / UnoCSS / shadcn-svelte / Biome conventions. Read it before writing components or routes.
 - Where it disagrees with this repo's config, follow the repo and don't migrate toward the rules file. This repo uses `bun:test`, not Vitest (`tests/unit/test-architecture.test.ts` fails on `vitest` or `@jest/globals` imports). It uses `svelte-adapter-bun`, not adapter-node. UnoCSS uses `presetWind4`. `svelte-check --tsgo` is required. Kit config (CSP, adapter, csrf) lives in `svelte.config.js`.
-- The rules file is right about `$app/state`. The 8 remaining `$app/stores` imports are legacy, so don't copy them.
+- The rules file is right about `$app/state`. Read `page` from `$app/state`; `$app/stores` is not used in this repo and SvelteKit 3 removes it, so don't reintroduce it.
 
 ## Layout and boundaries
 
@@ -35,7 +35,7 @@ Bun 1.4.2 (pinned in `package.json` `packageManager`). `bun install --frozen-loc
 - Runtime configuration is the `app_settings` key/value table, accessed only through `src/lib/server/admin/settings.service.ts` (`AppSettingsKey`, getters and setters, `set*Atomic` writers).
 - Read Plex/OpenAI config through `getPlexConfig()` / `getApiConfigWithSources()` in that service, never through `env.PLEX_*` / `env.OPENAI_*`. Env values override the DB and lock the UI field (the `ENV` badge).
 - `src/hooks.server.ts` `handle` redirects every path to `/onboarding/<step>` until onboarding completes, except the `skipPaths` prefixes. A new endpoint that must work before onboarding needs a prefix there.
-- `src/lib/components/ui/` holds shadcn-svelte primitives (`components.json`). Add new ones with the shadcn-svelte CLI rather than writing them by hand.
+- `src/lib/components/ui/` holds shadcn-svelte primitives (`components.json`). Add new ones with the shadcn-svelte CLI rather than writing them by hand. The exception is `ui/form/`: the shadcn form block depends on Formsnap, so these components are in-house (they read only superForm's stores). Don't re-add the block over them.
 
 ## Route and action rules
 
@@ -80,7 +80,7 @@ return { form, success: true, message: `Scheduler timezone set to ${timezone}` }
 - Route tests import the module by relative path (`../../../src/routes/admin/settings/appearance/+page.server`) and call `load` or `actions.x({ request, locals })` directly, with fake `locals.user`. Call `resetSharedTestDb()` from `tests/helpers/db.ts` in `beforeEach`.
 - Tests never run migrations. `tests/setup.ts` builds the `:memory:` schema from hand-written DDL, and `tests/unit/core-contracts.test.ts` checks its columns against `schema.ts`.
 - Many tests are source guards: they `readFile` a `.svelte` or `.ts` file and assert copy, `aria-*` attributes or markup (e.g. `tests/unit/admin/dogfood-ui-invariants.test.ts`). Before changing user-facing text or markup, run `grep -rn "<old text>" tests/`.
-- There are no component-render or browser tests.
+- Component tests exist only for `src/lib/components/ui/form/`: `tests/unit/components/form-accessibility.test.ts` renders them on the server (`tests/helpers/svelte-compile.ts` compiles `.svelte` files for `bun test`), and `form-accessibility-dom.test.ts` mounts a browser-condition bundle into Happy DOM. There are no browser (Playwright) tests.
 
 ## Workflows
 

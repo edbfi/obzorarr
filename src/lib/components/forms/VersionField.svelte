@@ -1,7 +1,7 @@
 <script lang="ts">
 /**
  * Hidden field that carries the optimistic-concurrency `settingsVersion`
- * outside of any Formsnap binding. This is the v3 plan's external-OCC
+ * outside of any form-field binding (`Form.Field`). This is the v3 plan's external-OCC
  * pattern for `z.enum()` settings actions (ThemeSchema, WrappedLogoModeSchema)
  * where wrapping the enum in `z.object()` would change the payload shape.
  *

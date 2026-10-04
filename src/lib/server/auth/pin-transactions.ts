@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer';
 import type { Cookies } from '@sveltejs/kit';
 import { eq, lte } from 'drizzle-orm';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import { db } from '$lib/server/db/client';
 import { pinTransactions } from '$lib/server/db/schema';
 

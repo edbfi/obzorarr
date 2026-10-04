@@ -5,7 +5,7 @@ import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 import PlayIcon from '@lucide/svelte/icons/play';
 import { animate, stagger } from 'motion';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import { invalidateAll } from '$app/navigation';
 import { page } from '$app/state';

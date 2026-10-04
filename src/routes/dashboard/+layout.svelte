@@ -7,9 +7,9 @@ import Settings from '@lucide/svelte/icons/settings';
 import User from '@lucide/svelte/icons/user';
 import X from '@lucide/svelte/icons/x';
 import { type Component, type Snippet, tick } from 'svelte';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import Logo from '$lib/components/Logo.svelte';
 import type { LayoutData } from './$types';
 
@@ -26,7 +26,7 @@ const navItems: Array<{ href: string; label: string; icon: Component }> = [
 ];
 
 const isActive = $derived((href: string) => {
-	const currentPath = $page.url.pathname;
+	const currentPath = page.url.pathname;
 	if (href === '/dashboard') {
 		return currentPath === '/dashboard';
 	}

@@ -8,7 +8,7 @@ import ClockIcon from '@lucide/svelte/icons/clock';
 import PauseIcon from '@lucide/svelte/icons/pause';
 import PlayIcon from '@lucide/svelte/icons/play';
 import SquareIcon from '@lucide/svelte/icons/square';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { enhance } from '$app/forms';
 import { goto, invalidateAll } from '$app/navigation';
 import SubmitButton from '$lib/components/forms/SubmitButton.svelte';

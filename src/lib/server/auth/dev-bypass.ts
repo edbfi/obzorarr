@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import { env } from '$env/dynamic/private';
 import { getPlexConfig } from '$lib/server/admin/settings.service';
 import { db } from '$lib/server/db/client';

@@ -1,9 +1,9 @@
 <script lang="ts">
 import type { Snippet } from 'svelte';
 import { untrack } from 'svelte';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { invalidateAll } from '$app/navigation';
-import { page } from '$app/stores';
+import { page } from '$app/state';
 import SyncLoadingOverlay from '$lib/components/SyncLoadingOverlay.svelte';
 import { toast } from '$lib/services/toast';
 import { createSyncStatusStore, type SyncStatusStore } from '$lib/stores/sync-status.svelte';
@@ -149,10 +149,10 @@ const progress = $derived(
 );
 
 // Suppress the sync status region entirely on error pages (403/404/+error.svelte).
-// When $page.error is set, the overlay's role="status" aria-live region must be
+// When page.error is set, the overlay's role="status" aria-live region must be
 // absent from the a11y tree — not just visually hidden — so screen readers don't
 // announce "Syncing your viewing history…" over an error (ISSUE-023).
-const hasPageError = $derived(Boolean($page.error));
+const hasPageError = $derived(Boolean(page.error));
 </script>
 
 {#if !hasPageError}

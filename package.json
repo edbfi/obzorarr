@@ -28,6 +28,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.13",
+		"@happy-dom/global-registrator": "20.14.5",
 		"@internationalized/date": "3.12.4",
 		"@j178/prek": "0.5.3",
 		"@playwright/test": "1.63.0",
@@ -38,7 +39,6 @@
 		"@unocss/reset": "66.10.5",
 		"drizzle-kit": "0.31.11",
 		"fast-check": "4.10.2",
-		"formsnap": "2.0.1",
 		"rollup-plugin-visualizer": "7.1.1",
 		"svelte": "5.57.1",
 		"svelte-adapter-bun": "1.0.1",

@@ -11,7 +11,7 @@ import { join } from 'node:path';
 // above the friendly copy and read as a hard error. The HTTP status is unchanged
 // (still 404) — this is presentation only.
 //
-// These components consume `$app/stores` and are awkward to mount in unit tests,
+// These components read `page` from `$app/state` and are awkward to mount in unit tests,
 // so — consistent with the source-assertion contract pattern already used by
 // `sse-denial-contract.test.ts` and `route-export-guard.test.ts` — we assert at
 // the source level that the `.status-code` markup is conditionally gated (and, in
@@ -84,11 +84,11 @@ describe('ISSUE-002 — wrapped no-data error page suppresses the bare status co
 		expect(src).toContain('No Wrapped for ${year} yet');
 	});
 
-	it('does not change the HTTP status (status stays a read of $page.status)', async () => {
+	it('does not change the HTTP status (status stays a read of page.status)', async () => {
 		const src = await readSource('src/routes/wrapped/[year=year]/+error.svelte');
-		// The component only READS `$page.status`; the fix is presentation-only, so
+		// The component only READS `page.status`; the fix is presentation-only, so
 		// the rendered HTTP status (404) is unchanged.
-		expect(src).toContain('const status = $derived($page.status)');
+		expect(src).toContain('const status = $derived(page.status)');
 	});
 });
 
