@@ -17,7 +17,7 @@ export const HOST_HEADER = 'x-obzorarr-origin-host';
 export const PEER_HEADER = 'x-obzorarr-peer';
 /**
  * Set by the front, and only by the front, to the origin it supplies. The app reads it to know
- * that `event.url` already carries ORIGIN (proxyHandle then ignores forwarded headers);
+ * that `event.url` already carries ORIGIN (the reverse-proxy diagnostic then reports ORIGIN);
  * ORIGIN alone does not say that, because build/index.js started directly ignores ORIGIN.
  */
 export const FRONT_ORIGIN_MARKER = 'OBZORARR_FRONT_ORIGIN';
