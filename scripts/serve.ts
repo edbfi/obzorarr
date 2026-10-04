@@ -191,6 +191,8 @@ export async function serve(
 	}
 
 	const { origin, ownPeerHeader, directory, socket } = plan;
+	// The public listener's idle window (Bun's default is 10 s).
+	const idleSeconds = plan.idleTimeout ?? 10;
 	const removeSocketDirectory = () => rmSync(directory, { recursive: true, force: true });
 	let markReady = () => {};
 	const ready = new Promise<void>((resolveReady) => {
@@ -214,12 +216,20 @@ export async function serve(
 				headers.set(HOST_HEADER, origin.host);
 				if (ownPeerHeader) headers.set(PEER_HEADER, server.requestIP(request)?.address ?? '');
 				else headers.delete(PEER_HEADER);
+				// Bun 1.4.2 keeps the idle timer running while this handler awaits fetch(), so a
+				// request the app answers after the idle window (one waiting on Plex) would get an
+				// empty reply. Waiting for the app is not client idleness: the timer is off from the
+				// end of the request body (at once without one) until the app answers, then re-armed.
+				// A client that stalls mid-body is still closed.
+				const waitForApp = () => server.timeout(request, 0);
+				const body = request.method === 'GET' || request.method === 'HEAD' ? null : request.body;
+				if (!body) waitForApp();
 				let response: Response;
 				try {
 					response = await fetch(`http://localhost${forwardPath(request.url)}`, {
 						method: request.method,
 						headers,
-						body: request.method === 'GET' || request.method === 'HEAD' ? null : request.body,
+						body: body?.pipeThrough(new TransformStream({ flush: waitForApp })) ?? null,
 						redirect: 'manual',
 						decompress: false,
 						signal: request.signal,
@@ -227,6 +237,8 @@ export async function serve(
 					});
 				} catch {
 					return new Response('Service Unavailable', { status: 503 });
+				} finally {
+					server.timeout(request, idleSeconds);
 				}
 				if (
 					response.headers.get('content-type')?.startsWith('text/event-stream') &&
