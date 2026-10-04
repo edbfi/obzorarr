@@ -655,6 +655,27 @@ describe('serve.ts process', () => {
 		expect(socketDirectories(server.temp)).toEqual([]);
 	}, 25_000);
 
+	// The adapter exits with status 1 on a second signal during its drain, so sveltekit:shutdown
+	// never fires; the socket directory must still go.
+	it('removes the socket directory when a second signal ends the drain early', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			SHUTDOWN_TIMEOUT: '15'
+		});
+		const response = await fetch(`http://127.0.0.1:${server.port}/hold-open`);
+		const body = response.text().catch(() => '');
+		expect(socketDirectories(server.temp)).toHaveLength(1);
+		server.child.kill('SIGTERM');
+		await Bun.sleep(300);
+		server.child.kill('SIGTERM');
+
+		expect(await server.exited).toEqual({ code: 1, signal: null });
+		await body;
+		expect(socketDirectories(server.temp)).toEqual([]);
+	}, 20_000);
+
 	it('leaves nothing behind when the adapter fails to load', async () => {
 		const port = await freePort();
 		const server = await start(
