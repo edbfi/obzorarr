@@ -517,6 +517,68 @@ describe('serve.ts process', () => {
 		expect(reply.body.toString()).toBe('data: one\n\ndata: two\n\n');
 	}, 10_000);
 
+	// Bun 1.4.2 runs the idle timer while a handler awaits fetch(): without the fix, a request the
+	// adapter answered after the idle window got an empty reply (a closed connection).
+	it('answers requests the adapter takes longer than the client idle timeout to answer', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			IDLE_TIMEOUT: '1'
+		});
+		const [get, post] = await Promise.all([
+			call(server.port, '/slow?ms=4500'),
+			call(server.port, '/slow?ms=4500', { method: 'POST', body: 'abc' })
+		]);
+		expect([get.status, get.body.toString()]).toEqual([200, 'slow 0']);
+		expect([post.status, post.body.toString()]).toEqual([200, 'slow 3']);
+	}, 15_000);
+
+	/** Sends `raw` on a new connection; the seconds until the server closes it (Infinity: 10 s). */
+	function secondsUntilClosed(port: number, raw: string): Promise<number> {
+		return new Promise((done) => {
+			const started = Date.now();
+			const socket = connect(port, '127.0.0.1', () => socket.write(raw));
+			const timer = setTimeout(() => done(Number.POSITIVE_INFINITY), 10_000);
+			socket.on('data', () => {});
+			socket.on('error', () => {});
+			socket.on('close', () => {
+				clearTimeout(timer);
+				done((Date.now() - started) / 1000);
+			});
+			cleanups.push(() => socket.destroy());
+		});
+	}
+
+	it('still closes a client that stalls before its request body is complete', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			IDLE_TIMEOUT: '1'
+		});
+		const stalled = secondsUntilClosed(
+			server.port,
+			'POST /slow?ms=0 HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100\r\n\r\nhello'
+		);
+		expect(await stalled).toBeLessThan(8);
+	}, 15_000);
+
+	it('re-arms the client idle timeout once the adapter has answered', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			IDLE_TIMEOUT: '1'
+		});
+		// A keep-alive connection that goes idle after a slow answer is closed like any other.
+		const idle = secondsUntilClosed(
+			server.port,
+			'GET /slow?ms=1500 HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
+		);
+		expect(await idle).toBeLessThan(8);
+	}, 15_000);
+
 	// This pins the outcome (a slow client still downloading when the adapter has drained and
 	// emitted sveltekit:shutdown gets every byte; the front stops accepting and removes the
 	// socket), not the mechanism: on Bun 1.4.2 the body is already buffered in the front by then,
