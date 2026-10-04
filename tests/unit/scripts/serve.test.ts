@@ -13,6 +13,7 @@ import {
 	FRONT_ORIGIN_MARKER,
 	HOST_HEADER,
 	MISSING_ORIGIN_WARNING,
+	ORIGIN_FORMAT_ERROR,
 	PEER_HEADER,
 	PROTOCOL_HEADER,
 	parseOrigin,
@@ -152,24 +153,38 @@ const socketDirectories = (temp: string) =>
 	readdirSync(temp).filter((name) => name.startsWith('obzorarr-'));
 
 describe('parseOrigin', () => {
-	it.each(['http://192.168.1.10:3000', 'https://obzorarr.example.com', 'http://localhost:3000/'])(
-		'accepts %s',
-		(value) => {
-			expect(parseOrigin(value).origin).toBe(value.replace(/\/$/, ''));
-		}
-	);
+	it.each([
+		['http://192.168.1.10:3000', 'http://192.168.1.10:3000'],
+		['https://obzorarr.example.com', 'https://obzorarr.example.com'],
+		['http://localhost:3000/', 'http://localhost:3000'],
+		['  http://192.168.1.10:3000/  ', 'http://192.168.1.10:3000'],
+		['HTTP://Obzorarr.Example', 'http://obzorarr.example'],
+		['https://obzorarr.example:443', 'https://obzorarr.example'],
+		['http://obzorarr.lan:80/', 'http://obzorarr.lan'],
+		['http://[::1]:3000', 'http://[::1]:3000']
+	])('accepts %j as %s', (value, canonical) => {
+		expect(parseOrigin(value).origin).toBe(canonical);
+	});
 
 	it.each([
 		['a path', 'https://x.example/path'],
+		['a path with a trailing slash', 'https://x.example/path/'],
 		['a query', 'http://example.com/?a=1'],
+		['an empty query', 'http://example.com/?'],
 		['a fragment', 'http://example.com/#top'],
+		['an empty fragment', 'http://example.com#'],
 		['credentials', 'http://user:pass@example.com'],
-		['an explicit default port', 'https://example.com:443'],
-		['an uppercase host', 'http://Example.com'],
+		['a user name', 'http://user@example.com'],
 		['a non-http(s) scheme', 'ftp://x'],
 		['garbage', 'not a url']
-	])('rejects %s with a clear startup error', (_reason, value) => {
-		expect(() => parseOrigin(value)).toThrow(/^ORIGIN must be a bare http\(s\) origin/);
+	])('rejects %s with the startup error', (_reason, value) => {
+		expect(() => parseOrigin(value)).toThrow(ORIGIN_FORMAT_ERROR);
+	});
+
+	it('uses the shared startup error text', () => {
+		expect(ORIGIN_FORMAT_ERROR).toBe(
+			'ORIGIN must be a bare http(s) origin such as http://192.168.1.10:3000 (no path, query, fragment or credentials).'
+		);
 	});
 
 	it('never echoes credentials, even when the URL parser rejects the value', () => {
@@ -209,6 +224,21 @@ describe('prepare', () => {
 		const unset: Record<string, string | undefined> = {};
 		prepare(unset);
 		expect(unset).not.toHaveProperty('CONNECTION_IDLE_TIMEOUT');
+	});
+
+	it('exports the canonical ORIGIN for the app, and treats a blank ORIGIN as unset', () => {
+		const environment: Record<string, string | undefined> = {
+			ORIGIN: ' HTTP://192.168.1.10:3000/ '
+		};
+		const plan = prepare(environment);
+		if (plan.mode !== 'front') throw new Error('expected the front');
+		cleanups.push(() => rmSync(plan.directory, { recursive: true, force: true }));
+		expect(environment.ORIGIN).toBe('http://192.168.1.10:3000');
+		expect(environment[FRONT_ORIGIN_MARKER]).toBe('http://192.168.1.10:3000');
+
+		const blank: Record<string, string | undefined> = { ORIGIN: '   ' };
+		expect(prepare(blank)).toEqual({ mode: 'direct', warning: MISSING_ORIGIN_WARNING });
+		expect(blank).not.toHaveProperty('ORIGIN');
 	});
 
 	it('without ORIGIN sets nothing for a front, and warns unless PROTOCOL_HEADER is set', () => {
@@ -350,6 +380,15 @@ describe('serve.ts process', () => {
 		expect(seen.headers[PEER_HEADER]).toBe('127.0.0.1');
 		// Forwarded headers pass through untouched; the adapter only trusts the ones it is told to.
 		expect(seen.headers['x-forwarded-for']).toBe('203.0.113.9');
+	});
+
+	it('hands the adapter the canonical ORIGIN when it is written with a trailing slash', async () => {
+		const port = await freePort();
+		const server = await start({ ORIGIN: `http://127.0.0.1:${port}/`, PORT: String(port) });
+		const seen = await echo(server.port);
+		expect(seen.env.ORIGIN).toBe(`http://127.0.0.1:${port}`);
+		expect(seen.env[FRONT_ORIGIN_MARKER]).toBe(`http://127.0.0.1:${port}`);
+		expect(seen.headers[HOST_HEADER]).toBe(`127.0.0.1:${port}`);
 	});
 
 	it('passes an operator ADDRESS_HEADER through and drops a client-supplied peer header', async () => {
@@ -619,7 +658,7 @@ describe('serve.ts process', () => {
 			const server = await start({ ORIGIN: origin }, { waitForReady: false });
 			const { code } = await server.exited;
 			expect(code).not.toBe(0);
-			expect(server.output()).toContain('ORIGIN must be a bare http(s) origin');
+			expect(server.output()).toContain(ORIGIN_FORMAT_ERROR);
 			expect(server.output()).not.toContain(secret);
 			expect(server.output()).not.toContain('standin listening');
 		}

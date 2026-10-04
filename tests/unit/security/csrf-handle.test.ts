@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { and, desc, eq, like } from 'drizzle-orm';
 import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
 import { db } from '$lib/server/db/client';
 import { logs } from '$lib/server/db/schema';
 import { logger } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { csrfHandle } from '$lib/server/security/csrf-handle';
 import { resetSharedTestDb } from '../../helpers/db';
 
@@ -182,6 +183,83 @@ describe('csrfHandle (production mode)', () => {
 
 			const metadata = rows[0]?.metadata ?? '';
 			expect(metadata).toContain('<unmatched>');
+		});
+	});
+
+	// ORIGIN from the environment is the configured origin (it locks the stored one). The
+	// operator may write it with a trailing `/`, an uppercase host or the default port, as the
+	// front accepts; the browser's Origin header is always canonical.
+	describe('origin from the ORIGIN environment variable', () => {
+		const mutableEnv = env as Record<string, string | undefined>;
+
+		afterEach(() => {
+			delete mutableEnv.ORIGIN;
+		});
+
+		it.each([
+			['http://192.168.1.10:3000', 'http://192.168.1.10:3000'],
+			['http://192.168.1.10:3000/', 'http://192.168.1.10:3000'],
+			['  HTTP://Obzorarr.LAN:8080/ ', 'http://obzorarr.lan:8080'],
+			['https://obzorarr.example:443/', 'https://obzorarr.example']
+		])('ORIGIN=%j accepts writes from the browser origin %s', async (configured, browser) => {
+			await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
+			mutableEnv.ORIGIN = configured;
+
+			const response = await invoke(
+				makeEvent({
+					method: 'POST',
+					url: `${browser}/admin/settings/system?/updateLogSettings`,
+					origin: browser,
+					route: { id: '/admin/settings/system' }
+				})
+			);
+
+			expect(response.status).toBe(200);
+			expect(await response.text()).toBe('resolved');
+		});
+
+		it.each([
+			['a foreign origin', 'http://evil.example'],
+			['the other scheme', 'https://192.168.1.10:3000'],
+			['another port', 'http://192.168.1.10:3001']
+		])('ORIGIN with a trailing slash still rejects %s', async (_reason, browser) => {
+			await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
+			mutableEnv.ORIGIN = 'http://192.168.1.10:3000/';
+
+			const response = await invoke(
+				makeEvent({
+					method: 'POST',
+					url: 'http://192.168.1.10:3000/admin/settings/system?/updateLogSettings',
+					origin: browser,
+					route: { id: '/admin/settings/system' }
+				})
+			);
+
+			expect(response.status).toBe(403);
+		});
+
+		it('ORIGIN wins over a stored CSRF origin', async () => {
+			await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
+			await setAppSetting(AppSettingsKey.CSRF_ORIGIN, 'https://stored.example');
+			mutableEnv.ORIGIN = 'http://192.168.1.10:3000/';
+
+			const fromEnv = await invoke(
+				makeEvent({
+					method: 'POST',
+					url: 'http://192.168.1.10:3000/api/security/dismiss-csrf-warning',
+					origin: 'http://192.168.1.10:3000'
+				})
+			);
+			expect(fromEnv.status).toBe(200);
+
+			const fromStored = await invoke(
+				makeEvent({
+					method: 'POST',
+					url: 'http://192.168.1.10:3000/api/security/dismiss-csrf-warning',
+					origin: 'https://stored.example'
+				})
+			);
+			expect(fromStored.status).toBe(403);
 		});
 	});
 
