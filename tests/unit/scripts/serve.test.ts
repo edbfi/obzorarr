@@ -700,6 +700,34 @@ describe('serve.ts process', () => {
 		expect(socketDirectories(server.temp)).toEqual([]);
 	}, 15_000);
 
+	// A request the app is still working on when the drain deadline passes (one waiting on Plex)
+	// gets the front's 503, but its work kept the process alive past the deadline, so a container
+	// stop killed it. The stand-in's /slow handler keeps a 15 s timer pending.
+	it('exits at the drain deadline while the app is still working on a request', async () => {
+		const port = await freePort();
+		const server = await start({
+			ORIGIN: `http://127.0.0.1:${port}`,
+			PORT: String(port),
+			SHUTDOWN_TIMEOUT: '2'
+		});
+		const pending = call(server.port, '/slow?ms=15000').catch((error: unknown) => error);
+		await Bun.sleep(300);
+		const signalled = Date.now();
+		server.child.kill('SIGTERM');
+
+		const exited = await Promise.race([
+			server.exited,
+			Bun.sleep(8000).then(() => 'still running' as const)
+		]);
+		expect(exited).toEqual({ code: 0, signal: null });
+		const elapsed = (Date.now() - signalled) / 1000;
+		expect(elapsed).toBeGreaterThanOrEqual(1.5);
+		expect(elapsed).toBeLessThan(5);
+		const reply = await pending;
+		expect(reply instanceof Error || (reply as Reply).status === 503).toBe(true);
+		expect(socketDirectories(server.temp)).toEqual([]);
+	}, 20_000);
+
 	it('shuts down cleanly when SIGTERM arrives while the adapter is still loading', async () => {
 		const port = await freePort();
 		const server = await start(
