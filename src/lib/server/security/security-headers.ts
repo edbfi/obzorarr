@@ -6,12 +6,11 @@ export function applySecurityHeaders(response: Response, isHttps: boolean): Resp
 	// Content-Security-Policy is managed by SvelteKit's kit csp option (`kitConfig` in vite.config.ts)
 	// using nonce mode, which eliminates the need for 'unsafe-inline' on script-src.
 
-	// Trust the protocol decision the caller made. proxyHandle is the single
-	// gate that honours TRUST_PROXY when deciding whether to rewrite event.url
-	// from x-forwarded-proto; reading the header here would bypass that gate
-	// and let an upstream-spoofed `X-Forwarded-Proto: https` advertise HSTS on
-	// an HTTP-only deployment, letting browsers cache a permanent upgrade hint
-	// for an origin that cannot serve HTTPS.
+	// Trust the protocol decision the caller made from event.url (ORIGIN through the
+	// front, else the adapter's origin). Reading X-Forwarded-Proto here would let a
+	// spoofed `X-Forwarded-Proto: https` advertise HSTS on an HTTP-only deployment,
+	// letting browsers cache a permanent upgrade hint for an origin that cannot
+	// serve HTTPS.
 	if (isHttps) {
 		response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 	}

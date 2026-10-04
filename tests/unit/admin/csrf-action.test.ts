@@ -194,8 +194,8 @@ describe('admin updateCsrfOrigin action', () => {
 		expect(await getAppSetting(AppSettingsKey.CSRF_ORIGIN)).toBe(publicOrigin);
 	});
 
-	it('falls back to event.url.origin (proxy-rewritten) when Origin/Referer headers are absent', async () => {
-		// proxyHandle rewrites event.url to the public-facing origin. When a
+	it('falls back to event.url.origin (the public origin) when Origin/Referer headers are absent', async () => {
+		// event.url carries the public-facing origin (ORIGIN through the front). When a
 		// request arrives without Origin or Referer (unusual for a browser POST
 		// but possible), we should use event.url.origin as the fallback rather
 		// than request.url which is the raw internal URL.

@@ -315,9 +315,9 @@ describe('csrfHandle (production mode)', () => {
 		});
 
 		it('keys on route+action regardless of origin header (forged x-forwarded cannot widen it)', async () => {
-			// Under TRUST_PROXY, proxyHandle rewrites event.url.origin from
-			// x-forwarded-* before csrfHandle runs. The carve-out decision must be
-			// independent of that origin: the repair POST resolves whether or not
+			// Without ORIGIN, event.url.origin comes from the request's Host (or an
+			// operator's HOST_HEADER), which a client can forge. The carve-out decision
+			// must be independent of that origin: the repair POST resolves whether or not
 			// the (spoofable) request origin matches, AND a non-repair route still
 			// 403s — so a forged forwarded header cannot exempt anything else.
 			await setAppSetting(AppSettingsKey.CSRF_ORIGIN, 'https://wrong.example');

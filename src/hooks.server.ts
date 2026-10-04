@@ -31,7 +31,6 @@ import { env } from '$lib/server/private-env';
 import {
 	applySecurityHeaders,
 	csrfHandle,
-	proxyHandle,
 	rateLimitHandle,
 	requestFilterHandle
 } from '$lib/server/security';
@@ -39,10 +38,9 @@ import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { initializeServer } from '$lib/server/startup';
 
 export const init: ServerInit = initializeServer;
-// `event.url.protocol` is the single source of truth: proxyHandle rewrites
-// event.url from x-forwarded-proto only when TRUST_PROXY is enabled, so reading
-// it here keeps the HSTS decision aligned with the trust-proxy gate rather than
-// reading the raw header twice.
+// `event.url.protocol` is the single source of truth: it carries ORIGIN's scheme when
+// scripts/serve.ts fronts the app, else the adapter's (PROTOCOL_HEADER, or https), so
+// HSTS never follows a raw, client-supplied X-Forwarded-Proto.
 const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 	return applySecurityHeaders(response, event.url.protocol === 'https:');
@@ -283,7 +281,6 @@ export const handleError: HandleServerError = async ({ kind, error, event }) => 
 export const handle = sequence(
 	requestFilterHandle,
 	rateLimitHandle,
-	proxyHandle,
 	csrfHandle,
 	initializationHandle,
 	securityHeadersHandle,

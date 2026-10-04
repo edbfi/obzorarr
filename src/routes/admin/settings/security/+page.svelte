@@ -43,15 +43,11 @@ let isSavingCsrf = $state(false);
 let isTestingCsrf = $state(false);
 let isClearingCsrfSkip = $state(false);
 let isResetingWarning = $state(false);
-let isTogglingTrustProxy = $state(false);
-let isConfirmingTrustProxy = $state(false);
 let isConfirmingCsrfMismatch = $state(false);
 
 let csrfMismatchDialogOpen = $state(false);
 let pendingCsrfOrigin = $state<string | null>(null);
 let pendingMismatchMessage = $state('');
-
-let trustProxyConfirmDialogOpen = $state(false);
 
 let diagnostic = $state<ReverseProxyDiagnostic | null>(null);
 let diagnosticStatus = $state<'idle' | 'checking' | 'success' | 'failure'>('idle');
@@ -59,7 +55,6 @@ let diagnosticError = $state<string | null>(null);
 let showDiagnosticDetails = $state(false);
 let hasRunInitialDiagnostic = $state(false);
 let diagnosticRunToken = 0;
-let trustProxyVerificationPending = $state(false);
 let copiedGuideId = $state<string | null>(null);
 
 async function runDiagnostic({ userInitiated = false }: { userInitiated?: boolean } = {}) {
@@ -107,26 +102,6 @@ async function runDiagnostic({ userInitiated = false }: { userInitiated?: boolea
 		if (userInitiated) toast.error(diagnosticError);
 	}
 }
-async function refreshDiagnosticAfterTrustProxyWrite() {
-	diagnostic = null;
-	diagnosticError = null;
-	diagnosticStatus = 'idle';
-	trustProxyVerificationPending = true;
-	try {
-		await invalidateAll();
-		await runDiagnostic();
-	} catch {
-		diagnosticStatus = 'failure';
-		diagnosticError = REVERSE_PROXY_COPY.savedUnverified;
-	} finally {
-		trustProxyVerificationPending = false;
-	}
-	if (!diagnostic) {
-		diagnosticStatus = 'failure';
-		diagnosticError = REVERSE_PROXY_COPY.savedUnverified;
-	}
-}
-
 async function copyGuide(id: string, config: string) {
 	try {
 		await navigator.clipboard.writeText(config);
@@ -346,13 +321,9 @@ const applicableProviderGuides = $derived(
 		<CardHeader>
 			<CardTitle>{REVERSE_PROXY_COPY.panelTitle}</CardTitle>
 			<CardDescription>
-				Controls whether Obzorarr trusts <code>x-forwarded-*</code> headers from your reverse proxy.
-				Source:
-				<strong>{security.trustProxySource}</strong>
-				{#if security.trustProxyLocked}
-					(locked by env)
-				{/if}
-				.
+				Compares the address your browser opened with the origin Obzorarr sees. Set it with the
+				<code>ORIGIN</code>
+				environment variable.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
@@ -360,9 +331,7 @@ const applicableProviderGuides = $derived(
 				<div class="status-card neutral" role="status" aria-live="polite" aria-busy="true">
 					<LoaderCircleIcon class="size-5 animate-spin status-icon" aria-hidden="true" />
 					<div class="status-text">
-						<span class="status-headline"
-							>{trustProxyVerificationPending ? 'Saved. Verifying…' : 'Checking your connection…'}</span
-						>
+						<span class="status-headline">Checking your connection…</span>
 						<span class="status-body"
 							>Comparing what your browser sees with what Obzorarr receives.</span
 						>
@@ -447,21 +416,11 @@ const applicableProviderGuides = $derived(
 									>{diagnostic.facts.origins.forwardedPair ?? 'not available'}</span
 								>
 							</div>
-							<div>
-								<span class="fact-label">TRUST_PROXY</span
-								><span class="fact-value"
-									>{diagnostic.facts.trustProxy.enabled ? 'Enabled' : 'Disabled'},
-									{diagnostic.facts.trustProxy.source}
-									{#if diagnostic.facts.trustProxy.isLocked}
-										(locked)
-									{/if}</span
-								>
-							</div>
 						</div>
 						<p class="safety-note">{presentation.safetyNotice}</p>
 						{#if applicableProviderGuides.length > 0}
 							<div class="provider-guides">
-								<span class="reasons-label">Repair steps by proxy</span>
+								<span class="reasons-label">{REVERSE_PROXY_COPY.providerGuidesHeading}</span>
 								{#each applicableProviderGuides as guide}
 									<details class="provider-guide">
 										<summary>{guide.label}</summary>
@@ -503,8 +462,7 @@ const applicableProviderGuides = $derived(
 						{/if}
 						<p class="safety-note">
 							{presentation.consequence}
-							Restart Obzorarr after changing an environment-controlled TRUST_PROXY setting, then
-							rerun this diagnostic.
+							Restart Obzorarr after changing ORIGIN, then rerun this diagnostic.
 						</p>
 						<div class="re-check">
 							<Button
@@ -522,61 +480,6 @@ const applicableProviderGuides = $derived(
 						</div>
 					</div>
 				{/if}
-			{/if}
-
-			{#if security.trustProxyLocked}
-				<p class="text-sm text-muted-foreground">
-					The <code>TRUST_PROXY</code> environment variable controls header trust, so you cannot
-					change it here.
-				</p>
-			{:else if security.trustProxyValue}
-				<form
-					method="POST"
-					action="?/updateTrustProxy"
-					use:enhance={({ cancel }) => {
-	if (isTogglingTrustProxy) {
-		cancel();
-		return;
-	}
-	isTogglingTrustProxy = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await refreshDiagnosticAfterTrustProxyWrite();
-		} finally {
-			isTogglingTrustProxy = false;
-		}
-	};
-}}
-				>
-					<input type="hidden" name="enabled" value="false">
-					<input type="hidden" name="settingsVersion" value={data.trustProxyVersion}>
-					<SettingsActionBar>
-						<Button
-							type="submit"
-							variant="destructive"
-							class="tap-target"
-							disabled={isTogglingTrustProxy}
-						>
-							{isTogglingTrustProxy ? 'Disabling…' : 'Disable header trust'}
-						</Button>
-					</SettingsActionBar>
-				</form>
-			{:else if diagnostic?.action === 'confirm-trust-boundary'}
-				<SettingsActionBar>
-					<button
-						type="button"
-						class="enable-header-trust-button tap-target"
-						data-testid="enable-header-trust"
-						onclick={() => (trustProxyConfirmDialogOpen = true)}
-						disabled={isConfirmingTrustProxy}
-					>
-						Enable header trust
-					</button>
-				</SettingsActionBar>
 			{/if}
 		</CardContent>
 	</Card>
@@ -624,87 +527,7 @@ const applicableProviderGuides = $derived(
 	</AlertDialog.Content>
 </AlertDialog.Root>
 
-<AlertDialog.Root bind:open={trustProxyConfirmDialogOpen}>
-	<AlertDialog.Content>
-		<AlertDialog.Header>
-			<AlertDialog.Title>Enable reverse-proxy header trust?</AlertDialog.Title>
-			<AlertDialog.Description>
-				Obzorarr will use the upstream proxy's X-Forwarded-Host and X-Forwarded-Proto values for
-				effective public URLs. Enable this only when the proxy removes or overwrites
-				visitor-supplied forwarding headers; otherwise attackers could spoof the host or protocol
-				used for security decisions and generated URLs. Client-IP handling is configured separately
-				by the runtime or adapter.
-			</AlertDialog.Description>
-		</AlertDialog.Header>
-		<AlertDialog.Footer>
-			<AlertDialog.Cancel disabled={isConfirmingTrustProxy}>Cancel</AlertDialog.Cancel>
-			<form
-				method="POST"
-				action="?/updateTrustProxy"
-				use:enhance={() => {
-	isConfirmingTrustProxy = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await refreshDiagnosticAfterTrustProxyWrite();
-		} finally {
-			isConfirmingTrustProxy = false;
-			trustProxyConfirmDialogOpen = false;
-		}
-	};
-}}
-				style="display: contents;"
-			>
-				<input type="hidden" name="enabled" value="true">
-				<input type="hidden" name="confirmRisk" value="true">
-				<input type="hidden" name="settingsVersion" value={data.trustProxyVersion}>
-				<input
-					type="hidden"
-					name="browserOrigin"
-					value={typeof window !== 'undefined' ? window.location.origin : ''}
-				>
-				<AlertDialog.Action type="submit" class="tap-target" disabled={isConfirmingTrustProxy}>
-					{isConfirmingTrustProxy ? 'Enabling…' : 'Enable header trust'}
-				</AlertDialog.Action>
-			</form>
-		</AlertDialog.Footer>
-	</AlertDialog.Content>
-</AlertDialog.Root>
-
 <style>
-/* Plain-button styling for the "Enable header trust" CTA. Uses a
-	   native <button> instead of the shadcn Button wrapper so the
-	   onclick handler attaches reliably (the wrapper's restProps
-	   spread under tailwind-variants composition was dropping clicks
-	   on dialog-opener buttons during the ui-overhaul branch). */
-.enable-header-trust-button {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-height: var(--min-tap-size);
-	padding: 0.5rem 1rem;
-	font-size: 0.875rem;
-	font-weight: 500;
-	background: oklch(var(--primary));
-	color: oklch(var(--primary-foreground));
-	border: 1px solid transparent;
-	border-radius: var(--radius);
-	cursor: pointer;
-	transition: opacity 0.15s ease;
-}
-
-.enable-header-trust-button:hover:not(:disabled) {
-	opacity: 0.9;
-}
-
-.enable-header-trust-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .status-card {
 	display: flex;
 	align-items: flex-start;

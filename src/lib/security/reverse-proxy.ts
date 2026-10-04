@@ -22,12 +22,6 @@ export interface ReverseProxyForwardedPairFact {
 	hostPresent: boolean;
 }
 
-export interface ReverseProxyConfigFact {
-	enabled: boolean;
-	source: ReverseProxyConfigSource;
-	isLocked: boolean;
-}
-
 export interface ReverseProxyConfiguredOriginFact {
 	isConfigured: boolean;
 	isValid: boolean;
@@ -45,26 +39,14 @@ export type SourceAddressCategory =
 	| 'unknown';
 
 export type ReverseProxyRecommendationAction =
-	| 'confirm-trust-boundary'
-	| 'leave-disabled'
-	| 'review-proxy'
-	| 'appears-working'
-	| 'unable-to-determine'
-	| 'env-controlled';
+	| 'origin-matches'
+	| 'set-origin'
+	| 'unable-to-determine';
 
 export type ReverseProxyDiagnosticReasonCode =
-	| 'trust-proxy-env-locked-enabled'
-	| 'trust-proxy-env-locked-disabled'
 	| 'browser-origin-invalid'
-	| 'forwarded-pair-matches-browser'
-	| 'request-origin-matches-without-forwarded-pair'
-	| 'request-origin-already-matches-browser'
-	| 'forwarded-pair-missing'
-	| 'forwarded-pair-partial'
-	| 'forwarded-pair-invalid'
-	| 'forwarded-pair-ambiguous'
-	| 'trust-proxy-working'
-	| 'trust-proxy-enabled-broken'
+	| 'request-origin-matches-browser'
+	| 'request-origin-differs-from-browser'
 	| 'origin-env-configured'
 	| 'origin-env-mismatch';
 
@@ -78,7 +60,7 @@ export type ReverseProxyDocumentationId =
 	| 'nginx-proxy-manager-custom-config'
 	| 'caddy-reverse-proxy'
 	| 'apache-request-header'
-	| 'obzorarr-trust-proxy';
+	| 'obzorarr-origin';
 
 export type ReverseProxyProviderId = 'nginx' | 'nginx-proxy-manager' | 'caddy' | 'apache' | 'other';
 
@@ -103,7 +85,6 @@ export interface ReverseProxyPresentation {
 	documentationIds: ReverseProxyDocumentationId[];
 }
 export interface ReverseProxyDiagnosticFacts {
-	trustProxy: ReverseProxyConfigFact;
 	browserOrigin: {
 		isValid: boolean;
 		origin: string | null;
@@ -121,7 +102,6 @@ export interface ReverseProxyDiagnosticFacts {
 		category: SourceAddressCategory;
 	};
 	originComparison: {
-		browserMatchesRequestUrl: boolean | null;
 		browserMatchesEffectiveApp: boolean | null;
 		forwardedPairMatchesBrowser: boolean | null;
 	};

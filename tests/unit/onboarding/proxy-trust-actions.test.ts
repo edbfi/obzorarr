@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
-import { AppSettingsKey, getAppSetting, setAppSetting } from '$lib/server/admin/settings.service';
+import { getAppSetting } from '$lib/server/admin/settings.service';
 import {
 	getOnboardingStep,
 	ONBOARDING_CLAIM_REQUIRED_MESSAGE,
@@ -14,7 +14,6 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
-import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/proxy-trust/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 import { TEST_REQUEST_URL } from '../../helpers/requests';
@@ -22,11 +21,8 @@ import { TEST_REQUEST_URL } from '../../helpers/requests';
 const OVERSIZED_BROWSER_ORIGIN = `https://wrapped.example.com/${'a'.repeat(2049)}`;
 type ContinueAction = NonNullable<typeof actions.continue>;
 type DiagnoseReverseProxyAction = NonNullable<typeof actions.diagnoseReverseProxy>;
-type EnableTrustProxyAction = NonNullable<typeof actions.enableTrustProxy>;
-
-function envRecord(): Record<string, string | undefined> {
-	return env as Record<string, string | undefined>;
-}
+// The app_settings key the retired enableTrustProxy action wrote; nothing may write it now.
+const RETIRED_TRUST_PROXY_KEY = 'trust_proxy' as Parameters<typeof getAppSetting>[0];
 
 function createCookies() {
 	const values = new Map<string, string>();
@@ -38,7 +34,6 @@ function createCookies() {
 }
 
 let cookies: ReturnType<typeof createCookies>;
-let previousTrustProxyEnv: string | undefined;
 let actionHeaders: Record<string, string>[] = [];
 
 function createThrowingClaimCookies(errorToThrow: Error): ReturnType<typeof createCookies> {
@@ -66,22 +61,6 @@ function createReverseProxyDiagnosticRequest(
 			'x-forwarded-proto': 'https',
 			'x-forwarded-host': 'wrapped.example.com',
 			...headers
-		},
-		body: formData
-	});
-}
-
-function createEnableTrustProxyRequest(confirmRisk = true): Request {
-	const formData = new FormData();
-	formData.set('browserOrigin', 'https://wrapped.example.com');
-	if (confirmRisk) formData.set('confirmRisk', 'true');
-
-	return new Request('http://internal.local/onboarding/proxy-trust', {
-		method: 'POST',
-		headers: {
-			origin: 'https://wrapped.example.com',
-			'x-forwarded-proto': 'https',
-			'x-forwarded-host': 'wrapped.example.com'
 		},
 		body: formData
 	});
@@ -115,18 +94,6 @@ async function runDiagnoseReverseProxy(request: Request) {
 	} as unknown as Parameters<DiagnoseReverseProxyAction>[0]);
 }
 
-async function runEnableTrustProxy(request: Request) {
-	const action = actions.enableTrustProxy as EnableTrustProxyAction;
-	actionHeaders = [];
-	return action({
-		request,
-		cookies,
-		url: new URL(request.url),
-		getClientAddress: () => '172.18.0.2',
-		setHeaders: (headers: Record<string, string>) => actionHeaders.push(headers)
-	} as unknown as Parameters<EnableTrustProxyAction>[0]);
-}
-
 async function expectRedirect(run: () => Promise<unknown>, location: string) {
 	try {
 		await run();
@@ -141,8 +108,6 @@ async function expectRedirect(run: () => Promise<unknown>, location: string) {
 
 describe('onboarding proxy-trust actions', () => {
 	beforeEach(async () => {
-		previousTrustProxyEnv = envRecord().TRUST_PROXY;
-		delete envRecord().TRUST_PROXY;
 		await resetSharedTestDb();
 		clearBootstrapToken();
 		cookies = createCookies();
@@ -155,16 +120,11 @@ describe('onboarding proxy-trust actions', () => {
 		await setOnboardingStep(OnboardingSteps.PROXY_TRUST);
 	});
 
-	afterEach(() => {
-		if (previousTrustProxyEnv === undefined) delete envRecord().TRUST_PROXY;
-		else envRecord().TRUST_PROXY = previousTrustProxyEnv;
-	});
-
-	it('exposes diagnostic, enable, and continue actions only', () => {
+	it('exposes diagnostic and continue actions only (header trust is retired)', () => {
 		expect('default' in actions).toBe(false);
 		expect(typeof actions.continue).toBe('function');
 		expect(typeof actions.diagnoseReverseProxy).toBe('function');
-		expect(typeof actions.enableTrustProxy).toBe('function');
+		expect('enableTrustProxy' in actions).toBe(false);
 	});
 	it('uses the shared presenter and accessible progressive disclosure in the onboarding UI', async () => {
 		const page = await readFile('src/routes/onboarding/proxy-trust/+page.svelte', 'utf8');
@@ -180,9 +140,10 @@ describe('onboarding proxy-trust actions', () => {
 		expect(page).toContain('<details class="provider-guide">');
 		expect(page).toContain('role="status" aria-live="polite"');
 		expect(page).toContain('Copy configuration');
-		expect(page).toContain("savedState = 'verifying'");
-		expect(page).toContain('void runDiagnostic(true)');
-		expect(page).toContain('REVERSE_PROXY_COPY.savedUnverified');
+		expect(page).toContain('REVERSE_PROXY_COPY.providerGuidesHeading');
+		expect(page).not.toContain('enableTrustProxy');
+		expect(page).not.toContain('TRUST_PROXY');
+		expect(page).not.toContain('trustProxy');
 		expect(page).toContain('presentation.documentationIds.includes(guide.documentationId)');
 		expect(page).toContain('{#each applicableProviderGuides as guide}');
 		expect(page).toContain('class="details-toggle tap-target"');
@@ -217,26 +178,24 @@ describe('onboarding proxy-trust actions', () => {
 		});
 	});
 
-	it('runs a read-only reverse proxy diagnostic without persisting TRUST_PROXY', async () => {
+	it('runs a read-only reverse proxy diagnostic that recommends ORIGIN', async () => {
 		const result = await runDiagnoseReverseProxy(createReverseProxyDiagnosticRequest());
 
 		expect(result).toMatchObject({
 			reverseProxyDiagnostic: {
 				facts: {
-					trustProxy: {
-						enabled: false,
-						source: 'default',
-						isLocked: false
-					},
 					forwardedHeaders: {
 						present: ['X-Forwarded-Host', 'X-Forwarded-Proto']
 					}
 				},
-				action: 'confirm-trust-boundary',
-				reasonCodes: ['forwarded-pair-matches-browser']
+				action: 'set-origin',
+				reasonCodes: ['request-origin-differs-from-browser']
 			}
 		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
+		expect(
+			(result as { reverseProxyDiagnostic: { facts: object } }).reverseProxyDiagnostic.facts
+		).not.toHaveProperty('trustProxy');
+		expect(await getAppSetting(RETIRED_TRUST_PROXY_KEY)).toBeNull();
 		expect(await getOnboardingStep()).toBe(OnboardingSteps.PROXY_TRUST);
 		expect(actionHeaders).toEqual([{ 'Cache-Control': 'no-store' }]);
 	});
@@ -250,7 +209,7 @@ describe('onboarding proxy-trust actions', () => {
 			status: 400,
 			data: { diagnosticError: 'browserOrigin is too long' }
 		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
+		expect(await getAppSetting(RETIRED_TRUST_PROXY_KEY)).toBeNull();
 		expect(await getOnboardingStep()).toBe(OnboardingSteps.PROXY_TRUST);
 	});
 
@@ -276,155 +235,13 @@ describe('onboarding proxy-trust actions', () => {
 		expect(actionHeaders).toEqual([{ 'Cache-Control': 'no-store' }]);
 	});
 
-	it('rejects enabling TRUST_PROXY without explicit risk confirmation', async () => {
-		const result = await runEnableTrustProxy(createEnableTrustProxyRequest(false));
-
-		expect(result).toEqual({
-			status: 400,
-			data: {
-				trustProxyError: 'Confirm the reverse-proxy header trust risk before enabling TRUST_PROXY.'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('rejects enabling TRUST_PROXY with a structurally abusive browser origin', async () => {
-		const formData = new FormData();
-		formData.set('browserOrigin', OVERSIZED_BROWSER_ORIGIN);
-		formData.set('confirmRisk', 'true');
-
-		const result = await runEnableTrustProxy(
-			new Request('http://internal.local/onboarding/proxy-trust', {
-				method: 'POST',
-				headers: {
-					origin: 'https://wrapped.example.com',
-					'x-forwarded-proto': 'https',
-					'x-forwarded-host': 'wrapped.example.com'
-				},
-				body: formData
-			})
-		);
-
-		expect(result).toEqual({
-			status: 400,
-			data: { trustProxyError: 'browserOrigin is too long' }
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('rejects enabling TRUST_PROXY when environment controlled', async () => {
-		envRecord().TRUST_PROXY = 'true';
-
-		const result = await runEnableTrustProxy(createEnableTrustProxyRequest(true));
-
-		expect(result).toEqual({
-			status: 400,
-			data: {
-				trustProxyError:
-					'TRUST_PROXY is set via environment variable and must be changed in your environment or container configuration.'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('rejects enabling TRUST_PROXY when the request origin differs from the submitted browser origin', async () => {
-		const formData = new FormData();
-		formData.set('browserOrigin', 'https://wrapped.example.com');
-		formData.set('confirmRisk', 'true');
-		const mismatchedRequest = new Request('http://internal.local/onboarding/proxy-trust', {
-			method: 'POST',
-			headers: {
-				origin: 'https://other.example.com',
-				'x-forwarded-proto': 'https',
-				'x-forwarded-host': 'wrapped.example.com'
-			},
-			body: formData
-		});
-
-		const mismatchedResult = await runEnableTrustProxy(mismatchedRequest);
-
-		expect(mismatchedResult).toEqual({
-			status: 403,
-			data: {
-				trustProxyError: 'Reverse proxy header trust must be enabled from this browser origin'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('persists TRUST_PROXY only after confirmation and a current enable recommendation', async () => {
-		const result = await runEnableTrustProxy(createEnableTrustProxyRequest(true));
-
-		expect(result).toEqual({
-			trustProxySuccess: true,
-			trustProxyMessage: 'Reverse-proxy header trust enabled.'
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBe('true');
-		expect(await getOnboardingStep()).toBe(OnboardingSteps.PROXY_TRUST);
-		expect(actionHeaders).toEqual([{ 'Cache-Control': 'no-store' }]);
-	});
-
-	it('rejects enabling TRUST_PROXY when the current diagnostic does not recommend it', async () => {
-		const ORIGIN = 'http://localhost:5173';
-		const result = await runEnableTrustProxy(
-			new Request(`${ORIGIN}/onboarding/proxy-trust`, {
-				method: 'POST',
-				headers: { origin: ORIGIN },
-				body: (() => {
-					const formData = new FormData();
-					formData.set('browserOrigin', ORIGIN);
-					formData.set('confirmRisk', 'true');
-					return formData;
-				})()
-			})
-		);
-
-		expect(result).toEqual({
-			status: 400,
-			data: {
-				trustProxyError:
-					'The current diagnostic does not recommend enabling reverse proxy header trust.'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	// ISSUE-001: when the diagnostic does NOT recommend enabling, the error
-	// message must reflect that — even if confirmRisk is also missing — so an
-	// API-direct caller that sends confirmRisk=true later does not pass the
-	// guard simply because the prior failure message blamed confirmRisk.
-	it('rejects with the diagnostic error first when diagnostic disagrees AND confirmRisk is absent', async () => {
-		const ORIGIN = 'http://localhost:5173';
-		const formData = new FormData();
-		formData.set('browserOrigin', ORIGIN);
-		// confirmRisk omitted on purpose
-
-		const result = await runEnableTrustProxy(
-			new Request(`${ORIGIN}/onboarding/proxy-trust`, {
-				method: 'POST',
-				headers: { origin: ORIGIN },
-				body: formData
-			})
-		);
-
-		expect(result).toEqual({
-			status: 400,
-			data: {
-				trustProxyError:
-					'The current diagnostic does not recommend enabling reverse proxy header trust.'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
 	it('propagates unexpected claim errors for centralized sanitization', async () => {
 		const unexpected = new Error('raw database path should stay server-side');
 		cookies = createThrowingClaimCookies(unexpected);
 
 		for (const run of [
 			() => runContinue(createContinueRequest()),
-			() => runDiagnoseReverseProxy(createReverseProxyDiagnosticRequest()),
-			() => runEnableTrustProxy(createEnableTrustProxyRequest(true))
+			() => runDiagnoseReverseProxy(createReverseProxyDiagnosticRequest())
 		]) {
 			try {
 				await run();
@@ -454,19 +271,7 @@ describe('onboarding proxy-trust actions', () => {
 				status: 403,
 				data: { diagnosticError: 'Not allowed at this onboarding stage' }
 			});
-			expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-		});
-
-		it('enableTrustProxy returns 403 when onboarding is complete', async () => {
-			await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
-
-			const result = await runEnableTrustProxy(createEnableTrustProxyRequest(true));
-
-			expect(result).toEqual({
-				status: 403,
-				data: { trustProxyError: 'Not allowed at this onboarding stage' }
-			});
-			expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
+			expect(await getAppSetting(RETIRED_TRUST_PROXY_KEY)).toBeNull();
 		});
 	});
 });

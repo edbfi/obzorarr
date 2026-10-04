@@ -16,13 +16,13 @@ import type {
 function diagnostic(
 	action: ReverseProxyRecommendationAction,
 	status: ForwardedProtoHostStatus = 'usable',
-	overrides: Partial<ReverseProxyDiagnostic['facts']['trustProxy']> = {}
+	reasonCodes: ReverseProxyDiagnostic['reasonCodes'] = []
 ): ReverseProxyDiagnostic {
 	const protoPresent = status !== 'missing';
 	const hostPresent = status !== 'missing' && status !== 'partial';
+	const matches = action === 'origin-matches';
 	return {
 		facts: {
-			trustProxy: { enabled: false, source: 'default', isLocked: false, ...overrides },
 			browserOrigin: { isValid: true, origin: 'https://wrapped.example.com' },
 			configuredPublicOrigin: {
 				isConfigured: true,
@@ -31,7 +31,7 @@ function diagnostic(
 				isLocked: false
 			},
 			origins: {
-				effectiveApp: 'https://wrapped.example.com',
+				effectiveApp: matches ? 'https://wrapped.example.com' : 'https://obzorarr:3000',
 				forwardedPair: 'https://wrapped.example.com'
 			},
 			forwardedHeaders: {
@@ -50,231 +50,103 @@ function diagnostic(
 			},
 			sourceAddress: { category: 'docker/private-range' },
 			originComparison: {
-				browserMatchesRequestUrl: false,
-				browserMatchesEffectiveApp: true,
+				browserMatchesEffectiveApp: matches,
 				forwardedPairMatchesBrowser: true
 			}
 		},
 		action,
-		reasonCodes: []
+		reasonCodes
 	};
 }
 
+const ACTIONS: ReverseProxyRecommendationAction[] = [
+	'origin-matches',
+	'set-origin',
+	'unable-to-determine'
+];
+
 describe('reverse proxy presenter', () => {
-	it.each([
-		'confirm-trust-boundary',
-		'leave-disabled',
-		'review-proxy',
-		'appears-working',
-		'unable-to-determine',
-		'env-controlled'
-	] as const)('presents %s with a diagnosis and persistent action', (action) => {
+	it.each(ACTIONS)('presents %s with a diagnosis and persistent action', (action) => {
 		const view = presentReverseProxyDiagnostic(diagnostic(action));
 		expect(view.headline.length).toBeGreaterThan(0);
-		expect(view.diagnosis).toContain('Both required headers arrived');
-		expect(view.diagnosis).toContain('forwarded origin https://wrapped.example.com');
+		expect(view.diagnosis.length).toBeGreaterThan(0);
 		expect(view.nextAction.length).toBeGreaterThan(0);
 		expect(view.consequence.length).toBeGreaterThan(0);
-		expect(view.safetyNotice).toContain('removes or overwrites visitor-supplied');
+		expect(view.safetyNotice).toContain('ORIGIN needs no forwarding headers');
+		expect(view.safetyNotice).toContain('PROTOCOL_HEADER=x-forwarded-proto');
 	});
 
-	it.each([
-		['missing', 'Neither X-Forwarded-Proto nor X-Forwarded-Host arrived'],
-		['partial', 'X-Forwarded-Proto arrived, but X-Forwarded-Host is missing'],
-		['invalid-proto', 'value other than http or https'],
-		['unsafe-host', 'characters that are unsafe'],
-		['invalid-host', 'not a valid public host']
-	] as const)('states the observed %s header condition', (status, expected) => {
-		expect(presentReverseProxyDiagnostic(diagnostic('review-proxy', status)).diagnosis).toContain(
-			expected
-		);
+	it.each(ACTIONS)('never offers the retired TRUST_PROXY setting (%s)', (action) => {
+		for (const status of [
+			'usable',
+			'missing',
+			'partial',
+			'invalid-proto',
+			'unsafe-host',
+			'invalid-host'
+		] as const) {
+			const view = presentReverseProxyDiagnostic(diagnostic(action, status));
+			expect(JSON.stringify(view)).not.toMatch(/TRUST_PROXY|header trust/i);
+		}
 	});
 
-	it('identifies a missing forwarded proto when only the host arrives', () => {
-		const partial = diagnostic('review-proxy', 'partial');
-		partial.facts.forwardedHeaders.present = ['X-Forwarded-Host'];
-		partial.facts.forwardedHeaders.pair.protoPresent = false;
-		partial.facts.forwardedHeaders.pair.hostPresent = true;
-
-		expect(presentReverseProxyDiagnostic(partial).diagnosis).toContain(
-			'X-Forwarded-Host arrived, but X-Forwarded-Proto is missing'
-		);
-	});
-
-	it.each([
-		['missing', 'both X-Forwarded-Proto and X-Forwarded-Host'],
-		['partial', 'missing member'],
-		['invalid-proto', 'exactly http or https'],
-		['unsafe-host', 'public hostname'],
-		['invalid-host', 'public hostname'],
-		['usable', 'pair is valid']
-	] as const)('gives a specific repair for %s', (status, expected) => {
-		const view = presentReverseProxyDiagnostic(diagnostic('review-proxy', status));
-		expect(view.nextAction).toContain(expected);
-	});
-
-	it('distinguishes a forwarded-origin mismatch from an ambiguous valid pair', () => {
-		const mismatch = diagnostic('review-proxy', 'usable');
-		mismatch.facts.originComparison.forwardedPairMatchesBrowser = false;
-		const view = presentReverseProxyDiagnostic(mismatch);
-		expect(view.nextAction).toContain('conflicts with the browser origin');
-	});
-	it('does not present matching forwarded values as proof of a trusted proxy', () => {
-		const view = presentReverseProxyDiagnostic(diagnostic('confirm-trust-boundary'));
-		expect(view.headline).toContain('boundary is unverified');
-		expect(view.consequence).toContain('consistency');
-		expect(view.consequence).toContain('not that a trusted proxy supplied them');
-	});
-
-	it('states the exact environment setting and restart requirement', () => {
+	it('tells a mismatched deployment to set ORIGIN to the browser origin and restart', () => {
 		const view = presentReverseProxyDiagnostic(
-			diagnostic('env-controlled', 'usable', {
-				enabled: false,
-				source: 'env',
-				isLocked: true
-			})
+			diagnostic('set-origin', 'usable', ['request-origin-differs-from-browser'])
 		);
-		expect(view.headline).toContain('disabled by the environment');
-		expect(view.nextAction).toContain('TRUST_PROXY=true');
+		expect(view.tone).toBe('warning');
+		expect(view.diagnosis).toBe(
+			'Obzorarr sees https://obzorarr:3000, but this page was opened at https://wrapped.example.com.'
+		);
+		expect(view.nextAction).toContain('Set ORIGIN=https://wrapped.example.com');
 		expect(view.nextAction).toContain('restart Obzorarr');
 	});
 
-	it('does not tell an environment-managed direct deployment to enable proxy trust', () => {
-		const direct = diagnostic('env-controlled', 'missing', {
-			enabled: false,
-			source: 'env',
-			isLocked: true
-		});
-		direct.facts.originComparison.browserMatchesRequestUrl = true;
-		direct.facts.originComparison.browserMatchesEffectiveApp = true;
-		direct.facts.originComparison.forwardedPairMatchesBrowser = null;
-		const view = presentReverseProxyDiagnostic(direct);
-		expect(view.tone).toBe('success');
-		expect(view.nextAction).toContain('Leave TRUST_PROXY=false');
-		expect(view.documentationIds).toEqual(['obzorarr-trust-proxy']);
-	});
-	it('keeps environment-managed trust disabled when Caddy headers are present but unnecessary', () => {
-		const caddy = diagnostic('env-controlled', 'usable', {
-			enabled: false,
-			source: 'env',
-			isLocked: true
-		});
-		caddy.facts.originComparison.browserMatchesRequestUrl = true;
-		const view = presentReverseProxyDiagnostic(caddy);
-		expect(view.tone).toBe('success');
-		expect(view.nextAction).toContain('Leave TRUST_PROXY=false');
-		expect(view.nextAction).not.toContain('TRUST_PROXY=true');
-	});
-	it('does not make unused malformed headers override an environment-managed false setting', () => {
-		const partial = diagnostic('env-controlled', 'partial', {
-			enabled: false,
-			source: 'env',
-			isLocked: true
-		});
-		partial.facts.originComparison.browserMatchesRequestUrl = true;
-		partial.facts.originComparison.browserMatchesEffectiveApp = true;
-		partial.facts.originComparison.forwardedPairMatchesBrowser = null;
-
-		const view = presentReverseProxyDiagnostic(partial);
-		expect(view.tone).toBe('success');
-		expect(view.nextAction).toContain('Leave TRUST_PROXY=false');
-		expect(view.nextAction).not.toContain('TRUST_PROXY=true');
-	});
-
-	it('distinguishes working and broken environment-managed trust', () => {
-		const working = diagnostic('env-controlled', 'usable', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		expect(presentReverseProxyDiagnostic(working).headline).toContain('origin matches');
-		const unusable = diagnostic('env-controlled', 'invalid-proto', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		expect(presentReverseProxyDiagnostic(unusable).consequence).toContain(
-			'unusable forwarding metadata'
+	it('needs no change when the origin already matches, fronted or not', () => {
+		const direct = presentReverseProxyDiagnostic(
+			diagnostic('origin-matches', 'missing', ['request-origin-matches-browser'])
 		);
-		const unknown = diagnostic('env-controlled', 'usable', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		unknown.facts.originComparison.browserMatchesEffectiveApp = null;
-		expect(presentReverseProxyDiagnostic(unknown).consequence).toContain('cannot be verified');
+		expect(direct.tone).toBe('success');
+		expect(direct.nextAction).toContain('No change is needed');
+		expect(direct.documentationIds).toEqual(['obzorarr-origin']);
+		const fronted = presentReverseProxyDiagnostic(
+			diagnostic('origin-matches', 'usable', ['origin-env-configured'])
+		);
+		expect(fronted.diagnosis).toContain('ORIGIN is https://wrapped.example.com');
+	});
 
-		const broken = diagnostic('env-controlled', 'invalid-proto', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		broken.facts.originComparison.browserMatchesEffectiveApp = false;
-		const brokenView = presentReverseProxyDiagnostic(broken);
-		expect(brokenView.tone).toBe('danger');
-		expect(brokenView.nextAction).toContain('exactly http or https');
-		expect(brokenView.nextAction).toContain('Restart Obzorarr');
-		expect(brokenView.consequence).toContain('rejected the unusable forwarding metadata');
+	it('asks to open the configured ORIGIN when the browser is elsewhere', () => {
+		const view = presentReverseProxyDiagnostic(
+			diagnostic('unable-to-determine', 'usable', ['origin-env-mismatch'])
+		);
+		expect(view.diagnosis).toContain('ORIGIN is https://obzorarr:3000');
+		expect(view.nextAction).toContain('set ORIGIN to it and restart Obzorarr');
 	});
 
 	it('selects the matching diagram for every diagnostic result state', () => {
-		const protocolMissing = diagnostic('review-proxy', 'partial');
-		protocolMissing.facts.forwardedHeaders.present = ['X-Forwarded-Host'];
-		protocolMissing.facts.forwardedHeaders.pair.protoPresent = false;
-		protocolMissing.facts.forwardedHeaders.pair.hostPresent = true;
-
-		const forwardedConflict = diagnostic('review-proxy');
-		forwardedConflict.facts.originComparison.forwardedPairMatchesBrowser = false;
-
-		const environmentEnabledWorking = diagnostic('env-controlled', 'usable', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		const environmentEnabledBroken = diagnostic('env-controlled', 'invalid-proto', {
-			enabled: true,
-			source: 'env',
-			isLocked: true
-		});
-		const environmentDisabledCorrect = diagnostic('env-controlled', 'missing', {
-			source: 'env',
-			isLocked: true
-		});
-		environmentDisabledCorrect.facts.originComparison.browserMatchesRequestUrl = true;
-		const environmentDisabledNeeded = diagnostic('env-controlled', 'usable', {
-			source: 'env',
-			isLocked: true
-		});
-		const environmentDisabledBroken = diagnostic('env-controlled', 'missing', {
-			source: 'env',
-			isLocked: true
-		});
-
 		const states = {
 			'browser-address-unavailable': diagnostic('unable-to-determine'),
-			'correct-without-trust': diagnostic('leave-disabled'),
-			'environment-disabled-broken': environmentDisabledBroken,
-			'environment-disabled-correct': environmentDisabledCorrect,
-			'environment-disabled-needed': environmentDisabledNeeded,
-			'environment-enabled-broken': environmentEnabledBroken,
-			'environment-enabled-working': environmentEnabledWorking,
-			'forwarded-address-conflict': forwardedConflict,
-			'forwarded-match-boundary-unverified': diagnostic('confirm-trust-boundary'),
-			'headers-missing': diagnostic('review-proxy', 'missing'),
-			'host-invalid': diagnostic('review-proxy', 'invalid-host'),
-			'host-missing': diagnostic('review-proxy', 'partial'),
-			'host-unsafe': diagnostic('review-proxy', 'unsafe-host'),
-			'protocol-invalid': diagnostic('review-proxy', 'invalid-proto'),
-			'protocol-missing': protocolMissing,
-			'trust-enabled-broken': diagnostic('review-proxy', 'invalid-proto', {
-				enabled: true,
-				source: 'db'
-			}),
-			'trust-working': diagnostic('appears-working')
+			'origin-matches': diagnostic('origin-matches'),
+			'set-origin': diagnostic('set-origin')
 		} as const;
 
 		for (const expected of Object.keys(states) as Array<keyof typeof states>) {
 			expect(diagramForReverseProxyDiagnostic(states[expected])).toBe(expected);
+		}
+	});
+
+	it('offers the per-proxy forwarding-header guides only with the ORIGIN repair', () => {
+		expect(presentReverseProxyDiagnostic(diagnostic('set-origin')).documentationIds.length).toBe(
+			REVERSE_PROXY_DOCUMENTATION.length
+		);
+		expect(presentReverseProxyDiagnostic(diagnostic('origin-matches')).documentationIds).toEqual([
+			'obzorarr-origin'
+		]);
+		expect(
+			presentReverseProxyDiagnostic(diagnostic('unable-to-determine')).documentationIds
+		).toEqual(['obzorarr-origin']);
+		for (const guide of REVERSE_PROXY_PROVIDER_GUIDES) {
+			expect(guide.steps.join(' ')).not.toContain('TRUST_PROXY');
 		}
 	});
 
@@ -326,7 +198,7 @@ describe('reverse proxy presenter', () => {
 	});
 
 	it('uses only host/protocol and Obzorarr configuration guidance', () => {
-		const links = documentationForDiagnostic(diagnostic('confirm-trust-boundary'));
+		const links = documentationForDiagnostic(diagnostic('set-origin'));
 		expect(links.length).toBeGreaterThan(0);
 		expect(
 			links.every((link) =>

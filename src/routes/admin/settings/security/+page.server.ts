@@ -12,21 +12,15 @@ import {
 	getAppSetting,
 	getAppSettingsUpdatedAt,
 	getCsrfConfigWithSource,
-	getTrustProxyConfigWithSource,
 	isCsrfWarningDismissed,
 	resetCsrfWarningDismissal,
-	setAppSetting,
-	TRUST_PROXY_SETTINGS_KEYS
+	setAppSetting
 } from '$lib/server/admin/settings.service';
 import { requireAdminActions } from '$lib/server/auth/guards';
 import { logger } from '$lib/server/logging';
 import { env } from '$lib/server/private-env';
 import { getOriginFromRequest } from '$lib/server/security/csrf-handle';
-import { _resetTrustProxyCache } from '$lib/server/security/proxy-handle';
-import {
-	assertEnableTrustProxyAllowed,
-	createReverseProxyDiagnostic
-} from '$lib/server/security/reverse-proxy-diagnostic';
+import { createReverseProxyDiagnostic } from '$lib/server/security/reverse-proxy-diagnostic';
 import type { Actions, PageServerLoad } from './$types';
 
 const MAX_BROWSER_ORIGIN_LENGTH = 2048;
@@ -78,46 +72,14 @@ const CsrfOriginSchema = z.object({
 		})
 });
 
-/**
- * OCC strategy: INLINE `settingsVersion` (in-schema). Standard pattern —
- * the version field lives alongside the data fields and the action
- * validates blank/missing via Zod min(1) (-> 409) and stale via
- * `inlineOccCheck` (-> 409) after safeParse. confirmRisk is a separate
- * z.enum(['true']).optional() gate that the action checks after OCC
- * but before the service-layer write.
- */
-const TrustProxySchema = z.object({
-	enabled: z.enum(['true', 'false']).transform((v) => v === 'true'),
-	confirmRisk: z.enum(['true']).optional(),
-	settingsVersion: z.string().min(1, 'Missing settings version (reload the page)'),
-	browserOrigin: z
-		.string()
-		.min(1, 'Browser origin is required')
-		.max(MAX_BROWSER_ORIGIN_LENGTH, 'browserOrigin is too long')
-		.url('Browser origin is invalid')
-		.refine((url) => url.startsWith('http://') || url.startsWith('https://'), {
-			message: 'Browser origin must start with http:// or https://'
-		})
-		.transform((url) => new URL(url).origin)
-		.optional()
-});
-
 export const load: PageServerLoad = async () => {
-	const [
-		csrfConfig,
-		csrfWarningDismissed,
-		csrfOriginSkippedRaw,
-		trustProxyConfig,
-		trustProxySettingsUpdatedAt,
-		csrfOriginSettingsUpdatedAt
-	] = await Promise.all([
-		getCsrfConfigWithSource(),
-		isCsrfWarningDismissed(),
-		getAppSetting(AppSettingsKey.CSRF_ORIGIN_SKIPPED),
-		getTrustProxyConfigWithSource(),
-		getAppSettingsUpdatedAt(TRUST_PROXY_SETTINGS_KEYS),
-		getAppSettingsUpdatedAt(CSRF_ORIGIN_SETTINGS_KEYS)
-	]);
+	const [csrfConfig, csrfWarningDismissed, csrfOriginSkippedRaw, csrfOriginSettingsUpdatedAt] =
+		await Promise.all([
+			getCsrfConfigWithSource(),
+			isCsrfWarningDismissed(),
+			getAppSetting(AppSettingsKey.CSRF_ORIGIN_SKIPPED),
+			getAppSettingsUpdatedAt(CSRF_ORIGIN_SETTINGS_KEYS)
+		]);
 
 	return {
 		security: {
@@ -126,12 +88,8 @@ export const load: PageServerLoad = async () => {
 			originSource: csrfConfig.origin.source,
 			originLocked: csrfConfig.origin.isLocked,
 			warningDismissed: csrfWarningDismissed,
-			csrfOriginSkipped: csrfOriginSkippedRaw === 'true' && !csrfConfig.origin.value,
-			trustProxyValue: trustProxyConfig.trustProxy.value === 'true',
-			trustProxySource: trustProxyConfig.trustProxy.source,
-			trustProxyLocked: trustProxyConfig.trustProxy.isLocked
+			csrfOriginSkipped: csrfOriginSkippedRaw === 'true' && !csrfConfig.origin.value
 		},
-		trustProxyVersion: settingsVersionISO(trustProxySettingsUpdatedAt),
 		csrfOriginVersion: settingsVersionISO(csrfOriginSettingsUpdatedAt)
 	};
 };
@@ -315,105 +273,6 @@ export const actions: Actions = requireAdminActions({
 			const message = error instanceof Error ? error.message : 'Unknown diagnostic error';
 			logger.error(`Admin reverse proxy diagnostic failed: ${message}`, 'Security');
 			return fail(500, { diagnosticError: 'Could not run reverse proxy diagnostic' });
-		}
-	},
-
-	updateTrustProxy: async ({ request, url, getClientAddress, setHeaders }) => {
-		setHeaders?.({ 'Cache-Control': 'no-store' });
-		const trustProxyConfig = await getTrustProxyConfigWithSource();
-		if (trustProxyConfig.trustProxy.isLocked) {
-			return fail(400, {
-				error: 'TRUST_PROXY is set via environment variable and cannot be changed here'
-			});
-		}
-
-		const formData = await request.formData();
-		const parsed = TrustProxySchema.safeParse({
-			enabled: formData.get('enabled'),
-			confirmRisk: formData.get('confirmRisk') ?? undefined,
-			settingsVersion: formData.get('settingsVersion')?.toString() ?? '',
-			browserOrigin: formData.get('browserOrigin')?.toString() || undefined
-		});
-		if (!parsed.success) {
-			const fieldErrors = parsed.error.flatten().fieldErrors;
-			if (fieldErrors.settingsVersion?.length) {
-				return fail(409, {
-					conflict: true,
-					error: OCC_CONFLICT_MESSAGE
-				});
-			}
-			if (fieldErrors.browserOrigin?.length) {
-				return fail(400, {
-					error: fieldErrors.browserOrigin[0] ?? 'Browser origin is invalid'
-				});
-			}
-			return fail(400, {
-				error:
-					'Invalid input: enabled must be "true" or "false"; confirmRisk must be "true" when provided'
-			});
-		}
-		const enabled = parsed.data.enabled;
-		if (enabled && parsed.data.confirmRisk !== 'true') {
-			return fail(400, {
-				error: 'Confirm the reverse-proxy header trust risk before enabling TRUST_PROXY.'
-			});
-		}
-
-		if (
-			(await inlineOccCheck(parsed.data.settingsVersion, TRUST_PROXY_SETTINGS_KEYS)).status ===
-			'conflict'
-		) {
-			return fail(409, {
-				conflict: true,
-				error: OCC_CONFLICT_MESSAGE
-			});
-		}
-
-		if (enabled) {
-			if (!parsed.data.browserOrigin) {
-				return fail(400, {
-					error:
-						'Browser origin is required to verify the reverse-proxy diagnostic before enabling header trust.'
-				});
-			}
-			if (!adminRequestOriginMatches(request, parsed.data.browserOrigin)) {
-				return fail(403, {
-					error: 'TRUST_PROXY can only be enabled from the submitted browser origin'
-				});
-			}
-			const diagnostic = await createReverseProxyDiagnostic({
-				request,
-				effectiveAppUrl: url,
-				browserOrigin: parsed.data.browserOrigin,
-				sourceAddress: getClientAddress()
-			});
-			const gate = assertEnableTrustProxyAllowed(diagnostic);
-			if (!gate.ok) {
-				return fail(400, { error: gate.error });
-			}
-		}
-
-		try {
-			await setAppSetting(AppSettingsKey.TRUST_PROXY, enabled ? 'true' : 'false');
-			_resetTrustProxyCache();
-			if (enabled) {
-				logger.warn(
-					'Reverse-proxy header trust enabled by admin. Verify your upstream proxy strips inbound x-forwarded-* headers.',
-					'Security'
-				);
-			} else {
-				logger.info('Reverse-proxy header trust disabled by admin', 'Security');
-			}
-			return {
-				success: true,
-				message: enabled
-					? 'Reverse-proxy header trust enabled.'
-					: 'Reverse-proxy header trust disabled.'
-			};
-		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to update TRUST_PROXY';
-			logger.error(`Failed to update TRUST_PROXY: ${message}`, 'Security');
-			return fail(500, { error: message });
 		}
 	}
 });

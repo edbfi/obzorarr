@@ -29,6 +29,7 @@ export const variables = defineEnvVars({
 	PLEX_ALLOW_INSECURE_LOCAL_HTTP: optional,
 	PLEX_SERVER_URL: optional,
 	PLEX_TOKEN: optional,
+	// Retired (ORIGIN replaced it): read only so startup can warn an operator who still sets it.
 	TRUST_PROXY: optional,
 	TZ: optional
 });

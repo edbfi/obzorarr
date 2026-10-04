@@ -85,16 +85,3 @@ export function parseForwardedProtoHost(headers: HeaderReader): ForwardedProtoHo
 		return { status: 'invalid-host', isUsable: false, protoPresent, hostPresent, url: null };
 	}
 }
-
-export function buildForwardedUrl(
-	currentUrl: URL,
-	forwarded: ForwardedProtoHostResult
-): URL | null {
-	if (!forwarded.url) return null;
-
-	const forwardedUrl = new URL(currentUrl);
-	forwardedUrl.protocol = forwarded.url.protocol;
-	forwardedUrl.hostname = forwarded.url.hostname;
-	forwardedUrl.port = forwarded.url.port;
-	return forwardedUrl;
-}
