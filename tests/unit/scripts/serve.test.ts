@@ -209,6 +209,12 @@ describe('parseOrigin', () => {
 });
 
 describe('prepare', () => {
+	it('warns in the shared words when ORIGIN is unset', () => {
+		expect(MISSING_ORIGIN_WARNING).toBe(
+			'ORIGIN is not set: Obzorarr assumes it is served over HTTPS behind a proxy that preserves the Host header. Over plain HTTP, signing in and saving changes will fail. Set ORIGIN to the address users open, for example ORIGIN=http://192.168.1.10:3000.'
+		);
+	});
+
 	it('maps IDLE_TIMEOUT only when it is set, and an explicit CONNECTION_IDLE_TIMEOUT wins', () => {
 		const mapped: Record<string, string | undefined> = { IDLE_TIMEOUT: '20' };
 		prepare(mapped);

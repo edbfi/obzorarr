@@ -22,12 +22,15 @@ export const PEER_HEADER = 'x-obzorarr-peer';
  */
 export const FRONT_ORIGIN_MARKER = 'OBZORARR_FRONT_ORIGIN';
 
+/**
+ * Logged once at startup when neither ORIGIN nor PROTOCOL_HEADER is set. The wording is shared
+ * by every edbfi app's front. In Obzorarr the failure over plain HTTP is sign-in: session and
+ * sign-in cookies follow the https scheme the adapter assumes, so browsers refuse them.
+ */
 export const MISSING_ORIGIN_WARNING =
-	'ORIGIN is not set and no PROTOCOL_HEADER is configured: Obzorarr assumes https + Host, so ' +
-	'sign-in redirects and links use https://<host> and session cookies are marked Secure, which ' +
-	'breaks sign-in over plain HTTP. Set ORIGIN to the public URL (for example ' +
-	'http://192.168.1.10:3000) when serving plain HTTP; leave it unset only behind an HTTPS proxy ' +
-	'that preserves Host.';
+	'ORIGIN is not set: Obzorarr assumes it is served over HTTPS behind a proxy that preserves ' +
+	'the Host header. Over plain HTTP, signing in and saving changes will fail. Set ORIGIN to ' +
+	'the address users open, for example ORIGIN=http://192.168.1.10:3000.';
 
 /** The startup error for an ORIGIN that is not a bare origin. It never contains the value. */
 export const ORIGIN_FORMAT_ERROR =
