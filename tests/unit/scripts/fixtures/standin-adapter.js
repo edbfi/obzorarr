@@ -30,13 +30,25 @@ const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
 
 /** @param {Request} request */
 async function handle(request) {
-	const url = new URL(request.url);
+	// Like the real adapter, answer a request whose Host does not parse instead of throwing; the
+	// echo reports the Host the front sent.
+	let url;
+	try {
+		url = new URL(request.url);
+	} catch {
+		const scheme = request.url.indexOf('://');
+		url = new URL(
+			scheme === -1 ? request.url : request.url.slice(request.url.indexOf('/', scheme + 3)),
+			'http://unparsed-host'
+		);
+	}
 	switch (url.pathname) {
 		case '/echo':
 			return Response.json({
 				method: request.method,
 				path: url.pathname,
 				search: url.search,
+				host: request.headers.get('host'),
 				body: await request.text(),
 				headers: Object.fromEntries(request.headers),
 				env: seen

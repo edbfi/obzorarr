@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
 	FRONT_ORIGIN_MARKER,
+	forwardPath,
 	HOST_HEADER,
 	MISSING_ORIGIN_WARNING,
 	ORIGIN_FORMAT_ERROR,
@@ -143,6 +144,7 @@ async function echo(port: number, options: Parameters<typeof call>[2] = {}) {
 		method: string;
 		path: string;
 		search: string;
+		host: string | null;
 		body: string;
 		headers: Record<string, string>;
 		env: Record<string, string | null>;
@@ -205,6 +207,19 @@ describe('parseOrigin', () => {
 			expect(String((caught as Error).message)).not.toContain(secret);
 			expect(Bun.inspect(caught)).not.toContain(secret);
 		}
+	});
+});
+
+describe('forwardPath', () => {
+	it.each([
+		['http://127.0.0.1:3000/echo?x=1', '/echo?x=1'],
+		['http://x/_app/immutable/a%20b.js?v=%2F&q', '/_app/immutable/a%20b.js?v=%2F&q'],
+		['http://x:99999/admin?/updateLogSettings', '/admin?/updateLogSettings'],
+		['http://[::1/p', '/p'],
+		['http://x', '/'],
+		['/relative?z=1', '/relative?z=1']
+	])('forwards %s as %s', (requestUrl, path) => {
+		expect(forwardPath(requestUrl)).toBe(path);
 	});
 });
 
@@ -429,6 +444,23 @@ describe('serve.ts process', () => {
 		expect(gzip.headers['content-encoding']).toBe('gzip');
 		expect([...gzip.body.subarray(0, 2)]).toEqual([0x1f, 0x8b]);
 	});
+
+	// Bun builds request.url from the client's Host header. A Host that does not parse used to make
+	// the front's own `new URL(request.url)` throw (HTTP 500); the request now reaches the adapter,
+	// which decides (the real adapter answers 400, as it does without the front).
+	it.each(['x:99999', '[::1', ''])(
+		'forwards a request whose Host header %j does not parse',
+		async (host) => {
+			const port = await freePort();
+			const server = await start({ ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port) });
+			const reply = await call(server.port, '/echo?x=1', { headers: { host } });
+			expect(reply.status).toBe(200);
+			const seen = JSON.parse(reply.body.toString());
+			expect(seen).toMatchObject({ method: 'GET', path: '/echo', search: '?x=1' });
+			expect(seen.headers[HOST_HEADER]).toBe(`127.0.0.1:${port}`);
+			expect(server.output()).not.toContain('Invalid URL');
+		}
+	);
 
 	it('propagates a client abort to the adapter', async () => {
 		const port = await freePort();

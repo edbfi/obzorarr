@@ -140,6 +140,18 @@ export function prepare(environment: Environment): Plan {
 }
 
 /**
+ * The path and query of a request as Bun received them, sliced from `request.url` after any
+ * authority. Never `new URL(request.url)`: Bun builds `request.url` from the client's Host header,
+ * and a Host that does not parse (`x:99999`, `[::1`, an empty one) made that throw, so the front
+ * answered 500 before the request reached the app. The front supplies the origin itself.
+ */
+export function forwardPath(requestUrl: string): string {
+	const scheme = requestUrl.indexOf('://');
+	const start = scheme === -1 ? 0 : requestUrl.indexOf('/', scheme + 3);
+	return start === -1 ? '/' : requestUrl.slice(start);
+}
+
+/**
  * An event stream has no length, so when the adapter force-closes it (at the end of its shutdown
  * drain) the public stream ends normally and the browser's EventSource reconnects. Passing the
  * upstream error on would reset the client connection instead. Other responses keep the error,
@@ -195,7 +207,6 @@ export async function serve(
 			maxRequestBodySize: Number.MAX_SAFE_INTEGER,
 			async fetch(request, server) {
 				await ready;
-				const url = new URL(request.url);
 				const headers = new Headers(request.headers);
 				headers.set(PROTOCOL_HEADER, origin.protocol.slice(0, -1));
 				headers.set(HOST_HEADER, origin.host);
@@ -203,7 +214,7 @@ export async function serve(
 				else headers.delete(PEER_HEADER);
 				let response: Response;
 				try {
-					response = await fetch(`http://localhost${url.pathname}${url.search}`, {
+					response = await fetch(`http://localhost${forwardPath(request.url)}`, {
 						method: request.method,
 						headers,
 						body: request.method === 'GET' || request.method === 'HEAD' ? null : request.body,
