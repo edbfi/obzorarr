@@ -477,9 +477,10 @@ Two more server settings, with their defaults:
 
 - `SHUTDOWN_TIMEOUT=30`: on stop (`SIGTERM` or `SIGINT`), Obzorarr stops accepting connections and
   lets open requests finish for up to this many seconds, open live-update streams included, then
-  closes what is left. In a container, keep it below the stop timeout (Docker's default is 10 seconds)
-  or raise both; otherwise the container is killed before Obzorarr has shut down cleanly. A second
-  signal stops it at once.
+  closes what is left. With `ORIGIN` set, the process exits at that deadline even if Obzorarr is
+  still waiting on Plex for a request. In a container, keep it below the stop timeout (Docker's
+  default is 10 seconds) or raise both; otherwise the container is killed before Obzorarr has shut
+  down cleanly. A second signal stops it at once.
 - `BODY_SIZE_LIMIT=512K`: the largest request body accepted (`K`, `M` and `G` suffixes; `Infinity`
   turns the limit off). Obzorarr has no uploads, so the default is enough; larger requests get
   `413`.
