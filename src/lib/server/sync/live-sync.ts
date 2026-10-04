@@ -1,6 +1,6 @@
-import { env } from '$env/dynamic/private';
 import { AppSettingsKey, getAppSetting } from '$lib/server/admin/settings.service';
 import { logger } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { getSyncProgress, type LiveSyncProgress } from './progress';
 import { startBackgroundSync } from './scheduler';
 import { isSyncRunning } from './service';

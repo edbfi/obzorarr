@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import { env } from '$lib/server/private-env';
 import pkg from '../../../package.json';
 
 export type AppVersion = {

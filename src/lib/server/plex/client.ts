@@ -1,5 +1,5 @@
-import { env } from '$env/dynamic/private';
 import { getPlexConfig } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 import {
 	type FetchHistoryOptions,
 	type HistoryPageResult,

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import { getTableConfig } from 'drizzle-orm/sqlite-core';
-import { env } from '$env/dynamic/private';
 import { shouldUseRedirectAuth } from '$lib/client/auth-mode';
 import {
 	CRON_ALLOWED_CHARS_MESSAGE,
@@ -12,13 +11,21 @@ import {
 import { optionalTrimmed } from '$lib/server/admin/zod-helpers';
 import { sqlite } from '$lib/server/db/client';
 import { cachedStats, shareSettings } from '$lib/server/db/schema';
+import { env } from '$lib/server/private-env';
 import { getAppVersion } from '$lib/server/version';
 import { formatWatchHours } from '$lib/stats/format';
 import { formatDuration, maskEmail } from '$lib/utils/format';
 import { getThumbUrl } from '$lib/utils/plex-thumb';
 import pkg from '../../package.json';
-import { match as matchYear } from '../../src/params/year';
+import { params } from '../../src/params';
 import { sharedTestDbTables } from '../helpers/db';
+
+// SvelteKit 3 normalizes each matcher to a Standard Schema; a rejected segment yields issues.
+function matchYear(segment: string): boolean {
+	const result = params.year['~standard'].validate(segment);
+	if (result instanceof Promise) throw new Error('year matcher must be synchronous');
+	return !result.issues;
+}
 
 const { isOccConflict, isPostValidationFailure } = await import('$lib/utils/occ-form');
 const envAny = env as Record<string, string | undefined>;

@@ -13,8 +13,8 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	default: async ({ cookies }) => {
-		await logout(cookies);
+	default: async ({ cookies, url }) => {
+		await logout(cookies, url);
 		throw redirect(303, '/');
 	}
 };

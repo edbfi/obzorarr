@@ -174,7 +174,7 @@ export const actions: Actions = requireAdminActions({
 	 * _CLAIM_PROOF_HASH / _CLAIMED_AT and the stored step, which is what
 	 * clearOnboardingClaim would have persisted.
 	 */
-	resetInstance: async ({ request, cookies, locals }) => {
+	resetInstance: async ({ request, cookies, locals, url }) => {
 		const formData = await request.formData();
 		const confirmation = formData.get('confirmation')?.toString() ?? '';
 		if (confirmation !== RESET_CONFIRMATION_PHRASE) {
@@ -223,8 +223,8 @@ export const actions: Actions = requireAdminActions({
 
 		// The sessions table is gone, so the cookie is already dead — delete it too
 		// so the redirect cannot land in a half-authenticated state.
-		await logout(cookies);
-		clearOnboardingClaimCookie(cookies);
+		await logout(cookies, url);
+		clearOnboardingClaimCookie(cookies, url);
 
 		// Re-arm the console banner without touching the active token: the banner is
 		// the recovery path if the admin loses the tab holding the token.

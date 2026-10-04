@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	getAppSetting,
@@ -9,6 +8,7 @@ import {
 	setAppSetting
 } from '$lib/server/admin/settings.service';
 import { getLogMaxCount, getLogRetentionDays, isDebugEnabled } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { getSchedulerStatus, setupSyncScheduler, stopSyncScheduler } from '$lib/server/sync';
 import { actions } from '../../../src/routes/admin/settings/system/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';

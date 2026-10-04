@@ -63,6 +63,9 @@ describe('wrapped layout sync status privacy gate', () => {
 		expect(result.lookupSyncTriggered).toBe(true);
 		expect(result.syncStatusEnabled).toBe(false);
 		expect(result.syncStatus).toBeNull();
-		expect(cookies.deletes).toEqual([{ name: 'lookup_live_sync', options: { path: '/wrapped' } }]);
+		// Plain-HTTP request URL: the deletion is not Secure, or the browser would refuse it (M13).
+		expect(cookies.deletes).toEqual([
+			{ name: 'lookup_live_sync', options: { path: '/wrapped', secure: false } }
+		]);
 	});
 });

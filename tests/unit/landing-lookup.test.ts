@@ -118,6 +118,7 @@ async function invokeLookup(username: string, ip: string, cookies: TestCookies =
 	const lookupUser = actions.lookupUser as LookupAction;
 	return lookupUser({
 		request,
+		url: new URL(request.url),
 		cookies,
 		getClientAddress: () => ip,
 		setHeaders: () => {}
@@ -194,6 +195,7 @@ describe('landing username lookup', () => {
 				options: {
 					path: '/wrapped',
 					httpOnly: true,
+					secure: true,
 					sameSite: 'lax',
 					maxAge: 60
 				}

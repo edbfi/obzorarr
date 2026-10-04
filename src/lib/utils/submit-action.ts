@@ -1,5 +1,4 @@
-import type { ActionResult } from '@sveltejs/kit';
-import { deserialize } from '$app/forms';
+import { type ActionResult, deserialize } from '$app/forms';
 
 export type SubmitOutcome<T> =
 	| { type: 'success'; data: T }

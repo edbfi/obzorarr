@@ -9,6 +9,7 @@ import {
 	requireActiveOnboardingClaim,
 	requiresOnboarding
 } from '$lib/server/onboarding';
+import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { requireServerMembership, verifyServerOwnership } from './membership';
 import { clearPinTransaction, getPinTransactionForRequest } from './pin-transactions';
 import { checkPinStatus, getPlexUserInfo } from './plex-oauth';
@@ -16,13 +17,15 @@ import { markSessionRevalidated } from './revalidation';
 import { createSession } from './session';
 import { NotServerMemberError, PinExpiredError, SESSION_DURATION_MS } from './types';
 
-const COOKIE_OPTIONS = {
-	path: '/',
-	httpOnly: true,
-	secure: process.env.NODE_ENV === 'production',
-	sameSite: 'lax' as const,
-	maxAge: Math.floor(SESSION_DURATION_MS / 1000)
-};
+function sessionCookieOptions(requestUrl: URL) {
+	return {
+		path: '/',
+		httpOnly: true,
+		secure: isSecureRequest(requestUrl),
+		sameSite: 'lax' as const,
+		maxAge: Math.floor(SESSION_DURATION_MS / 1000)
+	};
+}
 
 const ONBOARDING_OWNER_REQUIRED_MESSAGE =
 	'Only the server owner can configure Obzorarr. Sign in with the owner account.';
@@ -49,7 +52,7 @@ export type PinLoginResult = { pending: true } | CompletedLogin;
 export async function createSessionFromPlexToken(
 	authToken: string,
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<CompletedLogin> {
 	const plexUser = await getPlexUserInfo(authToken);
 
@@ -151,7 +154,7 @@ export async function createSessionFromPlexToken(
 	// generated". That request's response is discarded anyway, so swallow only
 	// that specific error instead of surfacing a spurious 500; re-throw the rest.
 	try {
-		cookies.set('session', sessionId, COOKIE_OPTIONS);
+		cookies.set('session', sessionId, sessionCookieOptions(context.requestUrl));
 	} catch (err) {
 		if (!(err instanceof Error) || !err.message.includes(RESPONSE_ALREADY_GENERATED_MESSAGE)) {
 			throw err;
@@ -175,7 +178,7 @@ export async function createSessionFromPlexToken(
 export async function completePlexPinLogin(
 	pinId: number,
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<PinLoginResult> {
 	const transaction = await getPinTransactionForRequest(pinId, cookies);
 	if (!transaction) {
@@ -194,7 +197,7 @@ export async function completePlexPinLogin(
 
 	const completed = await createSessionFromPlexToken(pinStatus.authToken, cookies, context);
 	try {
-		await clearPinTransaction(cookies, transaction.state);
+		await clearPinTransaction(cookies, transaction.state, context.requestUrl);
 	} catch (err) {
 		logger.warn('Failed to clear Plex PIN transaction after successful login', 'Auth', {
 			errorType: err instanceof Error ? err.name : typeof err

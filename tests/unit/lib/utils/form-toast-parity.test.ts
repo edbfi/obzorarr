@@ -65,22 +65,37 @@ describe('handleFormToast parity', () => {
 
 	describe('Superforms ActionResult shape', () => {
 		it('routes { type: "success", data: { message } } to toast.success', () => {
-			handleFormToast({ type: 'success', status: 200, data: { message: 'updated!' } });
+			handleFormToast({
+				type: 'success',
+				status: 200,
+				data: { message: 'updated!' },
+				location: '/'
+			});
 			expect(getTestToastCalls()).toEqual([{ variant: 'success', message: 'updated!' }]);
 		});
 
 		it('routes { type: "failure", data: { error } } to toast.error', () => {
-			handleFormToast({ type: 'failure', status: 400, data: { error: 'invalid input' } });
+			handleFormToast({
+				type: 'failure',
+				status: 400,
+				data: { error: 'invalid input' },
+				location: '/'
+			});
 			expect(getTestToastCalls()).toEqual([{ variant: 'error', message: 'invalid input' }]);
 		});
 
 		it('routes { type: "failure", data: { message } } to toast.error (fallback)', () => {
-			handleFormToast({ type: 'failure', status: 400, data: { message: 'bad shape' } });
+			handleFormToast({
+				type: 'failure',
+				status: 400,
+				data: { message: 'bad shape' },
+				location: '/'
+			});
 			expect(getTestToastCalls()).toEqual([{ variant: 'error', message: 'bad shape' }]);
 		});
 
 		it('routes { type: "error", error: { message } } to toast.error', () => {
-			handleFormToast({ type: 'error', status: 500, error: { message: 'kaboom' } });
+			handleFormToast({ type: 'error', status: 500, error: { message: 'kaboom', status: 500 } });
 			expect(getTestToastCalls()).toEqual([{ variant: 'error', message: 'kaboom' }]);
 		});
 
@@ -90,12 +105,12 @@ describe('handleFormToast parity', () => {
 		});
 
 		it('uses default messages when data is missing', () => {
-			handleFormToast({ type: 'success', status: 200, data: undefined });
+			handleFormToast({ type: 'success', status: 200, data: undefined, location: '/' });
 			expect(getTestToastCalls()[0]?.variant).toBe('success');
 			expect(getTestToastCalls()[0]?.message).toBe('Done');
 
 			clearTestToastCalls();
-			handleFormToast({ type: 'failure', status: 400, data: undefined });
+			handleFormToast({ type: 'failure', status: 400, data: undefined, location: '/' });
 			expect(getTestToastCalls()[0]?.variant).toBe('error');
 			expect(getTestToastCalls()[0]?.message).toBe('Something went wrong. Try again.');
 		});

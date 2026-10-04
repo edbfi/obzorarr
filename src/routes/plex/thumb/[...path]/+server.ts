@@ -24,23 +24,23 @@ export const GET: RequestHandler = async ({ locals, params, request, url }) => {
 	const { path } = params;
 
 	if (!path) {
-		error(400, { message: 'Missing thumbnail path' });
+		error(400, 'Missing thumbnail path');
 	}
 
 	if (!isAllowedPath(path)) {
-		error(400, { message: 'Invalid thumbnail path' });
+		error(400, 'Invalid thumbnail path');
 	}
 
 	const tokenPayload = await verifyThumbnailToken(url.searchParams.get('token'));
 	if (!tokenPayload || tokenPayload.path !== path) {
-		error(403, { message: 'Invalid thumbnail token' });
+		error(403, 'Invalid thumbnail token');
 	}
 	await authorizeThumbnailPayload(tokenPayload, locals);
 
 	const config = await getPlexConfig();
 
 	if (!config.serverUrl) {
-		error(503, { message: 'Plex server is not configured' });
+		error(503, 'Plex server is not configured');
 	}
 
 	const plexUrl = new URL(`/${path}`, config.serverUrl);
@@ -70,13 +70,13 @@ export const GET: RequestHandler = async ({ locals, params, request, url }) => {
 
 		if (!response.ok) {
 			if (response.status === 404) {
-				error(404, { message: 'Thumbnail not found' });
+				error(404, 'Thumbnail not found');
 			}
 
 			console.error(
 				`[Plex Thumb] Error fetching thumbnail: ${response.status} ${response.statusText}`
 			);
-			error(502, { message: 'Thumbnail unavailable' });
+			error(502, 'Thumbnail unavailable');
 		}
 
 		const imageData = await response.arrayBuffer();
@@ -102,6 +102,6 @@ export const GET: RequestHandler = async ({ locals, params, request, url }) => {
 		}
 
 		console.error('[Plex Thumb] Network error:', err);
-		error(502, { message: 'Thumbnail unavailable' });
+		error(502, 'Thumbnail unavailable');
 	}
 };

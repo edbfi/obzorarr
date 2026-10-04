@@ -4,12 +4,18 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..');
 
-async function runDbClientScript(script: string, env: Record<string, string>) {
-	const result = await Bun.spawn(['bun', '--eval', script], {
+// db/client imports `building` from SvelteKit's $app/env virtual module, which only
+// exists inside Kit; outside the preloaded test process, provide it as a runtime module.
+const appEnvStub = (building: boolean) =>
+	`Bun.plugin({ name: 'app-env-stub', setup(build) { build.module('$app/env', () => ({ loader: 'object', exports: { browser: false, building: ${building}, dev: false, version: 'test' } })); } });`;
+
+async function runDbClientScript(script: string, env: Record<string, string>, building = false) {
+	const result = await Bun.spawn(['bun', '--eval', `${appEnvStub(building)}\n${script}`], {
 		cwd: PROJECT_ROOT,
 		env: { ...process.env, ...env },
 		stdout: 'pipe',
@@ -94,6 +100,29 @@ describe('db/client module initialization', () => {
 
 			expect(result.exitCode).toBe(0);
 			expect(result.stdout).toContain('DIRECTORY_CREATED');
+		});
+	});
+
+	describe('while SvelteKit builds', () => {
+		it('opens an in-memory database and never creates DATABASE_PATH', async () => {
+			const tempDbPath = join(tmpdir(), `obzorarr-build-${Date.now()}`, 'data', 'obzorarr.db');
+			const script = `
+				const { existsSync } = await import('node:fs');
+				const { dirname } = await import('node:path');
+				const { sqlite } = await import('$lib/server/db/client');
+				console.log(sqlite.filename === ':memory:' ? 'MEMORY' : 'FILE');
+				console.log(existsSync(dirname(dirname('${tempDbPath}'))) ? 'CREATED' : 'NOT_CREATED');
+			`;
+
+			const result = await runDbClientScript(
+				script,
+				{ NODE_ENV: 'production', DATABASE_PATH: tempDbPath },
+				true
+			);
+
+			expect(result.exitCode).toBe(0);
+			expect(result.stdout).toContain('MEMORY');
+			expect(result.stdout).toContain('NOT_CREATED');
 		});
 	});
 

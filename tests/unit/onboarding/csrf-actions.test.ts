@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	deleteAppSetting,
@@ -19,8 +18,10 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
+import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/csrf/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
+import { TEST_REQUEST_URL } from '../../helpers/requests';
 
 const ORIGIN = 'http://localhost:5173';
 type SaveOriginAction = NonNullable<typeof actions.saveOrigin>;
@@ -99,7 +100,11 @@ async function runSave(request: Request) {
 
 async function runTestOrigin(request: Request) {
 	const testOrigin = actions.testOrigin as TestOriginAction;
-	return testOrigin({ request, cookies } as unknown as Parameters<TestOriginAction>[0]);
+	return testOrigin({
+		request,
+		cookies,
+		url: new URL(request.url)
+	} as unknown as Parameters<TestOriginAction>[0]);
 }
 
 async function runSkipCsrf(request: Request) {
@@ -131,7 +136,11 @@ describe('onboarding CSRF actions', () => {
 		clearBootstrapToken();
 		cookies = createCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 		await setOnboardingStep(OnboardingSteps.CSRF);
 	});
 

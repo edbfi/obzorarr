@@ -203,7 +203,7 @@ export const actions: Actions = {
 			return fail(403, { error: 'Admin access required' });
 		}
 		await completeOnboarding();
-		clearOnboardingClaimCookie(cookies);
+		clearOnboardingClaimCookie(cookies, url);
 		logger.info(`Onboarding completed by ${locals.user?.username || 'unknown'}`, 'Onboarding');
 		redirect(303, '/admin');
 	}

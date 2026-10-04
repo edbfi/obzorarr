@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { readFile } from 'node:fs/promises';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
 import { AppSettingsKey, getAppSetting, setAppSetting } from '$lib/server/admin/settings.service';
 import {
 	getOnboardingStep,
@@ -15,8 +14,10 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
+import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/proxy-trust/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
+import { TEST_REQUEST_URL } from '../../helpers/requests';
 
 const OVERSIZED_BROWSER_ORIGIN = `https://wrapped.example.com/${'a'.repeat(2049)}`;
 type ContinueAction = NonNullable<typeof actions.continue>;
@@ -146,7 +147,11 @@ describe('onboarding proxy-trust actions', () => {
 		clearBootstrapToken();
 		cookies = createCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 		await setOnboardingStep(OnboardingSteps.PROXY_TRUST);
 	});
 

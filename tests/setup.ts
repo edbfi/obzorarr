@@ -6,7 +6,7 @@ process.env.NODE_ENV = 'test';
 // Tests must never touch the development SQLite file.
 process.env.DATABASE_PATH = ':memory:';
 
-mock.module('$env/dynamic/private', () => ({
+mock.module('$lib/server/private-env', () => ({
 	env: {
 		PLEX_SERVER_URL: 'https://test-plex-server:32400',
 		PLEX_TOKEN: 'test-plex-token',
@@ -32,6 +32,10 @@ mock.module('$app/env', () => ({
 	building: false,
 	version: 'test'
 }));
+
+// sveltekit-superforms 3 marks its /server entry server-only with a bare
+// `import '$app/server'`, a Kit virtual module bun test cannot resolve.
+mock.module('$app/server', () => ({}));
 
 // Mock app toasts globally so client utility tests don't pull the Svelte/Sonner runtime.
 mock.module('$lib/services/toast', () => ({

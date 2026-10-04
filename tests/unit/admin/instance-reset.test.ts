@@ -58,6 +58,7 @@ import {
 	resetOnboardingTestState,
 	setOnboardingSessionCookie
 } from '../../helpers/onboarding';
+import { TEST_REQUEST_URL } from '../../helpers/requests';
 
 type PrepareAction = NonNullable<typeof actions.prepareInstanceReset>;
 type ResetAction = NonNullable<typeof actions.resetInstance>;
@@ -91,8 +92,10 @@ async function runReset(
 	locals: App.Locals = adminLocals
 ) {
 	const handler = actions.resetInstance as ResetAction;
+	const request = resetRequest(confirmation);
 	return handler({
-		request: resetRequest(confirmation),
+		request,
+		url: new URL(request.url),
 		cookies,
 		locals
 	} as unknown as Parameters<ResetAction>[0]);
@@ -248,9 +251,11 @@ describe('instance reset — claim token survival', () => {
 		// it), which is what makes dismissing this dialog genuinely side-effect-free.
 		// Asserted here so refuse-before and claim-after are pinned by one token —
 		// this fails loudly if anyone makes the guard burn the token instead.
-		expect(await claimOnboardingInstance(createOnboardingCookies(), prepared.token)).toBe(
-			'invalid-token'
-		);
+		expect(
+			await claimOnboardingInstance(createOnboardingCookies(), prepared.token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('invalid-token');
 
 		await expectRedirect(() => runReset(), '/onboarding/claim');
 
@@ -261,7 +266,9 @@ describe('instance reset — claim token survival', () => {
 		// And the real user path works end to end: pasting that token on the fresh
 		// claim screen claims the reset instance.
 		const freshCookies = createOnboardingCookies();
-		expect(await claimOnboardingInstance(freshCookies, prepared.token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(freshCookies, prepared.token, { requestUrl: TEST_REQUEST_URL })
+		).toBe('claimed');
 		expect(await getOnboardingStep()).toBe(OnboardingSteps.CLAIM);
 	});
 
@@ -277,9 +284,11 @@ describe('instance reset — claim token survival', () => {
 		// The bug was that this token could then be spent against the running
 		// instance: /onboarding is in onboardingHandle's skipPaths and a form action
 		// bypasses the layout load, so nothing upstream refuses the POST.
-		expect(await claimOnboardingInstance(createOnboardingCookies(), prepared.token)).toBe(
-			'invalid-token'
-		);
+		expect(
+			await claimOnboardingInstance(createOnboardingCookies(), prepared.token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('invalid-token');
 
 		expect(await getAppSetting(AppSettingsKey.ONBOARDING_CLAIMED)).toBeNull();
 		expect(await getAppSetting(AppSettingsKey.ONBOARDING_CLAIM_PROOF_HASH)).toBeNull();

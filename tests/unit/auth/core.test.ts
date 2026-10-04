@@ -47,7 +47,11 @@ import { GET as plexLoginGet } from '../../../src/routes/auth/plex/+server';
 import { load as redirectLoad } from '../../../src/routes/auth/plex/redirect/+page.server';
 import { seedAuthUser } from '../../helpers/auth';
 import { resetSharedTestDb } from '../../helpers/db';
-import { createMockJsonResponse, createTestCookies } from '../../helpers/requests';
+import {
+	createMockJsonResponse,
+	createTestCookies,
+	TEST_REQUEST_URL
+} from '../../helpers/requests';
 
 describe('auth core contracts', () => {
 	describe('types and schemas', () => {
@@ -535,6 +539,7 @@ function redirectEvent(
 }
 
 const readSource = (path: string) => Bun.file(path).text();
+const PIN_REQUEST_URL = new URL('https://obzorarr.test/auth/plex');
 
 describe('auth routes and browser login flow', () => {
 	describe('logout route', () => {
@@ -548,13 +553,20 @@ describe('auth routes and browser login flow', () => {
 				const action =
 					_name === 'GET load'
 						? () => logoutLoad({ cookies } as never)
-						: () => logoutActions.default!({ cookies } as never);
+						: () =>
+								logoutActions.default!({
+									cookies,
+									url: new URL('http://obzorarr.lan/auth/logout')
+								} as never);
 
 				await expectRedirect(action, '/');
 
 				expect(cookies.deletes).toHaveLength(deletes);
 				if (deletes)
-					expect(cookies.deletes[0]).toEqual({ name: 'session', options: { path: '/' } });
+					expect(cookies.deletes[0]).toEqual({
+						name: 'session',
+						options: { path: '/', secure: false }
+					});
 			}
 		);
 	});
@@ -634,7 +646,7 @@ describe('auth routes and browser login flow', () => {
 
 		it('binds, verifies, and clears a PIN transaction with the browser state cookie', async () => {
 			const cookies = createTestCookies();
-			const state = await createPinTransaction(123, cookies);
+			const state = await createPinTransaction(123, cookies, PIN_REQUEST_URL);
 
 			expect((await getPinTransactionForRequest(123, cookies))?.state).toBe(state);
 			expect(await getPinTransactionForRequest(456, cookies)).toBeNull();
@@ -644,7 +656,7 @@ describe('auth routes and browser login flow', () => {
 			expect(await markPinCallbackVerified(cookies, state)).toBe(true);
 			expect((await getPinTransactionForRequest(123, cookies))?.callbackVerified).toBe(true);
 
-			await clearPinTransaction(cookies, state);
+			await clearPinTransaction(cookies, state, PIN_REQUEST_URL);
 			expect(cookies.deletes).toHaveLength(1);
 			expect(cookies.deletes[0]?.name).toBe('plex_login_state');
 			const setOptions = cookies.sets[0]?.options;
@@ -657,7 +669,7 @@ describe('auth routes and browser login flow', () => {
 
 		it('returns a token-free server PIN fallback for verified callback state', async () => {
 			const cookies = createTestCookies();
-			const state = await createPinTransaction(123, cookies);
+			const state = await createPinTransaction(123, cookies, PIN_REQUEST_URL);
 			const verified = await verifyPinCallback(cookies, state);
 
 			expect(verified?.pinId).toBe(123);
@@ -673,7 +685,7 @@ describe('auth routes and browser login flow', () => {
 			async (context, onboarded, pinId, referer) => {
 				if (onboarded) await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
 				const cookies = createTestCookies();
-				const state = await createPinTransaction(pinId, cookies);
+				const state = await createPinTransaction(pinId, cookies, PIN_REQUEST_URL);
 
 				const result = await redirectLoad(redirectEvent(cookies, state, referer));
 
@@ -687,15 +699,17 @@ describe('auth routes and browser login flow', () => {
 
 		it('does not poll Plex or create a session before callback verification', async () => {
 			const cookies = createTestCookies();
-			await createPinTransaction(123, cookies);
+			await createPinTransaction(123, cookies, PIN_REQUEST_URL);
 
-			await expect(completePlexPinLogin(123, cookies)).resolves.toEqual({ pending: true });
+			await expect(
+				completePlexPinLogin(123, cookies, { requestUrl: TEST_REQUEST_URL })
+			).resolves.toEqual({ pending: true });
 		});
 
 		it('rejects PIN polling without the initiating browser transaction', async () => {
-			await expect(completePlexPinLogin(123, createTestCookies())).rejects.toBeInstanceOf(
-				PinExpiredError
-			);
+			await expect(
+				completePlexPinLogin(123, createTestCookies(), { requestUrl: TEST_REQUEST_URL })
+			).rejects.toBeInstanceOf(PinExpiredError);
 		});
 	});
 

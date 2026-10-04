@@ -1,15 +1,16 @@
 import { createHash } from 'node:crypto';
 import { and, between, eq, inArray, sql } from 'drizzle-orm';
-import { env } from '$env/dynamic/private';
 import { DEFAULT_TIMEZONE, normalizeTimezone, TIMEZONE_UNKNOWN_MESSAGE } from '$lib/cron/timezone';
 import { db } from '$lib/server/db/client';
 import { appSettings, cachedStats, playHistory, shareSettings } from '$lib/server/db/schema';
+import { env } from '$lib/server/private-env';
 import {
 	CredentialedUrlError,
 	envAllowsInsecureLocalPlexHttp,
 	normalizePlexServerUrl,
 	shouldPersistPlexInsecureLocalHttpOptIn
 } from '$lib/server/security/credentialed-url';
+import { canonicalOrigin } from '$lib/server/security/origin';
 import { ShareMode, ShareModeSource, ShareSettingsKey } from '$lib/server/sharing/types';
 import { createYearFilter } from '$lib/server/stats/utils';
 
@@ -1494,9 +1495,24 @@ export interface CsrfConfigWithSource {
 	origin: ConfigValue<string>;
 }
 
+/**
+ * ORIGIN from the environment in its canonical form (lowercase scheme and host, no default port,
+ * no trailing `/`), because csrfHandle compares it with the browser's Origin header as a string.
+ * scripts/serve.ts and the src/env.ts validator already hand the app the canonical value; this
+ * keeps the comparison right on any other path. A value that does not parse (src/env.ts stops
+ * the app before that can happen) is kept as written, so it never matches a browser origin.
+ */
+function envCsrfOrigin(): string {
+	try {
+		return canonicalOrigin(env.ORIGIN) ?? '';
+	} catch {
+		return env.ORIGIN?.trim() ?? '';
+	}
+}
+
 export async function getCsrfConfigWithSource(): Promise<CsrfConfigWithSource> {
 	const dbSettings = await getAllAppSettings();
-	const envOrigin = env.ORIGIN ?? '';
+	const envOrigin = envCsrfOrigin();
 
 	return {
 		origin: resolveConfigValue(dbSettings, AppSettingsKey.CSRF_ORIGIN, envOrigin)
@@ -1630,7 +1646,7 @@ export async function setSchedulerTimezoneAtomic(opts: {
 export async function clearConflictingDbSettings(): Promise<string[]> {
 	const plexEnv = getPlexEnvConfig();
 	const openaiEnv = getOpenAIEnvConfig();
-	const csrfEnvOrigin = env.ORIGIN ?? '';
+	const csrfEnvOrigin = envCsrfOrigin();
 	const trustProxyEnv = (env.TRUST_PROXY ?? '').trim();
 	const schedulerTimezoneEnv = env.TZ ?? '';
 	const effectivePlexConfig = await getPlexConfig();

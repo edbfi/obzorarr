@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import {
 	AppSettingsKey,
 	deleteAppSetting,
 	getAppSetting,
 	setAppSetting
 } from '$lib/server/admin/settings.service';
+import { env } from '$lib/server/private-env';
 // Re-pointed to the nested Security route after US-022 deleted the monolith.
 // All 14 tests below exercise the same updateCsrfOrigin contract — the
 // nested-route handler is a verbatim copy of the monolith's (per the
@@ -118,7 +118,7 @@ describe('admin updateCsrfOrigin action', () => {
 	});
 
 	it('returns fail(400) when env-locked (ORIGIN env var set)', async () => {
-		// $env/dynamic/private is mock.module()-ed at setup time and the underlying
+		// $lib/server/private-env is mock.module()-ed at setup time and the underlying
 		// `env` object reference is shared across importers — mutate it in place,
 		// then restore. process.env doesn't reach the SvelteKit-mocked module.
 		const dynamicEnv = env as Record<string, string | undefined>;

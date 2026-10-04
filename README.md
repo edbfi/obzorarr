@@ -249,6 +249,10 @@ services:
       - PGID=1000
       - UMASK=002
       - TZ=Etc/UTC
+      # The address in your browser's address bar. Required when you open Obzorarr over plain
+      # HTTP (e.g. http://192.168.1.10:3000); leave it unset only behind an HTTPS reverse proxy
+      # that preserves the Host header. See "Running Behind a Reverse Proxy".
+      - ORIGIN=http://<host-or-ip>:3000
       # Optional: lock Plex connection at the env layer. You can also leave
       # these unset and configure the server from the admin UI after onboarding.
       # - PLEX_SERVER_URL=http://plex-url-here:32400
@@ -257,7 +261,9 @@ services:
       - /<host_folder_config>:/config
 ```
 
-Replace `/<host_folder_config>` with your desired config path. Access the web UI at `http://localhost:3000` to complete setup.
+Replace `/<host_folder_config>` with your desired config path and `<host-or-ip>` with the address you
+open Obzorarr at, then open that address (`http://localhost:3000` on the Docker host itself) to
+complete setup.
 
 ### From Source
 
@@ -358,15 +364,47 @@ is wanted here: `0 0 * * *` should mean local midnight all year.
 Obzorarr needs to know the address **your browser** uses, not the internal one it listens on.
 Otherwise login redirects, share links, and CSRF checks get built from the wrong hostname.
 
-Set `ORIGIN` to your public URL, including the port if it isn't 80 or 443:
+Set `ORIGIN` to the address people open in the browser, including the port if it isn't 80 or 443:
 
 ```env
 ORIGIN=https://obzorarr.example.com
 ```
 
-That covers most setups. `TRUST_PROXY` is a separate, optional switch: when enabled, Obzorarr takes
-the hostname and protocol from the `X-Forwarded-Host` and `X-Forwarded-Proto` headers your proxy
-sends instead. Only turn it on when **both** of these are true:
+That covers most setups, and it is **required for plain-HTTP deployments** (no TLS anywhere, e.g.
+`ORIGIN=http://192.168.1.10:3000`). Leave it unset only behind an HTTPS reverse proxy that passes
+the original `Host` header: without `ORIGIN`, Obzorarr assumes `https://` plus that `Host`. Over
+plain HTTP it would build sign-in redirects for `https://…` and mark the sign-in and session cookies
+`Secure`, which browsers refuse over plain HTTP, so signing in fails. Obzorarr logs one warning at
+startup when neither `ORIGIN` nor `PROTOCOL_HEADER` is set. It never takes its origin from the `Host`
+header when `ORIGIN` is set.
+
+`ORIGIN` must be a bare origin: a scheme (`http` or `https`), a host and an optional port. A trailing
+`/`, uppercase letters and a default port (`:80`, `:443`) are fine and are normalized; a path, query,
+fragment or user name and password stop Obzorarr at startup with an error that names the expected
+form (it never prints the value).
+
+With `ORIGIN` set, `bun start` (`scripts/serve.ts`) listens on `HOST`/`PORT` and passes requests to the
+SvelteKit server over a private Unix socket, supplying `ORIGIN` itself; headers a client sends cannot
+change it. Start Obzorarr through `bun start` (or the container's command): `build/index.js` started on
+its own checks `ORIGIN` and uses it as the CSRF origin, but cannot make it the address links and
+cookies are built from. `IDLE_TIMEOUT` keeps working as the client idle timeout in seconds (it maps to
+`CONNECTION_IDLE_TIMEOUT`, which also works); event streams are exempt from it.
+
+**Client addresses behind a proxy.** Behind a reverse proxy, every request comes from the proxy's
+address unless you tell Obzorarr where the client's address is, so the per-client rate limits would
+treat all your users as one client. Set `ADDRESS_HEADER=x-forwarded-for`, with `XFF_DEPTH` set to the
+number of proxies in front of Obzorarr (default `1`), and only when every request goes through those
+proxies: a request that arrives without the header has no client address, and a visitor who can reach
+Obzorarr directly could send a forged one. Without a proxy, leave `ADDRESS_HEADER` unset; Obzorarr then
+uses the connection's own address.
+
+**`TRUST_PROXY` (only without `ORIGIN`).** `TRUST_PROXY` is a separate, optional switch for setups
+that do not set `ORIGIN`: when enabled, Obzorarr takes the hostname and protocol from the last hop of
+the `X-Forwarded-Host` and `X-Forwarded-Proto` headers your proxy sends. A configured `ORIGIN` always
+wins over forwarded headers, even with `TRUST_PROXY` on, so with `ORIGIN` set it has no effect on the
+origin. The adapter's own `PROTOCOL_HEADER` and `HOST_HEADER` are the same kind of setting and also
+apply only without `ORIGIN`, behind a proxy you trust. Only turn `TRUST_PROXY` on when **both** of
+these are true:
 
 - Obzorarr can only be reached through the proxy — nothing can hit it directly.
 - Your proxy sets both headers itself, overwriting whatever a visitor sends.
@@ -374,11 +412,14 @@ sends instead. Only turn it on when **both** of these are true:
 If either is false, a visitor can forge those headers and make Obzorarr build links pointing at a
 domain they control. When in doubt, leave `TRUST_PROXY` off and rely on `ORIGIN`.
 
+The CSRF origin you confirm in onboarding (stored in the database) only decides which browser
+`Origin` may submit changes; it does not change the address Obzorarr builds links from.
+
 Onboarding and **Admin → Settings → Security** include a diagnostic that compares what your browser
 sees, what the proxy forwards, and what Obzorarr actually uses, with hints for Caddy, Nginx, Nginx
 Proxy Manager, and Apache. Changing either variable through the environment requires a restart.
-(Client-IP detection is configured separately, via the Bun adapter's `ADDRESS_HEADER` and
-`XFF_DEPTH`.)
+`TRUST_PROXY` does not change client-address detection; that is `ADDRESS_HEADER` and `XFF_DEPTH`
+above.
 
 |                                       Reverse-proxy step                                        |                                     Technical evidence                                      |
 | :-------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
@@ -424,6 +465,18 @@ builds and production. Install dependencies with `bun install --frozen-lockfile`
 then use `bun run dev` for development.
 
 For production, run `bun run build` followed by `bun run start`. The start script
-sets `NODE_ENV=production` and runs the generated `build/index.js` with Bun. Keep
-`build/`, production `node_modules/`, `package.json` and `drizzle/` together, and
-retain the configured persistent database path.
+sets `NODE_ENV=production` and runs `scripts/serve.ts` with Bun, which starts the generated
+`build/index.js` (directly without `ORIGIN`, behind the front with it; see "Running Behind a
+Reverse Proxy"). Keep `build/`, `scripts/serve.ts`, production `node_modules/`, `package.json`
+and `drizzle/` together, and retain the configured persistent database path.
+
+Two more server settings, with their defaults:
+
+- `SHUTDOWN_TIMEOUT=30`: on stop (`SIGTERM` or `SIGINT`), Obzorarr stops accepting connections and
+  lets open requests finish for up to this many seconds, open live-update streams included, then
+  closes what is left. In a container, keep it below the stop timeout (Docker's default is 10 seconds)
+  or raise both; otherwise the container is killed before Obzorarr has shut down cleanly. A second
+  signal stops it at once.
+- `BODY_SIZE_LIMIT=512K`: the largest request body accepted (`K`, `M` and `G` suffixes; `Infinity`
+  turns the limit off). Obzorarr has no uploads, so the default is enough; larger requests get
+  `413`.

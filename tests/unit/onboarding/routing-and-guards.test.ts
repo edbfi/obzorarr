@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { env } from '$env/dynamic/private';
 import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
 import {
 	clearBootstrapToken,
 	ONBOARDING_CLAIM_REQUIRED_MESSAGE
 } from '$lib/server/onboarding/bootstrap';
 import { OnboardingSteps, setOnboardingStep } from '$lib/server/onboarding/status';
+import { env } from '$lib/server/private-env';
 import { load as layoutLoad } from '../../../src/routes/onboarding/+layout.server';
 import { actions as completeActions } from '../../../src/routes/onboarding/complete/+page.server';
 import { actions as plexActions } from '../../../src/routes/onboarding/plex/+page.server';

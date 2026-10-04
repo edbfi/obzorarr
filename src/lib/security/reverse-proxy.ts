@@ -64,7 +64,9 @@ export type ReverseProxyDiagnosticReasonCode =
 	| 'forwarded-pair-invalid'
 	| 'forwarded-pair-ambiguous'
 	| 'trust-proxy-working'
-	| 'trust-proxy-enabled-broken';
+	| 'trust-proxy-enabled-broken'
+	| 'origin-env-configured'
+	| 'origin-env-mismatch';
 
 export type ReverseProxyDocumentationPurpose =
 	| 'forwarded-host-proto'

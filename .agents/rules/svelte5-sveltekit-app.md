@@ -1,21 +1,21 @@
 ---
 type: "agent_requested"
-description: "Bun + SvelteKit 2 + Svelte 5 + UnoCSS + shadcn-svelte coding guidelines"
+description: "Bun + SvelteKit 3 + Svelte 5 + UnoCSS + shadcn-svelte coding guidelines"
 ---
-# Bun + SvelteKit 2 / Svelte 5 Production Reference (UnoCSS · shadcn-svelte · Biome)
+# Bun + SvelteKit 3 / Svelte 5 Production Reference (UnoCSS · shadcn-svelte · Biome)
 
-This stack pairs Bun as the package manager and production runtime with a Vite-powered SvelteKit 2 app running Svelte 5's signal-based runes, styled by UnoCSS in global mode with shadcn-svelte components themed through `unocss-preset-shadcn`, and kept clean by Biome. It is exceptional at fast cold installs, fine-grained reactivity with almost no runtime overhead, and a single-language full-stack story where server and client code share types automatically. Optimize for: explicit reactivity with runes, server/client boundaries that never leak state, UnoCSS in **global** mode (not `svelte-scoped`) so shadcn's CSS-variable theming works, and letting Bun own install + production serving while Vite/Node still drives dev and build.
+This stack pairs Bun as the package manager, production build runtime and production server (through the official `@sveltejs/adapter-bun`) with a Vite-powered SvelteKit 3 app running Svelte 5's signal-based runes, styled by UnoCSS in global mode with shadcn-svelte components themed through `unocss-preset-shadcn`, and kept clean by Biome. It is exceptional at fast cold installs, fine-grained reactivity with almost no runtime overhead, and a single-language full-stack story where server and client code share types automatically. Optimize for: explicit reactivity with runes, server/client boundaries that never leak state, declared environment variables, a correct public origin, UnoCSS in **global** mode (not `svelte-scoped`) so shadcn's CSS-variable theming works, and letting Bun own install, the production build and serving (the dev server may stay on Node).
 
-The biggest ways an agent writes wrong-but-plausible code here come from importing habits from adjacent ecosystems: reaching for `$effect` to sync derived values (that is React's `useEffect` muscle memory — use `$derived`), writing `on:click` / `export let` / `$$props` / stores as if this were Svelte 4, declaring module-level mutable state in server files (a cross-request leak, not a convenience), assuming `bun test` runs Svelte components (it does not — the Svelte compiler runs through Vite/Vitest), and wiring UnoCSS with Tailwind's config file or `svelte-scoped` mode (shadcn needs global CSS variables and a Tailwind-style reset). Get those five right and most of the stack falls into place.
+The biggest ways an agent writes wrong-but-plausible code here come from importing habits from adjacent ecosystems and from SvelteKit 2: reaching for `$effect` to sync derived values (that is React's `useEffect` muscle memory — use `$derived`), writing `on:click` / `export let` / `$$props` / stores as if this were Svelte 4, reaching for `$app/stores` or `svelte.config.js` (both gone in Kit 3), reading an environment variable that `src/env.ts` never declared (it is silently `undefined`), declaring module-level mutable state in server files (a cross-request leak, not a convenience), assuming `bun test` runs Svelte components (it does not — the Svelte compiler runs through Vite/Vitest), serving plain HTTP without a runtime origin (every form action answers 403), and wiring UnoCSS with Tailwind's config file or `svelte-scoped` mode (shadcn needs global CSS variables and a Tailwind-style reset).
 
 ## Toolchain, runtime, and the Bun/Vite split
 
-Bun is the package manager and the **production** runtime. It is *not* the dev/build engine: SvelteKit builds through Vite, and Vite's transforms run on Node unless you explicitly pass `--bun`. This is the single most misunderstood fact about the stack.
+Bun is the package manager, the **production build** runtime and the **production** server. `@sveltejs/adapter-bun` calls Bun's build API, so the production build must run in Bun: `bun run --bun build`, with a `build` script of `bun --bun vite build` (`--bun` overrides Vite's Node shebang). Dev may stay on Node.
 
 - `bun install` writes `bun.lock` — a text-based JSONC lockfile that has been the default since Bun 1.2, with `lockfileVersion` 2 on the 1.4 line. Commit it. Older Bun versions cannot read v2 lockfiles.
-- `bun run dev` executes the `dev` script; Vite's dev server still uses Node. Add `--bun` only if you deliberately want Bun to execute Vite (`bun --bun run dev`).
-- `bunx <pkg>` runs a package binary (equivalent to `npx`); `bun run <script>` runs a `package.json` script. Use `bunx shadcn-svelte@latest add …` for the component CLI.
-- In production you run the built server under Bun: `bun ./build/index.js`.
+- `bun run dev` executes the `dev` script; Vite's dev server still uses Node unless you pass `--bun` (`bun --bun run dev`).
+- `bunx <pkg>` runs a package binary (under Node if its shebang names `node`; `bunx --bun` forces Bun); `bun run <script>` runs a `package.json` script. Use `bunx shadcn-svelte@latest add …` for the component CLI. Never use npm, npx, yarn or pnpm commands.
+- In production you run the adapter output under Bun: `bun ./build`, or the app's own front (see Deployment).
 
 `package.json` scripts (the coherent command set):
 
@@ -23,11 +23,11 @@ Bun is the package manager and the **production** runtime. It is *not* the dev/b
 {
   "name": "app",
   "type": "module",
+  "imports": { "#lib": "./src/lib/index.js", "#lib/*": "./src/lib/*" },
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "bun ./build/index.js",
+    "build": "bun --bun vite build",
+    "start": "bun ./build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "biome format --write .",
@@ -39,65 +39,59 @@ Bun is the package manager and the **production** runtime. It is *not* the dev/b
 }
 ```
 
-Day-to-day: `bun install`, `bun run dev`, `bun run fix` (Biome format+lint+safe fixes), `bun run check` (types), `bun run test:unit`, `bun run build`, then `bun ./build/index.js`.
+No `preview` script: `vite preview` runs on Node without the adapter, so E2E and smoke tests run against the adapter output instead. Day-to-day: `bun install`, `bun run dev`, `bun run fix` (Biome format+lint+safe fixes), `bun run check` (types), `bun run test:unit`, `bun run build`, then `bun ./build`.
 
 ## Project configuration
 
-SvelteKit 2 can read its config from `vite.config.ts` directly since 2.62 — when you pass configuration to the `sveltekit()` plugin, `svelte.config.js` is ignored, giving you a single source of truth.
+Kit 3 reads its configuration **only** from the `sveltekit()` plugin in `vite.config.ts`; `svelte.config.*` is unsupported, so delete it. Former `kit: {…}` options are top-level plugin options next to `preprocess` and `compilerOptions`; vite-plugin-svelte options go straight to the plugin (`vitePlugin` is gone).
 
 ```ts
 // vite.config.ts
+import adapter from '@sveltejs/adapter-bun';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import UnoCSS from 'unocss/vite';
 import { defineConfig } from 'vite';
-import adapter from '@sveltejs/adapter-node';
 
 export default defineConfig({
   plugins: [
-    // UnoCSS must come before sveltekit()
-    UnoCSS(),
+    UnoCSS(), // must come before sveltekit()
     sveltekit({
-      // SvelteKit config lives here now; svelte.config.js becomes optional
-      kit: {
-        adapter: adapter(),
-        alias: { $components: 'src/lib/components' }
-      }
+      preprocess: vitePreprocess(),
+      compilerOptions: { runes: true },
+      adapter: adapter({ out: 'build', precompress: true }) // adapter default is false: set it explicitly
     })
   ]
 });
 ```
 
-If you keep a `svelte.config.js` (still fully supported, and required by some editor tooling), it looks like this:
+Removed options: `csrf.checkOrigin` (CSRF is always on; only `csrf.trustedOrigins` remains), `files.lib`, `preloadStrategy`, `prerender.origin` (now `paths.origin`, build-time), `experimental.handleRenderingErrors`, `experimental.instrumentation`; `experimental.tracing` is now top-level `tracing`. Kit's `alias` option is deprecated: never use it. `version.pollInterval` now defaults to one hour.
 
-```js
-// svelte.config.js
-import adapter from '@sveltejs/adapter-node';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+**`$lib` is no longer generated.** Choose one per repo: (1) the documented default, `#lib` subpath imports (the `imports` map above) with explicit extensions, `import { db } from '#lib/server/db.js'`; `$app/tsconfig` derives TypeScript `paths` from that map; or (2) an explicit `$lib` alias in Vite `resolve.alias` plus tsconfig `paths` (smaller diff). Your own `paths` replace the derived ones (`svelte-kit sync` warns `"paths" was overwritten` on a mismatch). Keep shadcn-svelte's `components.json` aliases consistent with the choice.
 
-export default {
-  preprocess: vitePreprocess(),
-  kit: {
-    adapter: adapter()
-  }
-};
-```
-
-`tsconfig.json` — `verbatimModuleSyntax` is **required** by the Svelte Vite plugin's TypeScript preprocessing; extend the generated Svelte base:
+`tsconfig.json` extends `$app/tsconfig`, which already sets `verbatimModuleSyntax`, `isolatedModules`, `moduleResolution: "bundler"` and `skipLibCheck`, but not `include`/`exclude`:
 
 ```jsonc
 {
-  "extends": "./.svelte-kit/tsconfig.json",
-  "compilerOptions": {
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "skipLibCheck": true
-  }
+  "extends": "$app/tsconfig",
+  "compilerOptions": { "strict": true, "types": ["bun", "$app/types"] }, // types must keep "$app/types"
+  "include": ["src", "test", "*"],
+  "exclude": ["src/service-worker"]
 }
 ```
 
-`svelte-check` is the type-checker for `.svelte` files — `tsc` alone cannot see inside components. Run it via the `check` script; it needs `svelte-kit sync` first so generated `$types` exist.
+A service worker is its own TS project (`src/service-worker/tsconfig.json` extending `$app/tsconfig/service-worker`), registers as `type: 'module'`, takes `version` from `$app/env` and `assets`/`immutable`/`prerendered` from `$app/manifest`, and its cache skips `no-store` responses.
+
+`svelte-check` is the type-checker for `.svelte` files — `tsc` alone cannot see inside components. `svelte-kit sync` still ships in Kit 3 (it writes `$app/tsconfig` into `node_modules`, the `$types` and the env declarations), so the `check` script keeps running it first.
+
+## Migrating from SvelteKit 2
+
+Codemod (runs under Node ≥22.17): `bunx sv migrate sveltekit-3`, one task at a time (`--tasks <id>`, commit after each, `--install bun` or `--no-install`). It runs your `format` script (expect reformatted files). Resolve every `@migration-task` marker; never commit `MIGRATION_TASKS.md`. `package-json` and `tsconfig` are implicit tasks. Known quirks: it can narrow tsconfig `include` to `src` (restore it) and write floors below Kit's peers (raise them); test mocks keyed on module specifiers must follow every rename; `external-redirects` only catches static redirects (see Redirects).
+
+- **`$app/stores` is removed** (throws at runtime, no types): use `$app/state`, which already works on Kit 2. `$app/environment` is a deprecated untyped alias: use `$app/env`. `$service-worker` is removed (see above).
+- `$app/paths` keeps only `asset`, `match` and `resolve` (`base`, `assets`, `resolveRoute` are gone); paths lose the leading `/` (`asset('foo.png')`, `resolve('blog/hello')`); `Pathname`/`Asset` are now `Path`/`AssetPath`; `preloadCode` takes a route ID. `src/params/*` becomes one `src/params.ts` built with `defineParams` from `@sveltejs/kit/params`.
+- Types: `RequestEvent` (readonly), `Cookies`, `RequestHandler`, `Load`, `Action`/`Actions`, `error`, `redirect`, `fail`, `isHttpError` stay in `@sveltejs/kit`. `ActionResult`/`SubmitFunction` → `$app/forms`; `Page`, `ReadonlyURL`, `ReadonlyURLSearchParams` → `$app/state` (`page.url` is readonly: `new URL(page.url.href)` before mutating); `Handle`, `HandleServerError`, `HandleFetch` → `@sveltejs/kit/hooks`; `BeforeNavigate`, `AfterNavigate`, `OnNavigate`, `Navigation*`, `GotoOptions` → `$app/navigation`; env types and `defineEnvVars` → `@sveltejs/kit/env`; `getRequestEvent`, `read` and remote-function types → `$app/server`; `CookieSerializeOptions`/`CookieParseOptions` → `SerializeOptions`/`ParseOptions`.
+- Also: cross-origin form submissions without a `Content-Type` are rejected; cookie names must be ASCII and `path` defaults to `/`; query parameters starting `x-sveltekit-` are rejected; universal route `config` beats server `config`; preloads are `<link>` elements (`output.linkHeaderPreload` is opt-in); a `204` from `+server.ts` has no body.
 
 ## Svelte 5 runes — the reactive core
 
@@ -181,7 +175,7 @@ Only `$bindable` props may be driven by `bind:` from a parent; plain props are r
 
 ```ts
 // src/lib/state/cart.svelte.ts
-class Cart {
+export class Cart {
   items = $state<{ id: string; qty: number }[]>([]);
   get count() {
     return this.items.reduce((n, i) => n + i.qty, 0);
@@ -192,15 +186,15 @@ class Cart {
     else this.items.push({ id, qty: 1 });
   }
 }
-// One instance per module = fine for CLIENT state. See SSR note below.
-export const cart = new Cart();
+// A module-level `export const cart = new Cart()` is ONE object for every SSR request:
+// safe only if nothing using it renders on the server. Otherwise use context (below).
 ```
 
 ## SSR, server boundaries, and state safety
 
-**Never keep mutable module-level state in code that runs on the server** (`+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, `.remote.ts`). Modules are shared across every request, so a top-level `let user` leaks one visitor's data to the next. Per-request state belongs in `event.locals`; per-user client state (like the `cart` above) is fine only because that module is instantiated fresh in each browser. `$effect` never runs during SSR, so anything that must appear in server-rendered HTML goes in a `load` function or a `$derived`, not an effect.
+**Never keep request- or user-specific data in mutable module-level state in server code** (`+page.server.ts`, `+layout.server.ts`, `hooks.server.ts`, server-only modules) or in a shared `.svelte.ts` singleton rendered during SSR. The server is shared by every user, so a top-level `let user` leaks one visitor's data to the next. Per-request data goes in `event.locals`. Deliberate process-wide resources (a database handle, a scheduler, a rate limiter) may stay at module level; name them as such. `load` has no side effects. Share per-request state with context and a getter: `setContext('user', () => data.user)` in a layout. Components are reused across navigations, so values computed from `data` use `$derived`. `$effect` never runs during SSR, so anything that must appear in server-rendered HTML goes in a `load` function or a `$derived`. Keep filter, sort and pagination state in URL search params (recommended). Code that must not run during the build (DB init, migrations, secret checks) guards on `building` from `$app/env`: route server files and hooks load during the build.
 
-In Svelte 5 read navigation state from the rune-based `$app/state`, not the legacy `$app/stores`:
+Read navigation state from `$app/state` (`$app/stores` is removed):
 
 ```svelte
 <script lang="ts">
@@ -208,6 +202,30 @@ In Svelte 5 read navigation state from the rune-based `$app/state`, not the lega
 </script>
 <p>Current path: {page.url.pathname}</p>
 ```
+
+**Server-only modules widened:** any file with a `server` name segment (`db.server.ts`, plain `server.ts`) and any `server` directory outside `src/routes` and `static` is server-only, so client imports that passed on Kit 2 can fail. Detection is off while `TEST=true`; only a clean `bun run build` proves it.
+
+## Environment variables
+
+Kit 3 exposes only **declared** variables. Declare every variable the app reads in `src/env.ts`:
+
+```ts
+// src/env.ts
+import { building } from '$app/env';
+import { defineEnvVars } from '@sveltejs/kit/env';
+import * as v from 'valibot';
+
+export const variables = defineEnvVars({
+  DATABASE_URL: { schema: building ? v.optional(v.string()) : v.string() }, // required at startup, absent at image build
+  LOG_LEVEL: { schema: v.optional(v.string()) }, // optional: unset stays undefined
+  SITE_NAME: { public: true } // no validator: required (may be empty); $app/env/public and %sveltekit.env.SITE_NAME%
+});
+```
+
+- Server code reads `$app/env/private` (`import * as env from '$app/env/private'` where code passes the env object around). `$env/*` is deprecated and untyped; `$env/dynamic/private` is a shim that exposes declared variables only.
+- **An undeclared variable silently reads as `undefined`** (an undeclared optional one silently switches its feature off). Add a test that compares the declared names with the names the code reads.
+- **A declared variable without a `schema` is required:** unset fails startup or the build ("Value is missing"); an empty string passes. Give every optional variable a validator that accepts `undefined`, such as `v.optional(v.string())` or a function (`(value) => value`; returning `undefined` is valid), never `{}`. Keep "unset" as `undefined`; no `?? ''` fallbacks that change semantics.
+- Variables are dynamic unless `static: true` (inlined at build). Public ones need `public: true`, including every `%sveltekit.env.NAME%` in `app.html`. An invalid value fails startup or the build. `browser`, `building`, `dev`, `version` come from `$app/env`.
 
 ## Routing and the data layer
 
@@ -217,7 +235,7 @@ The stable data-flow model is **`load` functions + form actions**. Load runs on 
 // src/routes/invoices/+page.server.ts
 import type { PageServerLoad, Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
-import { db } from '$lib/server/db';
+import { db } from '#lib/server/db.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
   if (!locals.user) redirect(303, '/login');
@@ -226,11 +244,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
   create: async ({ request, locals }) => {
+    if (!locals.user) return fail(401, { error: 'Sign in first' }); // load guards don't cover actions
     const data = await request.formData();
     const amount = Number(data.get('amount'));
     if (!Number.isFinite(amount) || amount <= 0)
       return fail(400, { error: 'Amount must be positive' });
-    await db.invoices.create({ userId: locals.user!.id, amount });
+    await db.invoices.create({ userId: locals.user.id, amount });
     return { success: true };
   }
 };
@@ -253,9 +272,20 @@ export const actions: Actions = {
 </form>
 ```
 
-`$types` (`PageProps`, `PageServerLoad`, `Actions`) are generated by SvelteKit from your load/action signatures — never hand-write those types. Use `+server.ts` route handlers for public APIs, webhooks, and anything needing a stable URL contract.
+`$types` (`PageProps`, `PageServerLoad`, `Actions`) are generated by SvelteKit from your load/action signatures — never hand-write those types. Use `+server.ts` route handlers for public APIs, webhooks, and anything needing a stable URL contract; return `Response.json(...)`/`new Response(...)` (`json`/`text` are deprecated).
 
-**Remote functions are experimental — opt-in only.** SvelteKit's `.remote.ts` files (`query`, `form`, `command`, `prerender` from `$app/server`) provide type-safe RPC and have been available since 2.27, iterating steadily, but they remain behind `kit.experimental.remoteFunctions` and are explicitly outside semantic versioning — the SvelteKit config docs label experimental features "Here be dragons… not subject to semantic versioning, so breaking changes or removal can happen in any release." Default to `load` + form actions for production. If you enable them, treat every remote function as a public endpoint and validate input with a Standard Schema validator (Zod/Valibot); enabling them also requires `compilerOptions.experimental.async` for in-component `await`.
+Kit 3 form actions: enhanced responses carry the status passed to `fail` (not 200), and an action returning nothing answers 204 with no body; update tests and logging. `use:enhance` posting to an action on **another page** now navigates there; `await update({ navigate: false })` restores Kit 2 behaviour. `form.error` is `App.Error | undefined`.
+
+**Remote functions stay experimental — not for production edbfi apps yet.** `.remote.ts` files need `experimental.remoteFunctions` plus `compilerOptions.experimental.async`, sit outside semver, and superforms has no integration. Default to `load` + form actions; if you opt in knowingly, treat each remote function as a public endpoint and validate input with a Standard Schema validator.
+
+## Navigation and redirects
+
+- `goto(url, { replace, reset, refreshAll, shallow, state })`. `replaceState`/`invalidateAll` options, `invalidateAll()` and `pushState`/`replaceState` are deprecated (use `replace`, `refreshAll`, `goto(..., { shallow: true, state })`); `keepFocus`/`noScroll` are gone.
+- `reset` (default `true`) resets scroll **and** focus; `reset: false` keeps both. There is no keep-focus-reset-scroll or keep-scroll-reset-focus mode: where old code kept focus and reset scroll, use `reset: false` and scroll yourself after `await goto(...)`. After `reset: false` the focused element must still exist.
+- `data-sveltekit-noscroll`/`keepfocus` became `data-sveltekit-reset="false"`; `"off"` values are now `false`. Keep the `data-sveltekit-preload-*` options on `<body>`.
+- `goto` rejects a same-app URL that matches no route: use `window.location.href`. Clicking a link to the current page calls `refreshAll()`; `invalidate` no longer aborts an in-flight navigation; `delta` exists only on popstate; `preloadData` can return `type: 'error'`.
+- Every page has a unique `<title>` (the route announcer reads it); `<html lang>` is correct (per request via `transformPageChunk` if multilingual). SSR stays on and a migration leaves `trailingSlash` and page options unchanged.
+- **External redirects** need a narrow origin allowlist, never `true`: `redirect(303, url, { external: ['https://accounts.example.com'] })`. The codemod finds only static ones; audit every computed `redirect(` target.
 
 ## Auth pattern (hooks + locals)
 
@@ -263,8 +293,8 @@ Authentication belongs in `hooks.server.ts`, populating `event.locals` for every
 
 ```ts
 // src/hooks.server.ts
-import type { Handle } from '@sveltejs/kit';
-import { verifySession } from '$lib/server/auth';
+import type { Handle } from '@sveltejs/kit/hooks';
+import { verifySession } from '#lib/server/auth.js';
 
 export const handle: Handle = async ({ event, resolve }) => {
   const token = event.cookies.get('session');
@@ -285,7 +315,39 @@ declare global {
 export {};
 ```
 
-Set cookies with `event.cookies.set(name, value, { path: '/', httpOnly: true, secure: true, sameSite: 'lax' })`. Guard pages in `load` (return `redirect(303, …)`), never rely on client-side checks.
+Every form action and endpoint runs its own guard; layouts do not protect actions, and client-side checks protect nothing. Keep `resolve(event, { transformPageChunk, preload })` options intact when `handle` customises rendering.
+
+**Cookies follow the public scheme.** Pass `secure` from the request to every `cookies.set`, `cookies.delete` and `cookies.serialize`: `const secure = event.url.protocol === 'https:'; event.cookies.set('session', token, { path: '/', httpOnly: true, secure, sameSite: 'lax' })`. Never derive it from `dev`/`NODE_ENV` or rely on Kit's default (`secure: true` except in dev and on `http://localhost`): browsers refuse `Secure` cookies and deletions over plain HTTP off loopback, so plain-HTTP logins and logouts silently fail. Behind a front or trusted proxy, `event.url` already carries the public scheme. Test plain-HTTP login from a non-loopback origin (browsers treat loopback as secure). A frontend that relays a backend's `Set-Cookie` sets `Secure` from `event.url` too, and strips the headers its front sets and any client `X-Forwarded-*` from requests it passes to the backend.
+
+## Errors
+
+`handleError` (server and client) receives **every** error as `{ kind, error, event }`, `kind` being `app` (your `error()`), `framework` (404, 405, 413, …), `validation` (remote-function input) or `unknown`:
+
+```ts
+// src/hooks.server.ts
+import type { HandleServerError } from '@sveltejs/kit/hooks';
+
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+  if (kind !== 'unknown') return error; // safe bodies pass through; don't log framework errors
+  console.error(event.route.id, error);
+  return { message: 'Internal Error' }; // never leak details
+};
+```
+
+It must never throw. An async client `handleError` needs `compilerOptions.experimental.async`. `App.Error` always has `status`. Use `error(404, 'Not found')`, with extra properties as a third argument (`error(403, 'Forbidden', { code })`); the object form `error(status, {...})` is deprecated and warns in dev. Use `isHttpError`/`isRedirect`, never `instanceof`.
+
+## Forms: Superforms 3
+
+Formsnap is no longer used (`formsnap@2.0.1` peers superforms `^2.19.0`, excluding 3.x; no release since April 2025): build field components in-house. Superforms 2.x peers Kit ≤2. **Superforms 3 is a prerelease (`3.0.0-next.N`) until stable: pin it exactly; nothing ships on it before stable.** Import paths and the store API (`$form`, `$errors`, `$message`) are unchanged; `/server` is server-only.
+
+- Every `load`/action path that **returns** includes the form (`{ form }`, or `{ loginForm, registerForm }` for several). Thrown `redirect()`/`error()` stay. Invalid input returns `fail(400, { form })`, never `error()`.
+- Schemas and adapters (`valibot(schema)`) live at module top level (adapter cache). One `superForm(untrack(() => data.form))` per form; inputs have `name` unless `dataType: 'json'` (needs JS; disabled fields are still posted).
+- Use superForm's `enhance`, not `use:enhance`; `applyAction`, `invalidateAll`, `resetForm` default to `true`. With `applyAction: false`, redirect yourself. Without `onError`, errors throw in the browser; `onError` reads `result.error.message` (and `status`).
+- Forms sharing a schema on one page, and multi-step forms switching schemas, set an `id` (plus a hidden `__superform_id` without JS). `valibotClient` needs the server's schema; per-step schemas use the full `valibot()` adapter client-side.
+- `message()`/`setError()` return `fail` when invalid or status ≥400; prefer status messages to `error()`. Files: `enctype="multipart/form-data"` and return with `withFiles`.
+- Read the body once: pass `request`/`event` to `superValidate` only if unread, else `const formData = await request.formData()` once and pass `formData`. Endpoints answer with `actionResult()`.
+- Rate-limit on the server (`multipleSubmits` is not enough); the server always validates (client checks can be tampered with; `defaults()` does not validate). Move off the deprecated `flashMessage` option.
+- Kit 3: action responses carry the `fail()` status, not 200 (fix tests). superForm calls `applyAction` itself, never Kit's `update()`, so (inference) a cross-route superForm stays on the current page, unlike `use:enhance`: test it.
 
 ## Styling: UnoCSS (global mode) + shadcn-svelte + unocss-preset-shadcn
 
@@ -348,14 +410,14 @@ Root layout wires the reset, generated utilities, and dark-mode manager. `mode-w
 {@render children?.()}
 ```
 
-Theme toggle (Svelte 5 syntax, `@lucide/svelte` is the current icon package — the old `lucide-svelte` is deprecated and points users to `@lucide/svelte` for Svelte 5):
+Icons: CSS icons through Iconify's UnoCSS integration avoid per-icon components (recommended). With `@lucide/svelte` (the old `lucide-svelte` is deprecated and points users to `@lucide/svelte` for Svelte 5), import per icon by subpath and **never mix umbrella and subpath imports**: one-`.svelte`-file-per-icon libraries slow Vite's dependency optimization, pathologically when both styles meet.
 
 ```svelte
 <script lang="ts">
   import SunIcon from '@lucide/svelte/icons/sun';
   import MoonIcon from '@lucide/svelte/icons/moon';
   import { toggleMode } from 'mode-watcher';
-  import { Button } from '$lib/components/ui/button/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
 </script>
 
 <Button onclick={toggleMode} variant="outline" size="icon">
@@ -380,7 +442,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-- Create `components.json` and an **empty `tailwind.config.js`** in the project root (the CLI expects both even though styling runs through UnoCSS):
+- Create `components.json` and an **empty `tailwind.config.js`** in the project root (the CLI expects both even though styling runs through UnoCSS). Its aliases must match the repo's `#lib`/`$lib` choice (shown: the explicit `$lib` alias):
 
 ```json
 {
@@ -391,43 +453,38 @@ export function cn(...inputs: ClassValue[]) {
 }
 ```
 
-- Then `bunx shadcn-svelte@latest add button card dialog` copies component source into `$lib/components/ui`. These files are **yours** — edit them directly; `bun update` never touches them. Re-run `add <name>` to pull upstream changes and reconcile.
+- Then `bunx shadcn-svelte@latest add button card dialog` copies component source into `src/lib/components/ui`. These files are **yours** — edit them directly; `bun update` never touches them. Re-run `add <name>` to pull upstream changes and reconcile.
 
-shadcn-svelte components are runes-native (`$props`, snippets, `onclick`), built on **bits-ui** primitives (accessible, unstyled behaviour) with the styling layered on top. Compose them; for a sortable table use TanStack Table, and for validated forms use Formsnap + Superforms.
+shadcn-svelte components are runes-native (`$props`, snippets, `onclick`), built on **bits-ui** primitives (accessible, unstyled behaviour) with the styling layered on top. Compose them; for a sortable table use TanStack Table, and for validated forms use Superforms 3 with in-house field components (no Formsnap).
 
 ## Testing
 
-`bun test` is **not** appropriate for Svelte components — it does not run the Svelte compiler or Vite transforms, and runes only work when compiled. Use **Vitest** through `@sveltejs/vite-plugin-svelte`. The modern component approach is **`vitest-browser-svelte`** (Browser Mode, real browser via Playwright) rather than `@testing-library/svelte` + jsdom, which mocked browser APIs; browser mode also correctly exercises runes that need a real DOM. Split into two Vitest projects: a browser project for components and a Node project for server logic.
+`bun test` is **not** appropriate for Svelte components — it does not run the Svelte compiler or Vite transforms, and runes only work when compiled. Use **Vitest** through `@sveltejs/vite-plugin-svelte`. The modern component approach is **`vitest-browser-svelte`** (Browser Mode, real browser via Playwright) rather than `@testing-library/svelte` + jsdom, which mocked browser APIs; browser mode also correctly exercises runes that need a real DOM. Split into two Vitest projects, and **never render components in the server project**: in Kit 3 a server `redirect()` resolves through `#internal` with the `browser` condition, so a config that also renders components fails server tests with `window is not defined`.
 
 ```ts
-// vite.config.ts (test section) — requires vitest 4.x, vitest-browser-svelte 3.x
-import { defineConfig } from 'vitest/config';
-import { sveltekit } from '@sveltejs/kit/vite';
-
-export default defineConfig({
-  plugins: [sveltekit()],
-  test: {
-    projects: [
-      {
-        extends: true,
-        test: {
-          name: 'client',
-          browser: { enabled: true, provider: 'playwright', instances: [{ browser: 'chromium' }] },
-          include: ['src/**/*.svelte.{test,spec}.ts']
-        }
-      },
-      {
-        extends: true,
-        test: {
-          name: 'server',
-          environment: 'node',
-          include: ['src/**/*.{test,spec}.ts'],
-          exclude: ['src/**/*.svelte.{test,spec}.ts']
-        }
+// vite.config.ts — `test` block added to the config above (defineConfig from 'vitest/config');
+// requires vitest 4.x, vitest-browser-svelte 3.x
+test: {
+  projects: [
+    {
+      extends: true,
+      test: {
+        name: 'client',
+        browser: { enabled: true, provider: 'playwright', instances: [{ browser: 'chromium' }] },
+        include: ['src/**/*.svelte.{test,spec}.ts']
       }
-    ]
-  }
-});
+    },
+    {
+      extends: true,
+      test: {
+        name: 'server',
+        environment: 'node',
+        include: ['src/**/*.{test,spec}.ts'],
+        exclude: ['src/**/*.svelte.{test,spec}.ts']
+      }
+    }
+  ]
+}
 ```
 
 ```ts
@@ -444,7 +501,7 @@ test('increments', async () => {
 });
 ```
 
-Use **Playwright** for end-to-end flows (`test:e2e`). Do not use `act()` or `fireEvent` patterns from testing-library — `vitest-browser-svelte` exposes retrying locators and `expect.element` instead.
+Use **Playwright** for end-to-end flows (`test:e2e`), against the built adapter output (`bun ./build` or the front), never `vite preview`. Do not use `act()` or `fireEvent` patterns from testing-library — `vitest-browser-svelte` exposes retrying locators and `expect.element` instead.
 
 ## Biome — format, lint, organize
 
@@ -477,16 +534,39 @@ Biome replaces ESLint + Prettier for this stack. It is a fast formatter and lint
 
 Commands: `biome check --write .` (format + lint + organize imports + safe fixes), `biome format --write .`, `biome lint .`. Run via `bunx biome …` or the `package.json` scripts. Biome does not type-check — that is `svelte-check`'s job, kept separate. If Biome's experimental markup formatting mangles a component, disable formatting for `.svelte` in the override and add `prettier-plugin-svelte` solely for `.svelte` formatting; that is the one legitimate complementary tool, for that specific gap.
 
-## Deployment (Bun runtime)
+## Deployment (`@sveltejs/adapter-bun`)
 
-Use **`@sveltejs/adapter-node`** and run the output under Bun. `svelte-adapter-bun` exists but is based on an old fork of adapter-node and its development has stalled, so it lags on origin/CORS handling that recent SvelteKit security changes depend on. `adapter-node`'s output runs unmodified on Bun, giving you the Bun runtime in production without the maintenance risk:
+Use the official **`@sveltejs/adapter-bun`** (Bun ≥1.4.0). Not `@sveltejs/adapter-node` under Bun, and not the community `svelte-adapter-bun` (peers Kit 2 and `typescript ^5`) or its forks.
+
+**Single-page apps** are the exception: an SPA (no `+page.server`, `+layout.server` or `+server` files) uses `@sveltejs/adapter-static` with a `fallback` page (such as `200.html`, not `index.html`) and `ssr = false` in the root `+layout.ts`, served by its backend on the same origin as its API. Its public variables are fixed at build (adapter-static writes them into `_app/env.js`). The adapter-bun, front, and server-side cookie and origin sections then do not apply: the backend owns origin checks, cookies and proxy trust.
 
 ```bash
-bun run build          # Vite build -> ./build
-bun ./build/index.js   # standalone server on the Bun runtime
+bun run build   # bun --bun vite build -> ./build
+bun ./build     # Bun.serve server, or the app's front
 ```
 
-Set `ORIGIN` (or `PROTOCOL_HEADER`/`HOST_HEADER` behind a proxy) so SvelteKit's form-action CSRF protection resolves the request URL correctly — this is the most common "works locally, 403s in prod" trap. Reach for `svelte-adapter-bun` only if you specifically need Bun-native WebSocket upgrades via `event.platform`.
+- **Runtime needs** the output directory, `package.json` and production `node_modules` (`bun install --production --frozen-lockfile`); Docker images copy `package.json` too. `dependencies` stay external; `devDependencies` (and Svelte libraries in `ssr.noExternal`) are bundled, so `@sveltejs/kit`, `svelte` and `vite` are `devDependencies` and runtime-only packages are `dependencies`. Bun auto-loads `.env` at runtime: no stray `.env` in any image or working directory.
+- **Options:** `out` (`build`), `precompress` (default `false`: set it explicitly), `envPrefix` (an unknown prefixed variable then fails startup), `serverOptions` (env vars win).
+- **Env:** `HOST`/`PORT` (`3000`); `SOCKET_PATH` (ignores TCP options); `BODY_SIZE_LIMIT` (`512K`, K/M/G, `Infinity`): size it from the app's real maximum (uploads) and let an operator value win; `CONNECTION_IDLE_TIMEOUT` (0–255 s, replaces `IDLE_TIMEOUT`; `text/event-stream` exempt, gets `X-Accel-Buffering: no`); `SHUTDOWN_TIMEOUT` (`30` s drain, then `sveltekit:shutdown`; a second signal exits 1; in a container the default must fit the stop budget, Docker's 10 s unless the image or Compose sets more, so `docker stop` drains event streams instead of killing them); `PROTOCOL_HEADER` (`http`/`https` else 400), `HOST_HEADER`, `PORT_HEADER` (numeric else 400); `ADDRESS_HEADER` + `XFF_DEPTH` (`1`, from the right). Empty headers are ignored. `getClientAddress()` **throws** if `ADDRESS_HEADER` is set but absent or short of `XFF_DEPTH` hops: leave it unset where no proxy supplies it.
+- **Static assets** are native Bun routes (`GET`/`HEAD`, ETags, ranges, immutable caching); a literal `*` in a filename fails the build; test URL-encoded asset paths (until sveltejs/kit#17123 lands they 404 or fall through to the app; do not patch the server for it). No WebSocket hook.
+
+**Public origin.** Runtime `ORIGIN` is gone in Kit 3 (adapter-node 6 too), `paths.origin` is build-time, and Kit's form CSRF check runs **before** `handle`, so no hook can rescue form actions or uploads. adapter-bun uses `paths.origin`, else the configured `PROTOCOL_HEADER`/`HOST_HEADER`/`PORT_HEADER`, else `Host` with an **assumed `https`**. Its docs: "Configure `paths.origin` or `PROTOCOL_HEADER` if that assumption is wrong, for example when serving plain HTTP directly", and "Only trust forwarded headers when requests can reach the server through a proxy you control. A direct client can spoof these headers."
+- **`ORIGIN` is the one public-origin setting:** the address people open in the browser. Plain HTTP needs it (without it same-origin writes get 403); it enables a network app's front. Leave it unset only behind an HTTPS reverse proxy that passes the original `Host`, where the adapter default is correct.
+- **Parse it the same way in every network front:** trim (empty means unset); `new URL()` must give `http:` or `https:`; reject credentials, a pathname other than `/` and any `?` or `#` in the raw value, before binding, with a startup error that never echoes the value: `ORIGIN must be a bare http(s) origin such as http://192.168.1.10:3000 (no path, query, fragment or credentials).` The canonical value is `url.origin` (lowercase scheme and host, no default port, no trailing `/`); set `process.env.ORIGIN` to it before the app loads, so the app and the front compare one string.
+- **App-level origin settings derive from `ORIGIN`** when it is set (allowed-origin lists, a CSRF origin, a stored public URL): stored or extra values may add origins, never replace it. Compare canonical origins, never raw strings.
+- **Never** derive the origin from the request's `Host` header (DNS rebinding; a network-facing app has no single listener origin). With neither `ORIGIN` nor `PROTOCOL_HEADER` set, log **one** startup warning (not an error) naming the user-visible failure, in the same words in every app (one parenthetical may follow "saving changes"): `ORIGIN is not set: <App> assumes it is served over HTTPS behind a proxy that preserves the Host header. Over plain HTTP, signing in and saving changes will fail. Set ORIGIN to the address users open, for example ORIGIN=http://192.168.1.10:3000.`
+- Behind a proxy, set `ADDRESS_HEADER=x-forwarded-for` and `XFF_DEPTH` (the number of trusted proxies, default 1) only when every request passes through them; `PROTOCOL_HEADER`/`HOST_HEADER` only without `ORIGIN`, behind a trusted proxy. Document them, `ORIGIN`, `SHUTDOWN_TIMEOUT` and `BODY_SIZE_LIMIT` (effective defaults) in the README, `.env.example` and image docs.
+- **Never** add a `Content-Type` to bodyless writes (or any client-side trick) to get past the origin check; it hides the wrong `https` origin. Do not weaken CSRF, widen `trustedOrigins` or accepted hostnames to pass tests, monkeypatch `Bun.serve`, or edit build output.
+
+**The app-owned front** (each app owns its own; no shared module) is the docs' "proxy you control" made runtime-configurable:
+- The adapter listens on `SOCKET_PATH` in a fresh `mkdtemp` directory; the front binds the public `HOST`/`PORT` (loopback only for a loopback app) and is the socket's only client.
+- On **every** request it **overwrites** the headers the adapter reads as `PROTOCOL_HEADER`/`HOST_HEADER` and deletes `PORT_HEADER` input. Unless the operator set `ADDRESS_HEADER` (then passed through), it deletes any client-sent copy of its own address header and sets it to the peer from `server.requestIP()`.
+- A network front runs only when `ORIGIN` is set (else the adapter listens directly), validates it alone and never compares it with its bind address (proxies and Docker port mapping differ legitimately). Only a **loopback** front may reject an `ORIGIN` that differs from its listener.
+- Forwarding: the raw path and query, sliced from `request.url` after any authority, never `new URL(request.url)` (it throws on some `Host` values); `redirect: 'manual'`, `decompress: false`, abort signal passed through, no body for GET/HEAD, 503 on a socket connection failure. When the adapter force-closes a proxied event stream (its shutdown drain expired), end the public stream normally instead of passing the error on, which browsers see as a connection reset.
+- Shutdown: on the first SIGTERM/SIGINT fix a deadline from `SHUTDOWN_TIMEOUT` and start `listener.stop()` (keep the promise); the adapter drains its side and emits `sveltekit:shutdown`; await the public drain until the deadline and `listener.stop(true)` only when it expires (force-closing on `sveltekit:shutdown` truncates slow downloads). Remove the socket directory on `exit` too, not only after a drain. A front that binds before loading the adapter re-delivers a signal received during the load once the adapter has loaded (else `sveltekit:shutdown` never fires and the process hangs); a second signal before then exits 1.
+- Observed (Bun 1.4.2, macOS and linux/arm64; consistent with oven-sh/bun#43816): on `SOCKET_PATH`, idle `text/event-stream` responses close after about 12 s despite the exemption. Fronts set `CONNECTION_IDLE_TIMEOUT=0` on the socket side, enforce the client idle timeout, and call `server.timeout(req, 0)` for event streams on their public TCP listener (it is inert on unix listeners).
+
+Optional: `tracing.server` with `src/instrumentation.server.ts` (adapter-bun's docs don't cover it; verify first; leave `@opentelemetry/api` uninstalled).
 
 ## Anti-patterns to avoid
 
@@ -494,37 +574,42 @@ Set `ORIGIN` (or `PROTOCOL_HEADER`/`HOST_HEADER` behind a proxy) so SvelteKit's 
 | --- | --- | --- |
 | `$effect(() => { double = count * 2 })` | Effect used to derive a value — extra render pass, stale-value bugs; a React `useEffect` habit | `let double = $derived(count * 2)` |
 | `on:click={…}`, `export let x`, `$$props`, `createEventDispatcher` | Svelte 4 syntax; invalid or non-reactive in runes mode | `onclick={…}`, `let { x } = $props()`, callback props |
-| Module-level `let user` in `+page.server.ts` / `hooks.server.ts` | Shared across all requests — cross-user data leak | Per-request `event.locals`; set in `hooks.server.ts` |
+| Module-level `let user` in server code, or an SSR-rendered `.svelte.ts` singleton | Shared across all requests — cross-user data leak | Per-request `event.locals`; context with a getter |
 | `bun test` for components | No Svelte compiler / Vite transform; runes don't run | `vitest` with `vitest-browser-svelte` in Browser Mode |
 | `@unocss/svelte-scoped` mode | Rewrites class names & scopes styles; breaks shadcn's global CSS variables + reset | `unocss/vite` (global) + `unocss-preset-shadcn` |
 | `presetWind4` with `unocss-preset-shadcn` | oklch/`color-mix` bugs + `transformerDirectives` incompatibility | `presetWind3` via `unocss-preset-shadcn/v3` |
 | Running `shadcn-svelte init` on a UnoCSS project | Scaffolds a Tailwind pipeline that conflicts with UnoCSS | Manual `cn` util + `components.json` + empty `tailwind.config.js`, then `add` |
 | Forgetting `'src/**/*.{js,ts}'` in UnoCSS content | shadcn barrel `index.ts` files aren't scanned; classes vanish in prod | Add JS/TS to `content.pipeline.include` |
-| `import { page } from '$app/stores'` in Svelte 5 | Legacy store API; verbose `$page` access | `import { page } from '$app/state'` |
+| `import { page } from '$app/stores'` | Removed in Kit 3; throws at runtime | `import { page } from '$app/state'` |
+| Undeclared env var | Silently `undefined`; feature switches off | Declare it in `src/env.ts` |
 | Dark-mode toggle in `onMount` | Runs after hydration — flash of wrong theme | `mode-watcher` `<ModeWatcher />` in root layout |
-| `import Icon from 'lucide-svelte'` | `lucide-svelte` is deprecated; points to the scoped package for Svelte 5 | `import Icon from '@lucide/svelte/icons/…'` |
-| `svelte-adapter-bun` as default | Stalled fork; lags origin/CORS handling | `adapter-node` run via `bun ./build/index.js` |
+| `lucide-svelte`, or mixed umbrella/subpath icon imports | Deprecated; pathological dep optimization | `@lucide/svelte/icons/…` only, or CSS icons |
+| `adapter-node` or `svelte-adapter-bun` | Runtime workarounds / peers Kit 2 + TS 5 | `@sveltejs/adapter-bun`, built with `--bun` |
+| Plain HTTP without `ORIGIN`, or a `Content-Type` hack | 403 on writes; the hack hides the wrong origin | App-owned front with `ORIGIN`, or a trusted proxy |
+| `secure: !dev` on cookies | Plain-HTTP login fails off loopback | `secure: event.url.protocol === 'https:'` |
 | Relying on remote functions in production | Experimental, outside semver — can break on any release | `load` + form actions; opt in only knowingly |
 
 ## Version & compatibility
 
 | Component | Targeted line | Notes / floor |
 | --- | --- | --- |
-| Bun | 1.4.x | Package manager + prod runtime; text `bun.lock` default since 1.2, `lockfileVersion` 2 on the 1.4 line |
-| SvelteKit (`@sveltejs/kit`) | 2.70.x | Config may live in `vite.config.ts` (≥2.62, where `svelte.config.js` is then ignored); Vite 8 supported since 2.53.x. SvelteKit 3 is RC/preview — excluded |
-| Svelte | 5.56.x | Runes stable since the Svelte 5 release (Oct 2024) |
-| TypeScript | 6.0.x | Last 5.x was 5.9; `verbatimModuleSyntax` required by Svelte plugin. TS 7 native compiler excluded — Svelte language tools not yet ready |
-| Vite | 8.x | Rolldown-based; requires `@sveltejs/vite-plugin-svelte` 7 |
-| `@sveltejs/vite-plugin-svelte` | 7.2.x | Requires Vite 8 + Svelte 5.46.4+ |
+| Bun | 1.4.x | ≥1.4.0 (adapter-bun); package manager, production build (`--bun`) and runtime; text `bun.lock` default since 1.2, `lockfileVersion` 2 on the 1.4 line |
+| SvelteKit (`@sveltejs/kit`) | 3.0.x | Config only in `sveltekit({...})` in `vite.config.ts`; migrate with `bunx sv migrate sveltekit-3` (`sv` 1.1.x) |
+| `@sveltejs/adapter-bun` | 1.0.x | Official; no TypeScript peer; set `precompress` explicitly |
+| `@sveltejs/adapter-static` | 4.0.x | SPAs only; peers Kit `^3.0.0-next.0` |
+| Svelte | 5.57.x | ≥5.57.1 (Kit 3 peer); runes stable since the Svelte 5 release (Oct 2024) |
+| TypeScript | 6.0.x | Never below 6; Kit 3's `^6.0.0` peer is optional. `verbatimModuleSyntax` required (set by `$app/tsconfig`). TS 7 native compiler excluded — Svelte language tools not yet ready |
+| Vite | 8.x | ≥8.0.12 (Kit 3 peer) |
+| `@sveltejs/vite-plugin-svelte` | 7.x | `^7.0.0` (Kit 3 peer); requires Vite 8 |
+| `sveltekit-superforms` | 3.0.0-next.N | Prerelease until stable: exact pin, nothing ships on it before stable; 2.x is Kit ≤2 only; no Formsnap |
 | UnoCSS (`unocss`, `@unocss/vite`, `@unocss/preset-wind3`) | 66.x | Global mode; `extractorSvelte` for `class:` directives |
 | `unocss-preset-shadcn` | 1.0.1 | Use `unocss-preset-shadcn/v3` (presetWind3); package default is presetWind4 (oklch/transformer issues) |
 | `unocss-preset-animations` | current | Replaces `tailwindcss-animate` |
 | shadcn-svelte (CLI) | latest | Runes-native; on bits-ui; no `init` with UnoCSS |
 | Biome (`@biomejs/biome`) | 2.5.x | `.svelte` support experimental (opt-in flag); JS/TS/JSON/CSS stable |
-| Vitest | 4.x | Browser Mode via Playwright |
+| Vitest | 4.x | Browser Mode via Playwright; separate component and server projects |
 | `vitest-browser-svelte` | 3.x | Requires Vitest 4+ |
 | svelte-check | 4.5.x | Type-checker for `.svelte` |
-| `@sveltejs/adapter-node` | 5.5.x | Run output under Bun; preferred over stalled `svelte-adapter-bun` |
-| Node (toolchain floor) | 20.19+ | For Vite/plugin when not executing via `--bun`; Bun 1.4 covers the runtime |
+| Node (toolchain floor) | 22.17+ | Kit 3 engines and the `sv` codemod; runs dev, Vitest and Playwright (the Node on `PATH`); production builds and serves on Bun |
 
-- **Research date:** September 5, 2026
+- **Research date:** October 3, 2026

@@ -80,6 +80,16 @@ describe('production smoke runner', () => {
 	});
 });
 
+describe('production smoke entry', () => {
+	it('starts the production entry scripts/serve.ts without ORIGIN', async () => {
+		const source = await Bun.file(join(PROJECT_ROOT, 'scripts/smoke-production.ts')).text();
+		expect(source).toContain("Bun.spawn(['bun', './scripts/serve.ts']");
+		expect(source).toContain('delete childEnv.ORIGIN;');
+		const pkg = await Bun.file(join(PROJECT_ROOT, 'package.json')).json();
+		expect(pkg.scripts.start).toBe('NODE_ENV=production bun ./scripts/serve.ts');
+	});
+});
+
 describe('bounded subprocess shutdown', () => {
 	it('returns after graceful termination', async () => {
 		const fake = createFakeSubprocess((signal, exit) => {

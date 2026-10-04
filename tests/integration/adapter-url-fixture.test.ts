@@ -3,6 +3,10 @@ import { access, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+// Builds a throwaway SvelteKit 3 app with the installed @sveltejs/adapter-bun and records how
+// the adapter (and, with ORIGIN, the obzorarr front in scripts/serve.ts) constructs request.url
+// and event.url.
+
 const repositoryRoot = process.cwd();
 let fixtureRoot = '';
 
@@ -15,7 +19,7 @@ function inheritedEnvironment(): Record<string, string> {
 async function writeFixture(): Promise<void> {
 	fixtureRoot = await mkdtemp(join(tmpdir(), 'obzorarr-adapter-url-'));
 	await mkdir(join(fixtureRoot, 'node_modules'));
-	for (const dependency of ['@sveltejs', 'svelte', 'svelte-adapter-bun', 'vite']) {
+	for (const dependency of ['@sveltejs', 'svelte', 'vite']) {
 		await symlink(
 			join(repositoryRoot, 'node_modules', dependency),
 			join(fixtureRoot, 'node_modules', dependency),
@@ -27,12 +31,14 @@ async function writeFixture(): Promise<void> {
 		JSON.stringify({ type: 'module', scripts: { build: 'vite build' } })
 	);
 	await Bun.write(
-		join(fixtureRoot, 'svelte.config.js'),
-		"import adapter from 'svelte-adapter-bun';\nexport default { kit: { adapter: adapter() } };\n"
-	);
-	await Bun.write(
 		join(fixtureRoot, 'vite.config.ts'),
-		"import { sveltekit } from '@sveltejs/kit/vite';\nimport { defineConfig } from 'vite';\nexport default defineConfig({ plugins: [sveltekit()] });\n"
+		"import adapter from '@sveltejs/adapter-bun';\nimport { sveltekit } from '@sveltejs/kit/vite';\nimport { defineConfig } from 'vite';\nexport default defineConfig({ plugins: [sveltekit({ adapter: adapter() })] });\n"
+	);
+	// The production front, run from the fixture root next to build/ as in the image.
+	await mkdir(join(fixtureRoot, 'scripts'));
+	await Bun.write(
+		join(fixtureRoot, 'scripts/serve.ts'),
+		Bun.file(join(repositoryRoot, 'scripts/serve.ts'))
 	);
 	await mkdir(join(fixtureRoot, 'src/routes'), { recursive: true });
 	await writeFile(
@@ -41,7 +47,7 @@ async function writeFixture(): Promise<void> {
 	);
 	await writeFile(
 		join(fixtureRoot, 'src/routes/+server.ts'),
-		"import { json } from '@sveltejs/kit';\nexport const GET = ({ request, url }) => json({ requestUrl: request.url, eventUrl: url.href });\n"
+		'export const GET = ({ request, url }) => Response.json({ requestUrl: request.url, eventUrl: url.href });\n'
 	);
 }
 
@@ -67,6 +73,8 @@ async function buildFixture(): Promise<void> {
 
 interface AdapterCase {
 	host: string;
+	/** `build/index.js` (the adapter, the default) or `scripts/serve.ts` (the front). */
+	entry?: string;
 	env?: Record<string, string>;
 	headers?: Record<string, string>;
 }
@@ -138,7 +146,7 @@ async function observeAdapterUrl(testCase: AdapterCase): Promise<{
 		PORT: port,
 		...testCase.env
 	});
-	const server = Bun.spawn(['bun', 'build/index.js'], {
+	const server = Bun.spawn(['bun', testCase.entry ?? 'build/index.js'], {
 		cwd: fixtureRoot,
 		env: environment,
 		stdout: 'pipe',
@@ -207,7 +215,7 @@ afterAll(async () => {
 	await expect(access(cleanedPath)).rejects.toThrow();
 });
 
-describe('installed svelte-adapter-bun request URL construction', () => {
+describe('installed @sveltejs/adapter-bun request URL construction', () => {
 	it('uses its documented HTTPS default and incoming Host when ORIGIN is unset', async () => {
 		const observed = await observeAdapterUrl({ host: 'public.example:8443' });
 		expect(observed).toEqual({
@@ -216,8 +224,20 @@ describe('installed svelte-adapter-bun request URL construction', () => {
 		});
 	}, 30_000);
 
-	it('uses ORIGIN ahead of contradictory configured origin headers', async () => {
+	it('ignores ORIGIN: SvelteKit 3 adapters have no runtime origin setting', async () => {
 		const observed = await observeAdapterUrl({
+			host: 'internal.example:3000',
+			env: { ORIGIN: 'https://canonical.example' }
+		});
+		expect(observed).toEqual({
+			requestUrl: 'https://internal.example:3000/',
+			eventUrl: 'https://internal.example:3000/'
+		});
+	}, 30_000);
+
+	it('takes ORIGIN from the scripts/serve.ts front, ahead of contradictory origin headers', async () => {
+		const observed = await observeAdapterUrl({
+			entry: 'scripts/serve.ts',
 			host: 'internal.example:3000',
 			env: {
 				ORIGIN: 'https://canonical.example',
@@ -228,12 +248,26 @@ describe('installed svelte-adapter-bun request URL construction', () => {
 			headers: {
 				'x-forwarded-proto': 'http',
 				'x-forwarded-host': 'attacker.example',
-				'x-forwarded-port': '8080'
+				'x-forwarded-port': '8080',
+				'x-obzorarr-origin-proto': 'http',
+				'x-obzorarr-origin-host': 'attacker.example'
 			}
 		});
 		expect(observed).toEqual({
 			requestUrl: 'https://canonical.example/',
 			eventUrl: 'https://canonical.example/'
+		});
+	}, 30_000);
+
+	it('serves a plain-HTTP ORIGIN through the front', async () => {
+		const observed = await observeAdapterUrl({
+			entry: 'scripts/serve.ts',
+			host: 'evil.example',
+			env: { ORIGIN: 'http://192.168.1.10:3000' }
+		});
+		expect(observed).toEqual({
+			requestUrl: 'http://192.168.1.10:3000/',
+			eventUrl: 'http://192.168.1.10:3000/'
 		});
 	}, 30_000);
 
@@ -275,10 +309,12 @@ describe('installed svelte-adapter-bun request URL construction', () => {
 		});
 	}, 30_000);
 
-	it('shows SvelteKit normalizing a default port while preserving an IPv6 non-default port', async () => {
+	// svelte-adapter-bun kept ':443' in request.url and SvelteKit dropped it from event.url;
+	// @sveltejs/adapter-bun normalizes both.
+	it('normalizes a default port while preserving an IPv6 non-default port', async () => {
 		const defaultPort = await observeAdapterUrl({ host: 'public.example:443' });
 		expect(defaultPort).toEqual({
-			requestUrl: 'https://public.example:443/',
+			requestUrl: 'https://public.example/',
 			eventUrl: 'https://public.example/'
 		});
 

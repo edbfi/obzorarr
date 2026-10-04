@@ -32,7 +32,7 @@ import { Glob } from 'bun';
 // the usual one: this is a source-text scan, not a loader, so it cannot resolve
 // re-export aliases at runtime or follow computed/dynamic re-exports.
 // The faithful long-term guard is `bun run build` (option (c) in the plan):
-// svelte-adapter-bun loads every route module and fails on a bad export. Adding
+// SvelteKit loads every route module while building and fails on a bad export. Adding
 // `bun run build` to CI is the authoritative fix when the maintainer wants it;
 // this test buys immediate, zero-setup protection in the meantime.
 

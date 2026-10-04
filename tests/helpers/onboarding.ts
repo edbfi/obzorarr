@@ -7,6 +7,7 @@ import {
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
 import { resetSharedTestDb } from './db';
+import { TEST_REQUEST_URL } from './requests';
 
 export interface CookieMutation {
 	name: string;
@@ -55,6 +56,10 @@ export function createOnboardingCookies(sessionId?: string): OnboardingTestCooki
 		},
 		serialize() {
 			return '';
+		},
+		// SvelteKit 3 adds Cookies.parse (Set-Cookie parsing); no onboarding code calls it.
+		parse(): never {
+			throw new Error('cookies.parse is not used by the onboarding flow');
 		}
 	} as OnboardingTestCookies;
 
@@ -73,7 +78,9 @@ export async function claimOnboardingCookies<T extends OnboardingTestCookies>(
 	cookies: T = createOnboardingCookies() as T
 ): Promise<T> {
 	const token = createBootstrapToken();
-	expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+	expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+		'claimed'
+	);
 	return cookies;
 }
 

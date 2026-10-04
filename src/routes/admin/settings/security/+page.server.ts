@@ -1,6 +1,5 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
-import { env } from '$env/dynamic/private';
 import {
 	inlineOccCheck,
 	OCC_CONFLICT_MESSAGE,
@@ -21,6 +20,7 @@ import {
 } from '$lib/server/admin/settings.service';
 import { requireAdminActions } from '$lib/server/auth/guards';
 import { logger } from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { getOriginFromRequest } from '$lib/server/security/csrf-handle';
 import { _resetTrustProxyCache } from '$lib/server/security/proxy-handle';
 import {

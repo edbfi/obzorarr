@@ -37,8 +37,11 @@ const childEnv = {
 	PORT: String(port)
 };
 delete childEnv.SOCKET_PATH;
+// Smoke the direct path of the production entry: without ORIGIN, scripts/serve.ts loads
+// build/index.js in-process, exactly as `bun start` and the container do.
+delete childEnv.ORIGIN;
 
-const server = Bun.spawn(['bun', './build/index.js'], {
+const server = Bun.spawn(['bun', './scripts/serve.ts'], {
 	env: childEnv,
 	stdout: 'pipe',
 	stderr: 'pipe'
