@@ -217,7 +217,9 @@ describe('forwardPath', () => {
 		['http://x:99999/admin?/updateLogSettings', '/admin?/updateLogSettings'],
 		['http://[::1/p', '/p'],
 		['http://x', '/'],
-		['/relative?z=1', '/relative?z=1']
+		['/relative?z=1', '/relative?z=1'],
+		// A bare path (what Bun gives for a Host it cannot parse) whose query holds a URL.
+		['/login?next=http://x/y', '/login?next=http://x/y']
 	])('forwards %s as %s', (requestUrl, path) => {
 		expect(forwardPath(requestUrl)).toBe(path);
 	});
@@ -461,6 +463,17 @@ describe('serve.ts process', () => {
 			expect(server.output()).not.toContain('Invalid URL');
 		}
 	);
+
+	it('forwards the whole bare path when its query holds a URL', async () => {
+		const port = await freePort();
+		const server = await start({ ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port) });
+		const reply = await call(server.port, '/echo?next=http://x/y', { headers: { host: 'a b' } });
+		expect(reply.status).toBe(200);
+		expect(JSON.parse(reply.body.toString())).toMatchObject({
+			path: '/echo',
+			search: '?next=http://x/y'
+		});
+	});
 
 	it('propagates a client abort to the adapter', async () => {
 		const port = await freePort();

@@ -36,7 +36,8 @@ async function handle(request) {
 	try {
 		url = new URL(request.url);
 	} catch {
-		const scheme = request.url.indexOf('://');
+		// A bare path (Bun's request.url for a Host it cannot parse) is the path, query included.
+		const scheme = request.url.startsWith('/') ? -1 : request.url.indexOf('://');
 		url = new URL(
 			scheme === -1 ? request.url : request.url.slice(request.url.indexOf('/', scheme + 3)),
 			'http://unparsed-host'

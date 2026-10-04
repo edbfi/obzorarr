@@ -146,6 +146,8 @@ export function prepare(environment: Environment): Plan {
  * answered 500 before the request reached the app. The front supplies the origin itself.
  */
 export function forwardPath(requestUrl: string): string {
+	// A bare path is already the path; its query may itself contain "://".
+	if (requestUrl.startsWith('/')) return requestUrl;
 	const scheme = requestUrl.indexOf('://');
 	const start = scheme === -1 ? 0 : requestUrl.indexOf('/', scheme + 3);
 	return start === -1 ? '/' : requestUrl.slice(start);
