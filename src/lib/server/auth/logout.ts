@@ -3,7 +3,7 @@ import { logger } from '$lib/server/logging';
 import { isSecureRequest } from '$lib/server/security/cookie-security';
 import { invalidateSession } from './session';
 
-export async function logout(cookies: Cookies, requestUrl: URL | undefined): Promise<void> {
+export async function logout(cookies: Cookies, requestUrl: URL): Promise<void> {
 	const sessionId = cookies.get('session');
 
 	if (sessionId) {

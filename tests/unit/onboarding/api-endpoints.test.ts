@@ -54,8 +54,10 @@ function runSelectServerPost(
 	body: unknown,
 	testCookies: SelectServerArgs['cookies'] = cookies
 ): ReturnType<typeof selectServerPost> {
+	const request = createJsonRequest('/api/onboarding/select-server', body);
 	return selectServerPost({
-		request: createJsonRequest('/api/onboarding/select-server', body),
+		request,
+		url: new URL(request.url),
 		locals: adminLocals,
 		cookies: testCookies
 	} as unknown as SelectServerArgs);
@@ -65,7 +67,11 @@ function runServersGet(
 	locals: ServersArgs['locals'],
 	testCookies: ServersArgs['cookies'] = cookies
 ): ReturnType<typeof serversGet> {
-	return serversGet({ cookies: testCookies, locals } as unknown as ServersArgs);
+	return serversGet({
+		cookies: testCookies,
+		locals,
+		url: new URL('http://localhost/api/onboarding/servers')
+	} as unknown as ServersArgs);
 }
 
 function runTestConnectionPost(
@@ -73,8 +79,10 @@ function runTestConnectionPost(
 	testCookies: TestConnectionArgs['cookies'] = cookies,
 	locals: TestConnectionArgs['locals'] = adminLocals
 ): ReturnType<typeof testConnectionPost> {
+	const request = createJsonRequest('/api/onboarding/test-connection', body);
 	return testConnectionPost({
-		request: createJsonRequest('/api/onboarding/test-connection', body),
+		request,
+		url: new URL(request.url),
 		locals,
 		cookies: testCookies
 	} as unknown as TestConnectionArgs);

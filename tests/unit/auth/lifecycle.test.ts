@@ -26,7 +26,7 @@ import {
 	restoreSpies
 } from '../../helpers/auth';
 import { resetSharedTestDb } from '../../helpers/db';
-import { createTestCookies } from '../../helpers/requests';
+import { createTestCookies, TEST_REQUEST_URL } from '../../helpers/requests';
 
 const SESSION_ID = 'test-session';
 const PLEX_TOKEN = 'test-token';
@@ -52,7 +52,9 @@ describe('createSessionFromPlexToken', () => {
 	it('redacts Plex and internal identifiers from the browser-facing completion response', async () => {
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
 		const cookies = createTestCookies();
-		const result = await createSessionFromPlexToken('secret-auth-token', cookies);
+		const result = await createSessionFromPlexToken('secret-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		expect(result).toEqual({
 			user: {
 				username: 'alice',
@@ -95,14 +97,18 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
 		await expect(
-			createSessionFromPlexToken('secret-auth-token', createTestCookies())
+			createSessionFromPlexToken('secret-auth-token', createTestCookies(), {
+				requestUrl: TEST_REQUEST_URL
+			})
 		).rejects.toBeInstanceOf(OnboardingClaimRequiredError);
 	});
 	it('rejects configured-Plex onboarding login without an active setup claim', async () => {
 		spies.push(spyOn(onboarding, 'requiresOnboarding').mockResolvedValue(true));
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
 		await expect(
-			createSessionFromPlexToken('secret-auth-token', createTestCookies())
+			createSessionFromPlexToken('secret-auth-token', createTestCookies(), {
+				requestUrl: TEST_REQUEST_URL
+			})
 		).rejects.toBeInstanceOf(OnboardingClaimRequiredError);
 		expect(await db.select().from(sessions)).toHaveLength(0);
 	});
@@ -110,10 +116,14 @@ describe('createSessionFromPlexToken', () => {
 		spies.push(spyOn(onboarding, 'requiresOnboarding').mockResolvedValue(true));
 		const cookies = createTestCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+		expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+			'claimed'
+		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
 		try {
-			await createSessionFromPlexToken('secret-auth-token', cookies);
+			await createSessionFromPlexToken('secret-auth-token', cookies, {
+				requestUrl: TEST_REQUEST_URL
+			});
 			expect.unreachable('Expected non-owner onboarding login to be rejected');
 		} catch (err) {
 			expect(err).toBeInstanceOf(NotServerMemberError);
@@ -135,9 +145,13 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const cookies = createTestCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+		expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+			'claimed'
+		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		const result = await createSessionFromPlexToken('secret-auth-token', cookies);
+		const result = await createSessionFromPlexToken('secret-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		expect(result).toEqual({
 			user: { username: 'alice', isAdmin: true },
 			redirectTo: '/admin'
@@ -153,7 +167,9 @@ describe('createSessionFromPlexToken', () => {
 			})
 		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		await createSessionFromPlexToken('secret-auth-token', createTestCookies());
+		await createSessionFromPlexToken('secret-auth-token', createTestCookies(), {
+			requestUrl: TEST_REQUEST_URL
+		});
 		const stored = await db.select().from(users);
 		expect(stored).toHaveLength(1);
 		expect(stored[0]?.accountId).toBe(1);
@@ -162,7 +178,9 @@ describe('createSessionFromPlexToken', () => {
 	});
 	it('stores the real plex.tv id as accountId for a non-owner member during normal login', async () => {
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		await createSessionFromPlexToken('secret-auth-token', createTestCookies());
+		await createSessionFromPlexToken('secret-auth-token', createTestCookies(), {
+			requestUrl: TEST_REQUEST_URL
+		});
 		const stored = await db.select().from(users);
 		expect(stored).toHaveLength(1);
 		expect(stored[0]?.accountId).toBe(12345);
@@ -180,9 +198,13 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const cookies = createTestCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+		expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+			'claimed'
+		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		await createSessionFromPlexToken('secret-auth-token', cookies);
+		await createSessionFromPlexToken('secret-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		const stored = await db.select().from(users);
 		expect(stored).toHaveLength(1);
 		expect(stored[0]?.accountId).toBe(1);
@@ -207,9 +229,13 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const cookies = createTestCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+		expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+			'claimed'
+		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		await createSessionFromPlexToken('secret-auth-token', cookies);
+		await createSessionFromPlexToken('secret-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		const stored = await db.select().from(users);
 		expect(stored).toHaveLength(1);
 		expect(stored[0]?.accountId).toBe(1);
@@ -232,7 +258,9 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
 		try {
-			await createSessionFromPlexToken('secret-auth-token', createTestCookies());
+			await createSessionFromPlexToken('secret-auth-token', createTestCookies(), {
+				requestUrl: TEST_REQUEST_URL
+			});
 			throw new Error('Expected setup claim renewal to fail');
 		} catch (err) {
 			expect(err).toBe(unexpectedError);
@@ -257,9 +285,13 @@ describe('createSessionFromPlexToken', () => {
 		);
 		const cookies = createTestCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+		expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+			'claimed'
+		);
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		const result = await createSessionFromPlexToken('secret-auth-token', cookies);
+		const result = await createSessionFromPlexToken('secret-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		expect(result).toEqual({
 			user: { username: 'alice', isAdmin: true },
 			redirectTo: '/admin'
@@ -525,9 +557,15 @@ describe('revalidation login-session survival regressions', () => {
 			)
 		);
 		const cookies = createTestCookies();
-		expect(await claimOnboardingInstance(cookies, createBootstrapToken())).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies, createBootstrapToken(), {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 		const { createSessionFromPlexToken } = await import('$lib/server/auth/login-completion');
-		const result = await createSessionFromPlexToken('owner-auth-token', cookies);
+		const result = await createSessionFromPlexToken('owner-auth-token', cookies, {
+			requestUrl: TEST_REQUEST_URL
+		});
 		const sessionId = cookies.get('session') as string;
 		expect(result.user.isAdmin).toBe(true);
 		expect(sessionId).toBeTruthy();

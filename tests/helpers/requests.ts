@@ -80,3 +80,6 @@ export function createMockJsonResponse(data: unknown, ok = true, status = 200): 
 		text: () => Promise.resolve(JSON.stringify(data))
 	} as Response;
 }
+
+/** A request URL for helpers that decide a cookie's Secure flag from it (https: Secure). */
+export const TEST_REQUEST_URL = new URL('https://obzorarr.test/');

@@ -7,6 +7,7 @@ import {
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
 import { resetSharedTestDb } from './db';
+import { TEST_REQUEST_URL } from './requests';
 
 export interface CookieMutation {
 	name: string;
@@ -77,7 +78,9 @@ export async function claimOnboardingCookies<T extends OnboardingTestCookies>(
 	cookies: T = createOnboardingCookies() as T
 ): Promise<T> {
 	const token = createBootstrapToken();
-	expect(await claimOnboardingInstance(cookies, token)).toBe('claimed');
+	expect(await claimOnboardingInstance(cookies, token, { requestUrl: TEST_REQUEST_URL })).toBe(
+		'claimed'
+	);
 	return cookies;
 }
 

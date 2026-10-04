@@ -4,8 +4,9 @@
  * the forwarded scheme when TRUST_PROXY rewrote it, and the adapter's https default
  * otherwise. Browsers refuse a Secure cookie (and a Secure deletion) over plain HTTP outside
  * loopback, so a fixed `secure: true` would make a plain-HTTP deployment unable to sign in or
- * out. Without a request URL the cookie stays Secure, as before.
+ * out. The URL is required everywhere a cookie is set or deleted: there is no fallback, so no
+ * caller can silently get a Secure cookie (or deletion) on a plain-HTTP origin.
  */
-export function isSecureRequest(url: URL | undefined): boolean {
-	return url ? url.protocol === 'https:' : true;
+export function isSecureRequest(url: URL): boolean {
+	return url.protocol === 'https:';
 }

@@ -24,6 +24,7 @@ import {
 	validateBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
 import { resetSharedTestDb } from '../../helpers/db';
+import { TEST_REQUEST_URL } from '../../helpers/requests';
 
 function createCookies() {
 	const values = new Map<string, string>();
@@ -139,9 +140,17 @@ describe('onboarding bootstrap token and claim', () => {
 		const cookies = createCookies();
 		const token = createBootstrapToken();
 
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 		expect(await hasActiveOnboardingClaim(cookies as unknown as Cookies)).toBe(true);
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('renewed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('renewed');
 
 		const rawProof = cookies.values.get(ONBOARDING_CLAIM_COOKIE);
 		const storedHash = await getAppSetting(AppSettingsKey.ONBOARDING_CLAIM_PROOF_HASH);
@@ -181,10 +190,16 @@ describe('onboarding bootstrap token and claim', () => {
 		const first = createCookies();
 		const second = createCookies();
 
-		expect(await claimOnboardingInstance(first as unknown as Cookies, token)).toBe('claimed');
-		expect(await claimOnboardingInstance(second as unknown as Cookies, token)).toBe(
-			'already-claimed'
-		);
+		expect(
+			await claimOnboardingInstance(first as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(second as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('already-claimed');
 	});
 
 	// The admin instance reset (PR #168) mints a 60-minute bootstrap token on a
@@ -222,9 +237,11 @@ describe('onboarding bootstrap token and claim', () => {
 			const cookies = createCookies();
 			const token = createBootstrapToken(RESET_BOOTSTRAP_TOKEN_TTL_MS);
 
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe(
-				'invalid-token'
-			);
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('invalid-token');
 
 			expect(await claimKeys()).toEqual([null, null, null]);
 			expect(cookies.values.get(ONBOARDING_CLAIM_COOKIE)).toBeUndefined();
@@ -235,9 +252,11 @@ describe('onboarding bootstrap token and claim', () => {
 			const cookies = createCookies();
 			const token = createBootstrapToken(RESET_BOOTSTRAP_TOKEN_TTL_MS);
 
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe(
-				'invalid-token'
-			);
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('invalid-token');
 			// Refuse only, never burn: burning would turn any reachable POST into a way
 			// to strand a reset mid-flight, leaving the admin unable to claim after
 			// their own wipe.
@@ -246,13 +265,21 @@ describe('onboarding bootstrap token and claim', () => {
 			// Standing in for the wipe, which deletes the key outright.
 			await deleteAppSetting(AppSettingsKey.ONBOARDING_COMPLETED);
 
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('claimed');
 		});
 
 		it('suppresses renewal too: an active claim cookie cannot renew on a completed instance', async () => {
 			const cookies = createCookies();
 			const token = createBootstrapToken();
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('claimed');
 			const claimedAt = await getAppSetting(AppSettingsKey.ONBOARDING_CLAIMED_AT);
 
 			// A live claim alongside the completed flag is only reachable in production
@@ -262,9 +289,11 @@ describe('onboarding bootstrap token and claim', () => {
 			// is what proves the guard sits above that branch.
 			await setAppSetting(AppSettingsKey.ONBOARDING_COMPLETED, 'true');
 
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe(
-				'invalid-token'
-			);
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('invalid-token');
 			expect(await getAppSetting(AppSettingsKey.ONBOARDING_CLAIMED_AT)).toBe(claimedAt);
 		});
 
@@ -274,14 +303,22 @@ describe('onboarding bootstrap token and claim', () => {
 			const token = createBootstrapToken();
 
 			// Guards against a refactor to truthiness: 'false' is a stored string.
-			expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+			expect(
+				await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+					requestUrl: TEST_REQUEST_URL
+				})
+			).toBe('claimed');
 		});
 	});
 
 	it('clears claim state', async () => {
 		const cookies = createCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 
 		await clearOnboardingClaim();
 
@@ -296,7 +333,11 @@ describe('onboarding bootstrap token and claim', () => {
 	it('renews a still-active claim on load, extending its stored expiry (ISSUE-002)', async () => {
 		const cookies = createCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(cookies as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(cookies as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 
 		// Backdate the claim to near-expiry (still valid, but old) to prove renewal
 		// pushes the expiry forward rather than being a no-op.
@@ -317,7 +358,11 @@ describe('onboarding bootstrap token and claim', () => {
 		const owner = createCookies();
 		const stranger = createCookies();
 		const token = createBootstrapToken();
-		expect(await claimOnboardingInstance(owner as unknown as Cookies, token)).toBe('claimed');
+		expect(
+			await claimOnboardingInstance(owner as unknown as Cookies, token, {
+				requestUrl: TEST_REQUEST_URL
+			})
+		).toBe('claimed');
 
 		const before = await getAppSetting(AppSettingsKey.ONBOARDING_CLAIMED_AT);
 

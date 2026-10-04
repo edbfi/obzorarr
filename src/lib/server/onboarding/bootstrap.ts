@@ -42,8 +42,9 @@ let bannerPrinted = false;
 let bootstrapBannerPromise: Promise<void> | null = null;
 let onboardingCompletedCached = false;
 
+/** The request whose public scheme decides the claim cookie's Secure flag (always required). */
 export interface OnboardingClaimCookieContext {
-	requestUrl?: URL;
+	requestUrl: URL;
 }
 
 export class OnboardingClaimRequiredError extends Error {
@@ -205,7 +206,7 @@ function createClaimProof(): string {
 function setClaimCookie(
 	cookies: Cookies,
 	proof: string,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): void {
 	cookies.set(ONBOARDING_CLAIM_COOKIE, proof, {
 		path: '/',
@@ -216,7 +217,7 @@ function setClaimCookie(
 	});
 }
 
-export function clearOnboardingClaimCookie(cookies: Cookies, requestUrl: URL | undefined): void {
+export function clearOnboardingClaimCookie(cookies: Cookies, requestUrl: URL): void {
 	cookies.delete(ONBOARDING_CLAIM_COOKIE, { path: '/', secure: isSecureRequest(requestUrl) });
 }
 
@@ -254,7 +255,7 @@ export async function hasActiveOnboardingClaim(cookies: Cookies): Promise<boolea
 
 export async function renewOnboardingClaim(
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<boolean> {
 	const proof = cookies.get(ONBOARDING_CLAIM_COOKIE);
 	if (!proof || !(await hasActiveOnboardingClaim(cookies))) return false;
@@ -266,7 +267,7 @@ export async function renewOnboardingClaim(
 
 export async function requireActiveOnboardingClaim(
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<void> {
 	if (!(await renewOnboardingClaim(cookies, context))) {
 		throw new OnboardingClaimRequiredError();
@@ -309,7 +310,7 @@ export async function requireActiveOnboardingClaim(
 export async function claimOnboardingInstance(
 	cookies: Cookies,
 	token: string,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<'claimed' | 'renewed' | 'already-claimed' | 'invalid-token'> {
 	if ((await getAppSetting(AppSettingsKey.ONBOARDING_COMPLETED)) === 'true') {
 		// No token, prefix or length in this message: logging/redactor.ts scrubs Plex

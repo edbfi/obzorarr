@@ -20,7 +20,7 @@ export interface VerifiedPinCallback {
 	expiresAt: Date;
 }
 
-function cookieOptions(requestUrl: URL | undefined) {
+function cookieOptions(requestUrl: URL) {
 	return {
 		path: '/',
 		httpOnly: true,
@@ -30,7 +30,7 @@ function cookieOptions(requestUrl: URL | undefined) {
 	};
 }
 
-function cookieDeleteOptions(requestUrl: URL | undefined) {
+function cookieDeleteOptions(requestUrl: URL) {
 	const { maxAge: _maxAge, ...options } = cookieOptions(requestUrl);
 	return options;
 }
@@ -48,7 +48,7 @@ async function pruneExpired(now = Date.now()): Promise<void> {
 export async function createPinTransaction(
 	pinId: number,
 	cookies: Cookies,
-	requestUrl: URL | undefined
+	requestUrl: URL
 ): Promise<string> {
 	await pruneExpired();
 
@@ -139,7 +139,7 @@ export async function getPinTransactionForRequest(
 export async function clearPinTransaction(
 	cookies: Cookies,
 	state: string,
-	requestUrl: URL | undefined
+	requestUrl: URL
 ): Promise<void> {
 	try {
 		await db.delete(pinTransactions).where(eq(pinTransactions.state, state));

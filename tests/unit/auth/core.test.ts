@@ -47,7 +47,11 @@ import { GET as plexLoginGet } from '../../../src/routes/auth/plex/+server';
 import { load as redirectLoad } from '../../../src/routes/auth/plex/redirect/+page.server';
 import { seedAuthUser } from '../../helpers/auth';
 import { resetSharedTestDb } from '../../helpers/db';
-import { createMockJsonResponse, createTestCookies } from '../../helpers/requests';
+import {
+	createMockJsonResponse,
+	createTestCookies,
+	TEST_REQUEST_URL
+} from '../../helpers/requests';
 
 describe('auth core contracts', () => {
 	describe('types and schemas', () => {
@@ -697,13 +701,15 @@ describe('auth routes and browser login flow', () => {
 			const cookies = createTestCookies();
 			await createPinTransaction(123, cookies, PIN_REQUEST_URL);
 
-			await expect(completePlexPinLogin(123, cookies)).resolves.toEqual({ pending: true });
+			await expect(
+				completePlexPinLogin(123, cookies, { requestUrl: TEST_REQUEST_URL })
+			).resolves.toEqual({ pending: true });
 		});
 
 		it('rejects PIN polling without the initiating browser transaction', async () => {
-			await expect(completePlexPinLogin(123, createTestCookies())).rejects.toBeInstanceOf(
-				PinExpiredError
-			);
+			await expect(
+				completePlexPinLogin(123, createTestCookies(), { requestUrl: TEST_REQUEST_URL })
+			).rejects.toBeInstanceOf(PinExpiredError);
 		});
 	});
 

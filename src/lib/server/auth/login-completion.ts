@@ -17,7 +17,7 @@ import { markSessionRevalidated } from './revalidation';
 import { createSession } from './session';
 import { NotServerMemberError, PinExpiredError, SESSION_DURATION_MS } from './types';
 
-function sessionCookieOptions(requestUrl: URL | undefined) {
+function sessionCookieOptions(requestUrl: URL) {
 	return {
 		path: '/',
 		httpOnly: true,
@@ -52,7 +52,7 @@ export type PinLoginResult = { pending: true } | CompletedLogin;
 export async function createSessionFromPlexToken(
 	authToken: string,
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<CompletedLogin> {
 	const plexUser = await getPlexUserInfo(authToken);
 
@@ -178,7 +178,7 @@ export async function createSessionFromPlexToken(
 export async function completePlexPinLogin(
 	pinId: number,
 	cookies: Cookies,
-	context: OnboardingClaimCookieContext = {}
+	context: OnboardingClaimCookieContext
 ): Promise<PinLoginResult> {
 	const transaction = await getPinTransactionForRequest(pinId, cookies);
 	if (!transaction) {
