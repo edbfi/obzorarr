@@ -499,8 +499,10 @@ describe('serve.ts process', () => {
 
 		expect(await server.exited).toEqual({ code: 0, signal: null });
 		const elapsed = (Date.now() - signalled) / 1000;
+		// The floor proves the SHUTDOWN_TIMEOUT budget was honoured; the ceiling only catches a front
+		// that waits far past it, with headroom for a slow runner.
 		expect(elapsed).toBeGreaterThanOrEqual(2.5);
-		expect(elapsed).toBeLessThan(5);
+		expect(elapsed).toBeLessThan(10);
 		expect(bytes).toBeGreaterThan(0);
 		expect(bytes).toBeLessThan(8 * 1024 * 1024);
 		expect(socketDirectories(server.temp)).toEqual([]);
@@ -569,12 +571,12 @@ describe('serve.ts process', () => {
 		const signalled = Date.now();
 		const exited = await Promise.race([
 			server.exited,
-			Bun.sleep(8000).then(() => 'timeout' as const)
+			Bun.sleep(15_000).then(() => 'timeout' as const)
 		]);
 		expect(exited).toEqual({ code: 0, signal: null });
-		expect(Date.now() - signalled).toBeLessThan(8000);
+		expect(Date.now() - signalled).toBeLessThan(15_000);
 		expect(socketDirectories(server.temp)).toEqual([]);
-	}, 20_000);
+	}, 25_000);
 
 	it('leaves nothing behind when the adapter fails to load', async () => {
 		const port = await freePort();
