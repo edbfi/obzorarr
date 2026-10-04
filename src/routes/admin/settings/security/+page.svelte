@@ -138,11 +138,7 @@ const applicableProviderGuides = $derived(
 			<CardDescription>
 				Origin check applied to all state-changing requests. Mismatches between this value and the
 				browser's Origin header are rejected with 403. Source:
-				<strong>{security.originSource}</strong>
-				{#if security.originLocked}
-					(locked by env)
-				{/if}
-				.
+				<strong>{security.originSource}</strong>{security.originLocked ? ' (locked by env)' : ''}.
 			</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
