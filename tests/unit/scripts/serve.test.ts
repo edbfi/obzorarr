@@ -676,6 +676,35 @@ describe('serve.ts process', () => {
 		expect(socketDirectories(server.temp)).toEqual([]);
 	}, 20_000);
 
+	// While the adapter loads, the front holds the first signal for it. A second one exits with
+	// status 1 at once, as the adapter does for a second signal, and leaves nothing behind.
+	it('exits 1 on a second signal while the adapter is still loading', async () => {
+		const port = await freePort();
+		const server = await start(
+			{ ORIGIN: `http://127.0.0.1:${port}`, PORT: String(port), STANDIN_LOAD_DELAY_MS: '5000' },
+			{ waitForReady: false }
+		);
+		const accepting = () =>
+			new Promise<boolean>((done) => {
+				const socket = connect(port, '127.0.0.1');
+				socket.once('connect', () => {
+					socket.destroy();
+					done(true);
+				});
+				socket.once('error', () => done(false));
+			});
+		await waitFor(accepting, Boolean);
+		server.child.kill('SIGTERM');
+		await Bun.sleep(200);
+		server.child.kill('SIGINT');
+		const signalled = Date.now();
+
+		expect(await server.exited).toEqual({ code: 1, signal: null });
+		expect(Date.now() - signalled).toBeLessThan(3000);
+		expect(server.output()).not.toContain('standin listening');
+		expect(socketDirectories(server.temp)).toEqual([]);
+	}, 20_000);
+
 	it('leaves nothing behind when the adapter fails to load', async () => {
 		const port = await freePort();
 		const server = await start(
