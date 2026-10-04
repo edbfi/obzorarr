@@ -1,9 +1,14 @@
-import { afterAll, describe, expect, it } from 'bun:test';
+import { afterAll, describe, expect, it, spyOn } from 'bun:test';
 import { eq } from 'drizzle-orm';
 import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
 import { db } from '$lib/server/db/client';
-import { syncStatus } from '$lib/server/db/schema';
-import { isRetentionSchedulerConfigured, stopLogRetentionScheduler } from '$lib/server/logging';
+import { appSettings, syncStatus } from '$lib/server/db/schema';
+import {
+	isRetentionSchedulerConfigured,
+	logger,
+	stopLogRetentionScheduler
+} from '$lib/server/logging';
+import { env } from '$lib/server/private-env';
 import { createServerInitializer, initializeServer } from '$lib/server/startup';
 import { getSchedulerStatus, stopSyncScheduler } from '$lib/server/sync';
 import {
@@ -73,8 +78,33 @@ describe('server startup initialization', () => {
 			status: 'running',
 			recordsProcessed: 0
 		});
+		// An instance upgraded with the retired TRUST_PROXY still set in the environment and
+		// stored by the old admin toggle.
+		await db.insert(appSettings).values({ key: 'trust_proxy', value: 'true' });
+		const trustProxyValue = `true-${crypto.randomUUID()}`;
+		const dynamicEnv = env as Record<string, string | undefined>;
+		dynamicEnv.TRUST_PROXY = trustProxyValue;
+		const warn = spyOn(logger, 'warn');
 
-		await initializeServer();
+		let warnings: unknown[][];
+		try {
+			await initializeServer();
+		} finally {
+			delete dynamicEnv.TRUST_PROXY;
+			warnings = [...warn.mock.calls];
+			warn.mockRestore();
+		}
+
+		const trustProxyWarnings = warnings.filter(([message]) =>
+			String(message).startsWith('TRUST_PROXY is no longer supported')
+		);
+		expect(trustProxyWarnings).toHaveLength(1);
+		expect(trustProxyWarnings[0]?.[0]).toContain('Set ORIGIN to the address users open');
+		expect(trustProxyWarnings[0]?.[0]).not.toContain(trustProxyValue);
+		expect(trustProxyWarnings[0]?.[1]).toBe('Startup');
+		expect(
+			await db.select().from(appSettings).where(eq(appSettings.key, 'trust_proxy'))
+		).toHaveLength(0);
 
 		const failedRows = await db.select().from(syncStatus).where(eq(syncStatus.status, 'failed'));
 		expect(failedRows).toHaveLength(1);

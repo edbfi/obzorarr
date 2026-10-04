@@ -2,7 +2,6 @@ import type { Handle } from '@sveltejs/kit/hooks';
 import { stringify } from 'devalue';
 import { checkRateLimit, RATE_LIMIT_CONFIGS, type RateLimitConfig } from '$lib/server/ratelimit';
 import { safeClientAddress, warnIndeterminateClientAddress } from './client-address';
-import { isProxiedHttps } from './proxy-handle';
 import { applySecurityHeaders } from './security-headers';
 
 function getConfigForPath(path: string, method: string): RateLimitConfig {
@@ -71,12 +70,10 @@ export const rateLimitHandle: Handle = async ({ event, resolve }) => {
 		};
 		const isEnhancedActionRequest =
 			event.request.method === 'POST' && event.request.headers.get('x-sveltekit-action') === 'true';
-		// rateLimitHandle runs before proxyHandle, so event.url.protocol still
-		// reflects the pre-rewrite value. Resolve the effective protocol the same
-		// way proxyHandle would, so HSTS is set on early-return 429 responses for
-		// proxied HTTPS clients (matching what securityHeadersHandle does later in
-		// the pipeline for non-early-return responses).
-		const isHttps = await isProxiedHttps(event);
+		// event.url already carries the public origin (ORIGIN through the front, else the
+		// adapter's), so HSTS on early-return 429 responses matches what
+		// securityHeadersHandle sets later in the pipeline.
+		const isHttps = event.url.protocol === 'https:';
 
 		if (isEnhancedActionRequest) {
 			return applySecurityHeaders(

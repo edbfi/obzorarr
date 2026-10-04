@@ -296,8 +296,8 @@ async function copyResetToken() {
 				<div class="space-y-1">
 					<p class="font-medium">What is untouched</p>
 					<p class="text-muted-foreground">
-						Anything configured through the environment (Plex, OpenAI, ORIGIN, TRUST_PROXY) is
-						not stored in the database, so it survives. On an env-configured server the new
+						Anything configured through the environment (Plex, OpenAI, ORIGIN) is not stored
+						in the database, so it survives. On an env-configured server the new
 						setup arrives with those steps already filled in and locked, so you do not start
 						from a blank slate.
 					</p>
@@ -475,9 +475,9 @@ async function copyResetToken() {
 			<div class="space-y-1">
 				<p class="font-medium">What is untouched</p>
 				<p class="text-muted-foreground">
-					Anything you configured with environment variables (Plex, OpenAI, ORIGIN, TRUST_PROXY)
-					is not in the database and survives, so parts of the new setup will already be filled
-					in for you.
+					Anything you configured with environment variables (Plex, OpenAI, ORIGIN) is not in
+					the database and survives, so parts of the new setup will already be filled in for
+					you.
 				</p>
 			</div>
 		</div>

@@ -1,14 +1,6 @@
 import { isIP } from 'node:net';
-import type {
-	ReverseProxyDiagnostic,
-	ReverseProxyDiagnosticReasonCode,
-	SourceAddressCategory
-} from '$lib/security/reverse-proxy';
-import {
-	type ConfigValue,
-	getCsrfConfigWithSource,
-	getTrustProxyConfigWithSource
-} from '$lib/server/admin/settings.service';
+import type { ReverseProxyDiagnostic, SourceAddressCategory } from '$lib/security/reverse-proxy';
+import { type ConfigValue, getCsrfConfigWithSource } from '$lib/server/admin/settings.service';
 import { env } from '$lib/server/private-env';
 import { getForwardedHeaderNamesPresent, parseForwardedProtoHost } from './forwarded-headers';
 
@@ -25,7 +17,6 @@ export interface ReverseProxyDiagnosticInput {
 }
 
 export interface ReverseProxyDiagnosticBuildInput extends ReverseProxyDiagnosticInput {
-	trustProxy: ConfigValue<string>;
 	csrfOrigin: ConfigValue<string>;
 	/** scripts/serve.ts fronts the app with ORIGIN (OBZORARR_FRONT_ORIGIN is set). */
 	fronted?: boolean;
@@ -125,120 +116,47 @@ export function classifySourceAddress(address: string | null | undefined): Sourc
 	return 'public';
 }
 
-function reasonForReview(
-	forwardedPair: ReturnType<typeof parseForwardedProtoHost>
-): ReverseProxyDiagnosticReasonCode {
-	if (forwardedPair.status === 'missing') return 'forwarded-pair-missing';
-	if (forwardedPair.status === 'partial') return 'forwarded-pair-partial';
-	if (!forwardedPair.isUsable) return 'forwarded-pair-invalid';
-	return 'forwarded-pair-ambiguous';
-}
-
+// The effective origin is what event.url carries: ORIGIN when scripts/serve.ts fronts the
+// app, otherwise the adapter's (the operator's PROTOCOL_HEADER/HOST_HEADER, else https and
+// the Host header). Forwarded headers never change it on their own, so the one repair this
+// diagnostic recommends for a mismatch is ORIGIN.
 function recommendationFor(input: {
 	frontedWithOrigin: boolean;
-	trustEnabled: boolean;
-	trustSource: ReverseProxyDiagnostic['facts']['trustProxy']['source'];
 	browserOrigin: OriginDiagnostic;
-	requestOrigin: string | null;
 	effectiveAppOrigin: string | null;
-	forwardedPair: ReturnType<typeof parseForwardedProtoHost>;
 }): Pick<ReverseProxyDiagnostic, 'action' | 'reasonCodes'> {
-	const browserMatchesRequestUrl = originsEqual(input.browserOrigin.origin, input.requestOrigin);
-	const browserMatchesEffectiveApp = originsEqual(
-		input.browserOrigin.origin,
-		input.effectiveAppOrigin
-	);
-	const forwardedPairMatchesBrowser = originsEqual(
-		input.browserOrigin.origin,
-		input.forwardedPair.url?.origin ?? null
-	);
-
-	// Fronted with ORIGIN, the effective origin is ORIGIN whatever TRUST_PROXY says
-	// (forwarded headers never override it), so proxy trust is moot.
-	if (input.frontedWithOrigin) {
-		if (!input.browserOrigin.isValid) {
-			return { action: 'unable-to-determine', reasonCodes: ['browser-origin-invalid'] };
-		}
-		return browserMatchesEffectiveApp === true
-			? { action: 'leave-disabled', reasonCodes: ['origin-env-configured'] }
-			: { action: 'unable-to-determine', reasonCodes: ['origin-env-mismatch'] };
-	}
-
-	if (input.trustSource === 'env') {
-		return {
-			action: 'env-controlled',
-			reasonCodes: [
-				input.trustEnabled ? 'trust-proxy-env-locked-enabled' : 'trust-proxy-env-locked-disabled'
-			]
-		};
-	}
-
 	if (!input.browserOrigin.isValid) {
 		return { action: 'unable-to-determine', reasonCodes: ['browser-origin-invalid'] };
 	}
 
-	if (!input.trustEnabled) {
-		if (
-			browserMatchesRequestUrl === false &&
-			input.forwardedPair.isUsable &&
-			forwardedPairMatchesBrowser === true
-		) {
-			return {
-				action: 'confirm-trust-boundary',
-				reasonCodes: ['forwarded-pair-matches-browser']
-			};
-		}
+	const matches = originsEqual(input.browserOrigin.origin, input.effectiveAppOrigin) === true;
 
-		if (browserMatchesRequestUrl === true) {
-			return {
-				action: 'leave-disabled',
-				reasonCodes: [
-					input.forwardedPair.status === 'missing'
-						? 'request-origin-matches-without-forwarded-pair'
-						: 'request-origin-already-matches-browser'
-				]
-			};
-		}
-
-		return {
-			action: 'review-proxy',
-			reasonCodes: [reasonForReview(input.forwardedPair)]
-		};
+	if (input.frontedWithOrigin) {
+		return matches
+			? { action: 'origin-matches', reasonCodes: ['origin-env-configured'] }
+			: { action: 'unable-to-determine', reasonCodes: ['origin-env-mismatch'] };
 	}
 
-	if (input.forwardedPair.isUsable && browserMatchesEffectiveApp === true) {
-		return { action: 'appears-working', reasonCodes: ['trust-proxy-working'] };
-	}
-
-	return { action: 'review-proxy', reasonCodes: ['trust-proxy-enabled-broken'] };
+	return matches
+		? { action: 'origin-matches', reasonCodes: ['request-origin-matches-browser'] }
+		: { action: 'set-origin', reasonCodes: ['request-origin-differs-from-browser'] };
 }
 
 export function buildReverseProxyDiagnostic(
 	input: ReverseProxyDiagnosticBuildInput
 ): ReverseProxyDiagnostic {
 	const forwardedPair = parseForwardedProtoHost(input.request.headers);
-	const requestOrigin = originFromUrl(input.request.url);
 	const effectiveAppOrigin = originFromUrl(input.effectiveAppUrl);
 	const browserOrigin = normalizeOrigin(input.browserOrigin);
 	const configuredPublicOrigin = normalizeOrigin(input.csrfOrigin.value || null);
-	const trustEnabled = input.trustProxy.value === 'true';
 	const { action, reasonCodes } = recommendationFor({
 		frontedWithOrigin: input.fronted === true,
-		trustEnabled,
-		trustSource: input.trustProxy.source,
 		browserOrigin,
-		requestOrigin,
-		effectiveAppOrigin,
-		forwardedPair
+		effectiveAppOrigin
 	});
 
 	return {
 		facts: {
-			trustProxy: {
-				enabled: trustEnabled,
-				source: input.trustProxy.source,
-				isLocked: input.trustProxy.isLocked
-			},
 			browserOrigin: {
 				isValid: browserOrigin.isValid,
 				origin: browserOrigin.origin
@@ -266,7 +184,6 @@ export function buildReverseProxyDiagnostic(
 				category: classifySourceAddress(input.sourceAddress)
 			},
 			originComparison: {
-				browserMatchesRequestUrl: originsEqual(browserOrigin.origin, requestOrigin),
 				browserMatchesEffectiveApp: originsEqual(browserOrigin.origin, effectiveAppOrigin),
 				forwardedPairMatchesBrowser: originsEqual(
 					browserOrigin.origin,
@@ -282,35 +199,11 @@ export function buildReverseProxyDiagnostic(
 export async function createReverseProxyDiagnostic(
 	input: ReverseProxyDiagnosticInput
 ): Promise<ReverseProxyDiagnostic> {
-	const [trustProxy, csrfOrigin] = await Promise.all([
-		getTrustProxyConfigWithSource(),
-		getCsrfConfigWithSource()
-	]);
+	const csrfOrigin = await getCsrfConfigWithSource();
 
 	return buildReverseProxyDiagnostic({
 		...input,
-		trustProxy: trustProxy.trustProxy,
 		csrfOrigin: csrfOrigin.origin,
 		fronted: Boolean(env.OBZORARR_FRONT_ORIGIN)
 	});
-}
-
-export const ENABLE_TRUST_PROXY_NOT_RECOMMENDED_MESSAGE =
-	'The current diagnostic does not recommend enabling reverse proxy header trust.';
-
-export type EnableTrustProxyDecision = { ok: true } | { ok: false; error: string };
-
-/**
- * Gate the "enable TRUST_PROXY" write on the live diagnostic recommendation.
- * Both the admin Security page and the onboarding proxy-trust step run the
- * diagnostic immediately before flipping the setting; this helper is the
- * single source of truth for the rejection message.
- */
-export function assertEnableTrustProxyAllowed(
-	diagnostic: ReverseProxyDiagnostic
-): EnableTrustProxyDecision {
-	if (diagnostic.action === 'confirm-trust-boundary') {
-		return { ok: true };
-	}
-	return { ok: false, error: ENABLE_TRUST_PROXY_NOT_RECOMMENDED_MESSAGE };
 }

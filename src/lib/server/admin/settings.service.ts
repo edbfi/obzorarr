@@ -63,7 +63,6 @@ export const AppSettingsKey = {
 	CSRF_ORIGIN: 'csrf_origin',
 	CSRF_ORIGIN_SKIPPED: 'csrf_origin_skipped',
 	CSRF_WARNING_DISMISSED: 'csrf_warning_dismissed',
-	TRUST_PROXY: 'trust_proxy',
 	THUMBNAIL_SIGNING_SECRET: 'thumbnail_signing_secret',
 	/**
 	 * Admin opt-in for public current-year Wrapped lookup from the landing page.
@@ -187,14 +186,6 @@ export const LOG_SETTINGS_KEYS = [
 	'log_max_count',
 	'log_debug_enabled'
 ] as const;
-
-/**
- * Single-key OCC tuple for the Security tab Trust Proxy toggle. The form has
- * exactly one persisted value (`AppSettingsKey.TRUST_PROXY`) so the version
- * is just that row's `updatedAt`. Wrapped in a tuple to share the
- * `getAppSettingsUpdatedAt(...)` helper that the multi-key OCC paths use.
- */
-export const TRUST_PROXY_SETTINGS_KEYS = [AppSettingsKey.TRUST_PROXY] as const;
 
 /**
  * Single-key OCC tuple for the System tab "Scheduler timezone" field. Kept out
@@ -1524,29 +1515,27 @@ export async function getCsrfOrigin(): Promise<string | null> {
 	return config.origin.value || null;
 }
 
-export interface TrustProxyConfigWithSource {
-	trustProxy: ConfigValue<string>;
-}
+/**
+ * The `app_settings` key of the retired TRUST_PROXY toggle (the admin Security page and the
+ * onboarding reverse-proxy step wrote it). ORIGIN replaced it; see startup.ts.
+ */
+const RETIRED_TRUST_PROXY_KEY = 'trust_proxy';
 
-export async function getTrustProxyConfigWithSource(): Promise<TrustProxyConfigWithSource> {
-	const dbSettings = await getAllAppSettings();
-	// resolveConfigValue treats any non-empty envValue as "env-locked" and returns
-	// it verbatim. getTrustProxy() / proxyHandle then compare with === 'true', so a
-	// raw env like 'TRUE' or ' true ' would lock the UI on while runtime stays off.
-	// Normalize to the canonical 'true'/'false' the rest of the pipeline expects.
-	// An empty string means "not set" (no lock). Mirrors the case-insensitive
-	// 'true' convention used by isLiveSyncEnabled() in sync/live-sync.ts.
-	const rawEnv = (env.TRUST_PROXY ?? '').trim();
-	const envValue = rawEnv === '' ? '' : rawEnv.toLowerCase() === 'true' ? 'true' : 'false';
-
-	return {
-		trustProxy: resolveConfigValue(dbSettings, AppSettingsKey.TRUST_PROXY, envValue, 'false')
-	};
-}
-
-export async function getTrustProxy(): Promise<boolean> {
-	const config = await getTrustProxyConfigWithSource();
-	return config.trustProxy.value === 'true';
+/**
+ * Deletes a stored TRUST_PROXY row, which nothing reads any more, and reports whether it had
+ * turned reverse-proxy header trust on, so startup can tell the operator what replaces it.
+ */
+export async function removeRetiredTrustProxySetting(): Promise<boolean> {
+	return db.transaction((tx) => {
+		const row = tx
+			.select()
+			.from(appSettings)
+			.where(eq(appSettings.key, RETIRED_TRUST_PROXY_KEY))
+			.get();
+		if (!row) return false;
+		tx.delete(appSettings).where(eq(appSettings.key, RETIRED_TRUST_PROXY_KEY)).run();
+		return row.value === 'true';
+	});
 }
 
 export interface SchedulerTimezoneConfigWithSource {
@@ -1563,8 +1552,7 @@ export interface SchedulerTimezoneConfigWithSource {
  *
  * Both sides are canonicalized through `normalizeTimezone` before they can win:
  * an unknown `TZ` degrades to "not set" instead of env-locking the admin field
- * to a zone croner cannot honour (mirrors how `getTrustProxyConfigWithSource`
- * normalizes its raw env value), and an unknown stored row falls back to the
+ * to a zone croner cannot honour, and an unknown stored row falls back to the
  * default rather than throwing inside a scheduler constructor.
  */
 export async function getSchedulerTimezoneConfigWithSource(): Promise<SchedulerTimezoneConfigWithSource> {
@@ -1647,7 +1635,6 @@ export async function clearConflictingDbSettings(): Promise<string[]> {
 	const plexEnv = getPlexEnvConfig();
 	const openaiEnv = getOpenAIEnvConfig();
 	const csrfEnvOrigin = envCsrfOrigin();
-	const trustProxyEnv = (env.TRUST_PROXY ?? '').trim();
 	const schedulerTimezoneEnv = env.TZ ?? '';
 	const effectivePlexConfig = await getPlexConfig();
 	const effectivePlexFingerprint = getPlexConfigFingerprint(effectivePlexConfig);
@@ -1686,11 +1673,6 @@ export async function clearConflictingDbSettings(): Promise<string[]> {
 			dbKey: AppSettingsKey.CSRF_ORIGIN,
 			label: 'CSRF_ORIGIN',
 			authoritative: isAuthoritativeEnvValue(csrfEnvOrigin)
-		},
-		{
-			dbKey: AppSettingsKey.TRUST_PROXY,
-			label: 'TRUST_PROXY',
-			authoritative: isAuthoritativeEnvValue(trustProxyEnv)
 		},
 		{
 			dbKey: AppSettingsKey.SCHEDULER_TIMEZONE,

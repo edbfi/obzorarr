@@ -4,14 +4,11 @@ import type {
 	ReverseProxyDiagnosticReasonCode,
 	ReverseProxyRecommendationAction
 } from '$lib/security/reverse-proxy';
-import { AppSettingsKey, setAppSetting } from '$lib/server/admin/settings.service';
 import { env } from '$lib/server/private-env';
 import { clearRateLimitStore } from '$lib/server/ratelimit';
 import {
-	assertEnableTrustProxyAllowed,
 	buildReverseProxyDiagnostic,
-	classifySourceAddress,
-	ENABLE_TRUST_PROXY_NOT_RECOMMENDED_MESSAGE
+	classifySourceAddress
 } from '$lib/server/security/reverse-proxy-diagnostic';
 import { GET as diagnosticGET } from '../../../src/routes/api/security/reverse-proxy-diagnostic/+server';
 import { resetSharedTestDb } from '../../helpers/db';
@@ -21,8 +18,6 @@ function envRecord(): Record<string, string | undefined> {
 }
 
 function diagnosticFor({
-	trustProxy = 'false',
-	trustSource = 'default',
 	browserOrigin = 'https://browser.example.com',
 	requestUrl = 'http://internal.local/path',
 	effectiveAppUrl = requestUrl,
@@ -32,8 +27,6 @@ function diagnosticFor({
 	fronted = false,
 	sourceAddress = '172.18.0.2'
 }: {
-	trustProxy?: string;
-	trustSource?: ReverseProxyConfigSource;
 	browserOrigin?: string | null;
 	requestUrl?: string;
 	effectiveAppUrl?: string;
@@ -48,11 +41,6 @@ function diagnosticFor({
 		effectiveAppUrl,
 		browserOrigin,
 		sourceAddress,
-		trustProxy: {
-			value: trustProxy,
-			source: trustSource,
-			isLocked: trustSource === 'env'
-		},
 		csrfOrigin: {
 			value: csrfOrigin,
 			source: csrfSource,
@@ -64,7 +52,7 @@ function diagnosticFor({
 
 describe('reverse proxy diagnostic when scripts/serve.ts fronts the app with ORIGIN', () => {
 	// SvelteKit 3: fronted, ORIGIN is the effective origin and forwarded headers never
-	// override it, so the diagnostic must not report TRUST_PROXY as what decides it.
+	// override it.
 	const fronted = {
 		fronted: true,
 		csrfOrigin: 'http://obzorarr.lan:3000',
@@ -73,81 +61,42 @@ describe('reverse proxy diagnostic when scripts/serve.ts fronts the app with ORI
 		headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'other.example.com' }
 	};
 
-	for (const trust of [
-		{ trustProxy: 'false', trustSource: 'default' as const },
-		{ trustProxy: 'true', trustSource: 'db' as const },
-		{ trustProxy: 'true', trustSource: 'env' as const }
-	]) {
-		it(`reports ORIGIN as decisive with TRUST_PROXY=${trust.trustProxy} (${trust.trustSource})`, () => {
-			const diagnostic = diagnosticFor({
-				...fronted,
-				...trust,
-				browserOrigin: 'http://obzorarr.lan:3000'
-			});
-			expect(diagnostic.action).toBe('leave-disabled');
-			expect(diagnostic.reasonCodes).toEqual(['origin-env-configured']);
-			expect(diagnostic.facts.origins.effectiveApp).toBe('http://obzorarr.lan:3000');
-		});
-	}
+	it('reports ORIGIN as decisive whatever the forwarded headers say', () => {
+		const diagnostic = diagnosticFor({ ...fronted, browserOrigin: 'http://obzorarr.lan:3000' });
+		expect(diagnostic.action).toBe('origin-matches');
+		expect(diagnostic.reasonCodes).toEqual(['origin-env-configured']);
+		expect(diagnostic.facts.origins.effectiveApp).toBe('http://obzorarr.lan:3000');
+	});
 
 	it('asks to open the configured ORIGIN when the browser origin differs from it', () => {
-		const diagnostic = diagnosticFor({
-			...fronted,
-			trustProxy: 'true',
-			trustSource: 'db',
-			browserOrigin: 'https://other.example.com'
-		});
+		const diagnostic = diagnosticFor({ ...fronted, browserOrigin: 'https://other.example.com' });
 		expect(diagnostic.action).toBe('unable-to-determine');
 		expect(diagnostic.reasonCodes).toEqual(['origin-env-mismatch']);
 	});
 
-	it('keeps the TRUST_PROXY logic when ORIGIN is set but the front is not running', () => {
+	it('judges the adapter origin, not ORIGIN, when ORIGIN is set but the front is not running', () => {
 		const diagnostic = diagnosticFor({
 			csrfOrigin: 'https://browser.example.com',
 			csrfSource: 'env',
-			trustProxy: 'true',
-			trustSource: 'db',
-			headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'browser.example.com' },
-			effectiveAppUrl: 'https://browser.example.com/path'
+			headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'browser.example.com' }
 		});
-		expect(diagnostic.reasonCodes).toEqual(['trust-proxy-working']);
+		expect(diagnostic.action).toBe('set-origin');
+		expect(diagnostic.reasonCodes).toEqual(['request-origin-differs-from-browser']);
 	});
 
 	it('ignores a database CSRF origin for this decision', () => {
 		const diagnostic = diagnosticFor({
 			csrfOrigin: 'https://browser.example.com',
 			csrfSource: 'db',
-			trustProxy: 'true',
-			trustSource: 'db',
-			headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'browser.example.com' },
-			effectiveAppUrl: 'https://browser.example.com/path'
+			headers: { 'x-forwarded-proto': 'https', 'x-forwarded-host': 'browser.example.com' }
 		});
-		expect(diagnostic.reasonCodes).toEqual(['trust-proxy-working']);
+		expect(diagnostic.action).toBe('set-origin');
+		expect(diagnostic.reasonCodes).toEqual(['request-origin-differs-from-browser']);
 	});
 });
 
 describe('reverse proxy diagnostic contract', () => {
 	it.each([
-		{
-			name: 'environment lock enabled',
-			input: {
-				trustProxy: 'true',
-				trustSource: 'env' as const,
-				browserOrigin: 'not a URL'
-			},
-			action: 'env-controlled',
-			reason: 'trust-proxy-env-locked-enabled'
-		},
-		{
-			name: 'environment lock disabled',
-			input: {
-				trustProxy: 'false',
-				trustSource: 'env' as const,
-				browserOrigin: 'not a URL'
-			},
-			action: 'env-controlled',
-			reason: 'trust-proxy-env-locked-disabled'
-		},
 		{
 			name: 'invalid browser origin',
 			input: {
@@ -161,15 +110,17 @@ describe('reverse proxy diagnostic contract', () => {
 			reason: 'browser-origin-invalid'
 		},
 		{
-			name: 'matching forwarded pair requires boundary confirmation',
+			// The shape that used to ask for TRUST_PROXY: the proxy's pair matches the
+			// browser, but Obzorarr's own origin is internal. ORIGIN is the repair now.
+			name: 'matching forwarded pair with an internal origin',
 			input: {
 				headers: {
 					'x-forwarded-proto': 'https',
 					'x-forwarded-host': 'browser.example.com'
 				}
 			},
-			action: 'confirm-trust-boundary',
-			reason: 'forwarded-pair-matches-browser'
+			action: 'set-origin',
+			reason: 'request-origin-differs-from-browser'
 		},
 		{
 			name: 'direct access',
@@ -177,11 +128,11 @@ describe('reverse proxy diagnostic contract', () => {
 				browserOrigin: 'http://internal.local',
 				requestUrl: 'http://internal.local/path'
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-matches-without-forwarded-pair'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
-			name: 'Caddy-shaped downstream values need no in-app trust when request origin matches',
+			name: 'Caddy-shaped downstream values when the origin already matches',
 			input: {
 				requestUrl: 'https://browser.example.com/path',
 				headers: {
@@ -189,11 +140,11 @@ describe('reverse proxy diagnostic contract', () => {
 					'x-forwarded-host': 'browser.example.com'
 				}
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-already-matches-browser'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
-			name: 'Caddy-shaped downstream values preserve a non-default public port',
+			name: 'a non-default public port',
 			input: {
 				browserOrigin: 'https://browser.example.com:8443',
 				requestUrl: 'https://browser.example.com:8443/path',
@@ -202,32 +153,46 @@ describe('reverse proxy diagnostic contract', () => {
 					'x-forwarded-host': 'browser.example.com:8443'
 				}
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-already-matches-browser'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
-			name: 'partial forwarding metadata is unused when the request origin matches',
+			// PROTOCOL_HEADER/HOST_HEADER (or ORIGIN through the front) already put the
+			// public origin into event.url: the effective origin decides.
+			name: 'an effective origin the adapter took from configured headers',
+			input: {
+				effectiveAppUrl: 'https://browser.example.com/path',
+				headers: {
+					'x-forwarded-proto': 'https',
+					'x-forwarded-host': 'browser.example.com'
+				}
+			},
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
+		},
+		{
+			name: 'partial forwarding metadata when the origin matches',
 			input: {
 				requestUrl: 'https://browser.example.com/path',
 				headers: { 'x-forwarded-proto': 'https' }
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-already-matches-browser'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
 			name: 'missing forwarded pair with mismatched origins',
 			input: {},
-			action: 'review-proxy',
-			reason: 'forwarded-pair-missing'
+			action: 'set-origin',
+			reason: 'request-origin-differs-from-browser'
 		},
 		{
-			name: 'partial forwarded pair',
+			name: 'partial forwarded pair with mismatched origins',
 			input: { headers: { 'x-forwarded-proto': 'https' } },
-			action: 'review-proxy',
-			reason: 'forwarded-pair-partial'
+			action: 'set-origin',
+			reason: 'request-origin-differs-from-browser'
 		},
 		{
-			name: 'invalid forwarded pair',
+			name: 'invalid forwarded pair when the origin matches',
 			input: {
 				requestUrl: 'https://browser.example.com/path',
 				headers: {
@@ -235,8 +200,8 @@ describe('reverse proxy diagnostic contract', () => {
 					'x-forwarded-host': 'browser.example.com'
 				}
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-already-matches-browser'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
 			name: 'invalid forwarded pair with mismatched origins',
@@ -246,11 +211,11 @@ describe('reverse proxy diagnostic contract', () => {
 					'x-forwarded-host': 'browser.example.com'
 				}
 			},
-			action: 'review-proxy',
-			reason: 'forwarded-pair-invalid'
+			action: 'set-origin',
+			reason: 'request-origin-differs-from-browser'
 		},
 		{
-			name: 'ambiguous forwarded pair',
+			name: 'conflicting forwarded pair when the origin matches',
 			input: {
 				requestUrl: 'https://browser.example.com/path',
 				headers: {
@@ -258,38 +223,19 @@ describe('reverse proxy diagnostic contract', () => {
 					'x-forwarded-host': 'different.example.com'
 				}
 			},
-			action: 'leave-disabled',
-			reason: 'request-origin-already-matches-browser'
+			action: 'origin-matches',
+			reason: 'request-origin-matches-browser'
 		},
 		{
-			name: 'ambiguous forwarded pair with mismatched origins',
+			name: 'conflicting forwarded pair with mismatched origins',
 			input: {
 				headers: {
 					'x-forwarded-proto': 'https',
 					'x-forwarded-host': 'different.example.com'
 				}
 			},
-			action: 'review-proxy',
-			reason: 'forwarded-pair-ambiguous'
-		},
-		{
-			name: 'working enabled trust',
-			input: {
-				trustProxy: 'true',
-				effectiveAppUrl: 'https://browser.example.com/path',
-				headers: {
-					'x-forwarded-proto': 'https',
-					'x-forwarded-host': 'browser.example.com'
-				}
-			},
-			action: 'appears-working',
-			reason: 'trust-proxy-working'
-		},
-		{
-			name: 'enabled but broken trust',
-			input: { trustProxy: 'true' },
-			action: 'review-proxy',
-			reason: 'trust-proxy-enabled-broken'
+			action: 'set-origin',
+			reason: 'request-origin-differs-from-browser'
 		}
 	] as const)('$name returns $action with $reason', ({ input, action, reason }) => {
 		const diagnostic = diagnosticFor(input as Parameters<typeof diagnosticFor>[0]);
@@ -317,7 +263,6 @@ describe('reverse proxy diagnostic contract', () => {
 
 		expect(Object.keys(diagnostic).sort()).toEqual(['action', 'facts', 'reasonCodes']);
 		expect(diagnostic.facts).toEqual({
-			trustProxy: { enabled: false, source: 'default', isLocked: false },
 			browserOrigin: { isValid: true, origin: 'https://browser-secret.example.com' },
 			configuredPublicOrigin: {
 				isConfigured: true,
@@ -341,7 +286,6 @@ describe('reverse proxy diagnostic contract', () => {
 			},
 			sourceAddress: { category: 'public' },
 			originComparison: {
-				browserMatchesRequestUrl: false,
 				browserMatchesEffectiveApp: false,
 				forwardedPairMatchesBrowser: false
 			}
@@ -374,20 +318,6 @@ describe('reverse proxy diagnostic contract', () => {
 		['not-an-address', 'unknown']
 	] as const)('classifies %s as %s without returning the raw address', (address, category) => {
 		expect(classifySourceAddress(address)).toBe(category);
-	});
-
-	it('keeps enabling authority behind the explicit boundary-confirmation action', () => {
-		const enabled = diagnosticFor({
-			headers: {
-				'x-forwarded-proto': 'https',
-				'x-forwarded-host': 'browser.example.com'
-			}
-		});
-		expect(assertEnableTrustProxyAllowed(enabled)).toEqual({ ok: true });
-		expect(assertEnableTrustProxyAllowed({ ...enabled, action: 'review-proxy' })).toEqual({
-			ok: false,
-			error: ENABLE_TRUST_PROXY_NOT_RECOMMENDED_MESSAGE
-		});
 	});
 });
 
@@ -427,12 +357,10 @@ describe('GET /api/security/reverse-proxy-diagnostic', () => {
 	beforeEach(async () => {
 		clearRateLimitStore();
 		await resetSharedTestDb();
-		delete envRecord().TRUST_PROXY;
 		delete envRecord().ORIGIN;
 	});
 
 	afterEach(() => {
-		delete envRecord().TRUST_PROXY;
 		delete envRecord().ORIGIN;
 	});
 
@@ -460,7 +388,7 @@ describe('GET /api/security/reverse-proxy-diagnostic', () => {
 		expect(response.headers.get('Cache-Control')).toBe('no-store');
 		const body = await response.json();
 		expect(Object.keys(body).sort()).toEqual(['action', 'facts', 'reasonCodes']);
-		expect(body.action).toBe('confirm-trust-boundary');
+		expect(body.action).toBe('set-origin');
 		expect(body.facts.forwardedHeaders.present).toEqual([
 			'Forwarded',
 			'X-Forwarded-For',
@@ -472,7 +400,6 @@ describe('GET /api/security/reverse-proxy-diagnostic', () => {
 	});
 
 	it('reports normalized browser, forwarded, and effective origins without a raw app origin', async () => {
-		await setAppSetting(AppSettingsKey.TRUST_PROXY, 'true');
 		const response = await runDiagnosticGET({
 			effectiveUrl:
 				'https://wrapped.example.com/api/security/reverse-proxy-diagnostic?browserOrigin=https%3A%2F%2Fwrapped.example.com',
@@ -491,7 +418,8 @@ describe('GET /api/security/reverse-proxy-diagnostic', () => {
 			forwardedPair: 'https://wrapped.example.com'
 		});
 		expect(body.facts.origins.rawApp).toBeUndefined();
-		expect(body.action).toBe('appears-working');
+		expect(body.facts.trustProxy).toBeUndefined();
+		expect(body.action).toBe('origin-matches');
 	});
 
 	it('rejects an overlong browser origin with no-store', async () => {

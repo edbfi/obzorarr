@@ -289,6 +289,36 @@ describe('installed @sveltejs/adapter-bun request URL construction', () => {
 		});
 	}, 30_000);
 
+	// TRUST_PROXY is retired: without ORIGIN, the adapter's PROTOCOL_HEADER/HOST_HEADER take its
+	// place behind a trusted proxy, and forwarded headers do nothing unless configured.
+	it('ignores forwarded headers it was not configured to read', async () => {
+		const observed = await observeAdapterUrl({
+			host: 'internal.example:3000',
+			headers: {
+				'x-forwarded-proto': 'http',
+				'x-forwarded-host': 'attacker.example'
+			}
+		});
+		expect(observed).toEqual({
+			requestUrl: 'https://internal.example:3000/',
+			eventUrl: 'https://internal.example:3000/'
+		});
+	}, 30_000);
+
+	it('falls back to https and the Host header when configured headers are absent', async () => {
+		const observed = await observeAdapterUrl({
+			host: 'public.example',
+			env: {
+				PROTOCOL_HEADER: 'x-forwarded-proto',
+				HOST_HEADER: 'x-forwarded-host'
+			}
+		});
+		expect(observed).toEqual({
+			requestUrl: 'https://public.example/',
+			eventUrl: 'https://public.example/'
+		});
+	}, 30_000);
+
 	it('uses a separately configured port header', async () => {
 		const observed = await observeAdapterUrl({
 			host: 'internal.example:3000',

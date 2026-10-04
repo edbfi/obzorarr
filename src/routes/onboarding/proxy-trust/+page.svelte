@@ -7,23 +7,9 @@ import { prefersReducedMotion } from 'svelte/motion';
 import { fade } from 'svelte/transition';
 import browserAddressUnavailableDiagram from '$lib/assets/onboarding/proxy-trust/browser-address-unavailable.png';
 import checkingDiagram from '$lib/assets/onboarding/proxy-trust/checking.png';
-import correctWithoutTrustDiagram from '$lib/assets/onboarding/proxy-trust/correct-without-trust.png';
 import diagnosticFailedDiagram from '$lib/assets/onboarding/proxy-trust/diagnostic-failed.png';
-import environmentDisabledBrokenDiagram from '$lib/assets/onboarding/proxy-trust/environment-disabled-broken.png';
-import environmentDisabledCorrectDiagram from '$lib/assets/onboarding/proxy-trust/environment-disabled-correct.png';
-import environmentDisabledNeededDiagram from '$lib/assets/onboarding/proxy-trust/environment-disabled-needed.png';
-import environmentEnabledBrokenDiagram from '$lib/assets/onboarding/proxy-trust/environment-enabled-broken.png';
-import environmentEnabledWorkingDiagram from '$lib/assets/onboarding/proxy-trust/environment-enabled-working.png';
-import forwardedAddressConflictDiagram from '$lib/assets/onboarding/proxy-trust/forwarded-address-conflict.png';
-import forwardedMatchBoundaryUnverifiedDiagram from '$lib/assets/onboarding/proxy-trust/forwarded-match-boundary-unverified.png';
-import headersMissingDiagram from '$lib/assets/onboarding/proxy-trust/headers-missing.png';
-import hostInvalidDiagram from '$lib/assets/onboarding/proxy-trust/host-invalid.png';
-import hostMissingDiagram from '$lib/assets/onboarding/proxy-trust/host-missing.png';
-import hostUnsafeDiagram from '$lib/assets/onboarding/proxy-trust/host-unsafe.png';
-import protocolInvalidDiagram from '$lib/assets/onboarding/proxy-trust/protocol-invalid.png';
-import protocolMissingDiagram from '$lib/assets/onboarding/proxy-trust/protocol-missing.png';
-import trustEnabledBrokenDiagram from '$lib/assets/onboarding/proxy-trust/trust-enabled-broken.png';
-import trustWorkingDiagram from '$lib/assets/onboarding/proxy-trust/trust-working.png';
+import originMatchesDiagram from '$lib/assets/onboarding/proxy-trust/origin-matches.png';
+import setOriginDiagram from '$lib/assets/onboarding/proxy-trust/set-origin.png';
 import SubmitButton from '$lib/components/forms/SubmitButton.svelte';
 import OnboardingCard from '$lib/components/onboarding/OnboardingCard.svelte';
 import { Button } from '$lib/components/ui/button';
@@ -44,32 +30,16 @@ let browserOrigin = $state('');
 let diagnostic = $state<ReverseProxyDiagnostic | null>(null);
 let diagnosticStatus = $state<'idle' | 'checking' | 'success' | 'failure'>('idle');
 let diagnosticError = $state<string | null>(null);
-let savedState = $state<'idle' | 'verifying' | 'unverified'>('idle');
 let showDetails = $state(false);
 let copiedGuide = $state<string | null>(null);
 let runToken = 0;
 let initialRun = false;
-let handledTrustProxySuccess = false;
 let failedDiagramSource: string | null = $state(null);
 
 const DIAGNOSTIC_DIAGRAMS: Record<ReverseProxyDiagramId, string> = {
 	'browser-address-unavailable': browserAddressUnavailableDiagram,
-	'correct-without-trust': correctWithoutTrustDiagram,
-	'environment-disabled-broken': environmentDisabledBrokenDiagram,
-	'environment-disabled-correct': environmentDisabledCorrectDiagram,
-	'environment-disabled-needed': environmentDisabledNeededDiagram,
-	'environment-enabled-broken': environmentEnabledBrokenDiagram,
-	'environment-enabled-working': environmentEnabledWorkingDiagram,
-	'forwarded-address-conflict': forwardedAddressConflictDiagram,
-	'forwarded-match-boundary-unverified': forwardedMatchBoundaryUnverifiedDiagram,
-	'headers-missing': headersMissingDiagram,
-	'host-invalid': hostInvalidDiagram,
-	'host-missing': hostMissingDiagram,
-	'host-unsafe': hostUnsafeDiagram,
-	'protocol-invalid': protocolInvalidDiagram,
-	'protocol-missing': protocolMissingDiagram,
-	'trust-enabled-broken': trustEnabledBrokenDiagram,
-	'trust-working': trustWorkingDiagram
+	'origin-matches': originMatchesDiagram,
+	'set-origin': setOriginDiagram
 };
 
 const presentation = $derived(diagnostic ? presentReverseProxyDiagnostic(diagnostic) : null);
@@ -88,20 +58,13 @@ const applicableProviderGuides = $derived(
 			)
 		: []
 );
-const canEnable = $derived(
-	diagnosticStatus === 'success' &&
-		diagnostic?.action === 'confirm-trust-boundary' &&
-		!diagnostic.facts.trustProxy.isLocked &&
-		savedState === 'idle'
-);
 const continueWarning = $derived(
-	savedState === 'unverified' ||
-		(diagnostic && ['review-proxy', 'unable-to-determine'].includes(diagnostic.action))
+	diagnostic && ['set-origin', 'unable-to-determine'].includes(diagnostic.action)
 		? REVERSE_PROXY_COPY.continueWarning
 		: null
 );
 
-async function runDiagnostic(afterSave = false) {
+async function runDiagnostic() {
 	if (diagnosticStatus === 'checking') return;
 	failedDiagramSource = null;
 	const token = ++runToken;
@@ -120,7 +83,6 @@ async function runDiagnostic(afterSave = false) {
 		if (result.type === 'success' && result.data.reverseProxyDiagnostic) {
 			diagnostic = result.data.reverseProxyDiagnostic;
 			diagnosticStatus = 'success';
-			savedState = 'idle';
 			return;
 		}
 		diagnosticStatus = 'failure';
@@ -128,12 +90,10 @@ async function runDiagnostic(afterSave = false) {
 			result.type === 'failure'
 				? (result.data.diagnosticError ?? 'Diagnostic failed')
 				: 'Diagnostic response was incomplete';
-		if (afterSave) savedState = 'unverified';
 	} catch {
 		if (token !== runToken) return;
 		diagnosticStatus = 'failure';
 		diagnosticError = 'Network error while running the diagnostic.';
-		if (afterSave) savedState = 'unverified';
 	}
 }
 
@@ -147,14 +107,6 @@ function applyActionData() {
 		diagnostic = null;
 		diagnosticStatus = 'failure';
 		diagnosticError = form.diagnosticError;
-	}
-	if (form?.trustProxySuccess && !handledTrustProxySuccess) {
-		handledTrustProxySuccess = true;
-		diagnostic = null;
-		savedState = 'verifying';
-		void runDiagnostic(true);
-	} else if (!form?.trustProxySuccess) {
-		handledTrustProxySuccess = false;
 	}
 }
 
@@ -181,9 +133,6 @@ async function copyGuide(id: string, text: string) {
 	class="proxy-onboarding"
 >
 	<div class="proxy-content">
-		{#if form?.trustProxyError}
-			<div class="inline-error" role="alert">{form.trustProxyError}</div>
-		{/if}
 		<div class="diagram-frame" aria-hidden="true">
 			{#if failedDiagramSource !== diagramSource}
 				{#key diagramSource}
@@ -200,25 +149,16 @@ async function copyGuide(id: string, text: string) {
 		{#if diagnosticStatus === 'checking'}
 			<div class="status-card neutral" role="status" aria-live="polite" aria-busy="true">
 				<LoaderCircleIcon class="size-5 animate-spin" aria-hidden="true" />
-				<span
-					>{savedState === 'verifying'
-	? REVERSE_PROXY_COPY.savedVerifying
-	: REVERSE_PROXY_COPY.rerunButtonInProgress}</span
-				>
+				<span>{REVERSE_PROXY_COPY.rerunButtonInProgress}</span>
 			</div>
 		{:else if diagnosticStatus === 'failure'}
 			<div class="status-card danger" role="alert">
 				<span aria-hidden="true">!</span>
 				<div>
 					<strong>{REVERSE_PROXY_COPY.diagnosticFailedHeadline}</strong>
-					<p>
-						{savedState === 'unverified' ? REVERSE_PROXY_COPY.savedUnverified : diagnosticError}
-					</p>
+					<p>{diagnosticError}</p>
 					<p>{REVERSE_PROXY_COPY.diagnosticFailedExplanation}</p>
-					<Button
-						type="button"
-						class="tap-target"
-						onclick={() => runDiagnostic(savedState === 'unverified')}
+					<Button type="button" class="tap-target" onclick={() => runDiagnostic()}
 						>{REVERSE_PROXY_COPY.rerunButton}</Button
 					>
 				</div>
@@ -236,17 +176,6 @@ async function copyGuide(id: string, text: string) {
 					<p><strong>{presentation.nextAction}</strong></p>
 				</div>
 			</div>
-
-			{#if canEnable}
-				<form method="POST" action="?/enableTrustProxy" class="enable-form">
-					<input type="hidden" name="browserOrigin" value={browserOrigin}>
-					<label
-						><input type="checkbox" name="confirmRisk" value="true" required>
-						{presentation.safetyNotice}</label
-					>
-					<SubmitButton class="tap-target"><span>Enable TRUST_PROXY</span></SubmitButton>
-				</form>
-			{/if}
 
 			<button
 				type="button"
@@ -280,18 +209,12 @@ async function copyGuide(id: string, text: string) {
 							<dt>Forwarded pair</dt>
 							<dd>{presentation.pairLabel}</dd>
 						</div>
-						<div>
-							<dt>TRUST_PROXY source</dt>
-							<dd>
-								{diagnostic.facts.trustProxy.source}{diagnostic.facts.trustProxy.isLocked ? ' (environment-controlled)' : ''}
-							</dd>
-						</div>
 					</dl>
 					<p>{presentation.consequence}</p>
 					<p class="safety">{presentation.safetyNotice}</p>
 					{#if applicableProviderGuides.length > 0}
 						<div class="provider-guides">
-							<h3>Repair steps by proxy</h3>
+							<h3>{REVERSE_PROXY_COPY.providerGuidesHeading}</h3>
 							{#each applicableProviderGuides as guide}
 								<details class="provider-guide">
 									<summary>{guide.label}</summary>
@@ -408,16 +331,10 @@ async function copyGuide(id: string, text: string) {
 .status-card.danger {
 	border-color: rgba(239, 68, 68, 0.7);
 }
-.enable-form,
 .details-panel {
 	padding: 1rem;
 	border: 1px solid rgba(255, 255, 255, 0.14);
 	border-radius: 0.75rem;
-}
-.enable-form {
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
 }
 .details-toggle {
 	align-self: flex-start;
@@ -473,8 +390,7 @@ pre {
 	min-height: 1.25rem;
 	font-size: 0.875rem;
 }
-.safety,
-.inline-error {
+.safety {
 	padding: 0.75rem;
 	border-left: 3px solid currentColor;
 	overflow-wrap: anywhere;

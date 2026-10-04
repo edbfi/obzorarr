@@ -23,12 +23,12 @@ let startupLogged = false;
 /**
  * Returns true iff this request is the CSRF-origin repair POST on the security
  * settings page. Keyed PURELY on `event.route.id` + the resolved SvelteKit form
- * action — NO same-origin derivation. `event.url.origin` is rewritten from
- * `x-forwarded-*` by proxyHandle (ordered before csrfHandle) under TRUST_PROXY
- * and is spoofable, so a forged forwarded header must not be able to widen this
- * carve-out. The form action is encoded by SvelteKit as a search-param key
- * beginning with `/` (e.g. `?/updateCsrfOrigin` → key `/updateCsrfOrigin`),
- * which is independent of the proxy-influenced origin.
+ * action — NO same-origin derivation. Without ORIGIN, `event.url.origin` comes
+ * from the request's Host (or an operator's HOST_HEADER) and is spoofable, so a
+ * forged header must not be able to widen this carve-out. The form action is
+ * encoded by SvelteKit as a search-param key beginning with `/` (e.g.
+ * `?/updateCsrfOrigin` → key `/updateCsrfOrigin`), which is independent of the
+ * request's origin.
  */
 function isCsrfOriginRepairRequest(event: Parameters<Handle>[0]['event']): boolean {
 	if (event.route.id !== CSRF_REPAIR_ROUTE_ID) return false;
@@ -73,7 +73,7 @@ export const csrfHandle: Handle = async ({ event, resolve }) => {
 	// action's own confirm-mismatch gate govern the write. This is the one
 	// setting whose misconfiguration this check exists to repair; every other
 	// state-changing route keeps strict origin matching below. No same-origin
-	// derivation happens here, so a forged `x-forwarded-*` cannot widen it.
+	// derivation happens here, so a forged Host or forwarded header cannot widen it.
 	if (isCsrfOriginRepairRequest(event)) {
 		logger.warn('CSRF self-repair: allowing updateCsrfOrigin POST to reach its action', 'CSRF', {
 			route: event.route.id ?? '<unmatched>'

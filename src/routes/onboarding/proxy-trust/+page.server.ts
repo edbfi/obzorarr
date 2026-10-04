@@ -1,10 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
-import {
-	AppSettingsKey,
-	getTrustProxyConfigWithSource,
-	setAppSetting
-} from '$lib/server/admin/settings.service';
 import { logger } from '$lib/server/logging';
 import {
 	getOnboardingStep,
@@ -14,12 +9,8 @@ import {
 	requireActiveOnboardingClaim,
 	setOnboardingStep
 } from '$lib/server/onboarding';
-import { _resetTrustProxyCache } from '$lib/server/security/proxy-handle';
-import {
-	assertEnableTrustProxyAllowed,
-	createReverseProxyDiagnostic
-} from '$lib/server/security/reverse-proxy-diagnostic';
-import type { Actions, PageServerLoad } from './$types';
+import { createReverseProxyDiagnostic } from '$lib/server/security/reverse-proxy-diagnostic';
+import type { Actions } from './$types';
 
 async function isOnboardingProxyTrustStep(): Promise<boolean> {
 	const [done, step] = await Promise.all([isOnboardingComplete(), getOnboardingStep()]);
@@ -59,11 +50,6 @@ function isSameOriginOnboardingAction(request: Request, url: URL): boolean {
 	return requestOrigin !== null && originsMatch(requestOrigin, url.origin);
 }
 
-function isSubmittedBrowserOriginAction(request: Request, browserOrigin: string): boolean {
-	const requestOrigin = getRequestOrigin(request);
-	return requestOrigin !== null && originsMatch(requestOrigin, browserOrigin);
-}
-
 const MAX_BROWSER_ORIGIN_LENGTH = 2048;
 
 const BrowserOriginSchema = z.object({
@@ -78,14 +64,10 @@ const BrowserOriginSchema = z.object({
 		.transform((url) => new URL(url).origin)
 });
 
-const TrustProxyEnableSchema = BrowserOriginSchema.extend({
-	confirmRisk: z.literal('true')
-});
-
 async function requireOnboardingProxyTrustAction(
 	cookies: Parameters<NonNullable<Actions['continue']>>[0]['cookies'],
 	url: URL,
-	errorKey: 'error' | 'diagnosticError' | 'trustProxyError'
+	errorKey: 'error' | 'diagnosticError'
 ) {
 	try {
 		await requireActiveOnboardingClaim(cookies, { requestUrl: url });
@@ -100,20 +82,6 @@ async function requireOnboardingProxyTrustAction(
 	}
 	return null;
 }
-
-export const load: PageServerLoad = async ({ parent }) => {
-	const parentData = await parent();
-	const trustProxyConfig = await getTrustProxyConfigWithSource();
-
-	return {
-		...parentData,
-		trustProxy: {
-			enabled: trustProxyConfig.trustProxy.value === 'true',
-			source: trustProxyConfig.trustProxy.source,
-			isLocked: trustProxyConfig.trustProxy.isLocked
-		}
-	};
-};
 
 export const actions: Actions = {
 	continue: async ({ request, cookies, url }) => {
@@ -165,65 +133,5 @@ export const actions: Actions = {
 			logger.error(`Onboarding reverse proxy diagnostic failed: ${message}`, 'Onboarding');
 			return fail(500, { diagnosticError: 'Could not run reverse proxy diagnostic' });
 		}
-	},
-
-	enableTrustProxy: async ({ request, cookies, url, getClientAddress, setHeaders }) => {
-		setHeaders({ 'Cache-Control': 'no-store' });
-		const guardResult = await requireOnboardingProxyTrustAction(cookies, url, 'trustProxyError');
-		if (guardResult) return guardResult;
-
-		const trustProxyConfig = await getTrustProxyConfigWithSource();
-		if (trustProxyConfig.trustProxy.isLocked) {
-			return fail(400, {
-				trustProxyError:
-					'TRUST_PROXY is set via environment variable and must be changed in your environment or container configuration.'
-			});
-		}
-
-		const formData = await request.formData();
-		const browserOriginParsed = BrowserOriginSchema.safeParse({
-			browserOrigin: formData.get('browserOrigin')
-		});
-		if (!browserOriginParsed.success) {
-			return fail(400, {
-				trustProxyError:
-					browserOriginParsed.error.issues[0]?.message ?? 'Could not read the browser origin safely'
-			});
-		}
-
-		if (!isSubmittedBrowserOriginAction(request, browserOriginParsed.data.browserOrigin)) {
-			return fail(403, {
-				trustProxyError: 'Reverse proxy header trust must be enabled from this browser origin'
-			});
-		}
-
-		const diagnostic = await createReverseProxyDiagnostic({
-			request,
-			effectiveAppUrl: url,
-			browserOrigin: browserOriginParsed.data.browserOrigin,
-			sourceAddress: getClientAddress()
-		});
-		const gate = assertEnableTrustProxyAllowed(diagnostic);
-		if (!gate.ok) {
-			return fail(400, { trustProxyError: gate.error });
-		}
-
-		const parsed = TrustProxyEnableSchema.safeParse({
-			browserOrigin: browserOriginParsed.data.browserOrigin,
-			confirmRisk: formData.get('confirmRisk')
-		});
-		if (!parsed.success) {
-			return fail(400, {
-				trustProxyError: 'Confirm the reverse-proxy header trust risk before enabling TRUST_PROXY.'
-			});
-		}
-
-		await setAppSetting(AppSettingsKey.TRUST_PROXY, 'true');
-		_resetTrustProxyCache();
-		logger.warn(
-			'Reverse-proxy header trust enabled during onboarding. Verify your upstream proxy strips inbound x-forwarded-* headers.',
-			'Onboarding'
-		);
-		return { trustProxySuccess: true, trustProxyMessage: 'Reverse-proxy header trust enabled.' };
 	}
 };

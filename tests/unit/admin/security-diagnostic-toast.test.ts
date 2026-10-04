@@ -37,10 +37,13 @@ describe('reverse-proxy diagnostic toast and progressive guidance', () => {
 		expect(src).not.toContain('function getForwardedPairLabel');
 	});
 
-	it('only offers enable after the live diagnostic asks for boundary confirmation', async () => {
+	it('offers no header-trust switch: ORIGIN is set in the environment', async () => {
 		const src = await readSource(SECURITY_PAGE);
-		expect(src).toContain("{:else if diagnostic?.action === 'confirm-trust-boundary'}");
-		expect(src).toContain('Client-IP handling is configured separately');
+		expect(src).not.toContain('updateTrustProxy');
+		expect(src).not.toContain('TRUST_PROXY');
+		expect(src).not.toContain('Enable header trust');
+		expect(src).toContain('<code>ORIGIN</code> environment variable');
+		expect(src).toContain('Restart Obzorarr after changing ORIGIN');
 		expect(src).not.toContain('headers for client IP, host');
 		expect(src).not.toContain('Raw app origin');
 	});
@@ -53,15 +56,6 @@ describe('reverse-proxy diagnostic toast and progressive guidance', () => {
 			/diagnosticStatus === 'failure'[\s\S]*runDiagnostic\(\{ userInitiated: true \}\)/
 		);
 		expect(src).toMatch(/try \{[\s\S]*await invalidateAll\(\)[\s\S]*finally \{/);
-	});
-
-	it('clears stale results and silently reruns after a TRUST_PROXY write', async () => {
-		const src = await readSource(SECURITY_PAGE);
-		expect(src).toMatch(
-			/async function refreshDiagnosticAfterTrustProxyWrite\(\)[\s\S]*diagnostic = null[\s\S]*await invalidateAll\(\)[\s\S]*await runDiagnostic\(\)/
-		);
-		expect(src).toContain('diagnosticError = REVERSE_PROXY_COPY.savedUnverified');
-		expect(src).toContain('Saved. Verifying…');
 	});
 
 	it('runDiagnostic accepts a userInitiated option defaulting to false', async () => {

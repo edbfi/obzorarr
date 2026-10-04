@@ -72,9 +72,9 @@ First run walks through seven steps: **Claim → Security → Reverse proxy → 
 | :----------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------: |
 | <img src="public/readme/stills/onboarding/01-claim.webp" width="400" alt="Claim setup step"> | <img src="public/readme/stills/onboarding/02-csrf.webp" width="400" alt="CSRF origin step"> |
 
-|                                            Reverse-proxy trust                                            |                                            Proxy diagnostic                                             |
-| :---------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
-| <img src="public/readme/stills/onboarding/03-proxy-trust.webp" width="400" alt="Reverse proxy trust step"> | <img src="public/readme/stills/onboarding/03b-proxy-trust-diagnostic.webp" width="400" alt="Proxy diagnostic evidence"> |
+|                                            Public address                                            |                                            Address diagnostic                                             |
+| :-----------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
+| <img src="public/readme/stills/onboarding/03-proxy-trust.webp" width="400" alt="Public address step"> | <img src="public/readme/stills/onboarding/03b-proxy-trust-diagnostic.webp" width="400" alt="Address diagnostic evidence"> |
 
 |                                          Server picker                                          |                                            Connection choice                                            |
 | :-----------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
@@ -336,7 +336,7 @@ tab is recoverable.
 Your watch statistics come back: they re-sync from Plex. Everything else does not. That covers all
 settings, every per-user share setting, and **every share link you have already handed out stops
 working**, along with any manual curation and the log history. Anything configured through
-environment variables (Plex, OpenAI, `ORIGIN`, `TRUST_PROXY`, `TZ`) is not in the database, so it
+environment variables (Plex, OpenAI, `ORIGIN`, `TZ`) is not in the database, so it
 survives and the new setup arrives partly pre-filled. Obzorarr refuses to reset while a sync is
 running.
 
@@ -398,32 +398,35 @@ proxies: a request that arrives without the header has no client address, and a 
 Obzorarr directly could send a forged one. Without a proxy, leave `ADDRESS_HEADER` unset; Obzorarr then
 uses the connection's own address.
 
-**`TRUST_PROXY` (only without `ORIGIN`).** `TRUST_PROXY` is a separate, optional switch for setups
-that do not set `ORIGIN`: when enabled, Obzorarr takes the hostname and protocol from the last hop of
-the `X-Forwarded-Host` and `X-Forwarded-Proto` headers your proxy sends. A configured `ORIGIN` always
-wins over forwarded headers, even with `TRUST_PROXY` on, so with `ORIGIN` set it has no effect on the
-origin. The adapter's own `PROTOCOL_HEADER` and `HOST_HEADER` are the same kind of setting and also
-apply only without `ORIGIN`, behind a proxy you trust. Only turn `TRUST_PROXY` on when **both** of
-these are true:
+**Without `ORIGIN`, behind a trusted proxy.** If you cannot set `ORIGIN` (one instance served under
+several addresses, say), the Bun adapter can take the protocol and host from headers your proxy sets:
+`PROTOCOL_HEADER=x-forwarded-proto` and `HOST_HEADER=x-forwarded-host`. They apply only without
+`ORIGIN` (the front supplies the origin itself and ignores them), and only when **both** of these are
+true:
 
 - Obzorarr can only be reached through the proxy — nothing can hit it directly.
-- Your proxy sets both headers itself, overwriting whatever a visitor sends.
+- Your proxy sets both headers itself, replacing whatever a visitor sends with a single value.
 
 If either is false, a visitor can forge those headers and make Obzorarr build links pointing at a
-domain they control. When in doubt, leave `TRUST_PROXY` off and rely on `ORIGIN`.
+domain they control. When in doubt, set `ORIGIN`.
+
+`TRUST_PROXY` is no longer read: `ORIGIN` replaces it, or the two headers above where `ORIGIN` cannot
+be used. If it is still set, in the environment or by the old switch in setup or on the Security
+page, Obzorarr ignores it, removes the stored switch, and logs one warning at startup that names the
+replacement.
 
 The CSRF origin you confirm in onboarding (stored in the database) only decides which browser
 `Origin` may submit changes; it does not change the address Obzorarr builds links from.
 
-Onboarding and **Admin → Settings → Security** include a diagnostic that compares what your browser
-sees, what the proxy forwards, and what Obzorarr actually uses, with hints for Caddy, Nginx, Nginx
-Proxy Manager, and Apache. Changing either variable through the environment requires a restart.
-`TRUST_PROXY` does not change client-address detection; that is `ADDRESS_HEADER` and `XFF_DEPTH`
-above.
+Onboarding and **Admin → Settings → Security** include a diagnostic that compares the address your
+browser opened with the origin Obzorarr actually uses and, when they differ, tells you the `ORIGIN`
+to set. Its technical details also show what the proxy forwards, with header recipes for Caddy,
+Nginx, Nginx Proxy Manager, and Apache for the header route above. Changing any of these variables
+requires a restart.
 
 |                                       Reverse-proxy step                                        |                                     Technical evidence                                      |
 | :-------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------: |
-| <img src="public/readme/stills/onboarding/03-proxy-trust.webp" width="400" alt="Reverse proxy trust step"> | <img src="public/readme/stills/onboarding/03b-proxy-trust-diagnostic.webp" width="400" alt="Reverse proxy diagnostic evidence and repair guides"> |
+| <img src="public/readme/stills/onboarding/03-proxy-trust.webp" width="400" alt="Public address step"> | <img src="public/readme/stills/onboarding/03b-proxy-trust-diagnostic.webp" width="400" alt="Address diagnostic evidence and proxy guides"> |
 
 ## How Plex Users Are Matched
 

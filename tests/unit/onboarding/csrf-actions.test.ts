@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import type { Cookies } from '@sveltejs/kit';
 import { isRedirect } from '@sveltejs/kit';
 import {
@@ -18,7 +18,6 @@ import {
 	clearBootstrapToken,
 	createBootstrapToken
 } from '$lib/server/onboarding/bootstrap';
-import { env } from '$lib/server/private-env';
 import { actions } from '../../../src/routes/onboarding/csrf/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 import { TEST_REQUEST_URL } from '../../helpers/requests';
@@ -28,10 +27,6 @@ type SaveOriginAction = NonNullable<typeof actions.saveOrigin>;
 type SaveAction = NonNullable<typeof actions.save>;
 type SkipCsrfAction = NonNullable<typeof actions.skipCsrf>;
 type TestOriginAction = NonNullable<typeof actions.testOrigin>;
-
-function envRecord(): Record<string, string | undefined> {
-	return env as Record<string, string | undefined>;
-}
 
 function createCookies() {
 	const values = new Map<string, string>();
@@ -43,7 +38,6 @@ function createCookies() {
 }
 
 let cookies: ReturnType<typeof createCookies>;
-let previousTrustProxyEnv: string | undefined;
 
 function createThrowingClaimCookies(errorToThrow: Error): ReturnType<typeof createCookies> {
 	return {
@@ -130,8 +124,6 @@ async function expectRedirect(run: () => Promise<unknown>, location: string) {
 
 describe('onboarding CSRF actions', () => {
 	beforeEach(async () => {
-		previousTrustProxyEnv = envRecord().TRUST_PROXY;
-		delete envRecord().TRUST_PROXY;
 		await resetSharedTestDb();
 		clearBootstrapToken();
 		cookies = createCookies();
@@ -142,11 +134,6 @@ describe('onboarding CSRF actions', () => {
 			})
 		).toBe('claimed');
 		await setOnboardingStep(OnboardingSteps.CSRF);
-	});
-
-	afterEach(() => {
-		if (previousTrustProxyEnv === undefined) delete envRecord().TRUST_PROXY;
-		else envRecord().TRUST_PROXY = previousTrustProxyEnv;
 	});
 
 	it('does not export a default action alongside named actions', () => {

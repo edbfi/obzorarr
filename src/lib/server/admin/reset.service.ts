@@ -6,8 +6,8 @@
  * - Rows only. The schema and `drizzle/` migration state are never touched;
  *   `db/client.ts` auto-migrates on import and a dropped/re-created schema would
  *   desynchronise the migration journal.
- * - Environment-configured settings are NOT application data. PLEX_*, OPENAI_*,
- *   ORIGIN and TRUST_PROXY live in the process environment, survive this wipe,
+ * - Environment-configured settings are NOT application data. PLEX_*, OPENAI_*
+ *   and ORIGIN live in the process environment, survive this wipe,
  *   and are re-applied by `clearConflictingDbSettings()` at the next startup —
  *   so an env-configured instance's post-reset onboarding is partly pre-filled.
  * - The in-memory bootstrap token is deliberately left alone. The reset flow

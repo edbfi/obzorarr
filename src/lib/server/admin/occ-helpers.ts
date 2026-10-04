@@ -81,12 +81,12 @@ export async function externalOccCheck(
 }
 
 /**
- * Inline OCC check shared by `updateLogSettings`, `updateTrustProxy`, and
- * `updateCsrfOrigin`. The conflict response shape for these actions is
- * `{ conflict: true, error: 'Settings changed in another tab. Please
- * reload.' }` so the helper just returns a status discriminator — the
- * caller writes the `fail(409, ...)` itself to keep the existing wording
- * and the test-asserted payload shape intact.
+ * Inline OCC check shared by `updateLogSettings` and `updateCsrfOrigin`. The
+ * conflict response shape for these actions is `{ conflict: true, error:
+ * 'Settings changed in another tab. Please reload.' }` so the helper just
+ * returns a status discriminator — the caller writes the `fail(409, ...)`
+ * itself to keep the existing wording and the test-asserted payload shape
+ * intact.
  *
  * For schemas where `settingsVersion` is a required Zod field, the schema
  * already rejects blank submissions; calling this helper after a

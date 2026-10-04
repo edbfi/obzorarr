@@ -6,14 +6,13 @@ import {
 	setAppSetting
 } from '$lib/server/admin/settings.service';
 import { env } from '$lib/server/private-env';
-import { actions } from '../../../src/routes/admin/settings/security/+page.server';
+import { actions, load } from '../../../src/routes/admin/settings/security/+page.server';
 import { resetSharedTestDb } from '../../helpers/db';
 
 type TestCsrfAction = NonNullable<typeof actions.testCsrfProtection>;
 type UpdateCsrfOriginAction = NonNullable<typeof actions.updateCsrfOrigin>;
 type ToggleCsrfSkipAction = NonNullable<typeof actions.toggleCsrfSkip>;
 type ResetCsrfWarningAction = NonNullable<typeof actions.resetCsrfWarning>;
-type UpdateTrustProxyAction = NonNullable<typeof actions.updateTrustProxy>;
 type DiagnoseReverseProxyAction = NonNullable<typeof actions.diagnoseReverseProxy>;
 
 const ORIGIN = 'http://localhost:5173';
@@ -232,179 +231,52 @@ describe('security nested route — diagnoseReverseProxy cache controls', () => 
 		expect(headers).toEqual([{ 'Cache-Control': 'no-store' }]);
 	});
 });
-describe('security nested route — updateTrustProxy (confirmRisk + OCC)', () => {
+describe('security nested route — reverse-proxy header trust is retired', () => {
 	beforeEach(async () => {
 		await resetSharedTestDb();
 	});
 
-	// Match the diagnostic's boundary-confirmation shape: adapter request URL internal,
-	// while the forwarded pair matches the submitted browser origin. The write gate
-	// refuses enablement for every other recommendation.
-	const TRUST_BROWSER_ORIGIN = 'https://obzorarr.example.com';
-	const TRUST_FORWARDED_HOST = 'obzorarr.example.com';
-	const TRUST_APP_URL = `${ORIGIN}/admin/settings/security?/updateTrustProxy`;
+	it('has no action that turns header trust on or off', () => {
+		expect('updateTrustProxy' in actions).toBe(false);
+	});
 
-	function trustProxyRequest(
-		fields: Record<string, string>,
-		originHeader: string | null = TRUST_BROWSER_ORIGIN,
-		requestUrl = TRUST_APP_URL
-	): Request {
-		const formData = new FormData();
-		for (const [k, v] of Object.entries(fields)) formData.set(k, v);
-		if (!formData.has('browserOrigin')) {
-			formData.set('browserOrigin', TRUST_BROWSER_ORIGIN);
-		}
-		const headers: HeadersInit = {
-			'x-forwarded-proto': 'https',
-			'x-forwarded-host': TRUST_FORWARDED_HOST
+	it('loads no TRUST_PROXY state', async () => {
+		const data = (await load({} as Parameters<typeof load>[0])) as Record<string, unknown> & {
+			security: Record<string, unknown>;
 		};
-		if (originHeader !== null) headers.Origin = originHeader;
-		return new Request(requestUrl, {
-			method: 'POST',
-			body: formData,
-			headers
-		});
-	}
+		expect(Object.keys(data.security).filter((key) => /trust/i.test(key))).toEqual([]);
+		expect('trustProxyVersion' in data).toBe(false);
+	});
 
-	async function run(request: Request, setHeaders?: (headers: Record<string, string>) => void) {
-		const handler = actions.updateTrustProxy as UpdateTrustProxyAction;
-		return handler({
-			request,
-			url: new URL(TRUST_APP_URL),
+	it('recommends ORIGIN, not header trust, when the forwarded pair matches the browser', async () => {
+		// The shape that used to unlock "Enable header trust": the adapter's origin is
+		// internal while the proxy's forwarded pair matches the browser.
+		const browserOrigin = 'https://obzorarr.example.com';
+		const appUrl = `${ORIGIN}/admin/settings/security?/diagnoseReverseProxy`;
+		const formData = new FormData();
+		formData.set('browserOrigin', browserOrigin);
+		const handler = actions.diagnoseReverseProxy as DiagnoseReverseProxyAction;
+		const result = (await handler({
+			request: new Request(appUrl, {
+				method: 'POST',
+				body: formData,
+				headers: {
+					Origin: browserOrigin,
+					'x-forwarded-proto': 'https',
+					'x-forwarded-host': 'obzorarr.example.com'
+				}
+			}),
+			url: new URL(appUrl),
 			getClientAddress: () => '203.0.113.1',
-			setHeaders,
+			setHeaders: () => {},
 			locals: adminLocals
-		} as Parameters<UpdateTrustProxyAction>[0]);
-	}
-
-	it('rejects checkbox-style boolean for enabled (z.enum guards against silent coercion)', async () => {
-		// Same protection as plexAllowInsecureLocalHttp + privacy FormBoolean:
-		// TrustProxySchema.enabled uses z.enum(['true', 'false']).transform so
-		// HTML checkbox 'on' fails schema validation. A refactor to z.preprocess
-		// or z.coerce.boolean would silently coerce 'on' to false (= disabled),
-		// hiding accidental checkbox-vs-toggle wiring bugs.
-		const result = await run(
-			trustProxyRequest({
-				enabled: 'on',
-				confirmRisk: 'true',
-				settingsVersion: new Date(0).toISOString()
-			})
-		);
-		expect(result).toMatchObject({ status: 400 });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('refuses to enable without confirmRisk=true', async () => {
-		const result = await run(
-			trustProxyRequest({
-				enabled: 'true',
-				settingsVersion: new Date(0).toISOString()
-			})
-		);
-		expect(result).toMatchObject({ status: 400 });
-		expect((result as { data: { error: string } }).data.error).toMatch(
-			/Confirm the reverse-proxy header trust risk/
-		);
-	});
-
-	it('rejects malformed risk confirmation with a specific validation message', async () => {
-		const result = await run(
-			trustProxyRequest({
-				enabled: 'true',
-				confirmRisk: 'false',
-				settingsVersion: new Date(0).toISOString()
-			})
-		);
-
-		expect(result).toMatchObject({
-			status: 400,
-			data: {
-				error:
-					'Invalid input: enabled must be "true" or "false"; confirmRisk must be "true" when provided'
-			}
-		});
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('persists TRUST_PROXY=true with confirmRisk=true', async () => {
-		const result = await run(
-			trustProxyRequest({
-				enabled: 'true',
-				confirmRisk: 'true',
-				settingsVersion: new Date(0).toISOString()
-			})
-		);
-		expect(result).toMatchObject({ success: true });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBe('true');
-	});
-	it('does not enable trust when the adapter request origin already matches the browser', async () => {
-		const result = await run(
-			trustProxyRequest(
-				{
-					enabled: 'true',
-					confirmRisk: 'true',
-					settingsVersion: new Date(0).toISOString()
-				},
-				TRUST_BROWSER_ORIGIN,
-				`${TRUST_BROWSER_ORIGIN}/admin/settings/security?/updateTrustProxy`
-			)
-		);
-
-		expect(result).toMatchObject({ status: 400 });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-	it('fails closed without a request Origin and does not write TRUST_PROXY', async () => {
-		const result = await run(
-			trustProxyRequest(
-				{ enabled: 'true', confirmRisk: 'true', settingsVersion: new Date(0).toISOString() },
-				null
-			)
-		);
-		expect(result).toMatchObject({ status: 403 });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('fails closed when request Origin mismatches browserOrigin and does not write TRUST_PROXY', async () => {
-		const result = await run(
-			trustProxyRequest(
-				{ enabled: 'true', confirmRisk: 'true', settingsVersion: new Date(0).toISOString() },
-				'https://attacker.example.com'
-			)
-		);
-		expect(result).toMatchObject({ status: 403 });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBeNull();
-	});
-
-	it('sets no-store for TRUST_PROXY actions when setHeaders is available', async () => {
-		const headers: Record<string, string>[] = [];
-		await run(
-			trustProxyRequest({ enabled: 'false', settingsVersion: new Date(0).toISOString() }),
-			(headersToSet) => headers.push(headersToSet)
-		);
-		expect(headers).toEqual([{ 'Cache-Control': 'no-store' }]);
-	});
-
-	it('rejects blank settingsVersion as 409 conflict', async () => {
-		const result = await run(
-			trustProxyRequest({
-				enabled: 'true',
-				confirmRisk: 'true',
-				settingsVersion: ''
-			})
-		);
-		expect(result).toMatchObject({
-			status: 409,
-			data: { conflict: true }
-		});
-	});
-
-	it('allows disabling without confirmRisk (with a fresh settingsVersion)', async () => {
-		await setAppSetting(AppSettingsKey.TRUST_PROXY, 'true');
-		const futureVersion = new Date(Date.now() + 60_000).toISOString();
-		const result = await run(
-			trustProxyRequest({ enabled: 'false', settingsVersion: futureVersion })
-		);
-		expect(result).toMatchObject({ success: true });
-		expect(await getAppSetting(AppSettingsKey.TRUST_PROXY)).toBe('false');
+		} as unknown as Parameters<DiagnoseReverseProxyAction>[0])) as {
+			reverseProxyDiagnostic: { action: string; reasonCodes: string[] };
+		};
+		expect(result.reverseProxyDiagnostic.action).toBe('set-origin');
+		expect(result.reverseProxyDiagnostic.reasonCodes).toEqual([
+			'request-origin-differs-from-browser'
+		]);
+		expect(await getAppSetting('trust_proxy' as Parameters<typeof getAppSetting>[0])).toBeNull();
 	});
 });

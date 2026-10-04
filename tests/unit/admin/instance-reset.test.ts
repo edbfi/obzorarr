@@ -560,7 +560,8 @@ describe('instance reset — Danger zone UI wiring (no DOM harness in this suite
 		expect(prose).toContain('any link you have already handed out to a user stops working');
 		expect(prose).toContain('other curation you did by hand');
 		// Env-configured settings survive; the copy must not promise a blank slate.
-		expect(prose).toContain('TRUST_PROXY');
+		expect(prose).toContain('(Plex, OpenAI, ORIGIN)');
+		expect(prose).not.toContain('TRUST_PROXY');
 		expect(prose).toContain('you do not start');
 	});
 
