@@ -273,16 +273,28 @@ export async function serve(
 	// status 1 at once, as the adapter does for a second signal (the exit handler below removes
 	// the socket directory). The handlers stay registered: Bun's default handler would end the
 	// process without that cleanup.
+	//
+	// SIGHUP (the terminal was closed) shuts down the same way; its default action would end the
+	// process without the drain, sveltekit:shutdown (the app stops its schedulers there) or the
+	// cleanup. The adapter does not handle SIGHUP, so it reaches the adapter as SIGTERM, once.
+	// Only the first SIGHUP counts and it is never a second signal: under `bun run start` the
+	// hangup arrives twice (from the terminal and forwarded by `bun run`), which would otherwise
+	// exit at once without the drain. A SIGTERM or SIGINT after it is a second signal as before.
 	let loaded = false;
 	let earlySignal: NodeJS.Signals | undefined;
 	const onSignal = (signal: NodeJS.Signals) => {
+		if (signal === 'SIGHUP' && publicDrain) return;
 		startDrain();
-		if (loaded) return;
+		if (loaded) {
+			if (signal === 'SIGHUP') process.kill(process.pid, 'SIGTERM');
+			return;
+		}
 		if (earlySignal) process.exit(1);
-		earlySignal = signal;
+		earlySignal = signal === 'SIGHUP' ? 'SIGTERM' : signal;
 	};
 	process.on('SIGTERM', onSignal);
 	process.on('SIGINT', onSignal);
+	process.on('SIGHUP', onSignal);
 	// Every exit removes the socket directory, also one that skips sveltekit:shutdown (the
 	// adapter's process.exit(1) on a second signal). Exit handlers must be synchronous; rmSync is.
 	process.once('exit', removeSocketDirectory);
@@ -309,6 +321,7 @@ export async function serve(
 	} catch (error) {
 		process.off('SIGTERM', onSignal);
 		process.off('SIGINT', onSignal);
+		process.off('SIGHUP', onSignal);
 		await listener.stop(true);
 		removeSocketDirectory();
 		throw error;
