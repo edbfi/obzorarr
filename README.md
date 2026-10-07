@@ -480,7 +480,8 @@ Two more server settings, with their defaults:
   closes what is left. With `ORIGIN` set, the process exits at that deadline even if Obzorarr is
   still waiting on Plex for a request. In a container, keep it below the stop timeout (Docker's
   default is 10 seconds) or raise both; otherwise the container is killed before Obzorarr has shut
-  down cleanly. A second signal stops it at once.
+  down cleanly. A second signal stops it at once. With `ORIGIN` set, closing the terminal it runs
+  in (`SIGHUP`) shuts it down the same way, and a repeated `SIGHUP` is not a second signal.
 - `BODY_SIZE_LIMIT=512K`: the largest request body accepted (`K`, `M` and `G` suffixes; `Infinity`
   turns the limit off). Obzorarr has no uploads, so the default is enough; larger requests get
   `413`.

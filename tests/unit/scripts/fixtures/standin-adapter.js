@@ -1,7 +1,8 @@
 // @ts-nocheck -- test fixture standing in for the generated adapter output (untyped JS).
 // Stand-in for the adapter-bun build output (build/index.js), used by tests/unit/scripts/serve.test.ts.
 // It reads the same environment variables as @sveltejs/adapter-bun, listens on SOCKET_PATH or
-// HOST/PORT, and drains and emits sveltekit:shutdown on SIGTERM the way the adapter does.
+// HOST/PORT, and drains and emits sveltekit:shutdown on SIGTERM the way the adapter does. Like the
+// adapter, it handles only SIGTERM and SIGINT.
 import { writeFileSync } from 'node:fs';
 import process from 'node:process';
 
@@ -105,6 +106,7 @@ async function handle(request) {
 		case '/slow': {
 			// Like a request waiting on Plex: reads the body, then answers after `ms`.
 			const body = await request.text();
+			console.log('standin slow begun');
 			await sleep(Number(url.searchParams.get('ms') || 3000));
 			return new Response(`slow ${body.length}`);
 		}
@@ -133,6 +135,7 @@ let stopping = false;
 async function shutdown(reason) {
 	if (stopping) return process.exit(1);
 	stopping = true;
+	console.log(`standin shutdown ${reason}`);
 	const timeout = Number(env.SHUTDOWN_TIMEOUT || 30) * 1000;
 	let timer;
 	const drained = await Promise.race([
@@ -148,3 +151,5 @@ async function shutdown(reason) {
 }
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+// Like the app's own sveltekit:shutdown listener (src/lib/server/startup.ts stops the schedulers).
+process.once('sveltekit:shutdown', () => console.log('standin shutdown hook'));
