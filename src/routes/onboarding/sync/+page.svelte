@@ -312,11 +312,11 @@ function formatNumber(n: number): string {
 				method="POST"
 				action="?/startSync"
 				use:enhance={() => {
-	handleStartSync();
-	return async ({ update }) => {
-		await update();
-	};
-}}
+					handleStartSync();
+					return async ({ update }) => {
+						await update();
+					};
+				}}
 			>
 				<SubmitButton class="start-button animate-item tap-target" submitting={isStarting}>
 					{#snippet children()}
@@ -417,15 +417,15 @@ function formatNumber(n: number): string {
 					method="POST"
 					action="?/cancelSync"
 					use:enhance={() => {
-	isCancelling = true;
-	return async ({ update }) => {
-		try {
-			await update();
-		} finally {
-			isCancelling = false;
-		}
-	};
-}}
+						isCancelling = true;
+						return async ({ update }) => {
+							try {
+								await update();
+							} finally {
+								isCancelling = false;
+							}
+						};
+					}}
 				>
 					<SubmitButton class="cancel-button tap-target" submitting={isCancelling}>
 						{#snippet children()}

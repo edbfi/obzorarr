@@ -168,9 +168,9 @@ function handleKeyDown(event: KeyboardEvent): void {
 			type="button"
 			class="close-button"
 			onclick={(e) => {
-	e.stopPropagation();
-	onClose?.();
-}}
+				e.stopPropagation();
+				onClose?.();
+			}}
 			aria-label="Close"
 		>
 			<svg

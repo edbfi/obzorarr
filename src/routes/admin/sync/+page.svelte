@@ -461,15 +461,15 @@ async function goToPage(page: number) {
 							method="POST"
 							action="?/cancelSync"
 							use:enhance={() => {
-	isCancelling = true;
-	return async ({ update }) => {
-		try {
-			await update();
-		} finally {
-			isCancelling = false;
-		}
-	};
-}}
+								isCancelling = true;
+								return async ({ update }) => {
+									try {
+										await update();
+									} finally {
+										isCancelling = false;
+									}
+								};
+							}}
 						>
 							<SubmitButton class="cancel-btn tap-target" submitting={isCancelling}>
 								{#snippet children()}
@@ -488,32 +488,32 @@ async function goToPage(page: number) {
 					method="POST"
 					action="?/startSync"
 					use:enhance={() => {
-	// Optimistically disable the Start button and mount the Cancel affordance
-	// synchronously on click, so the button can't be double-submitted and Cancel
-	// is hit-testable during the click -> first-SSE-frame window.
-	isSyncing = true;
-	pendingStart = true;
-	syncCompleted = false;
-	return async ({ update, result }) => {
-		try {
-			await update();
-			// ISSUE-010: only keep the syncing UI and open the SSE stream once
-			// the server confirms a sync actually started. On a 409 (a sync is
-			// already running) the start form stays mounted so the reactive
-			// handleFormToast(form) surfaces the conflict toast instead of the
-			// UI flipping to a stuck "syncing" state with a dangling EventSource.
-			if (result.type === 'success') {
-				connectSSE();
-			} else {
-				isSyncing = false;
-				pendingStart = false;
-			}
-		} catch {
-			isSyncing = false;
-			pendingStart = false;
-		}
-	};
-}}
+						// Optimistically disable the Start button and mount the Cancel affordance
+						// synchronously on click, so the button can't be double-submitted and Cancel
+						// is hit-testable during the click -> first-SSE-frame window.
+						isSyncing = true;
+						pendingStart = true;
+						syncCompleted = false;
+						return async ({ update, result }) => {
+							try {
+								await update();
+								// ISSUE-010: only keep the syncing UI and open the SSE stream once
+								// the server confirms a sync actually started. On a 409 (a sync is
+								// already running) the start form stays mounted so the reactive
+								// handleFormToast(form) surfaces the conflict toast instead of the
+								// UI flipping to a stuck "syncing" state with a dangling EventSource.
+								if (result.type === 'success') {
+									connectSSE();
+								} else {
+									isSyncing = false;
+									pendingStart = false;
+								}
+							} catch {
+								isSyncing = false;
+								pendingStart = false;
+							}
+						};
+					}}
 					class="sync-form"
 				>
 					<div class="form-group">
@@ -652,16 +652,16 @@ async function goToPage(page: number) {
 							method="POST"
 							action="?/stopScheduler"
 							use:enhance={() => {
-	// DF-013: preserve the current cron expression before stop
-	// clears schedulerStatus.cronExpression on the server, which
-	// would reset serverCronExpression to the default and blank
-	// the input field.
-	const preserved = cronExpression;
-	return async ({ update }) => {
-		await update();
-		localCronExpression = preserved !== DEFAULT_CRON_EXPRESSION ? preserved : null;
-	};
-}}
+								// DF-013: preserve the current cron expression before stop
+								// clears schedulerStatus.cronExpression on the server, which
+								// would reset serverCronExpression to the default and blank
+								// the input field.
+								const preserved = cronExpression;
+								return async ({ update }) => {
+									await update();
+									localCronExpression = preserved !== DEFAULT_CRON_EXPRESSION ? preserved : null;
+								};
+							}}
 						>
 							<SubmitButton class="control-btn stop tap-target" data-testid="scheduler-stop">
 								{#snippet children()}
@@ -677,13 +677,13 @@ async function goToPage(page: number) {
 					method="POST"
 					action="?/updateSchedule"
 					use:enhance={() => {
-	return async ({ result, update }) => {
-		await update();
-		if (result.type === 'success') {
-			localCronExpression = null;
-		}
-	};
-}}
+						return async ({ result, update }) => {
+							await update();
+							if (result.type === 'success') {
+								localCronExpression = null;
+							}
+						};
+					}}
 					class="cron-config"
 				>
 					<label for="cronExpression" class="cron-label">Schedule (cron)</label>
@@ -823,8 +823,8 @@ async function goToPage(page: number) {
 							>
 							<span class="stat-records"
 								>{sync.status === 'running' && progress
-	? progress.recordsProcessed.toLocaleString()
-	: sync.recordsProcessed.toLocaleString()}
+									? progress.recordsProcessed.toLocaleString()
+									: sync.recordsProcessed.toLocaleString()}
 								<small>records</small></span
 							>
 						</div>
@@ -848,7 +848,10 @@ async function goToPage(page: number) {
 					<div class="pagination-info">
 						<span class="pagination-range">
 							Showing
-							{(data.pagination.page - 1) * data.pagination.pageSize + 1}–{Math.min(data.pagination.page * data.pagination.pageSize, data.pagination.total)}
+							{(data.pagination.page - 1) * data.pagination.pageSize + 1}–{Math.min(
+								data.pagination.page * data.pagination.pageSize,
+								data.pagination.total
+							)}
 							of {data.pagination.total.toLocaleString()}
 						</span>
 					</div>

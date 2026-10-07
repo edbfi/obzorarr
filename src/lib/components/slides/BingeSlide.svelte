@@ -139,14 +139,14 @@ $effect(() => {
 				<p class="date">On {bingeDate}</p>
 				<p class="time-range">
 					{new Date(longestBinge.startTime * 1000).toLocaleTimeString('en-US', {
-	hour: 'numeric',
-	minute: '2-digit'
-})}
+						hour: 'numeric',
+						minute: '2-digit'
+					})}
 					-
 					{new Date(longestBinge.endTime * 1000).toLocaleTimeString('en-US', {
-	hour: 'numeric',
-	minute: '2-digit'
-})}
+						hour: 'numeric',
+						minute: '2-digit'
+					})}
 				</p>
 			</div>
 		{:else}

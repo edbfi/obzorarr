@@ -322,7 +322,9 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 
 			<!-- The explicit list role preserves list semantics in Safari when list styling is removed. -->
 			<ul class="slide-list" role="list">
-				{#each unifiedSlides as item, index (item.kind === 'builtin' ? item.slideType : `custom-${item.id}`)}
+				{#each unifiedSlides as item, index (item.kind === 'builtin'
+					? item.slideType
+					: `custom-${item.id}`)}
 					<!-- The explicit listitem role accompanies the styled list for assistive technology. -->
 					<li
 						class="slide-item"
@@ -393,9 +395,9 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 									type="button"
 									class="action-button edit-action tap-target"
 									onclick={() => {
-	const slide = getCustomSlideForEdit(item);
-	if (slide) openEditEditor(slide);
-}}
+										const slide = getCustomSlideForEdit(item);
+										if (slide) openEditEditor(slide);
+									}}
 									aria-label="Edit custom slide"
 								>
 									<Pencil class="size-[14px]" />
@@ -445,9 +447,9 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 										use:enhance
 										class="delete-trigger-form"
 										onsubmit={(e) => {
-	e.preventDefault();
-	deletingSlideId = item.id;
-}}
+											e.preventDefault();
+											deletingSlideId = item.id;
+										}}
 									>
 										<input type="hidden" name="id" value={item.id}>
 										<SubmitButton
@@ -497,16 +499,16 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 				method="POST"
 				action="?/setFunFactFrequency"
 				use:enhance={() => {
-	return async ({ result, update }) => {
-		if (result.type === 'success' && result.data?.funFactFrequency) {
-			const frequency = result.data.funFactFrequency as typeof data.funFactFrequency;
-			selectedFrequencyMode = frequency.mode;
-			customCount = frequency.count;
-			syncedFrequencyKey = `${frequency.mode}:${frequency.count}`;
-		}
-		await update();
-	};
-}}
+					return async ({ result, update }) => {
+						if (result.type === 'success' && result.data?.funFactFrequency) {
+							const frequency = result.data.funFactFrequency as typeof data.funFactFrequency;
+							selectedFrequencyMode = frequency.mode;
+							customCount = frequency.count;
+							syncedFrequencyKey = `${frequency.mode}:${frequency.count}`;
+						}
+						await update();
+					};
+				}}
 			>
 				<div class="frequency-options">
 					<label class="frequency-option">
@@ -603,21 +605,21 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 					method="POST"
 					action={editingSlide ? '?/updateCustom' : '?/createCustom'}
 					use:enhance={() => {
-	return async ({ result, update }) => {
-		// A fresh validation failure must re-show errors even if the user
-		// dismissed a prior one by editing or reopening (ISSUE-003).
-		if (result.type === 'failure') {
-			fieldErrorsDismissed = false;
-		}
-		// Refresh the list first so a newly created/updated slide appears
-		// immediately; keep the user's entered content on failure
-		// (reset: false) so a validation error never blanks the open modal.
-		await update({ reset: false });
-		if (result.type === 'success') {
-			closeEditor();
-		}
-	};
-}}
+						return async ({ result, update }) => {
+							// A fresh validation failure must re-show errors even if the user
+							// dismissed a prior one by editing or reopening (ISSUE-003).
+							if (result.type === 'failure') {
+								fieldErrorsDismissed = false;
+							}
+							// Refresh the list first so a newly created/updated slide appears
+							// immediately; keep the user's entered content on failure
+							// (reset: false) so a validation error never blanks the open modal.
+							await update({ reset: false });
+							if (result.type === 'success') {
+								closeEditor();
+							}
+						};
+					}}
 				>
 					{#if editingSlide}
 						<input type="hidden" name="id" value={editingSlide.id}>
@@ -698,48 +700,51 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 							type="button"
 							class="preview-button tap-target"
 							onclick={async () => {
-	// Short-circuit when there is nothing to render. Without this
-	// guard the server returns html: '' for empty input and the
-	// preview region falls through to {@html ''} — visible
-	// outcome is the placeholder text staying put with no
-	// indication the button was clicked (dogfood ISSUE-004).
-	const content = editorContent ?? '';
-	if (content.trim().length === 0) {
-		previewHtml = '';
-		previewRendered = false;
-		previewError = 'Enter some Markdown content first.';
-		return;
-	}
+								// Short-circuit when there is nothing to render. Without this
+								// guard the server returns html: '' for empty input and the
+								// preview region falls through to {@html ''} — visible
+								// outcome is the placeholder text staying put with no
+								// indication the button was clicked (dogfood ISSUE-004).
+								const content = editorContent ?? '';
+								if (content.trim().length === 0) {
+									previewHtml = '';
+									previewRendered = false;
+									previewError = 'Enter some Markdown content first.';
+									return;
+								}
 
-	const formData = new FormData();
-	formData.append('content', content);
+								const formData = new FormData();
+								formData.append('content', content);
 
-	try {
-		const result = await submitAction<{ html?: string }>('?/previewMarkdown', formData);
-		if (result.type === 'success') {
-			const html = typeof result.data.html === 'string' ? result.data.html : '';
-			previewHtml = html;
-			// Mark render success even when sanitization strips everything. A visible
-			// empty-state line is clearer than reverting to the pre-render placeholder,
-			// which made the button look broken.
-			previewRendered = true;
-			previewError = '';
-		} else if (result.type === 'failure') {
-			previewHtml = '';
-			previewRendered = false;
-			previewError = result.data.error ?? 'Failed to render Markdown';
-		} else if (result.type === 'error') {
-			previewHtml = '';
-			previewRendered = false;
-			previewError = result.error.message ?? 'Failed to render Markdown';
-		}
-	} catch (error) {
-		console.error('Failed to render Markdown preview:', error);
-		previewHtml = '';
-		previewRendered = false;
-		previewError = 'Failed to render Markdown';
-	}
-}}
+								try {
+									const result = await submitAction<{ html?: string }>(
+										'?/previewMarkdown',
+										formData
+									);
+									if (result.type === 'success') {
+										const html = typeof result.data.html === 'string' ? result.data.html : '';
+										previewHtml = html;
+										// Mark render success even when sanitization strips everything. A visible
+										// empty-state line is clearer than reverting to the pre-render placeholder,
+										// which made the button look broken.
+										previewRendered = true;
+										previewError = '';
+									} else if (result.type === 'failure') {
+										previewHtml = '';
+										previewRendered = false;
+										previewError = result.data.error ?? 'Failed to render Markdown';
+									} else if (result.type === 'error') {
+										previewHtml = '';
+										previewRendered = false;
+										previewError = result.error.message ?? 'Failed to render Markdown';
+									}
+								} catch (error) {
+									console.error('Failed to render Markdown preview:', error);
+									previewHtml = '';
+									previewRendered = false;
+									previewError = 'Failed to render Markdown';
+								}
+							}}
 						>
 							Update Preview
 						</Button>

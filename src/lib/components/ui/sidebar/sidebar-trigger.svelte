@@ -26,9 +26,9 @@ const sidebar = useSidebar();
 	class={cn('cn-sidebar-trigger tap-target', className)}
 	type="button"
 	onclick={(e) => {
-	onclick?.(e);
-	sidebar.toggle();
-}}
+		onclick?.(e);
+		sidebar.toggle();
+	}}
 	{...restProps}
 >
 	<PanelLeftIcon />

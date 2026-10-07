@@ -158,19 +158,19 @@ function handleCancelRedirect(): void {
 						method="POST"
 						action="?/lookupUser"
 						use:enhance={() => {
-	isLookingUp = true;
-	return async ({ update }) => {
-		try {
-			await update();
-		} finally {
-			isLookingUp = false;
-		}
-		if (form?.error) {
-			await tick();
-			usernameInput?.focus();
-		}
-	};
-}}
+							isLookingUp = true;
+							return async ({ update }) => {
+								try {
+									await update();
+								} finally {
+									isLookingUp = false;
+								}
+								if (form?.error) {
+									await tick();
+									usernameInput?.focus();
+								}
+							};
+						}}
 						class="username-form"
 						aria-busy={isLookingUp}
 					>
@@ -189,7 +189,9 @@ function handleCancelRedirect(): void {
 								autocapitalize="off"
 								spellcheck="false"
 								required
-								aria-describedby={form?.error ? 'username-help username-action-error' : 'username-help'}
+								aria-describedby={form?.error
+									? 'username-help username-action-error'
+									: 'username-help'}
 								aria-invalid={form?.error ? 'true' : undefined}
 								onblur={() => (usernameTouched = true)}
 							>
@@ -246,12 +248,12 @@ function handleCancelRedirect(): void {
 						href={data.loginHref}
 						class="view-button cta-link tap-target"
 						onclick={(e) => {
-	e.preventDefault();
-	handlePlexLogin();
-}}
+							e.preventDefault();
+							handlePlexLogin();
+						}}
 						onauxclick={(e) => {
-	e.preventDefault();
-}}
+							e.preventDefault();
+						}}
 					>
 						<span class="plex-icon" aria-hidden="true">&#9654;</span>
 						Sign in with Plex

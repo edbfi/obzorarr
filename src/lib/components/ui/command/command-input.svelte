@@ -19,12 +19,15 @@ let {
 		<CommandPrimitive.Input
 			{value}
 			data-slot="command-input"
-			class={cn('w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50', className)}
+			class={cn(
+				'w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50',
+				className
+			)}
 			{...restProps}
 		>
 			{#snippet child({
-	props
-})}
+				props
+			})}
 				<InputGroup.Input {...props} bind:value bind:ref />
 			{/snippet}
 		</CommandPrimitive.Input>

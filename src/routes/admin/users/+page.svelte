@@ -54,7 +54,9 @@ function markAvatarFailed(userId: number): void {
 							name="year"
 							class="year-selector"
 							disabled={data.availableYears.length === 1}
-							title={data.availableYears.length === 1 ? 'Only one year of data available' : undefined}
+							title={data.availableYears.length === 1
+								? 'Only one year of data available'
+								: undefined}
 							onchange={(e) => e.currentTarget.form?.requestSubmit()}
 						>
 							{#each data.availableYears as yr}
@@ -191,7 +193,9 @@ function markAvatarFailed(userId: number): void {
 										>
 										<SubmitButton
 											class={`toggle-button tap-target ${user.canUserControl ? 'enabled' : ''}`}
-											title={user.canUserControl ? 'Click to revoke control' : 'Click to grant control'}
+											title={user.canUserControl
+												? 'Click to revoke control'
+												: 'Click to grant control'}
 											aria-label={`Toggle share control for ${user.username} (currently ${user.canUserControl ? 'on' : 'off'})`}
 										>
 											{#snippet children()}
@@ -296,7 +300,9 @@ function markAvatarFailed(userId: number): void {
 									>
 									<SubmitButton
 										class={`toggle-button tap-target ${user.canUserControl ? 'enabled' : ''}`}
-										title={user.canUserControl ? 'Click to revoke control' : 'Click to grant control'}
+										title={user.canUserControl
+											? 'Click to revoke control'
+											: 'Click to grant control'}
 										aria-label={`Toggle share control for ${user.username} (currently ${user.canUserControl ? 'on' : 'off'})`}
 									>
 										{#snippet children()}

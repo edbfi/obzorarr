@@ -158,21 +158,21 @@ function handleLogoToggle(): void {
 				method="POST"
 				action="{data.currentUrl}?/toggleLogo"
 				use:enhance={() => {
-	handleLogoToggle();
-	return async ({ result, update }) => {
-		let payload: { showLogo?: boolean } | undefined;
-		if (result.type === 'success') {
-			payload = result.data as { showLogo?: boolean } | undefined;
-			if (typeof payload?.showLogo === 'boolean') {
-				showLogoOverride = payload.showLogo;
-			}
-		} else {
-			showLogoOverride = null;
-		}
-		await update();
-		showLogoOverride = null;
-	};
-}}
+					handleLogoToggle();
+					return async ({ result, update }) => {
+						let payload: { showLogo?: boolean } | undefined;
+						if (result.type === 'success') {
+							payload = result.data as { showLogo?: boolean } | undefined;
+							if (typeof payload?.showLogo === 'boolean') {
+								showLogoOverride = payload.showLogo;
+							}
+						} else {
+							showLogoOverride = null;
+						}
+						await update();
+						showLogoOverride = null;
+					};
+				}}
 			>
 				<input type="hidden" name="showLogo" value={!showLogo}>
 				<button type="submit" class="logo-toggle" title={showLogo ? 'Hide logo' : 'Show logo'}>

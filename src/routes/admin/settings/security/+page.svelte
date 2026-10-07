@@ -153,39 +153,41 @@ const applicableProviderGuides = $derived(
 					method="POST"
 					action="?/updateCsrfOrigin"
 					use:enhance={({ cancel }) => {
-	if (isSavingCsrf) {
-		cancel();
-		return;
-	}
-	isSavingCsrf = true;
-	csrfOriginError = undefined;
-	return async ({ result, update }) => {
-		try {
-			if (
-				result.type === 'failure' &&
-				result.data &&
-				(result.data as Record<string, unknown>).requireConfirmation
-			) {
-				const d = result.data as Record<string, unknown>;
-				pendingCsrfOrigin = String(d.attemptedOrigin ?? '');
-				pendingMismatchMessage = String(d.csrfMismatchMessage ?? '');
-				csrfMismatchDialogOpen = true;
-				csrfOriginError = undefined;
-			} else if (result.type === 'success' || result.type === 'failure') {
-				csrfOriginError =
-					result.type === 'failure'
-						? (result.data as { fieldErrors?: Record<string, string[] | undefined> })?.fieldErrors
-								?.csrfOrigin?.[0]
-						: undefined;
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await invalidateAll();
-		} finally {
-			isSavingCsrf = false;
-		}
-	};
-}}
+						if (isSavingCsrf) {
+							cancel();
+							return;
+						}
+						isSavingCsrf = true;
+						csrfOriginError = undefined;
+						return async ({ result, update }) => {
+							try {
+								if (
+									result.type === 'failure' &&
+									result.data &&
+									(result.data as Record<string, unknown>).requireConfirmation
+								) {
+									const d = result.data as Record<string, unknown>;
+									pendingCsrfOrigin = String(d.attemptedOrigin ?? '');
+									pendingMismatchMessage = String(d.csrfMismatchMessage ?? '');
+									csrfMismatchDialogOpen = true;
+									csrfOriginError = undefined;
+								} else if (result.type === 'success' || result.type === 'failure') {
+									csrfOriginError =
+										result.type === 'failure'
+											? (result.data as { fieldErrors?: Record<string, string[] | undefined> })
+													?.fieldErrors?.csrfOrigin?.[0]
+											: undefined;
+									handleFormToast(
+										result.data as { success?: boolean; message?: string; error?: string }
+									);
+								}
+								await update({ reset: false });
+								if (result.type === 'success') await invalidateAll();
+							} finally {
+								isSavingCsrf = false;
+							}
+						};
+					}}
 					class="space-y-4"
 				>
 					<div class="space-y-2">
@@ -219,21 +221,23 @@ const applicableProviderGuides = $derived(
 					method="POST"
 					action="?/testCsrfProtection"
 					use:enhance={({ cancel }) => {
-	if (isTestingCsrf) {
-		cancel();
-		return;
-	}
-	isTestingCsrf = true;
-	return async ({ result }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-		} finally {
-			isTestingCsrf = false;
-		}
-	};
-}}
+						if (isTestingCsrf) {
+							cancel();
+							return;
+						}
+						isTestingCsrf = true;
+						return async ({ result }) => {
+							try {
+								if (result.type === 'success' || result.type === 'failure') {
+									handleFormToast(
+										result.data as { success?: boolean; message?: string; error?: string }
+									);
+								}
+							} finally {
+								isTestingCsrf = false;
+							}
+						};
+					}}
 				>
 					<Button type="submit" variant="outline" class="tap-target" disabled={isTestingCsrf}>
 						{isTestingCsrf ? 'Testing…' : 'Test CSRF protection'}
@@ -245,24 +249,26 @@ const applicableProviderGuides = $derived(
 						method="POST"
 						action="?/toggleCsrfSkip"
 						use:enhance={({ cancel, formData }) => {
-	if (isClearingCsrfSkip) {
-		cancel();
-		return;
-	}
-	isClearingCsrfSkip = true;
-	formData.set('enabled', security.csrfOriginSkipped ? 'false' : 'true');
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await invalidateAll();
-		} finally {
-			isClearingCsrfSkip = false;
-		}
-	};
-}}
+							if (isClearingCsrfSkip) {
+								cancel();
+								return;
+							}
+							isClearingCsrfSkip = true;
+							formData.set('enabled', security.csrfOriginSkipped ? 'false' : 'true');
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success' || result.type === 'failure') {
+										handleFormToast(
+											result.data as { success?: boolean; message?: string; error?: string }
+										);
+									}
+									await update({ reset: false });
+									if (result.type === 'success') await invalidateAll();
+								} finally {
+									isClearingCsrfSkip = false;
+								}
+							};
+						}}
 					>
 						<Button
 							type="submit"
@@ -280,23 +286,25 @@ const applicableProviderGuides = $derived(
 						method="POST"
 						action="?/resetCsrfWarning"
 						use:enhance={({ cancel }) => {
-	if (isResetingWarning) {
-		cancel();
-		return;
-	}
-	isResetingWarning = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await invalidateAll();
-		} finally {
-			isResetingWarning = false;
-		}
-	};
-}}
+							if (isResetingWarning) {
+								cancel();
+								return;
+							}
+							isResetingWarning = true;
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success' || result.type === 'failure') {
+										handleFormToast(
+											result.data as { success?: boolean; message?: string; error?: string }
+										);
+									}
+									await update({ reset: false });
+									if (result.type === 'success') await invalidateAll();
+								} finally {
+									isResetingWarning = false;
+								}
+							};
+						}}
 					>
 						<Button type="submit" variant="outline" class="tap-target" disabled={isResetingWarning}>
 							{isResetingWarning ? 'Resetting…' : 'Re-enable CSRF warning banner'}
@@ -370,7 +378,9 @@ const applicableProviderGuides = $derived(
 					aria-controls="reverse-proxy-diagnostic-details"
 				>
 					<span
-						>{showDiagnosticDetails ? 'Hide technical details' : 'Show technical details and proxy setup'}</span
+						>{showDiagnosticDetails
+							? 'Hide technical details'
+							: 'Show technical details and proxy setup'}</span
 					>
 					<ChevronDownIcon
 						class="size-4 chevron"
@@ -386,8 +396,8 @@ const applicableProviderGuides = $derived(
 								<span class="fact-label">Present headers</span
 								><span class="fact-value"
 									>{diagnostic.facts.forwardedHeaders.present.length
-	? diagnostic.facts.forwardedHeaders.present.join(', ')
-	: 'None'}</span
+										? diagnostic.facts.forwardedHeaders.present.join(', ')
+										: 'None'}</span
 								>
 							</div>
 							<div>
@@ -440,16 +450,16 @@ const applicableProviderGuides = $derived(
 												</div>
 												<span class="copy-status" role="status" aria-live="polite">
 													{copiedGuideId === guide.id
-	? `${guide.label} configuration copied`
-	: copiedGuideId === `error:${guide.id}`
-		? `Could not copy the ${guide.label} configuration`
-		: ''}
+														? `${guide.label} configuration copied`
+														: copiedGuideId === `error:${guide.id}`
+															? `Could not copy the ${guide.label} configuration`
+															: ''}
 												</span>
 											{/if}
 											<a href={documentationForGuide(guide).url} target="_blank" rel="noreferrer">
 												{guide.id === 'other'
-	? 'Open Obzorarr configuration guidance'
-	: `Open official ${guide.label} documentation`}
+													? 'Open Obzorarr configuration guidance'
+													: `Open official ${guide.label} documentation`}
 											</a>
 										</div>
 									</details>
@@ -470,8 +480,8 @@ const applicableProviderGuides = $derived(
 								aria-busy={diagnosticStatus === 'checking'}
 							>
 								{diagnosticStatus === 'checking'
-	? REVERSE_PROXY_COPY.rerunButtonInProgress
-	: REVERSE_PROXY_COPY.rerunButton}
+									? REVERSE_PROXY_COPY.rerunButtonInProgress
+									: REVERSE_PROXY_COPY.rerunButton}
 							</Button>
 						</div>
 					</div>
@@ -495,21 +505,23 @@ const applicableProviderGuides = $derived(
 				method="POST"
 				action="?/updateCsrfOrigin"
 				use:enhance={() => {
-	isConfirmingCsrfMismatch = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') await invalidateAll();
-		} finally {
-			isConfirmingCsrfMismatch = false;
-			csrfMismatchDialogOpen = false;
-			pendingCsrfOrigin = null;
-		}
-	};
-}}
+					isConfirmingCsrfMismatch = true;
+					return async ({ result, update }) => {
+						try {
+							if (result.type === 'success' || result.type === 'failure') {
+								handleFormToast(
+									result.data as { success?: boolean; message?: string; error?: string }
+								);
+							}
+							await update({ reset: false });
+							if (result.type === 'success') await invalidateAll();
+						} finally {
+							isConfirmingCsrfMismatch = false;
+							csrfMismatchDialogOpen = false;
+							pendingCsrfOrigin = null;
+						}
+					};
+				}}
 				style="display: contents;"
 			>
 				<input type="hidden" name="csrfOrigin" value={pendingCsrfOrigin ?? ''}>

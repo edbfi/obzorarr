@@ -12,6 +12,6 @@ let {
 <AccordionPrimitive.Item
 	bind:ref
 	data-slot="accordion-item"
-	class={cn("not-last:border-b", className)}
+	class={cn('not-last:border-b', className)}
 	{...restProps}
 />

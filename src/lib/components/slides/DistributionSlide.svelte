@@ -276,7 +276,9 @@ function formatPlays(plays: number): string {
 												class="bar"
 												style="height: {item.percentage}%"
 												role="img"
-												aria-label="{item.labelFull}: {formatMinutesDetailed(item.minutes)}, {formatPlays(item.plays)}"
+												aria-label="{item.labelFull}: {formatMinutesDetailed(
+													item.minutes
+												)}, {formatPlays(item.plays)}"
 											>
 												<div class="bar-highlight"></div>
 											</div>
@@ -315,7 +317,9 @@ function formatPlays(plays: number): string {
 												class="bar"
 												style="height: {item.percentage}%"
 												role="img"
-												aria-label="{item.labelFull}: {formatMinutesDetailed(item.minutes)}, {formatPlays(item.plays)}"
+												aria-label="{item.labelFull}: {formatMinutesDetailed(
+													item.minutes
+												)}, {formatPlays(item.plays)}"
 											>
 												<div class="bar-highlight"></div>
 											</div>
@@ -351,8 +355,8 @@ function formatPlays(plays: number): string {
 							aria-selected={mobileView === 'monthly'}
 							class:active={mobileView === 'monthly'}
 							onclick={() => {
-	mobileView = 'monthly';
-}}
+								mobileView = 'monthly';
+							}}
 						>
 							Months
 						</button>
@@ -362,8 +366,8 @@ function formatPlays(plays: number): string {
 							aria-selected={mobileView === 'hourly'}
 							class:active={mobileView === 'hourly'}
 							onclick={() => {
-	mobileView = 'hourly';
-}}
+								mobileView = 'hourly';
+							}}
 						>
 							Hours
 						</button>
@@ -385,7 +389,9 @@ function formatPlays(plays: number): string {
 										class="bar"
 										style="height: {item.percentage}%"
 										role="img"
-										aria-label="{item.labelFull}: {formatMinutesDetailed(item.minutes)}, {formatPlays(item.plays)}"
+										aria-label="{item.labelFull}: {formatMinutesDetailed(
+											item.minutes
+										)}, {formatPlays(item.plays)}"
 									>
 										<div class="bar-highlight"></div>
 									</div>

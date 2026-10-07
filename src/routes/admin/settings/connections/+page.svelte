@@ -99,29 +99,32 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 				method="POST"
 				action="?/updateApiConfig"
 				use:enhance={({ cancel }) => {
-	if (isSavingPlex) {
-		cancel();
-		return;
-	}
-	isSavingPlex = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') {
-				// The sibling panel can save next without waiting for invalidateAll.
-				const freshVersion = (result.data as { apiConfigVersion?: string })?.apiConfigVersion;
-				if (freshVersion) apiConfigVersion = freshVersion;
-				plexTokenInput = '';
-				await invalidateAll();
-			}
-		} finally {
-			isSavingPlex = false;
-		}
-	};
-}}
+					if (isSavingPlex) {
+						cancel();
+						return;
+					}
+					isSavingPlex = true;
+					return async ({ result, update }) => {
+						try {
+							if (result.type === 'success' || result.type === 'failure') {
+								handleFormToast(
+									result.data as { success?: boolean; message?: string; error?: string }
+								);
+							}
+							await update({ reset: false });
+							if (result.type === 'success') {
+								// The sibling panel can save next without waiting for invalidateAll.
+								const freshVersion = (result.data as { apiConfigVersion?: string })
+									?.apiConfigVersion;
+								if (freshVersion) apiConfigVersion = freshVersion;
+								plexTokenInput = '';
+								await invalidateAll();
+							}
+						} finally {
+							isSavingPlex = false;
+						}
+					};
+				}}
 				class="space-y-4"
 			>
 				<div class="space-y-2">
@@ -196,27 +199,32 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					method="POST"
 					action="?/testPlexConnection"
 					use:enhance={({ cancel, formData }) => {
-	if (isTestingPlex) {
-		cancel();
-		return;
-	}
-	isTestingPlex = true;
-	// Connection tests should exercise unsaved edits, not only loaded data.
-	// Mirror the token pattern: skip the set when ENV-locked so the
-	// server-side `submittedUrl || storedUrl` fallback uses the stored URL.
-	if (!plexServerUrlLocked) formData.set('plexServerUrl', plexServerUrl);
-	if (plexTokenInput) formData.set('plexToken', plexTokenInput);
-	formData.set('plexAllowInsecureLocalHttp', plexAllowInsecureLocalHttp ? 'true' : 'false');
-	return async ({ result }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-		} finally {
-			isTestingPlex = false;
-		}
-	};
-}}
+						if (isTestingPlex) {
+							cancel();
+							return;
+						}
+						isTestingPlex = true;
+						// Connection tests should exercise unsaved edits, not only loaded data.
+						// Mirror the token pattern: skip the set when ENV-locked so the
+						// server-side `submittedUrl || storedUrl` fallback uses the stored URL.
+						if (!plexServerUrlLocked) formData.set('plexServerUrl', plexServerUrl);
+						if (plexTokenInput) formData.set('plexToken', plexTokenInput);
+						formData.set(
+							'plexAllowInsecureLocalHttp',
+							plexAllowInsecureLocalHttp ? 'true' : 'false'
+						);
+						return async ({ result }) => {
+							try {
+								if (result.type === 'success' || result.type === 'failure') {
+									handleFormToast(
+										result.data as { success?: boolean; message?: string; error?: string }
+									);
+								}
+							} finally {
+								isTestingPlex = false;
+							}
+						};
+					}}
 				>
 					<Button type="submit" variant="outline" class="tap-target" disabled={isTestingPlex}>
 						<FlaskConicalIcon />
@@ -257,44 +265,45 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 				method="POST"
 				action="?/updateApiConfig"
 				use:enhance={({ cancel }) => {
-	if (isSavingOpenai) {
-		cancel();
-		return;
-	}
-	isSavingOpenai = true;
-	openaiBaseUrlError = undefined;
-	openaiModelError = undefined;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				const data = result.data as {
-					success?: boolean;
-					message?: string;
-					error?: string;
-					fieldErrors?: Record<string, string[] | undefined>;
-					apiConfigVersion?: string;
-				};
-				if (result.type === 'failure') {
-					openaiBaseUrlError = data?.fieldErrors?.openaiBaseUrl?.[0];
-					openaiModelError = data?.fieldErrors?.openaiModel?.[0];
-				} else {
+					if (isSavingOpenai) {
+						cancel();
+						return;
+					}
+					isSavingOpenai = true;
 					openaiBaseUrlError = undefined;
 					openaiModelError = undefined;
-				}
-				handleFormToast(data);
-			}
-			await update({ reset: false });
-			if (result.type === 'success') {
-				const freshVersion = (result.data as { apiConfigVersion?: string })?.apiConfigVersion;
-				if (freshVersion) apiConfigVersion = freshVersion;
-				openaiApiKeyInput = '';
-				await invalidateAll();
-			}
-		} finally {
-			isSavingOpenai = false;
-		}
-	};
-}}
+					return async ({ result, update }) => {
+						try {
+							if (result.type === 'success' || result.type === 'failure') {
+								const data = result.data as {
+									success?: boolean;
+									message?: string;
+									error?: string;
+									fieldErrors?: Record<string, string[] | undefined>;
+									apiConfigVersion?: string;
+								};
+								if (result.type === 'failure') {
+									openaiBaseUrlError = data?.fieldErrors?.openaiBaseUrl?.[0];
+									openaiModelError = data?.fieldErrors?.openaiModel?.[0];
+								} else {
+									openaiBaseUrlError = undefined;
+									openaiModelError = undefined;
+								}
+								handleFormToast(data);
+							}
+							await update({ reset: false });
+							if (result.type === 'success') {
+								const freshVersion = (result.data as { apiConfigVersion?: string })
+									?.apiConfigVersion;
+								if (freshVersion) apiConfigVersion = freshVersion;
+								openaiApiKeyInput = '';
+								await invalidateAll();
+							}
+						} finally {
+							isSavingOpenai = false;
+						}
+					};
+				}}
 				class="space-y-4"
 			>
 				<div class="space-y-2">
@@ -376,24 +385,26 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 					method="POST"
 					action="?/testAIConnection"
 					use:enhance={({ cancel, formData }) => {
-	if (isTestingOpenai) {
-		cancel();
-		return;
-	}
-	isTestingOpenai = true;
-	if (openaiApiKeyInput) formData.set('openaiApiKey', openaiApiKeyInput);
-	formData.set('openaiBaseUrl', openaiBaseUrl);
-	formData.set('openaiModel', openaiModel);
-	return async ({ result }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-		} finally {
-			isTestingOpenai = false;
-		}
-	};
-}}
+						if (isTestingOpenai) {
+							cancel();
+							return;
+						}
+						isTestingOpenai = true;
+						if (openaiApiKeyInput) formData.set('openaiApiKey', openaiApiKeyInput);
+						formData.set('openaiBaseUrl', openaiBaseUrl);
+						formData.set('openaiModel', openaiModel);
+						return async ({ result }) => {
+							try {
+								if (result.type === 'success' || result.type === 'failure') {
+									handleFormToast(
+										result.data as { success?: boolean; message?: string; error?: string }
+									);
+								}
+							} finally {
+								isTestingOpenai = false;
+							}
+						};
+					}}
 				>
 					<Button type="submit" variant="outline" class="tap-target" disabled={isTestingOpenai}>
 						<FlaskConicalIcon />
@@ -406,25 +417,27 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 						method="POST"
 						action="?/clearOpenaiKey"
 						use:enhance={({ cancel }) => {
-	if (isClearingOpenaiKey) {
-		cancel();
-		return;
-	}
-	isClearingOpenaiKey = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') {
-				await invalidateAll();
-			}
-		} finally {
-			isClearingOpenaiKey = false;
-		}
-	};
-}}
+							if (isClearingOpenaiKey) {
+								cancel();
+								return;
+							}
+							isClearingOpenaiKey = true;
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success' || result.type === 'failure') {
+										handleFormToast(
+											result.data as { success?: boolean; message?: string; error?: string }
+										);
+									}
+									await update({ reset: false });
+									if (result.type === 'success') {
+										await invalidateAll();
+									}
+								} finally {
+									isClearingOpenaiKey = false;
+								}
+							};
+						}}
 					>
 						<Button
 							type="submit"
@@ -443,26 +456,28 @@ const showOpenaiKeyWarning = $derived(!data.hasEffectiveOpenAIKey && !openaiApiK
 						method="POST"
 						action="?/clearOpenaiModel"
 						use:enhance={({ cancel }) => {
-	if (isClearingOpenaiModel) {
-		cancel();
-		return;
-	}
-	isClearingOpenaiModel = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success' || result.type === 'failure') {
-				handleFormToast(result.data as { success?: boolean; message?: string; error?: string });
-			}
-			await update({ reset: false });
-			if (result.type === 'success') {
-				openaiModel = '';
-				await invalidateAll();
-			}
-		} finally {
-			isClearingOpenaiModel = false;
-		}
-	};
-}}
+							if (isClearingOpenaiModel) {
+								cancel();
+								return;
+							}
+							isClearingOpenaiModel = true;
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success' || result.type === 'failure') {
+										handleFormToast(
+											result.data as { success?: boolean; message?: string; error?: string }
+										);
+									}
+									await update({ reset: false });
+									if (result.type === 'success') {
+										openaiModel = '';
+										await invalidateAll();
+									}
+								} finally {
+									isClearingOpenaiModel = false;
+								}
+							};
+						}}
 					>
 						<Button
 							type="submit"

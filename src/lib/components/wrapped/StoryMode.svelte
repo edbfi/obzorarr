@@ -437,9 +437,9 @@ function handleSlideAnimationComplete(): void {}
 				type="button"
 				class="nav-arrow nav-arrow-prev"
 				onclick={(e) => {
-	e.stopPropagation();
-	goToPrevious();
-}}
+					e.stopPropagation();
+					goToPrevious();
+				}}
 				aria-label="Previous slide"
 			>
 				<svg
@@ -458,9 +458,9 @@ function handleSlideAnimationComplete(): void {}
 				type="button"
 				class="nav-arrow nav-arrow-next"
 				onclick={(e) => {
-	e.stopPropagation();
-	goToNext();
-}}
+					e.stopPropagation();
+					goToNext();
+				}}
 				aria-label="Next slide"
 			>
 				<svg
@@ -481,9 +481,9 @@ function handleSlideAnimationComplete(): void {}
 			type="button"
 			class="close-button"
 			onclick={(e) => {
-	e.stopPropagation();
-	onClose?.();
-}}
+				e.stopPropagation();
+				onClose?.();
+			}}
 			aria-label="Close presentation"
 		>
 			<svg

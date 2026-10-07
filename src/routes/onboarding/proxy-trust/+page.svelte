@@ -236,16 +236,16 @@ async function copyGuide(id: string, text: string) {
 											</Button>
 											<span class="copy-status" role="status" aria-live="polite">
 												{copiedGuide === guide.id
-	? `${guide.label} configuration copied`
-	: copiedGuide === `error:${guide.id}`
-		? `Could not copy the ${guide.label} configuration`
-		: ''}
+													? `${guide.label} configuration copied`
+													: copiedGuide === `error:${guide.id}`
+														? `Could not copy the ${guide.label} configuration`
+														: ''}
 											</span>
 										{/if}
 										<a href={documentationForGuide(guide).url} target="_blank" rel="noreferrer">
 											{guide.id === 'other'
-	? 'Open Obzorarr configuration guidance'
-	: `Open official ${guide.label} documentation`}
+												? 'Open Obzorarr configuration guidance'
+												: `Open official ${guide.label} documentation`}
 										</a>
 									</div>
 								</details>

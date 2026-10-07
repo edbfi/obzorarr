@@ -23,7 +23,7 @@ let {
 <ScrollAreaPrimitive.Root
 	bind:ref
 	data-slot="scroll-area"
-	class={cn("relative", className)}
+	class={cn('relative', className)}
 	{...restProps}
 >
 	<ScrollAreaPrimitive.Viewport
@@ -33,10 +33,10 @@ let {
 	>
 		{@render children?.()}
 	</ScrollAreaPrimitive.Viewport>
-	{#if orientation === "vertical" || orientation === "both"}
+	{#if orientation === 'vertical' || orientation === 'both'}
 		<Scrollbar orientation="vertical" class={scrollbarYClasses} />
 	{/if}
-	{#if orientation === "horizontal" || orientation === "both"}
+	{#if orientation === 'horizontal' || orientation === 'both'}
 		<Scrollbar orientation="horizontal" class={scrollbarXClasses} />
 	{/if}
 	<ScrollAreaPrimitive.Corner />

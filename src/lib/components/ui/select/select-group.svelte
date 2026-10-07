@@ -12,6 +12,6 @@ let {
 <SelectPrimitive.Group
 	bind:ref
 	data-slot="select-group"
-	class={cn("scroll-my-1 p-1", className)}
+	class={cn('scroll-my-1 p-1', className)}
 	{...restProps}
 />
