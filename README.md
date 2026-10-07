@@ -383,11 +383,12 @@ header when `ORIGIN` is set.
 fragment or user name and password stop Obzorarr at startup with an error that names the expected
 form (it never prints the value).
 
-With `ORIGIN` set, `bun start` (`scripts/serve.ts`) listens on `HOST`/`PORT` and passes requests to the
-SvelteKit server over a private Unix socket, supplying `ORIGIN` itself; headers a client sends cannot
-change it. Start Obzorarr through `bun start` (or the container's command): `build/index.js` started on
-its own checks `ORIGIN` and uses it as the CSRF origin, but cannot make it the address links and
-cookies are built from. `IDLE_TIMEOUT` keeps working as the client idle timeout in seconds (it maps to
+With `ORIGIN` set, `scripts/serve.ts` listens on `HOST`/`PORT` and passes requests to the SvelteKit
+server over a private Unix socket, supplying `ORIGIN` itself; headers a client sends cannot change it.
+Start Obzorarr through `scripts/serve.ts` (`NODE_ENV=production bun scripts/serve.ts`, see "Local
+development and production startup", or the container's command): `build/index.js` started on its
+own checks `ORIGIN` and uses it as the CSRF origin, but cannot make it the address links and cookies
+are built from. `IDLE_TIMEOUT` keeps working as the client idle timeout in seconds (it maps to
 `CONNECTION_IDLE_TIMEOUT`, which also works); event streams are exempt from it.
 
 **Client addresses behind a proxy.** Behind a reverse proxy, every request comes from the proxy's
@@ -467,11 +468,19 @@ Use the Bun version pinned in `package.json` (`packageManager`) for development,
 builds and production. Install dependencies with `bun install --frozen-lockfile`,
 then use `bun run dev` for development.
 
-For production, run `bun run build` followed by `bun run start`. The start script
-sets `NODE_ENV=production` and runs `scripts/serve.ts` with Bun, which starts the generated
-`build/index.js` (directly without `ORIGIN`, behind the front with it; see "Running Behind a
-Reverse Proxy"). Keep `build/`, `scripts/serve.ts`, production `node_modules/`, `package.json`
-and `drizzle/` together, and retain the configured persistent database path.
+For production, build and then start the server directly:
+
+```bash
+bun run build
+NODE_ENV=production bun scripts/serve.ts
+```
+
+Run it directly. With Bun 1.4.2's default shell, `bun run start` and `bun start` deliver one Ctrl+C
+twice, which skips the `SHUTDOWN_TIMEOUT` drain and stops at once. The `start` script runs the same
+command. `scripts/serve.ts` starts the generated `build/index.js` (directly without `ORIGIN`,
+behind the front with it; see "Running Behind a Reverse Proxy"). Keep `build/`, `scripts/serve.ts`,
+production `node_modules/`, `package.json` and `drizzle/` together, and retain the configured
+persistent database path.
 
 Two more server settings, with their defaults:
 
@@ -480,8 +489,11 @@ Two more server settings, with their defaults:
   closes what is left. With `ORIGIN` set, the process exits at that deadline even if Obzorarr is
   still waiting on Plex for a request. In a container, keep it below the stop timeout (Docker's
   default is 10 seconds) or raise both; otherwise the container is killed before Obzorarr has shut
-  down cleanly. A second signal stops it at once. With `ORIGIN` set, closing the terminal it runs
-  in (`SIGHUP`) shuts it down the same way, and a repeated `SIGHUP` is not a second signal.
+  down cleanly. With `NODE_ENV=production bun scripts/serve.ts`, a second signal stops it at once;
+  under `bun run start` or `bun start`, a single Ctrl+C (or a signal sent to the whole process
+  group) already arrives twice and stops it at once without the drain. With `ORIGIN` set, closing
+  the terminal it runs in (`SIGHUP`) shuts it down the same way, and a repeated `SIGHUP` is not a
+  second signal (under `bun run start` the hangup arrives twice; it still drains).
 - `BODY_SIZE_LIMIT=512K`: the largest request body accepted (`K`, `M` and `G` suffixes; `Infinity`
   turns the limit off). Obzorarr has no uploads, so the default is enough; larger requests get
   `413`.
