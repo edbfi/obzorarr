@@ -23,7 +23,10 @@ let {
 	)}
 	{...restProps}
 >
-	{#snippet children({ selected, highlighted })}
+	{#snippet children({
+		selected,
+		highlighted
+	})}
 		<span class="absolute end-2 flex size-3.5 items-center justify-center">
 			{#if selected}
 				<CheckIcon class="cn-select-item-indicator-icon" />

@@ -19,8 +19,8 @@ let isClaiming = $state(false);
 		action="?/claimInstance"
 		class="claim-form"
 		onsubmit={() => {
-	isClaiming = true;
-}}
+			isClaiming = true;
+		}}
 	>
 		<div class="icon-wrap">
 			<KeyRound size={36} strokeWidth={1.75} />

@@ -12,7 +12,9 @@ let { form }: { form: SuperForm<FormAccessibilityFixtureData> } = $props();
 
 <Form.Field {form} name="timezone" description>
 	<Form.Control>
-		{#snippet children({ props })}
+		{#snippet children({
+			props
+		})}
 			<Form.Label>Timezone</Form.Label>
 			<input type="text" {...props}>
 		{/snippet}
@@ -23,7 +25,10 @@ let { form }: { form: SuperForm<FormAccessibilityFixtureData> } = $props();
 
 <Form.Field {form} name="shareMode">
 	<Form.Control>
-		{#snippet children({ props, labelId })}
+		{#snippet children({
+			props,
+			labelId
+		})}
 			<Form.Label>Share mode</Form.Label>
 			<RadioGroup value="public" {...props} aria-labelledby={labelId}>
 				<RadioGroupItem value="public" aria-label="Public" />
@@ -36,7 +41,9 @@ let { form }: { form: SuperForm<FormAccessibilityFixtureData> } = $props();
 
 <Form.Field {form} name="enabled">
 	<Form.Control>
-		{#snippet children({ props })}
+		{#snippet children({
+			props
+		})}
 			<input
 				type="checkbox"
 				id={props.id}

@@ -195,19 +195,19 @@ function getLogoModeDescription(): string {
 						method="POST"
 						action="?/updateShareMode"
 						use:enhance={({ cancel }) => {
-	if (isUpdating) {
-		cancel();
-		return;
-	}
-	isUpdating = true;
-	return async ({ result, update }) => {
-		try {
-			await update({ reset: false });
-		} finally {
-			isUpdating = false;
-		}
-	};
-}}
+							if (isUpdating) {
+								cancel();
+								return;
+							}
+							isUpdating = true;
+							return async ({ result, update }) => {
+								try {
+									await update({ reset: false });
+								} finally {
+									isUpdating = false;
+								}
+							};
+						}}
 						class="share-form"
 					>
 						<div class="privacy-card-grid three-col">
@@ -373,10 +373,10 @@ function getLogoModeDescription(): string {
 								<span class="mode-badge"
 									>{getShareIcon(data.shareSettings.mode)}
 									{data.shareSettings.mode === 'private-oauth'
-	? 'Server Members Only'
-	: data.shareSettings.mode === 'private-link'
-		? 'Private Link'
-		: 'Public'}</span
+										? 'Server Members Only'
+										: data.shareSettings.mode === 'private-link'
+											? 'Private Link'
+											: 'Public'}</span
 								>
 							</p>
 							<!-- DF-007: explain WHY this control is locked — the admin's global
@@ -448,16 +448,16 @@ function getLogoModeDescription(): string {
 						method="POST"
 						action="?/updateLogoPreference"
 						use:enhance={({ cancel }) => {
-	if (isUpdating) {
-		cancel();
-		return;
-	}
-	isUpdating = true;
-	return async ({ update }) => {
-		await update();
-		isUpdating = false;
-	};
-}}
+							if (isUpdating) {
+								cancel();
+								return;
+							}
+							isUpdating = true;
+							return async ({ update }) => {
+								await update();
+								isUpdating = false;
+							};
+						}}
 						class="logo-form"
 					>
 						<div
@@ -598,35 +598,38 @@ function getLogoModeDescription(): string {
 					method="POST"
 					action="?/regenerateToken"
 					use:enhance={({ cancel }) => {
-	if (isRegenerating) {
-		cancel();
-		return;
-	}
-	isRegenerating = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success') {
-				const payload = (result.data ?? {}) as RegenerateTokenActionData;
-				if (payload.action === 'regenerateToken' && typeof payload.wrappedHref === 'string') {
-					wrappedHrefOverride = payload.wrappedHref;
-				}
-			} else if (result.type === 'error') {
-				handleFormToast({
-					error: result.error?.message ?? 'Could not regenerate the share link.'
-				});
-			}
+						if (isRegenerating) {
+							cancel();
+							return;
+						}
+						isRegenerating = true;
+						return async ({ result, update }) => {
+							try {
+								if (result.type === 'success') {
+									const payload = (result.data ?? {}) as RegenerateTokenActionData;
+									if (
+										payload.action === 'regenerateToken' &&
+										typeof payload.wrappedHref === 'string'
+									) {
+										wrappedHrefOverride = payload.wrappedHref;
+									}
+								} else if (result.type === 'error') {
+									handleFormToast({
+										error: result.error?.message ?? 'Could not regenerate the share link.'
+									});
+								}
 
-			await update({ reset: result.type !== 'failure' });
+								await update({ reset: result.type !== 'failure' });
 
-			if (result.type === 'success') {
-				regenerateDialogOpen = false;
-				await invalidateAll();
-			}
-		} finally {
-			isRegenerating = false;
-		}
-	};
-}}
+								if (result.type === 'success') {
+									regenerateDialogOpen = false;
+									await invalidateAll();
+								}
+							} finally {
+								isRegenerating = false;
+							}
+						};
+					}}
 					style="display: contents;"
 				>
 					<AlertDialog.Action type="submit" disabled={isRegenerating}>

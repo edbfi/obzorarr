@@ -415,33 +415,33 @@ $effect(() => {
 					method="POST"
 					action="?/updateShareMode"
 					use:enhance={() => {
-	isUpdating = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success') {
-				applyShareActionData(result.data);
-				if (await navigateAfterTokenRouteUpdate(result.data)) return;
-			} else {
-				if (result.type === 'failure') {
-					applyShareActionData(result.data);
-				} else {
-					restoreLocalShareState();
-				}
-				try {
-					await invalidateAll();
-				} catch (error) {
-					console.warn('Failed to refresh share data after share mode update:', error);
-				}
-			}
-			// DF-11: reset:false keeps the native <form> from reverting the
-			// radios to their authored `checked` attribute for a frame, which
-			// flashed the selection off before the optimistic localMode re-applied.
-			await update({ reset: false });
-		} finally {
-			isUpdating = false;
-		}
-	};
-}}
+						isUpdating = true;
+						return async ({ result, update }) => {
+							try {
+								if (result.type === 'success') {
+									applyShareActionData(result.data);
+									if (await navigateAfterTokenRouteUpdate(result.data)) return;
+								} else {
+									if (result.type === 'failure') {
+										applyShareActionData(result.data);
+									} else {
+										restoreLocalShareState();
+									}
+									try {
+										await invalidateAll();
+									} catch (error) {
+										console.warn('Failed to refresh share data after share mode update:', error);
+									}
+								}
+								// DF-11: reset:false keeps the native <form> from reverting the
+								// radios to their authored `checked` attribute for a frame, which
+								// flashed the selection off before the optimistic localMode re-applied.
+								await update({ reset: false });
+							} finally {
+								isUpdating = false;
+							}
+						};
+					}}
 				>
 					<div class="mode-options" role="radiogroup" aria-labelledby="visibility-label">
 						{#each availableModes as mode}
@@ -514,24 +514,24 @@ $effect(() => {
 						method="POST"
 						action="?/regenerateToken"
 						use:enhance={() => {
-	isUpdating = true;
-	return async ({ result, update }) => {
-		try {
-			if (result.type === 'success') {
-				applyShareActionData(result.data);
-				if (await navigateAfterTokenRouteUpdate(result.data)) return;
-			} else {
-				restoreLocalShareState();
-			}
-			// DF-11: reset:false keeps the native <form> from reverting the
-			// radios to their authored `checked` attribute for a frame, which
-			// flashed the selection off before the optimistic localMode re-applied.
-			await update({ reset: false });
-		} finally {
-			isUpdating = false;
-		}
-	};
-}}
+							isUpdating = true;
+							return async ({ result, update }) => {
+								try {
+									if (result.type === 'success') {
+										applyShareActionData(result.data);
+										if (await navigateAfterTokenRouteUpdate(result.data)) return;
+									} else {
+										restoreLocalShareState();
+									}
+									// DF-11: reset:false keeps the native <form> from reverting the
+									// radios to their authored `checked` attribute for a frame, which
+									// flashed the selection off before the optimistic localMode re-applied.
+									await update({ reset: false });
+								} finally {
+									isUpdating = false;
+								}
+							};
+						}}
 						class="regenerate-form"
 					>
 						<button type="submit" class="btn-link" disabled={controlsDisabled}>

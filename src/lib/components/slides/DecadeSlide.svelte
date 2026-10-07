@@ -193,196 +193,196 @@ $effect(() => {
 </BaseSlide>
 
 <style>
+.content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 1.5rem;
+	z-index: 1;
+	width: 100%;
+	max-width: var(--content-max-md, 700px);
+}
+
+.title {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: oklch(var(--primary));
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
+}
+
+.chart-container {
+	width: 100%;
+	padding: 1.5rem;
+	background: var(--slide-glass-bg);
+	backdrop-filter: blur(var(--slide-glass-blur, 20px));
+	-webkit-backdrop-filter: blur(var(--slide-glass-blur, 20px));
+	border: 1px solid var(--slide-glass-border);
+	border-radius: calc(var(--radius) * 2);
+}
+
+.timeline {
+	display: flex;
+	justify-content: center;
+	height: 160px;
+	gap: 0.5rem;
+}
+
+.bar-wrapper {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	flex: 1;
+	max-width: 60px;
+	height: 100%;
+}
+
+.bar-track {
+	flex: 1;
+	width: 100%;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+}
+
+.bar {
+	width: 100%;
+	background: linear-gradient(
+		180deg,
+		var(--decade-color),
+		color-mix(in srgb, var(--decade-color) 60%, transparent)
+	);
+	border-radius: var(--radius) var(--radius) 0 0;
+	transform-origin: bottom center;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 0.5rem;
+	transition: filter 0.3s ease;
+	min-height: 10px;
+}
+
+.bar:hover {
+	filter: brightness(1.2);
+}
+
+.bar.top {
+	box-shadow: 0 0 20px color-mix(in srgb, var(--decade-color) 50%, transparent);
+}
+
+.bar-count {
+	font-size: 0.6875rem;
+	font-weight: 600;
+	color: oklch(var(--foreground));
+}
+
+.bar-label {
+	font-size: 0.6875rem;
+	color: oklch(var(--muted-foreground));
+	font-weight: 500;
+}
+
+.bar-label.top {
+	color: oklch(var(--primary));
+	font-weight: 700;
+}
+
+.era-badge {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.75rem 1.5rem;
+	background: linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--era-color) 20%, transparent),
+		color-mix(in srgb, var(--era-color) 10%, transparent)
+	);
+	border: 1px solid color-mix(in srgb, var(--era-color) 30%, transparent);
+	border-radius: 2rem;
+}
+
+.era-decade {
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: var(--era-color);
+}
+
+.era-message {
+	font-size: 0.875rem;
+	color: oklch(var(--muted-foreground));
+}
+
+.no-data {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.no-data-icon {
+	font-size: 3rem;
+	opacity: 0.5;
+}
+
+.empty-message {
+	color: oklch(var(--muted-foreground));
+	font-style: italic;
+	font-size: 1.125rem;
+	margin: 0;
+}
+
+.empty-hint {
+	color: oklch(var(--muted-foreground));
+	font-size: 0.875rem;
+	opacity: 0.7;
+	margin: 0;
+}
+
+.extra {
+	margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
 	.content {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 1.5rem;
-			z-index: 1;
-			width: 100%;
-			max-width: var(--content-max-md, 700px);
-		}
+		gap: 1rem;
+	}
 
-		.title {
-			font-size: 1.75rem;
-			font-weight: 700;
-			color: oklch(var(--primary));
-			text-transform: uppercase;
-			letter-spacing: 0.05em;
-			text-shadow: 0 0 30px var(--slide-glow-color, oklch(var(--primary) / 0.3));
-		}
+	.title {
+		font-size: 1.5rem;
+	}
 
-		.chart-container {
-			width: 100%;
-			padding: 1.5rem;
-			background: var(--slide-glass-bg);
-			backdrop-filter: blur(var(--slide-glass-blur, 20px));
-			-webkit-backdrop-filter: blur(var(--slide-glass-blur, 20px));
-			border: 1px solid var(--slide-glass-border);
-			border-radius: calc(var(--radius) * 2);
-		}
+	.chart-container {
+		padding: 1rem;
+	}
 
-		.timeline {
-			display: flex;
-			justify-content: center;
-			height: 160px;
-			gap: 0.5rem;
-		}
+	.timeline {
+		height: 120px;
+		gap: 0.375rem;
+	}
 
-		.bar-wrapper {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.5rem;
-			flex: 1;
-			max-width: 60px;
-			height: 100%;
-		}
+	.bar-wrapper {
+		max-width: 45px;
+	}
 
-		.bar-track {
-			flex: 1;
-			width: 100%;
-			display: flex;
-			align-items: flex-end;
-			justify-content: center;
-		}
+	.bar-count {
+		font-size: 0.5625rem;
+	}
 
-		.bar {
-			width: 100%;
-			background: linear-gradient(
-				180deg,
-				var(--decade-color),
-				color-mix(in srgb, var(--decade-color) 60%, transparent)
-			);
-			border-radius: var(--radius) var(--radius) 0 0;
-			transform-origin: bottom center;
-			display: flex;
-			align-items: flex-start;
-			justify-content: center;
-			padding-top: 0.5rem;
-			transition: filter 0.3s ease;
-			min-height: 10px;
-		}
+	.bar-label {
+		font-size: 0.5625rem;
+	}
+}
 
-		.bar:hover {
-			filter: brightness(1.2);
-		}
+@media (min-width: 1024px) {
+	.timeline {
+		height: 180px;
+	}
 
-		.bar.top {
-			box-shadow: 0 0 20px color-mix(in srgb, var(--decade-color) 50%, transparent);
-		}
-
-		.bar-count {
-			font-size: 0.6875rem;
-			font-weight: 600;
-			color: oklch(var(--foreground));
-		}
-
-		.bar-label {
-			font-size: 0.6875rem;
-			color: oklch(var(--muted-foreground));
-			font-weight: 500;
-		}
-
-		.bar-label.top {
-			color: oklch(var(--primary));
-			font-weight: 700;
-		}
-
-		.era-badge {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.25rem;
-			padding: 0.75rem 1.5rem;
-			background: linear-gradient(
-				135deg,
-				color-mix(in srgb, var(--era-color) 20%, transparent),
-				color-mix(in srgb, var(--era-color) 10%, transparent)
-			);
-			border: 1px solid color-mix(in srgb, var(--era-color) 30%, transparent);
-			border-radius: 2rem;
-		}
-
-		.era-decade {
-			font-size: 1.25rem;
-			font-weight: 700;
-			color: var(--era-color);
-		}
-
-		.era-message {
-			font-size: 0.875rem;
-			color: oklch(var(--muted-foreground));
-		}
-
-		.no-data {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 0.5rem;
-		}
-
-		.no-data-icon {
-			font-size: 3rem;
-			opacity: 0.5;
-		}
-
-		.empty-message {
-			color: oklch(var(--muted-foreground));
-			font-style: italic;
-			font-size: 1.125rem;
-			margin: 0;
-		}
-
-		.empty-hint {
-			color: oklch(var(--muted-foreground));
-			font-size: 0.875rem;
-			opacity: 0.7;
-			margin: 0;
-		}
-
-		.extra {
-			margin-top: 1rem;
-		}
-
-		@media (max-width: 767px) {
-			.content {
-				gap: 1rem;
-			}
-
-			.title {
-				font-size: 1.5rem;
-			}
-
-			.chart-container {
-				padding: 1rem;
-			}
-
-			.timeline {
-				height: 120px;
-				gap: 0.375rem;
-			}
-
-			.bar-wrapper {
-				max-width: 45px;
-			}
-
-			.bar-count {
-				font-size: 0.5625rem;
-			}
-
-			.bar-label {
-				font-size: 0.5625rem;
-			}
-		}
-
-		@media (min-width: 1024px) {
-			.timeline {
-				height: 180px;
-			}
-
-			.bar-wrapper {
-				max-width: 70px;
-			}
-		}
+	.bar-wrapper {
+		max-width: 70px;
+	}
+}
 </style>

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -79,18 +79,9 @@
 	"overrides": [
 		{
 			"includes": [
-				"src/lib/components/onboarding/StepIndicator.svelte",
-				"src/lib/components/slides/DecadeSlide.svelte",
 				"src/lib/components/slides/SeriesCompletionSlide.svelte",
-				"src/lib/components/slides/TopViewersSlide.svelte",
-				"src/lib/components/slides/WeekdayPatternsSlide.svelte",
-				"src/lib/components/ui/sidebar/sidebar-menu-button.svelte",
-				"src/routes/admin/+layout.svelte",
 				"src/routes/admin/logs/+page.svelte",
-				"src/routes/admin/settings/+layout.svelte",
-				"src/routes/admin/settings/+page.svelte",
 				"src/routes/admin/settings/privacy/+page.svelte",
-				"src/routes/dashboard/+layout.svelte",
 				"src/routes/onboarding/plex/+page.svelte",
 				"src/routes/onboarding/settings/+page.svelte"
 			],

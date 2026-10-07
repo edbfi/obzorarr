@@ -110,8 +110,8 @@ return { form, success: true, message: `Scheduler timezone set to ${timezone}` }
 
 ## Biome configuration
 
-Biome is pinned to 2.5.13. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
+Biome is pinned to 2.5.15. The configuration uses Git ignores, the recommended lint and assist presets, and experimental full Svelte support. Keep type checking separate from Biome. Project quote, comma and indentation conventions remain explicit in the configuration.
 
-The exact-file formatter overrides protect components containing `{@const ...}`: Biome 2.5.14 inserts parentheses that Svelte rejects with `expected_pattern`. These files still receive lint and import checks. Recheck them with the Svelte compiler when upgrading Biome before removing the exceptions. Do not run a formatter with these overrides bypassed.
+The exact-file formatter overrides keep five components hand-formatted because Biome re-wraps their prose, which changes the compiled text nodes (the `{@const}` bug that needed the wider list was fixed in 2.5.15). These files still receive lint and import checks; before removing one, confirm with the Svelte compiler that formatting leaves its output unchanged.
 
 The narrow accessibility overrides retain the story player’s window-level keyboard handling and the custom slide dialog’s focus trap, Escape handler and styled-list semantics. Inline suppressions explain polymorphic component props, rendered control snippets, rich radio cards and CSS browser fallbacks. Generated Drizzle files are excluded from scanning.

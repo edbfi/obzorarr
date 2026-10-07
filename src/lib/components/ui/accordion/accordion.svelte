@@ -14,6 +14,6 @@ let {
 	bind:ref
 	bind:value={value as never}
 	data-slot="accordion"
-	class={cn("cn-accordion flex w-full flex-col", className)}
+	class={cn('cn-accordion flex w-full flex-col', className)}
 	{...restProps}
 />

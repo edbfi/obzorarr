@@ -182,7 +182,9 @@ $effect(() => {
 										<div
 											bind:this={bars[i]}
 											class="bar"
-											style="width: {genre.percentage}%; --genre-color: {getGenreColor(genre.title)};"
+											style="width: {genre.percentage}%; --genre-color: {getGenreColor(
+												genre.title
+											)};"
 											role="img"
 											aria-label="{genre.title}: {formatPlays(genre.count)}"
 										>

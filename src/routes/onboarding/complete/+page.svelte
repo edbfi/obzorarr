@@ -254,8 +254,8 @@ const summaryItems = $derived([
 				action="?/goToDashboard"
 				use:enhance
 				onsubmit={() => {
-	isNavigating = true;
-}}
+					isNavigating = true;
+				}}
 			>
 				<SubmitButton class="btn-dashboard tap-target" submitting={isNavigating}>
 					{#snippet children()}

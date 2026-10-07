@@ -27,7 +27,7 @@
 		"postinstall": "prek install || true"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.13",
+		"@biomejs/biome": "2.5.15",
 		"@happy-dom/global-registrator": "20.14.5",
 		"@internationalized/date": "3.12.4",
 		"@j178/prek": "0.5.3",

@@ -43,11 +43,11 @@ let {
 	data-align={align}
 	class={cn(inputGroupAddonVariants({ align }), className)}
 	onclick={(e) => {
-	if ((e.target as HTMLElement).closest('button')) {
-		return;
-	}
-	e.currentTarget.parentElement?.querySelector('input')?.focus();
-}}
+		if ((e.target as HTMLElement).closest('button')) {
+			return;
+		}
+		e.currentTarget.parentElement?.querySelector('input')?.focus();
+	}}
 	{...restProps}
 >
 	{@render children?.()}

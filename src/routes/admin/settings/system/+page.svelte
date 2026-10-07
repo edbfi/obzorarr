@@ -148,8 +148,8 @@ function formatUptime(seconds: number): string {
 					<Form.Field form={timezoneForm} name="timezone" description>
 						<Form.Control>
 							{#snippet children({
-	props
-})}
+								props
+							})}
 								<Form.Label>Timezone</Form.Label>
 								<Input
 									type="text"
@@ -198,8 +198,8 @@ function formatUptime(seconds: number): string {
 				<Form.Field {form} name="retentionDays" description>
 					<Form.Control>
 						{#snippet children({
-	props
-})}
+							props
+						})}
 							<Form.Label>Retention period (days)</Form.Label>
 							<Input
 								type="number"
@@ -221,8 +221,8 @@ function formatUptime(seconds: number): string {
 				<Form.Field {form} name="maxCount" description>
 					<Form.Control>
 						{#snippet children({
-	props
-})}
+							props
+						})}
 							<Form.Label>Maximum log count</Form.Label>
 							<Input
 								type="number"
@@ -247,8 +247,8 @@ function formatUptime(seconds: number): string {
 				<Form.Field {form} name="debugEnabled">
 					<Form.Control>
 						{#snippet children({
-	props
-})}
+							props
+						})}
 							<input
 								type="hidden"
 								name="debugEnabled"
