@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Dependabot auto-merge
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+permissions: {}
+defaults: { run: { shell: bash } }
+jobs:
+  enable:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'dependabot[bot]' # zizmor: ignore[bot-conditions] -- PR author is checked; actor only filters later pushes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - run: |
+          for attempt in 1 2 3 4 5; do
+            if output="$(gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL" 2>&1)"; then
+              printf '%s\n' "$output"
+              exit 0
+            fi
+            printf '%s\n' "$output" >&2
+            current="$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)" || { echo "::error::enable failed and head lookup failed"; exit 1; }
+            if [ -n "$current" ] && [ "$current" != "$HEAD_SHA" ]; then echo "head moved to $current; its writer enables auto-merge"; exit 0; fi
+            if [ "$current" = "$HEAD_SHA" ] && [[ "$output" == *"Pull request is in unstable status"* ]] && [ "$attempt" -lt 5 ]; then
+              echo "Merge state is still settling; retrying in 5 seconds"
+              sleep 5
+              continue
+            fi
+            echo "::error::enable failed for the current head"; exit 1
+          done
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.DEPENDENCY_AUTOMERGE_TOKEN }}
