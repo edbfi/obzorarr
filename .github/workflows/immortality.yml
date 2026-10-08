@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copy as .github/workflows/immortality.yml (design/watchdog.md).
+# GitHub disables scheduled workflows in a public repository after 60 days
+# without activity. Once a month this job re-enables this repository's
+# workflows with a personal token (github.token cannot), which resets that
+# counter. Workflows disabled by hand stay disabled.
+# From edbfi/homebrew-taps; script: PhrozenByte/gh-workflow-immortality v1.1.1 (MIT).
+name: immortality
+
+on:
+  schedule:
+    # 02:00 UTC on the first day of every month
+    - cron: "0 2 1 * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  keepalive:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Keep workflows alive
+        env:
+          GITHUB_TOKEN: ${{ secrets.IMMORTALITY_TOKEN }}
+          REPOS: ${{ github.repository }}
+          SCRIPT_URL: https://raw.githubusercontent.com/PhrozenByte/gh-workflow-immortality/b755c1ad9f4d287b56784a749634551149aa0313/gh-workflow-immortality.sh
+          SCRIPT_SHA256: 9ad3286c935e0c2eabfcc0fa346c1f47e18583966e9c3b23d60053da78a504b6
+        run: |
+          script="$(mktemp)"
+          curl -fsSL "$SCRIPT_URL" -o "$script"
+          echo "${SCRIPT_SHA256}  ${script}" | sha256sum -c -
+          bash "$script"

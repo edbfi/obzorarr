@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copy as .github/workflows/ci.yml; adapt commands, directories and runners to design/repos.md.
+# Allocate a distinct weekly minute during rollout. Every added PR job belongs in ci-ok.
+name: CI
+on:
+  pull_request:
+  push: { branches: [main] }
+  workflow_dispatch:
+  schedule: [{ cron: "29 3 * * 0" }]   # weekly audit + main revalidation/redeploy; minute unique per repo
+permissions: {}
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}-{1}', github.event.pull_request.number, github.event.pull_request.head.sha) || format('ci-{0}', github.sha) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with: { bun-version-file: package.json }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version-file: .node-version }
+      - run: bun ci
+      - uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+        with: { extra-args: "--all-files --hook-stage manual" }
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with: { bun-version-file: package.json }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version-file: .node-version }
+      - run: bun ci
+      - run: bun run build
+      - run: bun run smoke:production
+        env: { DATABASE_PATH: "${{ runner.temp }}/smoke.db" }
+  ci-ok:
+    if: always()
+    needs: [checks, smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - env:
+          NEEDS: ${{ toJSON(needs) }}
+          ALLOWED_SKIPS: ""
+        run: |
+          jq -e --arg skips "$ALLOWED_SKIPS" '
+            ($skips | split(",") | map(select(. != ""))) as $allowed
+            | length > 0 and all(to_entries[]; .value.result == "success"
+                or (.value.result == "skipped" and (.key | IN($allowed[]))))
+          ' <<<"$NEEDS" >/dev/null || { echo "::error::ci-ok failed: $(jq -c 'map_values(.result)' <<<"$NEEDS")"; exit 1; }
+  audit:
+    if: github.event_name != 'pull_request'
+    strategy: { fail-fast: false, matrix: { dir: ["."] } }
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read }
+    defaults: { run: { working-directory: "${{ matrix.dir }}" } }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with: { bun-version-file: "${{ matrix.dir }}/package.json" }
+      - run: bun audit --audit-level=high
