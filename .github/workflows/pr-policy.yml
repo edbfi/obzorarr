@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: PR policy
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+permissions: {}
+defaults: { run: { shell: bash } }
+jobs:
+  pr-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { pull-requests: read }
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Read current PR
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" > "$RUNNER_TEMP/pr-policy.json"
+          jq -e '
+            (.title | type == "string" and length > 0)
+            and (.head.sha | type == "string" and length > 0)
+            and (.commits | type == "number" and . > 0 and . <= 250)
+          ' "$RUNNER_TEMP/pr-policy.json" > /dev/null
+      - name: Check title and commit sign-offs
+        run: |
+          snapshot="$RUNNER_TEMP/pr-policy.json"
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/commits" > "$RUNNER_TEMP/pr-commits.json"
+          PR_TITLE="$(jq -er .title "$snapshot")"
+          export PR_TITLE
+          jq -e --slurpfile pr "$snapshot" '
+            def header: "[A-Za-z][A-Za-z0-9_-]*(\\([^()\\r\\n]+\\))?";
+            def breaking:
+              (.commit.message | split("\n")[0] | test("^" + header + "!: "))
+              or (.commit.message | test("(^|\n)BREAKING( CHANGE|-CHANGE):"));
+            def signed:
+              .commit.author as $a
+              | ($a.name | type == "string" and length > 0)
+              and ($a.email | type == "string" and length > 0)
+              and (.commit.message | split("\n") | map(rtrimstr("\r"))
+                | any(. == ("Signed-off-by: " + $a.name + " <" + $a.email + ">")));
+            $pr[0] as $p
+            | add as $commits
+            | ($p.user.login == "dependabot[bot]" and $p.head.repo.full_name == env.GITHUB_REPOSITORY) as $trusted
+            | (env.PR_TITLE | test("^" + header + "!?: [^\\r\\n]+$"; "i"))
+              and ($commits | length == $p.commits)
+              and ($commits[-1].sha == $p.head.sha)
+              and (all($commits[]; breaking | not) or (env.PR_TITLE | test("^" + header + "!: "; "i")))
+              and all($commits[];
+                (.parents | length > 1)
+                or ($trusted and (.author.login == "dependabot[bot]" or .author.login == "github-actions[bot]"))
+                or signed)
+          ' "$RUNNER_TEMP/pr-commits.json" > /dev/null || { echo '::error::PR title, current head, or DCO validation failed'; exit 1; }

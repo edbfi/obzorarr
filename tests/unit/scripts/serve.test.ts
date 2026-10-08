@@ -626,10 +626,14 @@ describe('serve.ts process', () => {
 
 	it('force-closes a client that cannot finish within SHUTDOWN_TIMEOUT', async () => {
 		const port = await freePort();
+		// The body must outgrow the socket buffers: once they hold all of it, the front has
+		// finished writing and exits before the budget. Linux loopback buffers take most of 8 MiB.
+		const bodyBytes = 64 * 1024 * 1024;
 		const server = await start({
 			ORIGIN: `http://127.0.0.1:${port}`,
 			PORT: String(port),
-			SHUTDOWN_TIMEOUT: '3'
+			SHUTDOWN_TIMEOUT: '3',
+			STANDIN_BIG_BYTES: String(bodyBytes)
 		});
 		// Bun's node:http client notices the reset late on a paused stream, so read the byte
 		// count when the process has exited instead of waiting for the response to end.
@@ -656,7 +660,7 @@ describe('serve.ts process', () => {
 		expect(elapsed).toBeGreaterThanOrEqual(2.5);
 		expect(elapsed).toBeLessThan(10);
 		expect(bytes).toBeGreaterThan(0);
-		expect(bytes).toBeLessThan(8 * 1024 * 1024);
+		expect(bytes).toBeLessThan(bodyBytes);
 		expect(socketDirectories(server.temp)).toEqual([]);
 	}, 30_000);
 

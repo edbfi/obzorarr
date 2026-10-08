@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copy as .github/dependabot.yml; match directories to the CI audit matrices.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
+    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+    commit-message: { prefix: chore, include: scope }
+    groups:
+      patch-minor: { patterns: ["*"], update-types: [minor, patch] }
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
+    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+    commit-message: { prefix: chore, include: scope }
+    groups:
+      patch-minor: { patterns: ["*"], update-types: [minor, patch] }
+  # Restore after dependabot-core#16071 (bun.lock v2) and a successful pilot PR.
+  # - package-ecosystem: bun
+  #   directory: /
+  #   schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
+  #   cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+  #   commit-message: { prefix: chore, include: scope }
+  #   groups:
+  #     biome: { patterns: ["@biomejs/*"] }
+  #     playwright: { patterns: [playwright, "@playwright/*"] }
+  #     vitest: { patterns: [vitest, "@vitest/*"] }
+  #     patch-minor: { patterns: ["*"], update-types: [minor, patch] }
