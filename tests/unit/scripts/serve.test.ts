@@ -354,6 +354,88 @@ describe('serve.ts process', () => {
 		expect(server.output()).not.toContain('Listening on http');
 	});
 
+	// Without ORIGIN the adapter listens itself and handles SIGTERM and SIGINT, but not SIGHUP,
+	// and work the app still has in flight (a request waiting on Plex) would keep the process
+	// alive past the drain deadline.
+	describe('without ORIGIN', () => {
+		it.each(['SIGTERM', 'SIGHUP'] as const)(
+			'on %s exits at the drain deadline while the app is still working on a request',
+			async (signal) => {
+				const server = await start({ SHUTDOWN_TIMEOUT: '2' });
+				const pending = call(server.port, '/slow?ms=15000').catch((error: unknown) => error);
+				await waitFor(server.output, (output) => output.includes('standin slow begun'));
+				const signalled = Date.now();
+				server.child.kill(signal);
+
+				const exited = await Promise.race([
+					server.exited,
+					Bun.sleep(8000).then(() => 'still running' as const)
+				]);
+				expect(exited).toEqual({ code: 0, signal: null });
+				const elapsed = (Date.now() - signalled) / 1000;
+				expect(elapsed).toBeGreaterThanOrEqual(1.5);
+				expect(elapsed).toBeLessThan(5);
+				await pending;
+				expect(server.output()).toContain('standin shutdown hook');
+			},
+			20_000
+		);
+
+		it('drains on SIGHUP like SIGTERM: an open request completes and sveltekit:shutdown fires', async () => {
+			const server = await start({ SHUTDOWN_TIMEOUT: '10' });
+			const pending = call(server.port, '/slow?ms=1500');
+			await waitFor(server.output, (output) => output.includes('standin slow begun'));
+			server.child.kill('SIGHUP');
+
+			const reply = await pending;
+			expect([reply.status, reply.body.toString()]).toEqual([200, 'slow 0']);
+			expect(await server.exited).toEqual({ code: 0, signal: null });
+			expect(server.output().split('standin shutdown SIGTERM').length - 1).toBe(1);
+			expect(server.output()).toContain('standin drained');
+			expect(server.output()).toContain('standin shutdown hook');
+		}, 20_000);
+
+		// Under `bun run start` a closed terminal delivers SIGHUP twice, and a hangup can follow a
+		// stop. Either would be the adapter's second signal, which exits 1 at once without the drain.
+		it.each([
+			['a repeated SIGHUP', 'SIGHUP'],
+			['a SIGHUP after SIGTERM', 'SIGTERM']
+		] as const)(
+			'ignores %s: the drain and the open response still complete',
+			async (_, first) => {
+				const server = await start({ SHUTDOWN_TIMEOUT: '10' });
+				const pending = call(server.port, '/slow?ms=2000');
+				await waitFor(server.output, (output) => output.includes('standin slow begun'));
+				server.child.kill(first);
+				await waitFor(server.output, (output) => output.includes('standin shutdown SIGTERM'));
+				server.child.kill('SIGHUP');
+
+				const reply = await pending;
+				expect([reply.status, reply.body.toString()]).toEqual([200, 'slow 0']);
+				expect(await server.exited).toEqual({ code: 0, signal: null });
+				expect(server.output().split('standin shutdown SIGTERM').length - 1).toBe(1);
+				expect(server.output()).toContain('standin shutdown hook');
+			},
+			20_000
+		);
+
+		// Nothing is bound while the adapter loads, so the default action (exit at once) loses
+		// nothing; holding the signal would let a slow load outlive the deadline.
+		it('exits at once on a signal while the adapter is still loading', async () => {
+			const server = await start({ STANDIN_LOAD_DELAY_MS: '5000' }, { waitForReady: false });
+			await Bun.sleep(500);
+			const signalled = Date.now();
+			server.child.kill('SIGHUP');
+			const exited = await Promise.race([
+				server.exited,
+				Bun.sleep(3000).then(() => 'still running' as const)
+			]);
+			expect(exited).toEqual({ code: null, signal: 'SIGHUP' });
+			expect(Date.now() - signalled).toBeLessThan(1000);
+			expect(server.output()).not.toContain('standin listening');
+		}, 15_000);
+	});
+
 	it('does not warn when ORIGIN or PROTOCOL_HEADER is set', async () => {
 		const withProtocol = await start({ PROTOCOL_HEADER: 'x-forwarded-proto' });
 		await echo(withProtocol.port);
