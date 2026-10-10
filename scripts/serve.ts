@@ -210,9 +210,10 @@ export async function serve(
 	const plan = prepare(environment);
 	if (plan.mode === 'direct') {
 		if (plan.warning) console.warn(plan.warning);
-		// Nothing is installed during the load: no listener is bound yet, so a signal's default
-		// action (exit at once) loses nothing, and holding it would let a slow load outlive the
-		// deadline.
+		// Nothing is installed during the load: no request can have been served yet (the adapter
+		// binds and installs its own handlers in one synchronous step at its end), so a signal's
+		// default action (exit at once) loses nothing, and holding it would let a slow load
+		// outlive the deadline.
 		await importServer();
 		handleDirectShutdown(environment);
 		return;
