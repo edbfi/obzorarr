@@ -38,7 +38,6 @@
 		"@types/bun": "1.4.2",
 		"@types/sanitize-html": "2.16.2",
 		"@unocss/extractor-svelte": "66.10.5",
-		"@unocss/reset": "66.10.5",
 		"drizzle-kit": "0.31.11",
 		"fast-check": "4.10.2",
 		"rollup-plugin-visualizer": "7.1.1",
