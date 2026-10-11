@@ -1,3 +1,4 @@
+import extractorSvelte from '@unocss/extractor-svelte';
 import {
 	defineConfig,
 	presetIcons,
@@ -10,6 +11,7 @@ import presetAnimations from 'unocss-preset-animations';
 import { presetShadcn } from 'unocss-preset-shadcn';
 
 export default defineConfig({
+	extractors: [extractorSvelte()],
 	// Safelist classes that are used in portalled components (AlertDialog, etc.)
 	// These need to be safelisted because UnoCSS may not detect them when content is dynamically portalled
 	safelist: [

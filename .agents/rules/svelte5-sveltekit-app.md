@@ -354,31 +354,33 @@ Formsnap is no longer used (`formsnap@2.0.1` peers superforms `^2.19.0`, excludi
 This is where agents most often produce broken setups. The rules:
 
 1. **Use UnoCSS in global mode (`unocss/vite`), not `@unocss/svelte-scoped`.** Svelte-scoped rewrites utility class names per component and distributes styles into component `<style>` blocks — that is designed for shippable component *libraries*, and it breaks shadcn-svelte, which depends on globally-scoped CSS custom properties (`--background`, `--primary`, …) and a Tailwind-style reset.
-2. **`unocss-preset-shadcn` generates the shadcn CSS variables and theme.** Pair it with `presetWind3` and `unocss-preset-animations`.
-3. **`presetWind4` is the package's default (since preset v1.0), but pin to the `presetWind3` path for reliability.** `presetWind4` switches colors to the `oklch` model with `color-mix()`, which has documented open bugs with this preset and, per UnoCSS's own docs, does not play well with `transformerDirectives` or `presetLegacyCompat`. Import the stable v3 entry: `unocss-preset-shadcn/v3`.
+2. **`unocss-preset-shadcn` generates the shadcn CSS variables and theme.** Pair it with `presetWind4` through the preset's root entry (its default since v1.0), plus `unocss-preset-animations`.
+3. **Write the theme in Wind4's keys.** presetWind4 silently ignores Wind3 keys, so a utility built on one gets no rule: `font` (each value a single string), not `fontFamily`; `radius`, not `borderRadius` (preset-shadcn declares its radius scale under `borderRadius`, so restate it under `radius`). The preset's Wind4 entry emits `oklch(var(--token))`, so custom theme colours are bare oklch components (`0.5854 0.2041 277.1173`), although its published types still say HSL. Keep each `--font-*` stack only in `theme.font`, not again in `app.css`.
 4. **`.ts`/`.js` files are not extracted by default** — you must add them to the content pipeline, or shadcn-svelte's `index.ts` barrel components lose their classes.
 
 ```bash
-bun add -D unocss @unocss/preset-wind3 @unocss/extractor-svelte \
-  unocss-preset-animations unocss-preset-shadcn
-bun add -D @unocss/reset
+bun add -D unocss @unocss/extractor-svelte unocss-preset-animations unocss-preset-shadcn
 ```
 
 ```ts
 // uno.config.ts
-import { defineConfig } from 'unocss';
-import { presetWind } from '@unocss/preset-wind3';
 import extractorSvelte from '@unocss/extractor-svelte';
+import { defineConfig, type Preset, presetWind4 } from 'unocss';
 import presetAnimations from 'unocss-preset-animations';
-import { presetShadcn } from 'unocss-preset-shadcn/v3';
+import { presetShadcn } from 'unocss-preset-shadcn';
 
 export default defineConfig({
-  extractors: [extractorSvelte()],
+  extractors: [extractorSvelte()], // without it a utility used only in `class:x={…}` gets no CSS
   presets: [
-    presetWind(),
-    presetAnimations(),
-    presetShadcn({ color: 'zinc' }) // default darkSelector is `.dark` — correct for Svelte/bits-ui
+    presetWind4({ preflights: { reset: true } }), // the Tailwind-style reset shadcn assumes
+    // Both presets still declare the Wind3 theme type; the mismatch is in their types only.
+    presetAnimations() as Preset,
+    presetShadcn({ color: 'zinc' }) as Preset // default darkSelector is `.dark` — correct for Svelte/bits-ui
   ],
+  theme: {
+    radius: { sm: 'calc(var(--radius) - 4px)', md: 'calc(var(--radius) - 2px)', lg: 'var(--radius)' },
+    font: { sans: 'Inter, ui-sans-serif, system-ui, sans-serif' }
+  },
   content: {
     pipeline: {
       include: [
@@ -394,13 +396,12 @@ export default defineConfig({
 
 Do **not** set `darkSelector: '[data-kb-theme="dark"]'` — that is the SolidUI/Kobalte default. shadcn-svelte uses the `.dark` class strategy, which is `presetShadcn`'s default. For a runtime color-swap UI, pass an array of themes (`presetShadcn(builtinColors.map((c) => ({ color: c })))`) and toggle the generated `theme-<color>` class on `document.body`; the preset ships no `updateTheme` helper.
 
-Root layout wires the reset, generated utilities, and dark-mode manager. `mode-watcher` is still required — it sets the `.dark` class on `<html>` before paint, avoiding the light→dark flash that `onMount`-based toggles cause:
+Root layout wires the generated utilities (which include the reset) and the dark-mode manager. `mode-watcher` is still required — it sets the `.dark` class on `<html>` before paint, avoiding the light→dark flash that `onMount`-based toggles cause:
 
 ```svelte
 <!-- src/routes/+layout.svelte -->
 <script lang="ts">
-  import '@unocss/reset/tailwind.css'; // shadcn assumes the Tailwind reset
-  import 'uno.css';
+  import 'uno.css'; // includes presetWind4's reset
   import '../app.css'; // your theme vars / globals
   import { ModeWatcher } from 'mode-watcher';
   let { children } = $props();
@@ -567,6 +568,7 @@ bun ./build     # Bun.serve server, or the app's front
 - Forwarding: the raw path and query, sliced from `request.url` after any authority, never `new URL(request.url)` (it throws on some `Host` values); `redirect: 'manual'`, `decompress: false`, abort signal passed through, no body for GET/HEAD, 503 on a socket connection failure. When the adapter force-closes a proxied event stream (its shutdown drain expired), end the public stream normally instead of passing the error on, which browsers see as a connection reset.
 - Idle timer: Bun 1.4.2 keeps the public listener's idle timer running while the front awaits the in-process app, so slow answers are cut, some long before the window ends. Call `server.timeout(request, 0)` once the request has fully arrived (at once without a body, else in the `flush` of a `TransformStream` the body is piped through, so a stalled upload still times out) and re-arm the client idle timeout in a `finally` when the app answers or fails, before the event-stream exemption. This also keeps an event stream whose first event is late (adapter-bun sends its headers with that event).
 - Shutdown: on the first SIGTERM, SIGINT or SIGHUP fix a deadline from `SHUTDOWN_TIMEOUT` and start `listener.stop()` (keep the promise); the adapter drains its side and emits `sveltekit:shutdown`; await the public drain until the deadline and `listener.stop(true)` only when it expires (force-closing on `sveltekit:shutdown` truncates slow downloads). Then, still in the `sveltekit:shutdown` handler, arm the exit at the deadline: `setTimeout(() => process.exit(), Math.max(0, deadline - Date.now())).unref()` (unreferenced, so a process with nothing left exits sooner). Without it, an app request still awaiting an upstream keeps the process alive past the deadline, and `docker stop` kills it. Remove the socket directory on `exit` too, not only after a drain. A front that binds before loading the adapter re-delivers a signal received during the load once the adapter has loaded (else `sveltekit:shutdown` never fires and the process hangs). adapter-bun handles only SIGTERM/SIGINT, so when SIGHUP begins the shutdown the front delivers SIGTERM to the adapter once (`process.kill(process.pid, 'SIGTERM')`), after the load if necessary. After the load, the front's own SIGTERM/SIGINT handler only starts the drain, so this SIGTERM is the adapter's first signal, not a further one. Once shutdown has begun, ignore SIGHUP (`bun run` delivers a terminal hangup twice); a further SIGTERM/SIGINT exits 1: the front exits during the load, the adapter after it.
+- Without a front (no `ORIGIN`, the adapter listens directly) the entry still owns part of this, from the moment the adapter has loaded: fix the deadline at the first SIGTERM, SIGINT or SIGHUP; deliver a first SIGHUP to the adapter as one SIGTERM, and ignore SIGHUP once shutdown has begun; on `sveltekit:shutdown` arm the same exit at the deadline. During the load it installs nothing: no listener is bound yet, so a signal's default action (exit at once) loses nothing, and holding the signal would let a slow load outlive the deadline. Both modes assume the load completes, so `init` and module top level never await upstream work.
 - Observed (Bun 1.4.2, macOS and linux/arm64; consistent with oven-sh/bun#43816): on `SOCKET_PATH`, idle `text/event-stream` responses close after about 12 s despite the exemption. Fronts set `CONNECTION_IDLE_TIMEOUT=0` on the socket side, enforce the client idle timeout, and call `server.timeout(req, 0)` for event streams on their public TCP listener (it is inert on unix listeners).
 
 Optional: `tracing.server` with `src/instrumentation.server.ts` (adapter-bun's docs don't cover it; verify first; leave `@opentelemetry/api` uninstalled).
@@ -580,7 +582,8 @@ Optional: `tracing.server` with `src/instrumentation.server.ts` (adapter-bun's d
 | Module-level `let user` in server code, or an SSR-rendered `.svelte.ts` singleton | Shared across all requests — cross-user data leak | Per-request `event.locals`; context with a getter |
 | `bun test` for components | No Svelte compiler / Vite transform; runes don't run | `vitest` with `vitest-browser-svelte` in Browser Mode |
 | `@unocss/svelte-scoped` mode | Rewrites class names & scopes styles; breaks shadcn's global CSS variables + reset | `unocss/vite` (global) + `unocss-preset-shadcn` |
-| `presetWind4` with `unocss-preset-shadcn` | oklch/`color-mix` bugs + `transformerDirectives` incompatibility | `presetWind3` via `unocss-preset-shadcn/v3` |
+| Wind3 theme keys (`fontFamily`, `borderRadius`) under `presetWind4` | Silently ignored: `font-display`, `rounded-*` get no rule or the wrong value | Wind4 keys: `font` (single strings), `radius` |
+| A safelist for portalled components | Extraction is per source module; portals don't hide classes | Fix the content pipeline; safelist only classes no source file contains (built at runtime, or allowed in user-supplied HTML) |
 | Running `shadcn-svelte init` on a UnoCSS project | Scaffolds a Tailwind pipeline that conflicts with UnoCSS | Manual `cn` util + `components.json` + empty `tailwind.config.js`, then `add` |
 | Forgetting `'src/**/*.{js,ts}'` in UnoCSS content | shadcn barrel `index.ts` files aren't scanned; classes vanish in prod | Add JS/TS to `content.pipeline.include` |
 | `import { page } from '$app/stores'` | Removed in Kit 3; throws at runtime | `import { page } from '$app/state'` |
@@ -605,8 +608,8 @@ Optional: `tracing.server` with `src/instrumentation.server.ts` (adapter-bun's d
 | Vite | 8.x | ≥8.0.12 (Kit 3 peer) |
 | `@sveltejs/vite-plugin-svelte` | 7.x | `^7.0.0` (Kit 3 peer); requires Vite 8 |
 | `sveltekit-superforms` | 3.0.x | Peers Kit 2.12+ and 3; 2.x is Kit ≤2 only; no Formsnap |
-| UnoCSS (`unocss`, `@unocss/vite`, `@unocss/preset-wind3`) | 66.x | Global mode; `extractorSvelte` for `class:` directives |
-| `unocss-preset-shadcn` | 1.0.1 | Use `unocss-preset-shadcn/v3` (presetWind3); package default is presetWind4 (oklch/transformer issues) |
+| UnoCSS (`unocss`, which bundles `@unocss/vite` and `presetWind4`) | 66.x | Global mode; `extractorSvelte` for `class:` directives |
+| `unocss-preset-shadcn` | 1.0.1 | Root entry (presetWind4); colours as bare oklch components despite the HSL types |
 | `unocss-preset-animations` | current | Replaces `tailwindcss-animate` |
 | shadcn-svelte (CLI) | latest | Runes-native; on bits-ui; no `init` with UnoCSS |
 | Biome (`@biomejs/biome`) | 2.5.x | `.svelte` support experimental (opt-in flag); JS/TS/JSON/CSS stable |
