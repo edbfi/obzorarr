@@ -48,10 +48,12 @@ export const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
 		'a',
 		'img'
 	],
+	// No `class` on any tag: slides are styled only by CustomSlide's
+	// `.markdown-content` rules. An author class would apply whatever global
+	// utility UnoCSS happened to generate (e.g. `fixed inset-0`).
 	allowedAttributes: {
 		a: ['href', 'title', 'target', 'rel'],
-		img: ['src', 'alt', 'title', 'width', 'height'],
-		'*': ['class']
+		img: ['src', 'alt', 'title', 'width', 'height']
 	},
 	allowedSchemes: ['http', 'https', 'mailto'],
 	allowedSchemesByTag: {

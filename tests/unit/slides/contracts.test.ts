@@ -8,7 +8,12 @@ import {
 	getSubject,
 	getWatchVerb
 } from '$lib/components/slides/messaging-context';
-import { containsUnsafeHtml, detectUnsafeHtml } from '$lib/server/slides/renderer';
+import {
+	containsUnsafeHtml,
+	detectUnsafeHtml,
+	renderMarkdown,
+	renderMarkdownSync
+} from '$lib/server/slides/renderer';
 import { SANITIZE_OPTIONS, sanitizeMarkdownHtml } from '$lib/server/slides/sanitize';
 import { SlideError, SlideTypeSchema, slideErrorToFail } from '$lib/server/slides/types';
 
@@ -123,7 +128,7 @@ describe('sanitizeMarkdownHtml', () => {
 		expect(sanitizeMarkdownHtml(input)).toBe(input);
 	});
 
-	it('preserves safe line breaks, images, data image URIs, and class attributes', () => {
+	it('preserves safe line breaks, images, and data image URIs', () => {
 		expect(sanitizeMarkdownHtml('<p>Line 1<br>Line 2</p><hr>')).toBe(
 			'<p>Line 1<br />Line 2</p><hr />'
 		);
@@ -132,12 +137,42 @@ describe('sanitizeMarkdownHtml', () => {
 				'<img src="https://example.com/image.jpg" alt="Example">',
 				'src="https://example.com/image.jpg"'
 			],
-			['<img src="data:image/png;base64,abc123" alt="Icon">', 'data:image/png;base64,abc123'],
-			['<p class="highlight">Text</p>', 'class="highlight"'],
-			['<h1 class="title">Heading</h1>', 'class="title"']
+			['<img src="data:image/png;base64,abc123" alt="Icon">', 'data:image/png;base64,abc123']
 		] as const) {
 			expect(sanitizeMarkdownHtml(input)).toContain(expected);
 		}
+	});
+
+	it.each([
+		['plain', '<p class="highlight">Text</p>', '<p>Text</p>'],
+		['heading', '<h1 class="title">Heading</h1>', '<h1>Heading</h1>'],
+		['layout utilities', '<p class="fixed inset-0 z-[100]">Overlay</p>', '<p>Overlay</p>'],
+		[
+			'link',
+			'<a class="fixed inset-0" href="https://example.com">Link</a>',
+			'<a href="https://example.com" rel="noopener noreferrer" target="_blank">Link</a>'
+		],
+		[
+			'image',
+			'<img class="fixed" src="https://example.com/i.png" alt="I">',
+			'<img src="https://example.com/i.png" alt="I" />'
+		]
+	] as const)('strips class attributes (%s)', (_name, input, expected) => {
+		expect(sanitizeMarkdownHtml(input)).toBe(expected);
+	});
+
+	it.each([
+		['renderMarkdown', renderMarkdown],
+		['renderMarkdownSync', renderMarkdownSync]
+	] as const)('%s strips classes from raw HTML and code fences', (_name, render) => {
+		const html = render(
+			'# Title\n\n<p class="fixed inset-0">Raw</p>\n\n```js\nconst a = "<b class=\\"x\\">";\n```\n\nUse `class="x"` here.'
+		);
+		expect(html).toContain('<h1>Title</h1>');
+		expect(html).toContain('<p>Raw</p>');
+		expect(html).toContain('<pre><code>const a = "&lt;b class=\\"x\\"&gt;";\n</code></pre>');
+		expect(html).toContain('<code>class="x"</code>');
+		expect(html).not.toMatch(/<[^>]+\sclass=/);
 	});
 
 	it.each([
