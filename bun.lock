@@ -31,6 +31,7 @@
         "@types/bun": "1.4.2",
         "@types/sanitize-html": "2.16.2",
         "@typescript/native": "npm:typescript@7.0.2",
+        "@unocss/extractor-svelte": "66.10.5",
         "@unocss/reset": "66.10.5",
         "drizzle-kit": "0.31.11",
         "fast-check": "4.10.2",
@@ -352,6 +353,8 @@
     "@unocss/core": ["@unocss/core@66.10.5", "", {}, "sha512-fukv4bL32z/kWIiKgDy5ih452Jzf7S76p8RnP4N+3utqMFeqWayEApiqRidGv5b6NwPguTsKXaLsy+mbK9aMfA=="],
 
     "@unocss/extractor-arbitrary-variants": ["@unocss/extractor-arbitrary-variants@66.10.5", "", { "dependencies": { "@unocss/core": "66.10.5" } }, "sha512-8qCJjByALdNiGQB1xHWK3tAl3n+hacBLlklqHhgNj0qWYtr3Hp+pfyA2nuyzJcPXkolqtGn1APJ1TNPbL5w+qg=="],
+
+    "@unocss/extractor-svelte": ["@unocss/extractor-svelte@66.10.5", "", {}, "sha512-gFaGBK6wCR/5X3DFKOfATGSv4waTwrPrhZdTsKq8Jw6OtOGvY30ILVgk+OHcjmCdaxDfHwH7Go87AOSL9WetQg=="],
 
     "@unocss/inspector": ["@unocss/inspector@66.10.5", "", { "dependencies": { "@unocss/config": "66.10.5", "@unocss/core": "66.10.5", "@unocss/rule-utils": "66.10.5", "devframe": "^1.0.0", "tinyglobby": "^0.2.17", "unplugin-utils": "^0.3.2" } }, "sha512-YTYkwzBrEnfleoIv9Q7PQDlbC7st/hUKI8V7veWwkqpzcAxGcLfbLn50jGgnbvAZrxtGgvF021uW6aor9FyX6A=="],
 
