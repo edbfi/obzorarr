@@ -1,0 +1,138 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Biome migration
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions: {}
+defaults: { run: { shell: bash } }
+concurrency:
+  group: biome-migrate-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+jobs:
+  migrate:
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'dependabot[bot]' # zizmor: ignore[bot-conditions] -- PR author is checked; actor only filters later pushes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { contents: read, pull-requests: read }
+    outputs:
+      patch: ${{ steps.diff.outputs.patch }}
+    steps:
+      - id: changed
+        name: Detect a Biome dependency update
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" > "$RUNNER_TEMP/files.json"
+          if jq -e 'add | any((.filename | endswith("package.json")) and ((.patch // "") | test("(?m)^[+-].*\"@biomejs/biome\"")))' "$RUNNER_TEMP/files.json" > /dev/null; then
+            echo 'biome=true' >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.changed.outputs.biome == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - if: steps.changed.outputs.biome == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with: { bun-version-file: package.json }
+      - if: steps.changed.outputs.biome == 'true'
+        run: |
+          bun ci --ignore-scripts
+          bunx --no-install biome migrate --write
+      - id: diff
+        if: steps.changed.outputs.biome == 'true'
+        run: |
+          git diff --binary > "$RUNNER_TEMP/biome.patch"
+          if [ -s "$RUNNER_TEMP/biome.patch" ]; then echo 'patch=true' >> "$GITHUB_OUTPUT"; fi
+      - if: steps.diff.outputs.patch == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: biome-${{ github.event.pull_request.head.sha }}
+          path: ${{ runner.temp }}/biome.patch
+          if-no-files-found: error
+          retention-days: 1
+  apply:
+    needs: [migrate]
+    if: needs.migrate.outputs.patch == 'true' && github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'dependabot[bot]' # zizmor: ignore[bot-conditions] -- PR author is checked; actor only filters later pushes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: { actions: read, contents: read, pull-requests: read }
+    outputs:
+      sha: ${{ steps.apply.outputs.sha }}
+    steps:
+      - id: apply
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUSH_TOKEN: ${{ secrets.BIOME_MIGRATE_TOKEN }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          artifact="$(mktemp -d)"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$artifact" "$work"' EXIT
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" -n "biome-$HEAD_SHA" -D "$artifact"
+          shopt -s nullglob dotglob
+          files=("$artifact"/*)
+          [ "${#files[@]}" -eq 1 ] && [ "${files[0]}" = "$artifact/biome.patch" ] || exit 1
+          [ -f "$artifact/biome.patch" ] && [ ! -L "$artifact/biome.patch" ] || exit 1
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git -c core.hooksPath=/dev/null check-ref-format "refs/heads/$HEAD_REF"
+          current="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha)"
+          if [ "$current" != "$HEAD_SHA" ]; then echo 'PR head moved; its new run owns migration'; exit 0; fi
+          cd "$work"
+          git -c core.hooksPath=/dev/null init -q
+          git -c core.hooksPath=/dev/null remote add origin "https://github.com/$GITHUB_REPOSITORY.git"
+          read_auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          git -c core.hooksPath=/dev/null -c "http.extraheader=AUTHORIZATION: basic $read_auth" fetch --depth=1 origin "$HEAD_SHA"
+          # Apply against the index; never check out or execute PR code.
+          git -c core.hooksPath=/dev/null read-tree "$HEAD_SHA"
+          summary="$(git -c core.hooksPath=/dev/null apply --summary "$artifact/biome.patch")"
+          [ -z "$summary" ] || { echo '::error::patch changes paths or modes'; exit 1; }
+          git -c core.hooksPath=/dev/null apply --cached --check "$artifact/biome.patch"
+          git -c core.hooksPath=/dev/null apply --cached "$artifact/biome.patch"
+          changed=()
+          while IFS= read -r -d '' path; do changed+=("$path"); done < <(git -c core.hooksPath=/dev/null diff --cached --name-only -z "$HEAD_SHA")
+          [ "${#changed[@]}" -gt 0 ]
+          for path in "${changed[@]}"; do
+            case "$path" in biome.json|biome.jsonc) ;; *) echo '::error::patch contains a forbidden path'; exit 1 ;; esac
+            mode="$(git -c core.hooksPath=/dev/null ls-files --stage -- "$path")"
+            [[ "$mode" == '100644 '* ]] || { echo '::error::configuration must be a regular file'; exit 1; }
+          done
+          export GIT_AUTHOR_NAME='github-actions[bot]' GIT_COMMITTER_NAME='github-actions[bot]'
+          export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          tree="$(git -c core.hooksPath=/dev/null write-tree)"
+          next="$(git -c core.hooksPath=/dev/null commit-tree "$tree" -p "$HEAD_SHA" -m 'chore(deps): apply biome migrate [dependabot skip]')"
+          git -c core.hooksPath=/dev/null update-ref HEAD "$next"
+          [ "$(git -c core.hooksPath=/dev/null rev-parse HEAD^)" = "$HEAD_SHA" ]
+          push_auth="$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 | tr -d '\n')"
+          git -c core.hooksPath=/dev/null -c "http.extraheader=AUTHORIZATION: basic $push_auth" push "--force-with-lease=refs/heads/$HEAD_REF:$HEAD_SHA" origin "HEAD:refs/heads/$HEAD_REF"
+          echo "sha=$next" >> "$GITHUB_OUTPUT"
+  enable:
+    needs: [apply]
+    if: needs.apply.outputs.sha != '' && github.event.pull_request.user.login == 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'dependabot[bot]' # zizmor: ignore[bot-conditions] -- PR author is checked; actor only filters later pushes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - env:
+          HEAD_SHA: ${{ needs.apply.outputs.sha }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDENCY_AUTOMERGE_TOKEN }}
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if output="$(gh pr merge --auto --squash --match-head-commit "$HEAD_SHA" "$PR_URL" 2>&1)"; then
+              printf '%s\n' "$output"
+              exit 0
+            fi
+            printf '%s\n' "$output" >&2
+            current="$(gh pr view "$PR_URL" --json headRefOid --jq .headRefOid)" || { echo "::error::enable failed and head lookup failed"; exit 1; }
+            if [ -n "$current" ] && [ "$current" != "$HEAD_SHA" ]; then echo "head moved to $current; its writer enables auto-merge"; exit 0; fi
+            if [ "$current" = "$HEAD_SHA" ] && [[ "$output" == *"Pull request is in unstable status"* ]] && [ "$attempt" -lt 5 ]; then
+              echo "Merge state is still settling; retrying in 5 seconds"
+              sleep 5
+              continue
+            fi
+            echo "::error::enable failed for the current head"; exit 1
+          done
