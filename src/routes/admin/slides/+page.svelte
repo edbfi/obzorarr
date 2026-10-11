@@ -658,8 +658,13 @@ function getCustomSlideForEdit(item: UnifiedSlideItem) {
 							rows="10"
 							placeholder="Write your slide content in Markdown..."
 							aria-invalid={visibleFieldErrors?.content?.[0] ? 'true' : undefined}
-							aria-describedby={visibleFieldErrors?.content?.[0] ? 'content-error' : undefined}
+							aria-describedby={visibleFieldErrors?.content?.[0]
+								? 'content-hint content-error'
+								: 'content-hint'}
 						></textarea>
+						<span id="content-hint" class="field-hint">
+							Format with Markdown; HTML classes and inline styles are removed.
+						</span>
 						{#if visibleFieldErrors?.content?.[0]}
 							<span id="content-error" class="field-error" role="alert">
 								{visibleFieldErrors.content[0]}

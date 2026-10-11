@@ -406,6 +406,40 @@ describe('admin slides actions', () => {
 			expect((await getSlideConfigByType('total-time'))?.sortOrder).toBe(2);
 		});
 	});
+
+	describe('class attributes in custom slide content', () => {
+		const content = '<p class="fixed inset-0 z-[100]">Overlay</p>';
+
+		it('stores the Markdown unchanged but renders it without classes on load', async () => {
+			expect(
+				await runCreateCustom(
+					buildCreateCustomRequest({ title: 'Classy', content, enabled: 'true' })
+				)
+			).toMatchObject({ success: true });
+
+			const rows = await db.select().from(customSlides);
+			expect(rows[0]?.content).toBe(content);
+
+			const data = await (
+				load as unknown as () => Promise<{ customSlides: { renderedHtml: string }[] }>
+			)();
+			expect(data.customSlides[0]?.renderedHtml).toBe('<p>Overlay</p>');
+		});
+
+		it('previews without classes', async () => {
+			const formData = new FormData();
+			formData.set('content', content);
+			const handler = actions.previewMarkdown as NonNullable<typeof actions.previewMarkdown>;
+			const result = await handler({
+				request: new Request('http://localhost/admin/slides?/previewMarkdown', {
+					method: 'POST',
+					body: formData
+				}),
+				locals: adminLocals
+			} as Parameters<typeof handler>[0]);
+			expect(result).toEqual({ success: true, html: '<p>Overlay</p>' });
+		});
+	});
 });
 
 describe('slides load — AI fun-fact status flag (ISSUE-012)', () => {
