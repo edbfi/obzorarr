@@ -16,13 +16,3 @@ updates:
     commit-message: { prefix: chore, include: scope }
     groups:
       patch-minor: { patterns: ["*"], update-types: [minor, patch] }
-  - package-ecosystem: bun
-    directory: /
-    schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
-    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
-    commit-message: { prefix: chore, include: scope }
-    groups:
-      biome: { patterns: ["@biomejs/*"] }
-      playwright: { patterns: [playwright, "@playwright/*"] }
-      vitest: { patterns: [vitest, "@vitest/*"] }
-      patch-minor: { patterns: ["*"], update-types: [minor, patch] }
