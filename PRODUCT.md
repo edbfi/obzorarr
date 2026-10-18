@@ -8,7 +8,7 @@ web
 
 ## Users
 
-Member shell: top navigation Overview, My Wrapped, Sharing, Alex menu. No admin links for members. Owner shell: 224px sidebar Dashboard, Wrapped, Slides, Sync, Users, Logs, Settings, owner footer. Do not invent media playback.
+Member shell: top navigation Overview, My Wrapped, Sharing, account menu (the member's name). No admin links for members. Owner shell: 224px sidebar Dashboard, Wrapped, Slides, Sync, Users, Logs, Settings, owner footer. Do not invent media playback.
 
 ## Primary tasks
 
