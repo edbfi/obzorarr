@@ -106,11 +106,11 @@ and repoint every link to them (AGENTS.md, docs/SPEC.md) at `panda.config.ts`.
 **Description:** Add `@ark-ui/svelte`, now, before its first use (spec, ground-floor choice 2).
 
 **Acceptance criteria:**
-- [ ] It installs with no unmet peer dependency.
-- [ ] `check` and `build` still pass.
+- [x] It installs with no unmet peer dependency.
+- [x] `check` and `build` still pass.
 
 **Verification:**
-- [ ] `bun ci && bun run --bun check && bun run --bun build`
+- [x] `bun ci && bun run --bun check && bun run --bun build`
 
 **Dependencies:** T1
 
