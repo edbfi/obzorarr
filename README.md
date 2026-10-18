@@ -35,3 +35,9 @@
 | HTTP API clients | `@hey-api/openapi-ts`, generated from the app's OpenAPI document |
 | Plex | `@ctrl/plex`, with focused `fetch` methods for missing endpoints |
 | Deployment | `@sveltejs/adapter-bun`: one container, one process, one HTTP port |
+
+## Working on it
+
+Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
+The product and design context is in [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and
+[docs/](docs/); the skeleton's scope is [docs/SPEC.md](docs/SPEC.md).
