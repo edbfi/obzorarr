@@ -1,6 +1,6 @@
 # Spec: obzorarr
 
-**Status:** the ground floor (skeleton) is specified here and waits for the orchestrator's approval.
+**Status:** the ground floor (skeleton) is specified here and approved by the orchestrator (2026-10-18).
 Product modules aren't specified yet (see the capability map).
 
 ## Objective
@@ -120,7 +120,7 @@ export const GET: RequestHandler = () =>
 - `panda.config.ts` takes every value in [`docs/design/tokens.json`](design/tokens.json): colours,
   type styles, spacing, radii, layout sizes and motion durations, under the names DESIGN.md uses.
 - Colours are semantic tokens behind a colour-mode condition, dark by default; other themes can be
-  added later without touching components (open question 1).
+  added later without touching components (ground-floor choice 4).
 - Once the Panda config holds them, `docs/design/tokens.json` and `tokens.css` are deleted, and the
   links to them point at `panda.config.ts`.
 - The placeholder page uses only Panda tokens: no raw colour, size or font values in components.
@@ -183,14 +183,10 @@ design doesn't call for anything different.
 3. **Security headers and CSP.** The legacy app set a nonce-based CSP and security headers on every
    response (legacy spec, "Security"). They belong to the first module that serves real pages, not
    the skeleton.
-
-## Open questions
-
-1. **Themes.** The legacy app lets the owner pick the admin panel's theme and the recap's theme
-   independently, from five presets. The design seeds both to After Hours and names no other preset.
-   Proposal: the skeleton defines After Hours as the only theme, its colours as semantic tokens
-   behind the dark colour-mode condition, and the module that brings back the two theme settings
-   decides whether more presets return and how Panda switches them.
-2. **CSP and the recap spike.** If the recap spike ships as a real route before sign-in exists, does
-   it carry the security headers and CSP (choice 3), or does that wait for sign-in? Proposal: the
-   spike's spec decides, since only it knows whether the spike is served to users.
+4. **Themes.** The legacy app lets the owner pick the admin panel's theme and the recap's theme
+   independently, from five presets; the design seeds both to After Hours. The skeleton defines After
+   Hours as the only theme, its colours as semantic tokens behind the dark colour-mode condition, and
+   the module that brings back the two theme settings decides whether more presets return and how
+   Panda switches them.
+5. **CSP and the recap spike.** Whether the recap spike carries the security headers and CSP (choice
+   3) is decided by the spike's own spec, since only it knows whether the spike is served to users.

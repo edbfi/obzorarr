@@ -61,7 +61,7 @@ Every check below runs with failing `node`, `npm` and `npx` shims on `PATH`. Pla
 `svelte-kit sync` (`bun --bun panda codegen`), and put every value from `docs/design/tokens.json`
 into `panda.config.ts`: colours as semantic tokens behind a dark-by-default colour-mode condition,
 type styles, spacing, radii, layout sizes, motion durations, with After Hours as the only theme
-(spec, open question 1). The root layout loads the stylesheet; the placeholder page uses only
+(spec, ground-floor choice 4). The root layout loads the stylesheet; the placeholder page uses only
 tokens. Font tokens use system fallbacks (spec, ground-floor choice 1).
 
 **Acceptance criteria:**
