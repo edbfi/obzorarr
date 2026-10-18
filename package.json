@@ -9,7 +9,8 @@
 		"dev": "bun --bun vite dev",
 		"build": "bun --bun vite build",
 		"preview": "bun ./build",
-		"check": "bun --bun svelte-kit sync && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+		"check": "bun --bun svelte-kit sync && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"test": "bun --bun vitest run"
 	},
 	"imports": {
 		"#lib/*": "./src/lib/*"
@@ -21,6 +22,7 @@
 		"svelte": "5.57.2",
 		"svelte-check": "4.7.7",
 		"typescript": "6.0.3",
-		"vite": "8.3.4"
+		"vite": "8.3.4",
+		"vitest": "5.0.5"
 	}
 }

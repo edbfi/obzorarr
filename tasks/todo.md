@@ -35,12 +35,12 @@ Every check below runs with failing `node`, `npm` and `npx` shims on `PATH`. Pla
 `ok` as plain text, `cache-control: no-store`. Add Vitest (`node` environment) and the `test` script.
 
 **Acceptance criteria:**
-- [ ] The test fails before the handler exists and passes after.
-- [ ] `bun run --bun test` runs once and exits (no watch mode).
+- [x] The test fails before the handler exists and passes after.
+- [x] `bun run --bun test` runs once and exits (no watch mode).
 
 **Verification:**
-- [ ] `bun run --bun test`
-- [ ] `bun run --bun check`
+- [x] `bun run --bun test`
+- [x] `bun run --bun check`
 
 **Dependencies:** T1
 
@@ -51,8 +51,8 @@ Every check below runs with failing `node`, `npm` and `npx` shims on `PATH`. Pla
 
 ### Checkpoint A
 
-- [ ] `check`, `test` and `build` pass from a clean clone.
-- [ ] `/` and `/healthz` respond from the built server.
+- [x] `check`, `test` and `build` pass from a clean clone.
+- [x] `/` and `/healthz` respond from the built server.
 
 ## Phase 2: Design system and smoke
 
