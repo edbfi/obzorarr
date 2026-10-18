@@ -172,12 +172,12 @@ on main), keeping the vendored-skill exclusions and the `docs-set` hook, and add
 (`bun run --bun check`, `pass_filenames: false`).
 
 **Acceptance criteria:**
-- [ ] `prek run --all-files --hook-stage manual` passes, including `biome`, `biome-migrate`,
+- [x] `prek run --all-files --hook-stage manual` passes, including `biome`, `biome-migrate`,
   `check-peers`, `tests`, `check` and `docs-set`.
-- [ ] A stray `NOTES.md` still fails `docs-set`.
+- [x] A stray `NOTES.md` still fails `docs-set`.
 
 **Verification:**
-- [ ] `prek run --all-files --hook-stage manual`
+- [x] `prek run --all-files --hook-stage manual`
 
 **Dependencies:** T2, T6, T7
 
