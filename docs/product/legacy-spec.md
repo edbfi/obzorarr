@@ -9,8 +9,8 @@
 > in "Upgrades". Its visual direction (the five theme presets, and typefaces loaded from a public
 > web-font service with that origin in the content security policy) is superseded by
 > [PRODUCT.md](../../PRODUCT.md) and [DESIGN.md](../../DESIGN.md), which seed both theme settings to
-> After Hours and bundle fonts locally; whether more presets return is an open question in
-> [`docs/SPEC.md`](../SPEC.md). Sections are deleted as approved `docs/SPEC-<id>.md` files cover
+> After Hours and bundle fonts locally; whether more presets return is left to a later module ([`docs/SPEC.md`](../SPEC.md),
+> ground-floor choice 4). Sections are deleted as approved `docs/SPEC-<id>.md` files cover
 > them, and the file goes once nothing is left (AGENTS.md, cleanup procedures).
 
 ## Status
