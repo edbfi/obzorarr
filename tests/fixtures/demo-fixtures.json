@@ -1,0 +1,23 @@
+{
+	"note": "Fictional historical fixture, deliberately independent of the current date. Production values come from server responses; screenshots never define calculations.",
+	"snapshotDate": "2025-10-15",
+	"obzorarr": {
+		"year": 2025,
+		"member": "Alex",
+		"hours": 842,
+		"movies": 127,
+		"series": 38,
+		"longestStreakDays": 21,
+		"monthlyHours": [42, 58, 60, 70, 75, 65, 76, 96, 88, 72, 67, 73],
+		"server": {
+			"viewers": 24,
+			"hours": 12460,
+			"plays": 3842,
+			"monthlyHours": [700, 820, 960, 1080, 1190, 1010, 1460, 1290, 1180, 1020, 900, 850]
+		},
+		"privacyFloor": "members-only",
+		"publicLookup": false,
+		"interfaceTheme": "After Hours",
+		"wrappedTheme": "After Hours"
+	}
+}
