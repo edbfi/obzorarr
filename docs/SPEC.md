@@ -171,8 +171,8 @@ obzorarr moves from the Content tier to Bun web with this work
 
 ## Ground-floor choices
 
-Carried over from the ground floor the orchestrator approved for the first rewrite app; obzorarr's
-design doesn't call for anything different.
+Choices 1–3 are carried over from the first rewrite app's skeleton, since obzorarr's design doesn't
+call for anything different; choices 4 and 5 are obzorarr's own.
 
 1. **Fonts.** DESIGN.md wants Space Grotesk, Instrument Sans and IBM Plex Mono bundled locally. The
    skeleton defines the font tokens with system fallbacks; the first surface adds the font files (a
