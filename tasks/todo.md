@@ -13,13 +13,14 @@ Every check below runs with failing `node`, `npm` and `npx` shims on `PATH`. Pla
 `tsconfig.json`, the document shell and a placeholder `(public)` page at `/`.
 
 **Acceptance criteria:**
-- [ ] `bun ci`, `bun run --bun check` (zero errors and warnings) and `bun run --bun build` pass.
-- [ ] `bun run --bun preview` serves `/` with the placeholder heading.
-- [ ] SvelteKit's configuration lives in the Vite plugin; `#lib` resolves.
+- [x] `bun ci`, `bun run --bun check` (zero errors and warnings) and `bun run --bun build` pass.
+- [x] `bun run --bun preview` serves `/` with the placeholder heading.
+- [x] SvelteKit's configuration lives in the Vite plugin; `#lib` resolves (the root layout imports
+  the icon from `#lib/assets/obzorarr-icon.svg`).
 
 **Verification:**
-- [ ] `bun ci && bun run --bun check && bun run --bun build`
-- [ ] `bun run --bun preview`, then `curl -fsS localhost:<port>/` shows the heading.
+- [x] `bun ci && bun run --bun check && bun run --bun build`
+- [x] `bun run --bun preview`, then `curl -fsS localhost:<port>/` shows the heading.
 
 **Dependencies:** none
 

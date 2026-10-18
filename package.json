@@ -1,0 +1,26 @@
+{
+	"name": "obzorarr",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"packageManager": "bun@1.4.3",
+	"scripts": {
+		"prepare": "bun --bun svelte-kit sync",
+		"dev": "bun --bun vite dev",
+		"build": "bun --bun vite build",
+		"preview": "bun ./build",
+		"check": "bun --bun svelte-kit sync && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+	},
+	"imports": {
+		"#lib/*": "./src/lib/*"
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-bun": "1.0.0",
+		"@sveltejs/kit": "3.1.0",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"svelte": "5.57.2",
+		"svelte-check": "4.7.7",
+		"typescript": "6.0.3",
+		"vite": "8.3.4"
+	}
+}
