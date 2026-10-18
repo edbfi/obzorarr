@@ -1,0 +1,59 @@
+# Dependencies and build output
+node_modules/
+.svelte-kit/
+build/
+styled-system/
+
+# Environment: only the example is committed
+.env*
+!.env.example
+
+# Local data
+*.db*
+/data/
+
+# Test output
+test-results/
+playwright-report/
+coverage/
+
+# Agent tooling. A global gitignore may ignore .claude/ and .codex/, so re-include
+# them; only machine-local settings stay ignored.
+!.claude/
+!.codex/
+.claude/settings.local.json
+# Impeccable's engine binary; fresh clones use ~/.impeccable/bin/<version>/.
+**/skills/impeccable/scripts/bin/
+
+# Impeccable's block, copied verbatim from its README.
+# impeccable-ignore-start
+# Ephemeral output, runtime state, and per-dev overrides.
+# The **/ prefix covers .impeccable at the repo root or in a nested workspace.
+# Shared artifacts stay tracked: config.json, live/config.json,
+# design.json, surfaces/*.md, critique/*.md.
+**/.impeccable/config.local.json
+**/.impeccable/hook.cache.json
+**/.impeccable/hook.pending.json
+**/.impeccable/*.png
+**/.impeccable/review/
+**/.impeccable/questions/
+**/.impeccable/live/server.json
+**/.impeccable/live/sessions/
+**/.impeccable/live/previews/
+**/.impeccable/live/annotations/
+**/.impeccable/live/cache/
+**/.impeccable/live/manual-edit-apply-transaction.json
+**/.impeccable/live/manual-edit-events.jsonl
+**/.impeccable/live/manual-edit-evidence/
+**/.impeccable/live/pending-manual-edits.json
+**/.impeccable/live/deferred-svelte-component-accepts.json
+**/.impeccable/live/*.png
+# impeccable-ignore-end
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
