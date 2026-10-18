@@ -7,7 +7,16 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["**", "!**/*.svg"]
+		"includes": [
+			"**",
+			"!**/*.svg",
+			"!!.agents/skills",
+			"!!.claude",
+			"!!.codex",
+			"!!.impeccable",
+			"!!.opencode",
+			"!!skills-lock.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,

@@ -1,0 +1,34 @@
+/* Proposed Obzorarr design seed. Map these tokens into Panda CSS; this file adds no UI framework. */
+:root {
+  --color-background: #0B1828;
+  --color-surface: #142D45;
+  --color-raised: #1B3952;
+  --color-border: #35536D;
+  --color-control-border: #708597;
+  --color-primary: #6BE4E4;
+  --color-secondary: #4F9ECF;
+  --color-text: #F2F8FF;
+  --color-muted: #B3C6D8;
+  --color-success: #9CDDBD;
+  --color-warning: #F0C680;
+  --color-danger: #FFACB5;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-xxl: 32px;
+  --space-section: 48px;
+  --space-hero: 64px;
+  --radius-sm: 4px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-dialog: 16px;
+  --radius-full: 999px;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --control-height: 44px;
+  --sidebar-width: 224px;
+  --topbar-height: 64px;
+}

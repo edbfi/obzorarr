@@ -1,0 +1,7 @@
+{
+  "telemetry": false,
+  "updateCheck": false,
+  "detector": {
+    "extensions": [{ "ext": ".svelte", "engine": "html" }]
+  }
+}
