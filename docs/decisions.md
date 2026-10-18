@@ -2,7 +2,7 @@
 
 Each entry is a decision and why it was made. Open entries keep their number when they're settled.
 The stack entries come from the shared rewrite recipe used by all five edbfi apps, cut down to what
-applies to obzorarr. Versions live in `package.json` once it exists.
+applies to obzorarr. Versions live in `package.json` and `bun.lock`.
 
 ## Decided
 
@@ -101,7 +101,9 @@ Why: one typed contract for the JSON endpoints, without hand-written client code
 
 Styling is Panda CSS 2 through its Vite plugin, with build-time transforms on. Accessible primitives
 come from Ark UI for Svelte, unstyled and styled with Panda tokens. Design tokens are defined once,
-in Panda's configuration. No second styling tool or primitive library.
+in Panda's configuration, which loads only `@pandacss/preset-base` (utilities and conditions, no
+preset palette) and sets `strictTokens`, so a raw value in a component fails type checking. No
+second styling tool or primitive library.
 
 Why: one token source and one primitive library keep the design system (DESIGN.md) enforceable.
 
@@ -153,8 +155,9 @@ database module.
 
 ### D16. Runtime validation gaps
 
-Not yet validated for this stack: browser hydration and interaction (only server rendering and
-emitted assets passed), production containers, realistic load, and job recovery after a restart.
+Not yet validated for this stack: browser interaction with a real component, production containers,
+realistic load, and job recovery after a restart. Hydration is validated: the e2e smoke test waits
+for the hydrated app in Chromium against the built server, with no console errors.
 A crash test doesn't prove recovery from power loss or storage faults. The Turso backup and restore
 procedure is still to be defined and tested; the database file and the secrets must be restored
 together. Each closes with the work that first depends on it.
