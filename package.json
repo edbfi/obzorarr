@@ -10,7 +10,8 @@
 		"build": "bun --bun vite build",
 		"preview": "bun ./build",
 		"check": "bun --bun svelte-kit sync && bun --bun panda codegen && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-		"test": "bun --bun vitest run"
+		"test": "bun --bun vitest run",
+		"smoke": "bun --bun playwright test"
 	},
 	"imports": {
 		"#lib/*": "./src/lib/*",
@@ -21,6 +22,7 @@
 		"@pandacss/dev": "2.2.0",
 		"@pandacss/preset-base": "2.2.0",
 		"@pandacss/vite": "2.2.0",
+		"@playwright/test": "1.64.1",
 		"@sveltejs/adapter-bun": "1.0.0",
 		"@sveltejs/kit": "3.1.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
