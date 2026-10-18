@@ -192,11 +192,11 @@ browser install, `audit`, `ci-ok`; keep cron `29 3 * * 0`), add the `bun` block 
 and add `biome-migrate.yml`. Record the tier change for edbfi-ci in the PR body.
 
 **Acceptance criteria:**
-- [ ] actionlint, zizmor and `privileged-jobs` pass.
+- [x] actionlint, zizmor and `privileged-jobs` pass.
 - [ ] The PR's `checks`, `smoke` and `ci-ok` are green; `audit` is skipped on PRs.
 
 **Verification:**
-- [ ] `prek run --all-files --hook-stage manual`
+- [x] `prek run --all-files --hook-stage manual`
 - [ ] The PR's CI run.
 
 **Dependencies:** T8
