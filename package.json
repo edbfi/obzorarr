@@ -5,17 +5,21 @@
 	"type": "module",
 	"packageManager": "bun@1.4.3",
 	"scripts": {
-		"prepare": "bun --bun svelte-kit sync",
+		"prepare": "bun --bun svelte-kit sync && bun --bun panda codegen",
 		"dev": "bun --bun vite dev",
 		"build": "bun --bun vite build",
 		"preview": "bun ./build",
-		"check": "bun --bun svelte-kit sync && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"check": "bun --bun svelte-kit sync && bun --bun panda codegen && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"test": "bun --bun vitest run"
 	},
 	"imports": {
-		"#lib/*": "./src/lib/*"
+		"#lib/*": "./src/lib/*",
+		"#styled-system/*": "./styled-system/*/index.js"
 	},
 	"devDependencies": {
+		"@pandacss/dev": "2.2.0",
+		"@pandacss/preset-base": "2.2.0",
+		"@pandacss/vite": "2.2.0",
 		"@sveltejs/adapter-bun": "1.0.0",
 		"@sveltejs/kit": "3.1.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",

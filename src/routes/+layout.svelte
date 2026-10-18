@@ -1,4 +1,5 @@
 <script lang="ts">
+import "../app.css";
 import icon from "#lib/assets/obzorarr-icon.svg";
 import type { LayoutProps } from "./$types";
 
