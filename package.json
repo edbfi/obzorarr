@@ -1,0 +1,37 @@
+{
+	"name": "obzorarr",
+	"private": true,
+	"version": "0.0.1",
+	"type": "module",
+	"packageManager": "bun@1.4.3",
+	"scripts": {
+		"prepare": "bun --bun svelte-kit sync && bun --bun panda codegen",
+		"dev": "bun --bun vite dev",
+		"build": "bun --bun vite build",
+		"preview": "bun ./build",
+		"check": "bun --bun svelte-kit sync && bun --bun panda codegen && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
+		"test": "bun --bun vitest run",
+		"smoke": "bun --bun playwright test",
+		"lint": "bun --bun biome check"
+	},
+	"imports": {
+		"#lib/*": "./src/lib/*",
+		"#styled-system/*": "./styled-system/*/index.js"
+	},
+	"devDependencies": {
+		"@ark-ui/svelte": "5.24.3",
+		"@biomejs/biome": "2.5.15",
+		"@pandacss/dev": "2.2.0",
+		"@pandacss/preset-base": "2.2.0",
+		"@pandacss/vite": "2.2.0",
+		"@playwright/test": "1.64.1",
+		"@sveltejs/adapter-bun": "1.0.0",
+		"@sveltejs/kit": "3.1.0",
+		"@sveltejs/vite-plugin-svelte": "7.3.1",
+		"svelte": "5.57.2",
+		"svelte-check": "4.7.7",
+		"typescript": "6.0.3",
+		"vite": "8.3.4",
+		"vitest": "5.0.5"
+	}
+}

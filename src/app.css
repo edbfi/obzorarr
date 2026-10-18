@@ -1,0 +1,2 @@
+/* Layer order. The Panda Vite plugin appends the generated CSS to this file. */
+@layer reset, base, tokens, recipes, utilities;

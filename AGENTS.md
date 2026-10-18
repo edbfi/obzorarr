@@ -161,12 +161,15 @@ gives each member a personal recap, plus a server-wide recap, as an animated sto
 panel for the server's owner. It is being rewritten from scratch; the previous version is on the
 `legacy-old/v1` branch, for reference only.
 
-**Status:** context only. The skeleton is next: [`docs/SPEC.md`](docs/SPEC.md) and
-[`tasks/plan.md`](tasks/plan.md). Product modules come later, each through an owner-approved
-`docs/SPEC-<id>.md`; the first is the three-slide recap spike.
+**Status:** the ground floor is built: an empty SvelteKit app on Bun with Panda tokens, `/healthz`,
+one unit test, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
+come next, each through an owner-approved `docs/SPEC-<id>.md`; the first is the three-slide recap
+spike.
 
-**Commands:** none yet beyond `prek run --all-files --hook-stage manual`. The skeleton adds
-`package.json` scripts.
+**Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
+`bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
+manual` is CI's `checks` job. `smoke` runs against the built server, so run `build` first, and it
+needs Chromium once per machine: `bunx --bun playwright install chromium`.
 
 **Boundaries.**
 - The animated recap starts with a three-slide spike ([D19](docs/decisions.md#d19-the-animated-recap)).
@@ -180,6 +183,47 @@ panel for the server's owner. It is being rewritten from scratch; the previous v
 **Read next.**
 - Product: [PRODUCT.md](PRODUCT.md), [legacy spec](docs/product/legacy-spec.md).
 - Design: [DESIGN.md](DESIGN.md), the [surface briefs](.impeccable/surfaces/) (one per route),
-  [screens and references](docs/design/), [seed tokens](docs/design/tokens.json),
+  [screens and references](docs/design/), [design tokens](panda.config.ts),
   [demo fixtures](tests/fixtures/demo-fixtures.json).
 - Decisions: [docs/decisions.md](docs/decisions.md).
+
+## Structure
+
+Folders exist only once they hold a real file; the later ones are the layout that modules grow
+into. These are principles, not hard limits.
+
+```text
+src/
+  app.html                       document shell; `class="dark"` sets the default colour mode
+  app.css                        Panda layer order; the Vite plugin appends the generated CSS
+  app.d.ts                       SvelteKit ambient types
+  routes/
+    +layout.svelte               loads app.css and the favicon; marks <html data-hydrated> once
+                                 mounted
+    (public)/+page.svelte        `/`: placeholder page
+    healthz/+server.ts           `/healthz`: public one-word status
+    (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
+  lib/                           imported as `#lib/<path>.<ext>`, e.g. `#lib/server/health.ts`
+    assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon
+    server/                      server-only: health.ts; later db/ (schema per aggregate),
+                                 providers/plex/ (and the optional AI text provider),
+                                 services/<domain>/, jobs/, http/ (SSRF-safe fetch), config/,
+                                 security/, logging/
+    components/                  later: ui/ (Ark wrappers), layout/, <feature>/
+    shared/                      later: isomorphic types, schemas, utilities
+tests/
+  e2e/smoke.test.ts              Playwright smoke against the built server
+  fixtures/demo-fixtures.json    design fixtures
+drizzle/                         later: reviewed migrations
+panda.config.ts                  every design token; components use them through
+                                 `#styled-system/<module>` (generated, gitignored)
+vite.config.ts                   SvelteKit (all its configuration), Panda and Vitest
+playwright.config.ts  tsconfig.json  package.json  bun.lock
+```
+
+- Routes stay thin and call `#lib/server` code; they never reach the database or a provider
+  directly.
+- Unit tests sit next to their source as `*.test.ts` (Vitest takes `src/**/*.test.ts`); e2e tests
+  live in `tests/e2e/`.
+- One purpose per file and one component per file (naming: [docs/SPEC.md](docs/SPEC.md#code-style)).
+  A file that keeps growing is a prompt to split it, raised in review.

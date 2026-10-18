@@ -54,6 +54,36 @@ repos:
     rev: d07ccc13141d4aee4fa28546f4328f4e48d5363b  # frozen: v0.1.0
     hooks:
       - id: privileged-jobs
+      - id: check-peers
+
+  - repo: local
+    hooks:
+      - id: biome
+        name: Biome checks
+        # biome.json ignores tool-written configs; a batch of only those must not fail.
+        entry: bunx --bun --no-install biome check --no-errors-on-unmatched
+        language: system
+        types_or: [javascript, jsx, ts, tsx, json, css, svelte]
+        exclude: ^(\.agents/skills|\.claude/skills|\.claude/agents|\.opencode)/
+      - id: biome-migrate
+        name: Migrate Biome configuration
+        entry: bunx --bun --no-install biome migrate --write
+        language: system
+        stages: [manual]
+        pass_filenames: false
+        always_run: true
+      - id: tests
+        name: Unit tests
+        entry: bun run --bun test
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: check
+        name: Type check
+        entry: bun run --bun check
+        language: system
+        pass_filenames: false
+        always_run: true
 
   # Rewrite apps only (design/repos.md rule 13): drop elsewhere.
   - repo: local
