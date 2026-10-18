@@ -11,7 +11,8 @@
 		"preview": "bun ./build",
 		"check": "bun --bun svelte-kit sync && bun --bun panda codegen && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"test": "bun --bun vitest run",
-		"smoke": "bun --bun playwright test"
+		"smoke": "bun --bun playwright test",
+		"lint": "bun --bun biome check"
 	},
 	"imports": {
 		"#lib/*": "./src/lib/*",
@@ -19,6 +20,7 @@
 	},
 	"devDependencies": {
 		"@ark-ui/svelte": "5.24.3",
+		"@biomejs/biome": "2.5.15",
 		"@pandacss/dev": "2.2.0",
 		"@pandacss/preset-base": "2.2.0",
 		"@pandacss/vite": "2.2.0",

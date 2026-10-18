@@ -1,7 +1,7 @@
 <script lang="ts">
 import "../app.css";
-import icon from "#lib/assets/obzorarr-icon.svg";
 import { onMount } from "svelte";
+import icon from "#lib/assets/obzorarr-icon.svg";
 import type { LayoutProps } from "./$types";
 
 let { children }: LayoutProps = $props();
@@ -13,7 +13,7 @@ onMount(() => {
 </script>
 
 <svelte:head>
-	<link rel="icon" href={icon} type="image/svg+xml" />
+	<link rel="icon" href={icon} type="image/svg+xml">
 </svelte:head>
 
 {@render children()}
