@@ -5,21 +5,21 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
-    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- updates merge on green without delay
     commit-message: { prefix: chore, include: scope }
     groups:
       patch-minor: { patterns: ["*"], update-types: [minor, patch] }
   - package-ecosystem: pre-commit
     directory: /
     schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
-    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- updates merge on green without delay
     commit-message: { prefix: chore, include: scope }
     groups:
       patch-minor: { patterns: ["*"], update-types: [minor, patch] }
   - package-ecosystem: bun
     directory: /
     schedule: { interval: weekly, day: monday, time: "05:00", timezone: Europe/Copenhagen }
-    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- D2: no cooldown
+    cooldown: { exclude: ["*"] } # zizmor: ignore[dependabot-cooldown] -- updates merge on green without delay
     commit-message: { prefix: chore, include: scope }
     groups:
       biome: { patterns: ["@biomejs/*"] }

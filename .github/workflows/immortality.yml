@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Copy as .github/workflows/immortality.yml (design/watchdog.md).
+# Copy as .github/workflows/immortality.yml.
 # GitHub disables scheduled workflows in a public repository after 60 days
 # without activity. Once a month this job re-enables this repository's
 # workflows with a personal token (github.token cannot), which resets that
-# counter. Workflows disabled by hand stay disabled.
+# counter. Workflows disabled by hand stay disabled. Nothing reports it if
+# GitHub disables this workflow itself.
 # From edbfi/homebrew-taps; script: PhrozenByte/gh-workflow-immortality v1.1.1 (MIT).
 name: immortality
 

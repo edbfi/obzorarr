@@ -76,8 +76,7 @@ Also installed, for when their description fits: `context-engineering`,
 1. The orchestrator approves ground-floor specs and task lists; the owner approves product-feature
    specs (`docs/SPEC-<id>.md`) and the capability map.
 2. Every PR is shepherded until it merges: with the owner's `babysit-pr` skill where it's installed,
-   and always by the review rules below. Where they differ, edbfi-ci's
-   [auto-merge rules](https://github.com/edbfi/edbfi-ci/blob/main/design/auto-merge.md) 8–13 win.
+   and always by the review rules below, which win where they differ.
 
 **Spec boundaries.**
 - **Always:** follow the approved spec and task list; write the test first; run prek and the repo's
@@ -87,7 +86,7 @@ Also installed, for when their description fits: `context-engineering`,
 - **Never:** commit secrets; edit installed skills; weaken a test or hook to get to green; delete a
   requirement because the code doesn't meet it yet.
 
-**Review replies and merging** ([auto-merge.md](https://github.com/edbfi/edbfi-ci/blob/main/design/auto-merge.md) rules 8–13):
+**Review replies and merging:**
 - After opening a PR and after every push, wait up to 30 minutes for Pullfrog's review of the current
   head. Without one, ask once with `@pullfrog review` and wait 30 more minutes; then end the loop on
   the checks and record `no bot review received`. Never use Pullfrog's Fix links.

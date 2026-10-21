@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Copy as .github/workflows/ci.yml; adapt commands, directories and runners to design/repos.md.
-# Allocate a distinct weekly minute during rollout. Every added PR job belongs in ci-ok.
+# Copy as .github/workflows/ci.yml; adapt commands, directories and runners to the repo.
+# Give each repo its own weekly minute. Every added PR job belongs in ci-ok. No paths: filter:
+# a skipped workflow leaves the required checks pending.
+# Bun only: a bare bin runs its `#!/usr/bin/env node` with the runner's Node, so scripts run with
+# `bun run --bun`, bins with `bunx --bun`, and lifecycle scripts call `bun --bun <bin>` (bun ci
+# ignores --bun there, oven-sh/bun#44584).
 name: CI
 on:
   pull_request:
@@ -21,7 +25,7 @@ jobs:
         with: { persist-credentials: false }
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with: { bun-version-file: package.json }
-      - name: Fail on node, npm and npx (design/ci.md rule 8)
+      - name: Fail on node, npm and npx (Bun only)
         run: |
           mkdir -p "$RUNNER_TEMP/bun-only"
           for tool in node npm npx; do
@@ -41,7 +45,7 @@ jobs:
         with: { persist-credentials: false }
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with: { bun-version-file: package.json }
-      - name: Fail on node, npm and npx (design/ci.md rule 8)
+      - name: Fail on node, npm and npx (Bun only)
         run: |
           mkdir -p "$RUNNER_TEMP/bun-only"
           for tool in node npm npx; do

@@ -121,9 +121,7 @@ export const GET: RequestHandler = () => healthResponse();
 
 ## CI and repo tooling
 
-obzorarr is a Bun web repo
-([edbfi-ci repos.md](https://github.com/edbfi/edbfi-ci/blob/main/design/repos.md) rule 12), with
-edbfi-ci's Bun web templates:
+obzorarr is a Bun web repo with edbfi-ci's Bun web templates:
 - `.pre-commit-config.yaml`: Biome, `biome-migrate`, `check-peers`, the `tests` hook, plus a
   `check` hook (`bun run --bun check`), keeping the vendored-skill exclusions and the `docs-set`
   hook.
