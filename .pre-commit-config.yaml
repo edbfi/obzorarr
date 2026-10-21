@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# Copy to the repo root; preserve existing project hooks during rollout.
+# Copy to the repo root; preserve existing project hooks. Keep this filename: Dependabot's
+# pre-commit updater can't read prek.toml. CI runs prek run --all-files --hook-stage manual.
 default_install_hook_types: [pre-commit, commit-msg]
 default_stages: [pre-commit, manual]
 repos:
@@ -85,7 +86,7 @@ repos:
         pass_filenames: false
         always_run: true
 
-  # Rewrite apps only (design/repos.md rule 13): drop elsewhere.
+  # Rewrite apps only (comradarr, obzorarr, otpravkarr, zimuarr, zondarr): drop elsewhere.
   - repo: local
     hooks:
       - id: docs-set
