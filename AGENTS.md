@@ -24,8 +24,8 @@ Ambitious ideas, simple systems, software that feels obvious.
   rules below (Always / Ask first / Never, Code structure, the cleanup procedures) hold; everything
   else is a good default for navigating and changing the codebase, and these principles guide the
   judgement calls. Precedence: the owner's explicit instruction, then `.agents/rules/*.md`, then
-  this file (the orchestrator approves within it; see Gates), then the skills' defaults. When the
-  owner overrides a rule, the PR body says which.
+  this file, then the skills' defaults. The orchestrator approves ground-floor specs and task lists
+  (Gates) but can't set a rule aside. When the owner overrides a rule, the PR body says which.
 
 ### Stack and tools
 
