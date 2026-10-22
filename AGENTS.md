@@ -6,8 +6,26 @@ specifics follow the house rules.
 <!-- house-rules:start -->
 ## House rules
 
-These rules are identical in every edbfi rewrite app. Project rules in `.agents/rules/*.md`, where
-they exist, override them.
+These rules are identical in every edbfi rewrite app.
+
+### Working principles
+
+Ambitious ideas, simple systems, software that feels obvious.
+
+- **The smallest design that makes correct behaviour unsurprising.** Find the real constraint
+  first, then fight for the simplest design that meets it. Don't keep complexity because it's
+  already there, and don't add machinery because it looks architecturally impressive. Simplifying
+  code outside the task is a note or a proposal, not a drive-by edit.
+- **Measure twice, cut once; YAGNI.** Think a change through before writing it, then build what
+  the approved spec and the task need now, nothing for a future that may not come. Fight scope
+  creep both ways: no extras, and no silently dropped requirements; scope changes go through the
+  spec. Honour the owner's intent in the smallest form that is still realistic, not a stub.
+- **Defaults, not dogma.** Everything in this file is a good default for navigating and changing
+  the codebase, not a law, and the owner can override any of it. Precedence: the owner's explicit
+  instruction, then `.agents/rules/*.md`, then this file, then the skills' defaults. These
+  principles guide judgement calls; they don't let an agent set aside an explicit rule below
+  (Always / Ask first / Never, Code structure, the cleanup procedures). When the owner overrides
+  one, say which.
 
 ### Stack and tools
 
@@ -165,6 +183,11 @@ Design work uses Impeccable: `/impeccable` in Claude Code and OpenCode, `$impecc
 
 A fixed set of files. No length limits; bloat is removed by the cleanup procedures, never by cutting
 real content. History lives in git and PR bodies, and each fact lives in one place.
+
+**Most code changes need no doc change.** Agents and people read the code, so internal docs don't
+describe the implementation. They hold what code can't say: intent, constraints, decisions, the
+spec, and this file's repo section (status, structure, commands). Update a doc when a change alters
+one of those; the cleanup procedures below still apply to every PR.
 
 ```text
 README.md  AGENTS.md  CLAUDE.md          humans; agent rules (CLAUDE.md is only @AGENTS.md)
