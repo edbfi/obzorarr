@@ -36,8 +36,8 @@ It is private by default and built for a household or friends-and-family server:
 - **Owner's setup ritual:** a fresh install is claimed with a one-time token printed to the server console, then onboarding connects Plex, runs the first sync and sets appearance, privacy, slides and fun facts. Settings supplied by the deployment environment are shown read-only and always win.
 - **Data rhythm:** play history arrives by scheduled sync (default daily at midnight in the configured zone) and by a best-effort background sync when someone opens a recap. Statistics are per calendar year. Members open recaps all year, and use peaks at year end.
 - **Member's experience:** members sign in with their Plex account, open their own recap and the server recap, and share a link to theirs. The recap is a portrait-first story with a summary card, widened for desktop; the owner's admin panel is an operational tool that also works on phones, where its sidebar becomes a drawer.
-- **Rewrite status:** the rewrite is at its ground floor: an empty SvelteKit app with `/healthz` and a placeholder page. Every product module still needs an owner-approved `docs/SPEC-<id>.md`, starting with the three-slide recap spike. The legacy app on `legacy-old/v1` (releases up to 0.1.11) is behaviour reference only. Its known limitations, such as UTC date bucketing and counting full runtimes as watch time, are revisited in the rewrite's specs, not carried over.
-- **Language:** English only for the first release; the legacy app had no localisation layer.
+- **Legacy app:** behaviour reference only (see Evidence on Hand); current rewrite status lives in `docs/SPEC.md`. Its known limitations, such as UTC date bucketing and counting full runtimes as watch time, are revisited in the rewrite's specs, not carried over.
+- **Language:** English only, as in the legacy app, which had no localisation layer. Adding languages is a spec decision.
 
 ## Product requirements
 
@@ -60,7 +60,6 @@ What exists:
 - **Surface briefs:** `.impeccable/surfaces/*.md`, one per proposed route, each with required content and acceptance criteria. All are marked "proposed design seed for review".
 - **Demo fixtures:** `tests/fixtures/demo-fixtures.json`: one fictional member ("Alex") and one fictional server for 2025 (snapshot date 2025-10-15). They are for stable visual tests only; production values come from the server.
 - **Behaviour reference:** `docs/product/legacy-spec.md`, the shipped legacy app's behaviour, including its QA-derived rules, glossary and a list of known weaknesses. The legacy code is on `legacy-old/v1`, with published releases up to 0.1.11; both are behaviour reference only, not evidence to cite.
-- **Running rewrite:** only the ground-floor placeholder page and `/healthz`, covered by `tests/e2e/smoke.test.ts`.
 
 What does not exist, and must not be fabricated:
 - No real Plex play history, server names, member names or avatars. Use the fictional fixtures and label them as such.
