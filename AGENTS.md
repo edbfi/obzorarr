@@ -57,14 +57,16 @@ stacks and package managers; treat them as illustrations, never as instructions.
 ### Workflow
 
 **A feature starts with a spec.** No feature code without an approved spec, a plan and a task list.
-Invoke each skill by name; its `SKILL.md` is in `.agents/skills/<skill>/`.
+Invoke each skill by name; its `SKILL.md` is in `.agents/skills/<skill>/`. Every phase follows
+[Code structure](#code-structure): specs and plans name files in its layout, builds keep to it
+and review checks it.
 
 | Phase | Skill | Artifact |
 |---|---|---|
 | spec | `spec-driven-development` | `docs/SPEC.md` (project spec + capability map), `docs/SPEC-<id>.md` per module |
 | plan | `planning-and-task-breakdown` | `tasks/plan.md` + `tasks/todo.md` |
 | build | `incremental-implementation` + `test-driven-development` | code, tests, commits |
-| review | `code-review-and-quality` | PR review, including Code structure and the cleanup gate below |
+| review | `code-review-and-quality` | PR review, including the cleanup gate below |
 | decisions | `documentation-and-adrs` | `docs/decisions.md`: one file of `D<n>` entries, not one ADR per decision |
 
 Also installed, for when their description fits: `context-engineering`,
@@ -131,9 +133,11 @@ splits that are worse than a long, coherent file. Review enforces these.
   `.svelte.ts` modules are kebab-case. No hand-written `index.ts` that only re-exports; a compound
   component may have one entry that names its parts.
 - **Imports only go downwards.** `routes/`, `hooks.server.ts` and `jobs/` → `services/` →
-  `providers/` and `db/` → `http/`, `config/`, `security/`, `logging/`. Services may use other
-  services; providers and `db/` never import each other or anything above them. Browser code never
-  imports server code. No pass-through layers.
+  `providers/` and `db/` → `http/` and `security/` → `logging/` → `config/`. Routes, hooks and
+  jobs stay thin and call services, never a provider or `db/` directly. Services may use other
+  services; providers and `db/` never import each other or anything above them. `lib/shared/`
+  imports nothing else from `lib/` and anything may import it; `lib/components/` is imported only
+  by routes and other components. Browser code never imports server code.
 - **The framework wins.** SvelteKit's files keep their names (`+page.svelte`, `+server.ts`,
   `+page.server.ts`, `hooks.server.ts`, `app.d.ts`, `./$types`), and generated code is exempt.
 - **Tests sit next to their source** (`client.ts` + `client.test.ts`). In `routes/` drop the `+`,
@@ -243,9 +247,10 @@ src/
     (public)/+page.svelte        `/`: placeholder page
     healthz/+server.ts           `/healthz`: public one-word status
     (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
-  lib/                           imported as `#lib/<path>.<ext>`, e.g. `#lib/server/health.ts`
+  lib/                           imported as `#lib/<path>.<ext>`, e.g.
+                                 `#lib/server/services/health.ts`
     assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon
-    server/                      server-only: health.ts; later db/ (schema per aggregate),
+    server/                      server-only: services/health.ts; later db/ (schema per aggregate),
                                  providers/plex/ (and the optional AI text provider),
                                  services/<domain>/, jobs/, http/ (SSRF-safe fetch), config/,
                                  security/, logging/
