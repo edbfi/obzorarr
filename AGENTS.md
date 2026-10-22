@@ -20,12 +20,12 @@ Ambitious ideas, simple systems, software that feels obvious.
   the approved spec and the task need now, nothing for a future that may not come. Fight scope
   creep both ways: no extras, and no silently dropped requirements; scope changes go through the
   spec. Honour the owner's intent in the smallest form that is still realistic, not a stub.
-- **Defaults, not dogma.** Everything in this file is a good default for navigating and changing
-  the codebase, not a law, and the owner can override any of it. Precedence: the owner's explicit
-  instruction, then `.agents/rules/*.md`, then this file, then the skills' defaults. These
-  principles guide judgement calls; they don't let an agent set aside an explicit rule below
-  (Always / Ask first / Never, Code structure, the cleanup procedures). When the owner overrides
-  one, say which.
+- **Defaults, not dogma.** The owner can override anything in this file. For agents, the explicit
+  rules below (Always / Ask first / Never, Code structure, the cleanup procedures) hold; everything
+  else is a good default for navigating and changing the codebase, and these principles guide the
+  judgement calls. Precedence: the owner's explicit instruction, then `.agents/rules/*.md`, then
+  this file (the orchestrator approves within it; see Gates), then the skills' defaults. When the
+  owner overrides a rule, the PR body says which.
 
 ### Stack and tools
 
@@ -184,11 +184,6 @@ Design work uses Impeccable: `/impeccable` in Claude Code and OpenCode, `$impecc
 A fixed set of files. No length limits; bloat is removed by the cleanup procedures, never by cutting
 real content. History lives in git and PR bodies, and each fact lives in one place.
 
-**Most code changes need no doc change.** Agents and people read the code, so internal docs don't
-describe the implementation. They hold what code can't say: intent, constraints, decisions, the
-spec, and this file's repo section (status, structure, commands). Update a doc when a change alters
-one of those; the cleanup procedures below still apply to every PR.
-
 ```text
 README.md  AGENTS.md  CLAUDE.md          humans; agent rules (CLAUDE.md is only @AGENTS.md)
 PRODUCT.md  DESIGN.md                    Impeccable (needs the root)
@@ -204,6 +199,11 @@ tasks/plan.md  tasks/todo.md             the active work stream only
 
 The `docs-set` prek hook fails on any other `.md` file: fold the content into an existing doc or the
 PR body.
+
+**Most code changes need no doc change.** Agents and people read the code, so internal docs don't
+describe the implementation. They hold what code can't say: intent, constraints, decisions, the
+spec, and this file's repo section (status, structure, commands). Update a doc when a change alters
+one of those; the cleanup procedures below still apply to every PR.
 
 **Cleanup procedures** (part of the definition of done):
 1. **Every PR**, before it opens: update each changed fact in its one place; delete superseded text
