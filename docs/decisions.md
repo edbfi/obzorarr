@@ -164,6 +164,14 @@ app keeps its own copy; there is no shared package.
   the secret encrypted by `secrets`, single-use backup codes stored only as hashes, each code
   accepted once and a limit on failed attempts. When it is on, every way of signing in passes
   through it, with one optional exception for OIDC (below).
+- **Recovery.** An owner who loses their password, or their authenticator and backup codes, turns on
+  a recovery setting in the environment and restarts the app. It then prints a one-time recovery
+  token to the console, outside the structured logs, as `setup` does. Typing the token lets the
+  owner set a new password; it also turns two-factor off, so they can set it up again, and signs out
+  every session. The token expires after 15 minutes (a restart prints a new one), failed attempts
+  are limited per address, and once it is used the app prints no new one while the setting stays on,
+  and warns at startup that the setting should be cleared. `sign-in` builds it, and `two-factor`
+  adds turning itself off.
 - **Plex for the owner is an option.** In the apps that use Plex (all of them except comradarr and
   zimuarr), the owner can link their account to their own Plex account in the admin settings once
   setup is done. After that, "Sign in with Plex" also signs them in as the owner. The password
@@ -199,10 +207,11 @@ claim and has to know who its owner is. Encrypting in the app (D4: secrets are c
 the database) keeps stolen database files unreadable without the key. Two-factor and OIDC sign-in
 were the owner's call for every app, and so was letting a provider's own second factor stand in for
 the app's, optionally; one standard OIDC flow covers the self-hosted identity providers without a
-client for each, and `amr` is the standard way to see the provider's factor. A copy per app is
-enough for five apps and avoids building a shared package before it's needed (YAGNI). Keeping Plex
-as the authority for members keeps obzorarr's privacy model, while the owner model matches the other
-four apps.
+client for each, and `amr` is the standard way to see the provider's factor. Recovery was the
+owner's call for every app too, after comradarr's legacy recovery mode showed that the opening had
+no way back in. A copy per app is enough for five apps and avoids building a shared package before
+it's needed (YAGNI). Keeping Plex as the authority for members keeps obzorarr's privacy model, while
+the owner model matches the other four apps.
 
 ### D21. Every interface is translatable, in English and Danish
 
