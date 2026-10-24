@@ -128,10 +128,162 @@ ever one implementation of an operation.
 obzorarr's Plex scope is playback history, metadata, sign-in and membership checks. History is read
 page by page; server-local account ids are mapped to Plex identities; runtime totals are estimates
 of viewing time, not time watched. Membership means the configured server is currently shared with
-the account, and the only administrator is the server's owner.
+the account, and the server token must belong to the server's owner; the administrator is the owner
+who claimed the instance (D20).
 
 Why: a maintained library covers most operations, and one provider boundary keeps the access rules
 (a server share, proven ownership) explicit and testable.
+
+### D20. Shared opening modules and owner sign-in, in the same shape in every app
+
+Every edbfi rewrite app builds five modules before any feature module, in this order: `secrets`,
+`i18n`, `setup`, `sign-in`, then `two-factor`. Each app also gets `oidc-sign-in` later. These
+modules have the same shape in all five apps, so signing in works the same way everywhere. Each
+app keeps its own copy; there is no shared package.
+
+- **One owner.** Each instance has exactly one owner account, with no other roles: no co-admins,
+  viewers or operators, and none planned for later.
+- **`secrets`.** Secret values are encrypted in the app before they reach the database, with
+  AES-256-GCM through WebCrypto, so this works on any database engine:
+  - The key is 32 random bytes from an environment variable or a secret file. It is never derived
+    from a password, and a missing or malformed key stops the app at startup.
+  - Every encryption uses a fresh random 12-byte nonce.
+  - Associated data ties each value to its record and field, so a value copied to another row or
+    field fails to decrypt.
+  - Every stored value carries its key ID, so the key can be rotated.
+- **`i18n`.** The translation groundwork (D21), in place before the first screen.
+- **`setup`.** If nobody has claimed the instance yet, the app prints a one-time bootstrap token to
+  the console at startup, outside the structured logs (D11). Whoever types that token claims the
+  instance and creates the owner account. After that, setup no longer exists: its routes answer
+  "not found".
+- **`sign-in`.** The owner signs in with the username and password created in `setup`. Sessions
+  are server-side, and only a hash of each session token is stored.
+- **`two-factor`.** Optional, but strongly recommended: first-run setup offers it right after the
+  owner account is created, before any connection step, and the admin shell keeps reminding the
+  owner until it is on. It uses authenticator-app codes (TOTP), with
+  the secret encrypted by `secrets`, single-use backup codes stored only as hashes, each code
+  accepted once and a limit on failed attempts. When it is on, every way of signing in passes
+  through it, with one optional exception for OIDC (below).
+- **Plex for the owner is an option.** In the apps that use Plex (all of them except comradarr and
+  zimuarr), the owner can link their account to their own Plex account in the admin settings once
+  setup is done. After that, "Sign in with Plex" also signs them in as the owner. The password
+  keeps working, and Plex sign-in for the owner stays off until they link. Where an app has users
+  besides the owner, those users sign in with Plex.
+- **`oidc-sign-in`.** The owner can also link their account to one OpenID Connect provider, such as
+  Authentik, Authelia, Pocket ID or Tinyauth, which then signs them in as the owner. It uses
+  discovery and the authorization code flow with PKCE, and keys the link on the provider's issuer
+  and subject. As with Plex, linking never creates an owner, and the password keeps working.
+  Signing in through a reverse proxy's headers isn't supported.
+  - **The provider's own second factor can replace the app's, if the owner chooses.** When the ID
+    token's `amr` claim (RFC 8176) reports that the owner used a second factor at the provider,
+    such as Authentik's or Authelia's TOTP or a passkey, the app offers to skip its own two-factor
+    for OIDC sign-ins. It stays on until the owner accepts. Every OIDC sign-in checks the claim
+    again, and one that reports no second factor goes through the app's two-factor. Password and
+    Plex sign-ins always do. A provider that doesn't send `amr` never gets the offer.
+
+Each app's connection modules add their own first-run steps after `setup`, such as connecting Plex
+here. In obzorarr this replaces the legacy rule that the only administrator is the Plex server's
+proven owner (legacy spec "Users, roles and permissions"; owner decision): the administrator is the
+owner who claimed the instance. Plex stays the authority for everything else. Connecting Plex is
+accepted only when the server token belongs to the server's owner, because identity reconciliation
+needs the owner's reads. Members sign in with Plex and keep access only while the server is shared
+with them. The owner's own recap is that of the Plex account behind the server token (the server's
+local account 1), so it needs no Plex link, as otpravkarr's self-subscription does. The server
+owner's Plex account signing in through the member flow while unlinked gets a member session, never
+the owner's. The three-slide recap spike (D19) runs right after `i18n`: it is a design spike on demo
+fixtures, with no database or sign-in, not a feature module.
+
+Why: the owner wants the five apps to look and work alike, and everything else depends on these
+modules: every app stores upstream secrets, shows text that must be translatable, needs a safe first
+claim and has to know who its owner is. Encrypting in the app (D4: secrets are configured apart from
+the database) keeps stolen database files unreadable without the key. Two-factor and OIDC sign-in
+were the owner's call for every app, and so was letting a provider's own second factor stand in for
+the app's, optionally; one standard OIDC flow covers the self-hosted identity providers without a
+client for each, and `amr` is the standard way to see the provider's factor. A copy per app is
+enough for five apps and avoids building a shared package before it's needed (YAGNI). Keeping Plex
+as the authority for members keeps obzorarr's privacy model, while the owner model matches the other
+four apps.
+
+### D21. Every interface is translatable, in English and Danish
+
+Every edbfi app is built for translation from its first screen. No user-facing text is written into
+components or services: it comes from message files, one per language. English is the source
+language and the default, and Danish is the second language. Each request uses the viewer's own
+choice, then the browser's preferred languages, then English. Dates, times and numbers are formatted
+for the viewer's locale through `Intl`, never in a fixed format. The message files use a format
+Weblate reads, plurals included, so a Weblate project can be connected later without changing code.
+Connecting Weblate is later work and belongs to no module yet. Text the owner writes, such as
+custom slides, is content and isn't translated through the message files. Fun-fact templates are
+messages too, and AI fun facts are requested in the viewer's language.
+
+Why: the owner wants full translation support in every app, with Weblate as the translation tool,
+and English and Danish now. Adding translation afterwards touches every screen; building it in from
+the first one costs little. This fixes legacy spec weakness 18 (English only, no localisation
+layer).
+
+### D22. Paraglide JS with i18next JSON v4 messages
+
+Translation (D21) uses Paraglide JS 2 (`@inlang/paraglide-js`) through its Vite plugin, SvelteKit's
+official i18n integration. Messages live in `messages/en.json` and `messages/da.json` in i18next
+JSON v4, through `@inlang/plugin-i18next` 6.2.0 or later (which fixed its plural handling), with
+plurals under CLDR suffixes. Weblate reads that format as "i18next JSON v4" (`i18nextv4`),
+monolingual, with `messages/en.json` as the base file.
+
+- Components and services call the typed message functions Paraglide compiles, so a missing
+  message is a type error. The compiled output is generated and gitignored.
+- On the server, `paraglideMiddleware` in `hooks.server.ts` picks each request's language (the
+  viewer's cookie, then the browser's preferred languages, then English) and keeps it in
+  AsyncLocalStorage, so concurrent requests can't mix languages. Under SvelteKit 3 it passes the
+  translated request on a copy of the event, because `event.request` is read-only.
+- Dates, times and numbers stay with `Intl` (D21).
+
+Still to validate in the `i18n` module: the pinned versions with SvelteKit 3, TypeScript 6 and Bun;
+building and serving through adapter-bun (Paraglide issue
+[#725](https://github.com/opral/paraglide-js/issues/725) reports the middleware returning nothing in
+builds that use instrumentation); and a Weblate round trip of a plural message.
+
+Why: it is the integration SvelteKit itself points to. Compiled, tree-shaken message functions add
+almost nothing to the bundle and are checked by strict TypeScript. A language per request through
+AsyncLocalStorage is safe for server rendering. i18next JSON v4 is a native Weblate format with
+correct plurals for English and Danish. gettext PO (through wuchale or Lingui) would also carry
+notes for translators, which i18next JSON v4 can't, but those integrations are younger and keep the
+language in stores, which need care when the server renders concurrent requests; svelte-i18n
+resolves messages at runtime, without typed messages. The owner left the choice to the agents.
+
+### D23. Watch time is the runtime of what was played
+
+Every time total (hours and minutes, binge length, marathon day, the top-viewers leaderboard, the
+percentile and fun facts) is the sum of the full runtimes of the items played, as in the legacy app.
+An abandoned play counts in full. A play without a known runtime still counts as a play but adds no
+time, and the recap says when runtimes are missing. Every place that shows a total says what it
+measures, such as "hours of everything you played", never "hours watched". Watched time and runtime
+are never mixed in one total.
+
+The Plex library audit (D18) checks whether Plex's history reports a watched duration or view offset
+for each play, and what it means for finished, abandoned and resumed plays. If it does, a later spec
+may switch every total to it at once, with the label changing too.
+
+Why: Plex's history carries no verified watched time (D12). A total that was watched time for some
+plays and runtime for others couldn't be labelled truthfully, and would make viewers, years and the
+leaderboard incomparable (PRODUCT.md, principle 3). An honest label answers legacy spec weakness 2.
+The owner took the agents' recommendation, which two independent reviews agreed with.
+
+### D24. Statistics use the instance's time zone
+
+Calendar years and every daily bucket (hour, weekday, month, marathon day, streak, binge date) are
+computed on the server in one instance time zone: the environment's zone if it names a valid IANA
+zone, else the owner's setting, else UTC, the same resolution the sync schedule uses (legacy spec
+"Scheduling"). Recaps name the zone, such as "Times in Europe/Copenhagen". A first-run step asks
+for the zone, suggesting the browser's, so no install falls back to UTC unnoticed. Changing the zone
+invalidates the cached statistics of every year, because year boundaries move. Stored timestamps and
+the sync watermark stay in UTC. Formatting still follows each viewer's locale through `Intl` (D21),
+with the instance zone passed explicitly.
+
+Why: recaps are shared and cached, so one zone gives every viewer the same recap, which the
+determinism requirement needs (legacy spec "Statistics engine"). A household or friends-and-family
+server lives mostly in one zone, and the setting already exists for the schedule. A zone per member
+can come later without changing the engine. This fixes legacy spec weakness 1 (everything in UTC).
+The owner took the agents' recommendation, which two independent reviews agreed with.
 
 ## Open
 
@@ -171,12 +323,13 @@ coordination across processes would need a new design. Stays open as an accepted
 
 The Plex operations obzorarr needs (D12) still have to be audited against a pinned `@ctrl/plex`
 version, checked for Bun and TypeScript 6 compatibility, and tested for request payloads and
-response parsing, including history pagination and the local-account mapping. Sign-in and the
+response parsing, including history pagination, the local-account mapping, and whether history
+reports a watched duration or view offset for each play and what it means (D23). Sign-in and the
 membership checks must be verified against Plex before they replace a working flow. Closes with the
 Plex provider.
 
 ### D19. The animated recap
 
 The animated recap is the surface most likely to need custom work beyond Panda CSS and Ark UI. Three
-slides are built as a spike before its design is committed. Closes with that spike, the first module
-after the ground floor.
+slides are built as a spike before its design is committed. Closes with that spike, which runs right
+after `i18n` (D20).

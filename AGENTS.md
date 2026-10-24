@@ -230,8 +230,9 @@ panel for the server's owner. It is being rewritten from scratch; the previous v
 
 **Status:** the ground floor is built: an empty SvelteKit app on Bun with Panda tokens, `/healthz`,
 one unit test, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
-come next, each through an owner-approved `docs/SPEC-<id>.md`; the first is the three-slide recap
-spike.
+come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
+owner-approved `docs/SPEC-<id>.md`, starting with `secrets`; the three-slide recap spike follows
+`i18n`.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
