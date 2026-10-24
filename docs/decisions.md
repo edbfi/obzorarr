@@ -295,6 +295,26 @@ server lives mostly in one zone, and the setting already exists for the schedule
 can come later without changing the engine. This fixes legacy spec weakness 1 (everything in UTC).
 The owner took the agents' recommendation, which two independent reviews agreed with.
 
+### D25. Other software: the latest stable release only
+
+Each edbfi app works with the latest stable release of every service it talks to, and with nothing
+older. Its contract tests run against that release; when a new stable release ships, the tests and
+the app move to it in the app's next release, and support for the one before goes. The app adds no
+code for older versions and no workarounds for upstream bugs that a later release may fix: a bug
+that harms users is reported upstream and named in the app's docs. A service on any other version
+(older, newer than the one tested, a prerelease, or a version the app can't read) keeps working,
+and the app says plainly in setup and on its health page which version it is tested with.
+Responses are still validated, so a real difference in the API shows up as an error, not as wrong
+data.
+
+In obzorarr the service is Plex Media Server, held to its latest public release. Plex's account
+service has no version to check.
+
+Why: the owner doesn't want a backlog of backwards compatibility in any app (owner decision). Code
+for old versions and for upstream bugs is seldom removed once it's in, and each workaround outlives
+the upstream fix as code to maintain. Warning instead of refusing keeps users who update a week
+late working.
+
 ## Open
 
 ### D13. Producing the OpenAPI document
