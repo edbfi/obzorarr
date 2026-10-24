@@ -153,8 +153,9 @@ app keeps its own copy; there is no shared package.
   - Every stored value carries its key ID, so the key can be rotated.
 - **`i18n`.** The translation groundwork (D21), in place before the first screen.
 - **`setup`.** If nobody has claimed the instance yet, the app prints a one-time bootstrap token to
-  its log at startup. Whoever types that token claims the instance and creates the owner account.
-  After that, setup no longer exists: its routes answer "not found".
+  the console at startup, outside the structured logs (D11). Whoever types that token claims the
+  instance and creates the owner account. After that, setup no longer exists: its routes answer
+  "not found".
 - **`sign-in`.** The owner signs in with the username and password created in `setup`. Sessions
   are server-side, and only a hash of each session token is stored.
 - **`two-factor`.** Optional, but strongly recommended: first-run setup offers it right after the
