@@ -10,8 +10,11 @@
 > web-font service with that origin in the content security policy) is superseded by
 > [PRODUCT.md](../../PRODUCT.md) and [DESIGN.md](../../DESIGN.md), which seed both theme settings to
 > After Hours and bundle fonts locally; whether more presets return is left to a later module ([`docs/SPEC.md`](../SPEC.md),
-> ground-floor choice 4). Sections are deleted as approved `docs/SPEC-<id>.md` files cover
-> them, and the file goes once nothing is left (AGENTS.md, cleanup procedures).
+> ground-floor choice 4). Its owner model (the only administrator is the Plex server's proven owner,
+> and the app has no accounts of its own) is superseded by D20, its English-only interface by D21,
+> its UTC date bucketing by D24, and its watch time is labelled per D23. Sections are deleted as
+> approved `docs/SPEC-<id>.md` files cover them, and the file goes once nothing is left (AGENTS.md,
+> cleanup procedures).
 
 ## Status
 
