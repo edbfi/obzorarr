@@ -1,4 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
+# Commits `biome migrate` and Biome's formatter output (never lint fixes) to Dependabot's Biome PRs, then
+# re-enables auto-merge on the new head, because this workflow races dependabot-auto-merge.yml.
+# A Biome release can reformat source without any configuration change. The migrate job formats the tracked files
+# its `case` allowlist selects, and the apply job re-validates every changed path against the same allowlist:
+# keep the two lists identical (tools/test_templates.py checks that they agree).
 name: Biome migration
 on:
   pull_request:
@@ -39,6 +44,23 @@ jobs:
         run: |
           bun ci --ignore-scripts
           bunx --bun --no-install biome migrate --write
+      - if: steps.changed.outputs.biome == 'true'
+        name: Format with the new Biome
+        run: |
+          # Formatter only, on regular tracked source files: no lint fixes, no assists.
+          files=()
+          while IFS= read -r -d '' entry; do
+            mode="${entry%% *}"
+            path="${entry#*$'\t'}"
+            [ "$mode" = 100644 ] || continue
+            case "$path" in
+              package.json|*/package.json|.github/*|.agents/*|.claude/*|.opencode/*) ;;
+              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.json|*.jsonc) files+=("./$path") ;;
+            esac
+          done < <(git ls-files -z --stage)
+          if [ "${#files[@]}" -gt 0 ]; then
+            printf '%s\0' "${files[@]}" | xargs -0 bunx --bun --no-install biome format --write --no-errors-on-unmatched --files-ignore-unknown=true
+          fi
       - id: diff
         if: steps.changed.outputs.biome == 'true'
         run: |
@@ -95,15 +117,21 @@ jobs:
           while IFS= read -r -d '' path; do changed+=("$path"); done < <(git -c core.hooksPath=/dev/null diff --cached --name-only -z "$HEAD_SHA")
           [ "${#changed[@]}" -gt 0 ]
           for path in "${changed[@]}"; do
-            case "$path" in biome.json|biome.jsonc) ;; *) echo '::error::patch contains a forbidden path'; exit 1 ;; esac
+            # The same allowlist as the migrate job's formatter step.
+            case "$path" in
+              biome.json|biome.jsonc) ;;
+              package.json|*/package.json|.github/*|.agents/*|.claude/*|.opencode/*) echo '::error::patch contains a forbidden path'; exit 1 ;;
+              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.json|*.jsonc) ;;
+              *) echo '::error::patch contains a forbidden path'; exit 1 ;;
+            esac
             mode="$(git -c core.hooksPath=/dev/null ls-files --stage -- "$path")"
-            [[ "$mode" == '100644 '* ]] || { echo '::error::configuration must be a regular file'; exit 1; }
+            [[ "$mode" == '100644 '* ]] || { echo '::error::patch must change regular files only'; exit 1; }
           done
           export GIT_AUTHOR_NAME='github-actions[bot]' GIT_COMMITTER_NAME='github-actions[bot]'
           export GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com'
           export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
           tree="$(git -c core.hooksPath=/dev/null write-tree)"
-          next="$(git -c core.hooksPath=/dev/null commit-tree "$tree" -p "$HEAD_SHA" -m 'chore(deps): apply biome migrate [dependabot skip]')"
+          next="$(git -c core.hooksPath=/dev/null commit-tree "$tree" -p "$HEAD_SHA" -m 'chore(deps): apply biome migrate and format [dependabot skip]')"
           git -c core.hooksPath=/dev/null update-ref HEAD "$next"
           [ "$(git -c core.hooksPath=/dev/null rev-parse HEAD^)" = "$HEAD_SHA" ]
           push_auth="$(printf 'x-access-token:%s' "$PUSH_TOKEN" | base64 | tr -d '\n')"
