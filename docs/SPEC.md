@@ -1,7 +1,8 @@
 # Spec: obzorarr
 
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
-(2026-10-18) and built. The capability map below is approved; no product module is specified yet.
+(2026-10-18) and built. The capability map below is approved; `secrets` is specified in
+[SPEC-secrets.md](SPEC-secrets.md).
 
 ## Objective
 
@@ -34,7 +35,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
-| 1 | `secrets` | Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20) | — | — |
+| 1 | `secrets` | Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `recap-spike` | The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it is committed. No database or sign-in, and its code becomes product code only through `recap`'s spec | `i18n` | a spike route that its spec names (ground-floor choice 5) |
 | 4 | `setup` | Startup checks, database and migrations, settings with their environment locks and the per-group versions that catch a save from a stale tab (legacy "Settings concurrency"), structured logging with redaction (legacy "Logging"), security headers and CSP (ground-floor choice 3), the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin | `secrets`, `i18n` | first-run setup (no brief yet) |
@@ -82,7 +83,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 | Module | Main homes |
 |---|---|
-| `secrets` | `security/secrets/`; loading the key in `config/` |
+| `secrets` | `security/secrets/` (the cipher and the secret wrapper); loading the key in `config/` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (Paraglide's settings), `lib/shared/i18n/` (formatting); `paraglideMiddleware` in `hooks.server.ts` |
 | `recap-spike` | `lib/components/recap/` (the slide shell and the three slides); its route |
 | `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
@@ -113,8 +114,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - `recap-spike`: D19.
 - `i18n`: the validation that D22 lists (pinned versions, the adapter-bun build, a Weblate round
   trip).
-- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14. The secrets half of
-  D16's backup and restore goes with `secrets`.
+- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
 - The first module with a background job closes the job half of D14: `sign-in` if its session
   cleanup is a job, otherwise `sync`.
 - `plex-connection`: D18, including the watched-time question (D23) and the history and mapping
