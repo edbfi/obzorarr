@@ -67,9 +67,9 @@ clear error: a value written under another key says so, instead of failing as ta
 
 ## Startup
 
-`hooks.server.ts` gains SvelteKit's `init` hook, which loads the keys. `init` skips the load while
-the app is being built (`building` from `$app/environment`), so a build never needs or embeds a key.
-`setup` later adds its own startup checks after this one.
+`src/hooks.server.ts` is created with SvelteKit's `init` hook, which loads the keys. `init` skips
+the load while the app is being built (`building` from `$app/env`), so a build never needs or embeds
+a key. `setup` later adds its own startup checks after this one.
 - **The built server** (`bun ./build`): adapter-bun awaits `init` before it listens, so a key error
   stops the process with a non-zero exit code and nothing is ever served.
 - **`bun run --bun dev`:** SvelteKit's dev server runs `init` on the first request and doesn't exit
@@ -103,9 +103,9 @@ v1.<key id>.<nonce>.<ciphertext and tag>
 - Each segment after `v1` is canonical unpadded base64url: the key ID is 22 characters (16 bytes),
   the nonce 16 characters (12 fresh random bytes from WebCrypto for every encryption), and the
   ciphertext ends in GCM's 16-byte tag.
-- **Nothing stored is SQL `NULL`.** Encrypting an empty secret is an error, so an empty string never
-  means "nothing stored". Any stored text that isn't exactly this shape is corruption and an error,
-  never a silent empty value.
+- **A stored secret is never `NULL` or empty; `NULL` means none.** Encrypting an empty secret is an
+  error, so an empty string never means "nothing stored". Any stored text that isn't exactly this
+  shape is corruption and an error, never a silent empty value.
 - One self-describing column: its parts can't drift apart, and it works on any database engine.
 
 **The binding.** The associated data is the UTF-8 bytes of the JSON array
@@ -178,7 +178,7 @@ how to generate it, the two variables, what changing it means, and backups.
 As in [docs/SPEC.md](SPEC.md#code-style). The hook stays thin:
 
 ```ts
-import { building } from "$app/environment";
+import { building } from "$app/env";
 import * as env from "$app/env/private";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
 import type { ServerInit } from "@sveltejs/kit";
