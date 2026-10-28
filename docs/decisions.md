@@ -150,7 +150,8 @@ app keeps its own copy; there is no shared package.
   - Every encryption uses a fresh random 12-byte nonce.
   - Associated data ties each value to its record and field, so a value copied to another row or
     field fails to decrypt.
-  - Every stored value carries its key ID, so the key can be rotated.
+  - Every stored value carries its key ID, so a value written under another key fails with its
+    own error (D26).
 - **`i18n`.** The translation groundwork (D21), in place before the first screen.
 - **`setup`.** If nobody has claimed the instance yet, the app prints a one-time bootstrap token to
   the console at startup, outside the structured logs (D11). Whoever types that token claims the
@@ -316,6 +317,36 @@ for old versions and for upstream bugs is seldom removed once it's in, and each 
 the upstream fix as code to maintain. Warning instead of refusing keeps users who update a week
 late working.
 
+### D26. The master key: its format, its checks, and when it's required
+
+`secrets` (D20) takes one master key, exactly 32 bytes in canonical standard base64, from
+`OBZORARR_SECRET_KEY` or `OBZORARR_SECRET_KEY_FILE`; setting both is an error. Startup refuses a key
+whose bytes have at most 4.0 bits of Shannon entropy per byte, step by one constant amount, or are
+all printable ASCII; there is no denylist. The key is imported only as HKDF input, and each use
+derives its own key under its own label: the AES-256-GCM key and a 16-byte key ID. A stored value is
+one text value, `v1.<key id>.<nonce>.<ciphertext and tag>`, with `NULL` for none, and decrypts only
+under the table, field, row and app it was written for. The `Secret` wrapper keeps plaintext out of
+logs, errors and JSON, and `reveal()` is the only way to read it. There is no rotation: the key ID
+D20 asks for makes a value written under another key fail with its own clear error, and a new key
+means entering the stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from
+its first version, so every way of running the app, dev and CI included, needs one. The key is
+restored with the database file (D16). The details are in [SPEC-secrets.md](SPEC-secrets.md). The
+design is the same in all five edbfi apps; only the variable prefix, the app name and the stored
+secrets differ.
+
+Why: the shared opening keeps `secrets` the same in every app (D20), and comradarr settled its
+design first, with safety first (owner decision, after a council of three models and a review). Each
+check catches a real mistake (a padded or doubled short secret, a counter, a passphrase), and
+together they refuse a random key about once in 62 billion. A denylist adds upkeep without safety
+once no key is ever written in the repo. One encoding and an error when both variables are set leave
+nothing ambiguous at startup. HKDF keeps the master key out of every primitive but one, so later
+uses can derive their own keys safely. One self-describing column can't come apart. The wrapper
+joins every app, not only comradarr (owner decision). Rotation is left out because the apps are
+rewritten from scratch with no stored data to carry over, and a key change is rare enough to handle
+by entering a few secrets again (owner decision). Checking the key from the first version makes it
+part of installing obzorarr from the start, rather than a surprise when a later module first stores
+a secret.
+
 ## Open
 
 ### D13. Producing the OpenAPI document
@@ -342,8 +373,8 @@ Not yet validated for this stack: browser interaction with a real component, pro
 realistic load, and job recovery after a restart. Hydration is validated: the e2e smoke test waits
 for the hydrated app in Chromium against the built server, with no console errors.
 A crash test doesn't prove recovery from power loss or storage faults. The Turso backup and restore
-procedure is still to be defined and tested; the database file and the secrets must be restored
-together. Each closes with the work that first depends on it.
+procedure is still to be defined and tested; the master key is restored with the database file
+(D26). Each closes with the work that first depends on it.
 
 ### D17. One process
 
