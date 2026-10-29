@@ -320,7 +320,8 @@ late working.
 ### D26. The master key: its format, its checks, and when it's required
 
 `secrets` (D20) takes one master key, exactly 32 bytes in canonical standard base64, from
-`OBZORARR_SECRET_KEY` or `OBZORARR_SECRET_KEY_FILE`; setting both is an error. Startup refuses a key
+`OBZORARR_SECRET_KEY` or `OBZORARR_SECRET_KEY_FILE`; setting both is an error, and an empty
+variable counts as unset. Startup refuses a key
 whose bytes have at most 4.0 bits of Shannon entropy per byte, step by one constant amount, or are
 all printable ASCII; there is no denylist. The key is imported only as HKDF input, and each use
 derives its own key under its own label: the AES-256-GCM key and a 16-byte key ID. A stored value is
@@ -339,7 +340,9 @@ design first, with safety first (owner decision, after a council of three models
 check catches a real mistake (a padded or doubled short secret, a counter, a passphrase), and
 together they refuse a random key about once in 62 billion. A denylist adds upkeep without safety
 once no key is ever written in the repo. One encoding and an error when both variables are set leave
-nothing ambiguous at startup. HKDF keeps the master key out of every primitive but one, so later
+nothing ambiguous at startup. An empty variable can't hold a key or a path, and Compose writes one
+for every `${VAR}` that isn't defined, so counting it as set would only break the usual secret-file
+setup (owner decision). HKDF keeps the master key out of every primitive but one, so later
 uses can derive their own keys safely. One self-describing column can't come apart. The wrapper
 joins every app, not only comradarr (owner decision). Rotation is left out because the apps are
 rewritten from scratch with no stored data to carry over, and a key change is rare enough to handle
