@@ -271,9 +271,11 @@ panel for the server's owner. It is being rewritten from scratch; the previous v
 `legacy-old/v1` branch, for reference only.
 
 **Status:** the ground floor is built: an empty SvelteKit app on Bun with Panda tokens, `/healthz`,
-one unit test, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
+unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
-owner-approved `docs/SPEC-<id>.md`.
+owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
+([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is being built ([`tasks/todo.md`](tasks/todo.md)):
+a master key's text is decoded and checked for weak keys, and nothing reads or uses a key yet.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
@@ -318,7 +320,9 @@ src/
     server/                      server-only: services/health.ts; later db/ (schema per aggregate),
                                  providers/plex/ (and the optional AI text provider),
                                  services/<domain>/, jobs/, http/ (SSRF-safe fetch), config/,
-                                 security/, logging/
+                                 logging/
+      security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
+                                 malformed and weak keys; later the keyring, cipher and `Secret`
     components/                  later: ui/ (Ark wrappers), layout/, <feature>/
     shared/                      later: browser-safe shared code
 tests/

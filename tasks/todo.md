@@ -13,16 +13,16 @@ from bytes at test time, weak and hex keys included, never written as a literal.
 and refuse weak keys. Each error names the check that failed and never holds key text.
 
 **Acceptance criteria:**
-- [ ] Canonical 44-character keys decode to 32 bytes. 43 or 45 characters, a missing `=`,
+- [x] Canonical 44-character keys decode to 32 bytes. 43 or 45 characters, a missing `=`,
   base64url, non-canonical trailing bits, embedded whitespace, and empty or whitespace-only text
   fail as malformed, and a 64-character hex key gets the hex hint.
-- [ ] The checks run in the spec's table order (entropy, constant step, printable ASCII), and the
+- [x] The checks run in the spec's table order (entropy, constant step, printable ASCII), and the
   first that fails is named; each case below expects the first check it trips. A repeated byte,
   16 distinct values each twice (exactly 4.0 bits) and a doubled 16-byte key fail the entropy
   check; an ascending, a descending and a wrapping (mod 256) counter fail the step check; a
   base64-encoded passphrase of 32 distinct printable bytes not in constant steps fails the ASCII
   check. 10,000 generated random keys all pass.
-- [ ] No error message contains any 6 characters of the failing text in a row (text shorter than
+- [x] No error message contains any 6 characters of the failing text in a row (text shorter than
   6 characters has nothing to check).
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
