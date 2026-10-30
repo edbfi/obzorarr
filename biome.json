@@ -8,8 +8,7 @@
 	"files": {
 		"ignoreUnknown": true,
 		"includes": [
-			"**",
-			"!**/*.svg",
+			"**/*.{js,mjs,cjs,jsx,ts,mts,cts,tsx,json,jsonc,css,svelte,html}",
 			"!!.agents/skills",
 			"!!.claude",
 			"!!.codex",

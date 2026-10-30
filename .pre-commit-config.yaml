@@ -59,13 +59,14 @@ repos:
 
   - repo: local
     hooks:
+      # package.json: "lint": "bun --bun biome ci". biome.json alone decides which files Biome
+      # owns: an extension allowlist, so a language a Biome release adds stays out until listed.
       - id: biome
         name: Biome checks
-        # biome.json ignores tool-written configs; a batch of only those must not fail.
-        entry: bunx --bun --no-install biome check --no-errors-on-unmatched
+        entry: bun run --bun lint
         language: system
-        types_or: [javascript, jsx, ts, tsx, json, css, svelte]
-        exclude: ^(\.agents/skills|\.claude/skills|\.claude/agents|\.opencode)/
+        pass_filenames: false
+        always_run: true
       - id: biome-migrate
         name: Migrate Biome configuration
         entry: bunx --bun --no-install biome migrate --write
