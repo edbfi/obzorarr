@@ -27,7 +27,7 @@ the master key read and checked at startup, the cipher every stored secret goes 
 
 ### Phase 1: the key
 
-- [ ] Task 1: key text and the weak-key checks
+- [x] Task 1: key text and the weak-key checks
 - [ ] Task 2: reading the key from the environment or a file
 - [ ] Task 3: the keyring
 
