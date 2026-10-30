@@ -1,8 +1,8 @@
 # Decisions
 
 Each entry is a decision and why it was made. Open entries keep their number when they're settled.
-The stack entries come from the shared rewrite recipe used by all five edbfi apps, cut down to what
-applies to obzorarr. Versions live in `package.json` and `bun.lock`.
+The stack entries are the stack every edbfi rewrite app shares
+([Shared groundwork](../AGENTS.md#shared-groundwork)), cut down to what applies to obzorarr. Versions live in `package.json` and `bun.lock`.
 
 ## Decided
 
@@ -14,8 +14,7 @@ in the browser. Backend work happens in server routes, server `load` functions a
 which call application services.
 
 Why: one framework and one origin for every surface (landing, member area, recaps and the owner's
-admin panel) keeps sessions, origin checks and deployment simple, and it's the recipe all five apps
-share.
+admin panel) keeps sessions, origin checks and deployment simple, and all five apps share it.
 
 ### D2. TypeScript 6, strict
 
@@ -138,8 +137,8 @@ Why: a maintained library covers most operations, and one provider boundary keep
 
 Every edbfi rewrite app builds five modules before any feature module, in this order: `secrets`,
 `i18n`, `setup`, `sign-in`, then `two-factor`. Each app also gets `oidc-sign-in` later. These
-modules have the same shape in all five apps, so signing in works the same way everywhere. Each
-app keeps its own copy; there is no shared package.
+modules have the same shape in all five apps, so signing in works the same way everywhere; each app
+keeps its own copy ([Shared groundwork](../AGENTS.md#shared-groundwork)).
 
 - **One owner.** Each instance has exactly one owner account, with no other roles: no co-admins,
   viewers or operators, and none planned for later.
@@ -211,8 +210,7 @@ were the owner's call for every app, and so was letting a provider's own second 
 the app's, optionally; one standard OIDC flow covers the self-hosted identity providers without a
 client for each, and `amr` is the standard way to see the provider's factor. Recovery was the
 owner's call for every app too, after comradarr's legacy recovery mode showed that the opening had
-no way back in. A copy per app is enough for five apps and avoids building a shared package before
-it's needed (YAGNI). Keeping Plex as the authority for members keeps obzorarr's privacy model, while
+no way back in. Keeping Plex as the authority for members keeps obzorarr's privacy model, while
 the owner model matches the other four apps.
 
 ### D21. Every interface is translatable, in English and Danish

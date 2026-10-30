@@ -164,6 +164,46 @@ splits that are worse than a long, coherent file. Review enforces these.
   than one purpose?" If not, it stays. The review skill's size signal is this question, not a
   blocker.
 
+### Shared groundwork
+
+**Shared groundwork, distinct products.** The edbfi rewrite apps share one stack, one code skeleton
+and, where two or more need the same thing, one way of building it, so the owner and agents move
+between them without relearning the groundwork. This is a convention between repos, not a
+dependency: each app keeps its own code and standalone documents, with no shared package and no
+automated cross-app checks for sameness. Reuse a sibling's proven way when the need is genuinely the
+same, without building ahead for the others; where needs differ, the app's purpose and spec win, and
+the difference is deliberate, not drift to correct. Never make code or screens alike only for
+symmetry.
+
+- **A reference app per area.** The first app to build a shared area is its reference, normally
+  obzorarr, which comes first by priority. The map below names it once it's known.
+- **Port after the reference has built it.** Another app specifies a shared module only once the
+  reference has built it, starting from the reference's spec and tests. Its `SPEC-<id>.md` names
+  the reference and what differs in its first lines. Specs copied before this rule (`secrets`) are
+  kept in step with the reference instead.
+- **Say who else needs a change.** A PR that changes a shared area names, in its body, the sibling
+  apps that need the same change. Correctness and security fixes reach them soon; wording can wait.
+- **What may differ:** the environment prefix, the app name, the stored secrets, the database
+  engine, routes, settings surfaces, shell names, design tokens, legacy contracts, and anything a
+  product decision requires. The monthly prune compares the shared areas (cleanup procedure 3).
+
+| Area | How it's shared | Reference | Apps |
+|---|---|---|---|
+| Stack, config, Biome, prek, CI, the code skeleton | identical | — | all |
+| `secrets` | the same design; each app lists its own stored secrets | obzorarr | all |
+| `i18n` | the same rules; each app adds its own context | obzorarr | all |
+| `setup`, `sign-in`, `two-factor`, `oidc-sign-in` | a shared core; each capability map names its app's additions | obzorarr | all |
+| Testing patterns: tests beside their source, the e2e smoke on the built server, environment isolation | the same | obzorarr | all |
+| SSRF-safe outbound HTTP | a shared core; each app sets its address policy | obzorarr | all |
+| Providers behind a contract, validated at the boundary | the same pattern | first to build | all |
+| Background jobs' lifecycle | the same pattern | first to build | all |
+| Plex sign-in | the same mechanics; who signs in differs | obzorarr | obzorarr, otpravkarr, zondarr |
+| Live streams to the browser | the same mechanics; payloads and replay differ | first to build | all but otpravkarr |
+| Audit trail | one write service; storage and privileges differ | otpravkarr | otpravkarr, comradarr, zimuarr |
+| Environment locks on settings | the same | obzorarr | obzorarr, zondarr |
+| API keys | the same | comradarr | comradarr, zimuarr |
+| Logs pages, health checks beyond the basics, notifications, provider operations, domain models, settings surfaces, shells and routes, design tokens, Docker packaging | each app's own | — | — |
+
 ### Design
 
 Design work uses Impeccable: `/impeccable` in Claude Code and OpenCode, `$impeccable` in Codex.
@@ -216,7 +256,9 @@ one of those; the cleanup procedures below still apply to every PR.
    whose outcome has landed; close resolved Impeccable critiques.
 3. **Monthly prune** (a scheduled task): read every doc against the code and the spec, and open a PR
    that removes stale, duplicated and superseded content, finished work, merged research and closed
-   critiques. Flag any doc that grew a lot since the last prune for a human look.
+   critiques. Flag any doc that grew a lot since the last prune for a human look. Compare this app's
+   shared areas with their reference app's ([Shared groundwork](#shared-groundwork)) and list in the
+   PR body what should be ported.
 4. **Preservation gate**, for every removal above: the PR body maps each removed requirement to an
    approved spec, a test or an owner-approved scope removal. Nothing is cut only for length.
 <!-- house-rules:end -->
