@@ -193,7 +193,7 @@ Setup facts for this stack:
 | `bun run --bun check` | `svelte-kit sync`, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
 | `bun run --bun smoke` | Playwright e2e smoke; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
-| `bun run --bun lint` | `biome check` |
+| `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
 ## Project structure

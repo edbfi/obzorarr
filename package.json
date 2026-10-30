@@ -13,7 +13,7 @@
 		"check": "bun --bun svelte-kit sync && bun --bun panda codegen && bun --bun svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
 		"test": "bun --bun vitest run",
 		"smoke": "bun --bun playwright test",
-		"lint": "bun --bun biome check"
+		"lint": "bun --bun biome ci"
 	},
 	"imports": {
 		"#lib/*": "./src/lib/*",

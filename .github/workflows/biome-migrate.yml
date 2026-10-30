@@ -54,8 +54,8 @@ jobs:
             path="${entry#*$'\t'}"
             [ "$mode" = 100644 ] || continue
             case "$path" in
-              package.json|*/package.json|.github/*|.agents/*|.claude/*|.opencode/*) ;;
-              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.json|*.jsonc) files+=("./$path") ;;
+              package.json|*/package.json|skills-lock.json|*/skills-lock.json|.github/*|.agents/*|.claude/*|.codex/*|.impeccable/*|.opencode/*) ;;
+              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.html|*.svg|*.json|*.jsonc) files+=("./$path") ;;
             esac
           done < <(git ls-files -z --stage)
           if [ "${#files[@]}" -gt 0 ]; then
@@ -120,8 +120,8 @@ jobs:
             # The same allowlist as the migrate job's formatter step.
             case "$path" in
               biome.json|biome.jsonc) ;;
-              package.json|*/package.json|.github/*|.agents/*|.claude/*|.opencode/*) echo '::error::patch contains a forbidden path'; exit 1 ;;
-              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.json|*.jsonc) ;;
+              package.json|*/package.json|skills-lock.json|*/skills-lock.json|.github/*|.agents/*|.claude/*|.codex/*|.impeccable/*|.opencode/*) echo '::error::patch contains a forbidden path'; exit 1 ;;
+              *.js|*.mjs|*.cjs|*.jsx|*.ts|*.mts|*.cts|*.tsx|*.css|*.svelte|*.astro|*.html|*.svg|*.json|*.jsonc) ;;
               *) echo '::error::patch contains a forbidden path'; exit 1 ;;
             esac
             mode="$(git -c core.hooksPath=/dev/null ls-files --stage -- "$path")"
