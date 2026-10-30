@@ -16,9 +16,9 @@ the master key read and checked at startup, the cipher every stored secret goes 
   names the variable or the path, and `loadKeyring` joins them into the one startup line, adding
   `openssl rand -base64 32` where a new key is the fix. No message ever holds key text.
 - **One loaded keyring.** `loadKeyring(env)` keeps the keyring it loaded, and the cipher uses it,
-  failing if none is loaded; a failed load leaves none loaded. Production loads it once in `init`. The cipher test proves
-  `SecretKeyMismatchError` by loading key A, encrypting, loading key B and decrypting; there is no
-  test-only way in.
+  failing if none is loaded; a failed load leaves none loaded. Production loads it once in `init`.
+  The cipher test proves `SecretKeyMismatchError` by loading key A, encrypting, loading key B and
+  decrypting; there is no test-only way in.
 - **Tests never see a developer's `.env`** (SPEC-secrets.md, "Startup").
 - **Imports go downwards:** `hooks.server.ts` → `security/secrets/` → `config/`. `config/` reads
   text and knows nothing about keys.

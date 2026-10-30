@@ -85,8 +85,8 @@ keeps the loaded keyring for the cipher.
 then prove with e2e tests that the built server refuses to start without a valid key.
 
 **Acceptance criteria:**
-- [ ] `playwright.config.ts` deletes both variables from `process.env`, passes its generated key only
-  to its web server, and starts it as `bun --no-env-file ./build`.
+- [ ] `playwright.config.ts` deletes both variables from `process.env`, passes its generated key
+  only to its web server, and starts it as `bun --no-env-file ./build`.
 - [ ] `bun --no-env-file ./build` with no key, a malformed key and a weak key each exits non-zero
   before it listens; the error's message is one line naming the variable and the check, and the
   output never contains the key. The e2e helper builds each server's environment without either
@@ -95,8 +95,8 @@ then prove with e2e tests that the built server refuses to start without a valid
   by its absolute path) change none of these results.
 - [ ] The smoke test passes with the key Playwright generates, and `build` passes with no key set.
 - [ ] The README has a "Master key" section (making a key, the two variables, an empty variable
-  counting as unset), whose placeholder fails as malformed. SPEC.md's commands and testing sections are updated, and CI needs no
-  stored secret.
+  counting as unset), whose placeholder fails as malformed. SPEC.md's commands and testing
+  sections are updated, and CI needs no stored secret.
 
 **Verification:** all of the above, then `bun run --bun build` and `bun run --bun smoke`. Manual
 check: `bun run --bun dev` with no key fails every page and endpoint, with the key error in the
