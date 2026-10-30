@@ -320,19 +320,19 @@ late working.
 ### D26. The master key: its format, its checks, and when it's required
 
 `secrets` (D20) takes one master key, exactly 32 bytes in canonical standard base64, from
-`OBZORARR_SECRET_KEY` or `OBZORARR_SECRET_KEY_FILE`; setting both is an error, and an empty
-variable counts as unset. Startup refuses a key whose bytes have at most 4.0 bits of Shannon entropy
-per byte, step by one constant amount, or are all printable ASCII; there is no denylist. The key is imported only as HKDF input, and each use
-derives its own key under its own label: the AES-256-GCM key and a 16-byte key ID. A stored value is
-one text value, `v1.<key id>.<nonce>.<ciphertext and tag>`, with `NULL` for none, and decrypts only
-under the table, field, row and app it was written for. The `Secret` wrapper keeps plaintext out of
-logs, errors and JSON, and `reveal()` is the only way to read it. There is no rotation: the key ID
-D20 asks for makes a value written under another key fail with its own clear error, and a new key
-means entering the stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from
-its first version, so every way of running the app, dev and CI included, needs one. The key is
-restored with the database file (D16). The details are in [SPEC-secrets.md](SPEC-secrets.md). The
-design is the same in all five edbfi apps; only the variable prefix, the app name and the stored
-secrets differ.
+`OBZORARR_SECRET_KEY` or `OBZORARR_SECRET_KEY_FILE`; setting both is an error, and an empty variable
+counts as unset. Startup refuses a key whose bytes have at most 4.0 bits of Shannon entropy per
+byte, step by one constant amount, or are all printable ASCII; there is no denylist. The key is
+imported only as HKDF input, and each use derives its own key under its own label: the AES-256-GCM
+key and a 16-byte key ID. A stored value is one text value,
+`v1.<key id>.<nonce>.<ciphertext and tag>`, with `NULL` for none, and decrypts only under the table,
+field, row and app it was written for. The `Secret` wrapper keeps plaintext out of logs, errors and
+JSON, and `reveal()` is the only way to read it. There is no rotation: the key ID D20 asks for makes
+a value written under another key fail with its own clear error, and a new key means entering the
+stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from its first version, so
+every way of running the app, dev and CI included, needs one. The key is restored with the database
+file (D16). The details are in [SPEC-secrets.md](SPEC-secrets.md). The design is the same in all
+five edbfi apps; only the variable prefix, the app name and the stored secrets differ.
 
 Why: the shared opening keeps `secrets` the same in every app (D20), and comradarr settled its
 design first, with safety first (owner decision, after a council of three models and a review). Each
