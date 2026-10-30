@@ -22,7 +22,8 @@ and refuse weak keys. Each error names the check that failed and never holds key
   check; an ascending, a descending and a wrapping (mod 256) counter fail the step check; a
   base64-encoded passphrase of 32 distinct printable bytes not in constant steps fails the ASCII
   check. 10,000 generated random keys all pass.
-- [ ] No error message contains the key text or any 6 characters of it in a row.
+- [ ] No error message contains any 6 characters of the failing text in a row (text shorter than
+  6 characters has nothing to check).
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
 
@@ -87,10 +88,11 @@ then prove with e2e tests that the built server refuses to start without a valid
 - [ ] `playwright.config.ts` deletes both variables from `process.env`, passes its generated key only
   to its web server, and starts it as `bun --no-env-file ./build`.
 - [ ] `bun --no-env-file ./build` with no key, a malformed key and a weak key each exits non-zero
-  before it listens, with a one-line message naming the check, and its output never contains the
-  key. The e2e helper builds each server's environment without either variable. A `.env` holding
-  `OBZORARR_SECRET_KEY`, and one holding `OBZORARR_SECRET_KEY_FILE`, in the server's working
-  directory (a temporary one, never the developer's) change none of these results.
+  before it listens; the error's message is one line naming the variable and the check, and the
+  output never contains the key. The e2e helper builds each server's environment without either
+  variable. A `.env` holding `OBZORARR_SECRET_KEY`, and one holding `OBZORARR_SECRET_KEY_FILE`, in
+  the server's working directory (a temporary one, never the developer's, with the build started
+  by its absolute path) change none of these results.
 - [ ] The smoke test passes with the key Playwright generates, and `build` passes with no key set.
 - [ ] The README has a "Master key" section (making a key, the two variables, an empty variable
   counting as unset), whose placeholder fails as malformed. SPEC.md's commands and testing sections are updated, and CI needs no
