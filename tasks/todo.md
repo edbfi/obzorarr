@@ -39,13 +39,14 @@ and refuse weak keys. Each error names the check that failed and never holds key
 values. No key logic.
 
 **Acceptance criteria:**
-- [ ] Exactly one non-empty variable is accepted. Both set is an error, even with the same key;
+- [x] Exactly one non-empty variable is accepted. Both set is an error, even with the same key;
   neither is an error. An empty variable counts as unset: an empty key with a file uses the file,
   a key with an empty file variable uses the key, and both empty is "missing".
-- [ ] A file is read once, must be at most 4 KiB, and loses one trailing LF or CRLF; any other
+- [x] A file is read once, must be at most 4 KiB, and loses one trailing LF or CRLF; any other
   whitespace stays in the text. An unreadable file (a missing path, a directory) is an error
-  naming the variable and the path.
-- [ ] An empty key file returns empty text, which task 1 refuses as malformed.
+  naming the variable and the error code, never the path: when `OBZORARR_SECRET_KEY_FILE` holds a
+  generated key, the error contains no 6 characters of it in a row.
+- [x] An empty key file returns empty text, which task 1 refuses as malformed.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
 

@@ -275,7 +275,8 @@ unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). P
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is being built ([`tasks/todo.md`](tasks/todo.md)):
-a master key's text is decoded and checked for weak keys, and nothing reads or uses a key yet.
+a master key's text is read from the environment or a file, and decoded and checked for weak
+keys; nothing loads or uses a key yet.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
@@ -319,8 +320,9 @@ src/
     assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon
     server/                      server-only: services/health.ts; later db/ (schema per aggregate),
                                  providers/plex/ (and the optional AI text provider),
-                                 services/<domain>/, jobs/, http/ (SSRF-safe fetch), config/,
-                                 logging/
+                                 services/<domain>/, jobs/, http/ (SSRF-safe fetch), logging/
+      config/secret-key.ts       the master key's text from `OBZORARR_SECRET_KEY` or the file
+                                 `OBZORARR_SECRET_KEY_FILE` names; no key logic
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; later the keyring, cipher and `Secret`
     components/                  later: ui/ (Ark wrappers), layout/, <feature>/
