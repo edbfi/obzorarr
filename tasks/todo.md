@@ -13,8 +13,8 @@ and refuse weak keys. Each error names the check that failed and never holds key
 
 **Acceptance criteria:**
 - [ ] Canonical 44-character keys decode to 32 bytes. 43 or 45 characters, a missing `=`,
-  base64url, non-canonical trailing bits, embedded whitespace and whitespace-only text fail as
-  malformed, and a 64-character hex key gets the hex hint.
+  base64url, non-canonical trailing bits, embedded whitespace, and empty or whitespace-only text
+  fail as malformed, and a 64-character hex key gets the hex hint.
 - [ ] A repeated byte, 16 distinct values each twice (exactly 4.0 bits), a doubled 16-byte key, an
   ascending and a descending counter, and a base64-encoded passphrase each fail and name their
   check. 10,000 generated random keys all pass.
@@ -24,7 +24,7 @@ and refuse weak keys. Each error names the check that failed and never holds key
 
 **Dependencies:** none.
 
-**Files:** `server/security/secrets/key-text.ts`, `key-text.test.ts`.
+**Files:** `server/security/secrets/key-text.ts`, `key-text.test.ts`, `AGENTS.md`.
 
 **Size:** S.
 
@@ -45,7 +45,7 @@ values. No key logic.
 
 **Dependencies:** none.
 
-**Files:** `server/config/secret-key.ts`, `secret-key.test.ts`.
+**Files:** `server/config/secret-key.ts`, `secret-key.test.ts`, `AGENTS.md`.
 
 **Size:** S.
 
@@ -66,7 +66,7 @@ keeps the loaded keyring for the cipher.
 
 **Dependencies:** tasks 1 and 2.
 
-**Files:** `server/security/secrets/keyring.ts`, `keyring.test.ts`.
+**Files:** `server/security/secrets/keyring.ts`, `keyring.test.ts`, `AGENTS.md`.
 
 **Size:** S.
 
@@ -90,7 +90,7 @@ check: `bun run --bun dev` with no key fails every request with the key error in
 **Dependencies:** task 3.
 
 **Files:** `src/env.ts`, `src/hooks.server.ts`, `playwright.config.ts`,
-`tests/e2e/secret-key.test.ts`, `README.md`, `docs/SPEC.md`.
+`tests/e2e/secret-key.test.ts`, `README.md`, `AGENTS.md`, `docs/SPEC.md`.
 
 **Size:** M.
 
@@ -111,7 +111,7 @@ check: `bun run --bun dev` with no key fails every request with the key error in
 
 **Dependencies:** none.
 
-**Files:** `server/security/secrets/secret.ts`, `secret.test.ts`.
+**Files:** `server/security/secrets/secret.ts`, `secret.test.ts`, `AGENTS.md`.
 
 **Size:** XS.
 

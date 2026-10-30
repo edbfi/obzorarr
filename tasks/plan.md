@@ -63,9 +63,9 @@ the master key read and checked at startup, the cipher every stored secret goes 
 
 ## Porting to the other apps
 
-The other apps port this plan with three changes: the variable prefix (`OBZORARR_`), the app
-name in the associated data (`"obzorarr"`), and the list of stored secrets in the README.
-Everything else stays identical.
+The other apps port this plan with three changes, each replacing this app's own with theirs: the
+variable prefix (`OBZORARR_`), the app name in the associated data (`"obzorarr"`), and the list
+of stored secrets in the README. Everything else stays identical.
 
 ## Open questions
 

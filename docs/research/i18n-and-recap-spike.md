@@ -59,7 +59,8 @@ deleted once both specs are approved.
   - you move through it by tap, swipe and keys;
   - it has no timer, so it has no Pause button (the brief's Pause is dropped);
   - it shows segmented progress;
-  - Close goes to `/`.
+  - Close always goes to `/`, and the slide index isn't kept in the URL fragment: the spike leaves
+    out the legacy return to the previous page and the deep link.
 - **Text:** every string comes from `messages/` in English and Danish, and numbers and months are
   formatted for the locale through `lib/shared/i18n/`.
 - **Fonts:** the dependency that ground-floor choice 1 deferred to the first surface.
