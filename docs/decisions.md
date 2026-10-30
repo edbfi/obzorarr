@@ -2,7 +2,8 @@
 
 Each entry is a decision and why it was made. Open entries keep their number when they're settled.
 The stack entries are the stack every edbfi rewrite app shares
-([Shared groundwork](../AGENTS.md#shared-groundwork)), cut down to what applies to obzorarr. Versions live in `package.json` and `bun.lock`.
+([Shared groundwork](../AGENTS.md#shared-groundwork)), cut down to what applies to obzorarr.
+Versions live in `package.json` and `bun.lock`.
 
 ## Decided
 
