@@ -60,7 +60,9 @@ repos:
   - repo: local
     hooks:
       # package.json: "lint": "bun --bun biome ci". biome.json alone decides which files Biome
-      # owns: an extension allowlist, so a language a Biome release adds stays out until listed.
+      # owns: an extension allowlist, so a language a Biome release adds stays out until listed,
+      # and `!!` entries for .agents/skills, .claude, .codex, .impeccable, .opencode and
+      # skills-lock.json, which only their installers change.
       - id: biome
         name: Biome checks
         entry: bun run --bun lint
