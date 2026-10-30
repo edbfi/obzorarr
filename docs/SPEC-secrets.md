@@ -35,7 +35,8 @@ without the master key (D20). `secrets` builds that groundwork and nothing that 
   whitespace-only key file.
 - A file is read once at startup, must be at most 4 KiB, and may end in one newline (LF or CRLF);
   anything else around the key is part of it. A file that can't be read is an error naming the
-  variable and the path.
+  variable and the system's error code (such as `ENOENT`), never the path: a key set as the path
+  by mistake would otherwise be echoed, and a base64 key can't be told from a path.
 
 **Format.** A key is exactly 32 bytes in canonical standard base64: 44 characters
 (`A–Z a–z 0–9 + /`) ending in one `=`, which decode to 32 bytes and encode back to the same text.
@@ -201,7 +202,8 @@ export const init: ServerInit = async () => {
 ## Testing strategy
 
 Unit tests (Vitest), next to their source; every key in them is generated at test time:
-- **Reading:** each variable alone, neither, both, an unreadable file, a file over 4 KiB, a file
+- **Reading:** each variable alone, neither, both, an unreadable file (its error names no path, and
+  no part of a key set as the path), a file over 4 KiB, a file
   with one trailing LF or CRLF and with other whitespace; an empty key with a file, a key with an
   empty file variable, both empty, and an empty key file.
 - **Format:** canonical keys pass; 43 or 45 characters, a missing `=`, base64url, hex (with its

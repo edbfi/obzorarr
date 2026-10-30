@@ -13,7 +13,7 @@ the master key read and checked at startup, the cipher every stored secret goes 
   hook, adapter-bun, Playwright and CI) before the cipher exists, so a surprise in the framework
   shows up while the code is small. Tasks 1–3 are the pure parts it needs.
 - **Errors are composed in one place.** `key-text.ts` names the check that failed, `secret-key.ts`
-  names the variable or the path, and `loadKeyring` joins them into the one startup line, adding
+  names the variable, and `loadKeyring` joins them into the one startup line, adding
   `openssl rand -base64 32` where a new key is the fix. No message ever holds key text.
 - **One loaded keyring.** `loadKeyring(env)` keeps the keyring it loaded, and the cipher uses it,
   failing if none is loaded; a failed load leaves none loaded. Production loads it once in `init`.
@@ -28,7 +28,7 @@ the master key read and checked at startup, the cipher every stored secret goes 
 ### Phase 1: the key
 
 - [x] Task 1: key text and the weak-key checks
-- [ ] Task 2: reading the key from the environment or a file
+- [x] Task 2: reading the key from the environment or a file
 - [ ] Task 3: the keyring
 
 ### Phase 2: the app needs a key
