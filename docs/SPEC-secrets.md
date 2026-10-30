@@ -29,6 +29,10 @@ without the master key (D20). `secrets` builds that groundwork and nothing that 
 **Reading.**
 - Exactly one of the two must be set. Both set is an error, even when they hold the same key:
   precedence would hide a stale setting.
+- **Set means non-empty.** An empty variable counts as unset, because Compose writes `VAR=` for a
+  `${VAR}` that isn't defined, and an empty string can never be a key or a path. Only the
+  variable's own text counts: a whitespace-only key is malformed, and so is an empty or
+  whitespace-only key file.
 - A file is read once at startup, must be at most 4 KiB, and may end in one newline (LF or CRLF);
   anything else around the key is part of it. A file that can't be read is an error naming the
   variable and the path.
@@ -80,11 +84,17 @@ a key. `setup` later adds its own startup checks after this one.
 `secrets` declares the two there with `defineEnvVars`: private, read when the app starts (not
 inlined at build time), each optional through a schema function that returns the value unchanged and
 never throws, so SvelteKit's own validation can't print a key. The hook imports them from
-`$app/env/private`, and every check stays in `secrets`. `dev` reads them from an ignored `.env`
-file, the built server from the real environment.
+`$app/env/private`, and every check stays in `secrets`. They come from the environment or from an
+ignored `.env` file: `dev` reads it through Vite, and Bun loads it into every `bun` process started
+in the repo, the built server included.
 
 Every way of running the app now needs a key: the README says how to make one, and the Playwright
-config generates a fresh one for each run, so CI needs no secret and no change.
+config generates a fresh one for each run, so CI needs no secret and no change. A developer's own
+`.env` or exported variables never reach a test: `playwright.config.ts` deletes both variables from
+`process.env` and passes the generated key only to its web server, every built server a test
+starts runs as `bun --no-env-file ./build`, and the e2e tests build each server's environment
+without either variable, adding only what the case needs (Playwright's workers are new Bun
+processes, which load `.env` again).
 
 ## The cipher
 
@@ -181,7 +191,7 @@ As in [docs/SPEC.md](SPEC.md#code-style). The hook stays thin:
 import { building } from "$app/env";
 import * as env from "$app/env/private";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
-import type { ServerInit } from "@sveltejs/kit";
+import type { ServerInit } from "@sveltejs/kit/hooks";
 
 export const init: ServerInit = async () => {
 	if (!building) await loadKeyring(env);
@@ -192,7 +202,8 @@ export const init: ServerInit = async () => {
 
 Unit tests (Vitest), next to their source; every key in them is generated at test time:
 - **Reading:** each variable alone, neither, both, an unreadable file, a file over 4 KiB, a file
-  with one trailing LF or CRLF and with other whitespace.
+  with one trailing LF or CRLF and with other whitespace; an empty key with a file, a key with an
+  empty file variable, both empty, and an empty key file.
 - **Format:** canonical keys pass; 43 or 45 characters, a missing `=`, base64url, hex (with its
   hint), non-canonical trailing bits and embedded whitespace fail.
 - **Weak keys:** a repeated byte, 16 distinct values each twice (exactly 4.0 bits), a doubled
@@ -209,7 +220,8 @@ Unit tests (Vitest), next to their source; every key in them is generated at tes
 
 e2e (Playwright, against the built server): `bun ./build` with no key, with a malformed key and with
 a weak key each exits non-zero before listening, naming the check, and its output never contains the
-key; the existing smoke test passes with the generated key.
+key; the existing smoke test passes with the generated key. A key in the developer's `.env` changes
+none of these results.
 
 ## Commands
 
