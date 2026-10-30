@@ -64,6 +64,8 @@ async function readAtMost(path: string): Promise<Uint8Array> {
 	const buffer = new Uint8Array(MAX_BYTES + 1);
 	let length = 0;
 	try {
+		// A named pipe with no writer blocks here until one opens it; a non-blocking open would
+		// instead fail a pipe whose writer is slow, so that limit is accepted.
 		const file = await open(path, "r");
 		try {
 			// A short read isn't the end of the file: pipes return their data in chunks.
