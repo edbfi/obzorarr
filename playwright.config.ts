@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// A developer's own key never reaches a test: only the web server gets a key, generated per run
+// (SPEC-secrets.md, "Startup").
+delete process.env.OBZORARR_SECRET_KEY;
+delete process.env.OBZORARR_SECRET_KEY_FILE;
+const key = crypto.getRandomValues(new Uint8Array(32)).toBase64();
+
 const port = 4173;
 const baseURL = `http://127.0.0.1:${port}`;
 
@@ -11,9 +17,9 @@ export default defineConfig({
 	use: { baseURL },
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	webServer: {
-		command: "bun ./build",
+		command: "bun --no-env-file ./build",
 		url: `${baseURL}/healthz`,
-		env: { HOST: "127.0.0.1", PORT: String(port) },
+		env: { HOST: "127.0.0.1", PORT: String(port), OBZORARR_SECRET_KEY: key },
 		reuseExistingServer: false,
 		gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },
 	},

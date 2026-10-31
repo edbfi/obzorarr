@@ -86,16 +86,16 @@ keeps the loaded keyring for the cipher.
 then prove with e2e tests that the built server refuses to start without a valid key.
 
 **Acceptance criteria:**
-- [ ] `playwright.config.ts` deletes both variables from `process.env`, passes its generated key
+- [x] `playwright.config.ts` deletes both variables from `process.env`, passes its generated key
   only to its web server, and starts it as `bun --no-env-file ./build`.
-- [ ] `bun --no-env-file ./build` with no key, a malformed key and a weak key each exits non-zero
+- [x] `bun --no-env-file ./build` with no key, a malformed key and a weak key each exits non-zero
   before it listens; the error's message is one line naming the variable and the check, and the
   output never contains the key. The e2e helper builds each server's environment without either
   variable. A `.env` holding `OBZORARR_SECRET_KEY`, and one holding `OBZORARR_SECRET_KEY_FILE`, in
   the server's working directory (a temporary one, never the developer's, with the build started
   by its absolute path) change none of these results.
-- [ ] The smoke test passes with the key Playwright generates, and `build` passes with no key set.
-- [ ] The README has a "Master key" section (making a key, the two variables, an empty variable
+- [x] The smoke test passes with the key Playwright generates, and `build` passes with no key set.
+- [x] The README has a "Master key" section (making a key, the two variables, an empty variable
   counting as unset), whose placeholder fails as malformed. It tells an existing install to set
   its existing key rather than generate a new one. SPEC.md's commands and testing sections are
   updated, and CI needs no stored secret.
