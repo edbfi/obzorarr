@@ -275,8 +275,8 @@ unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). P
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is being built ([`tasks/todo.md`](tasks/todo.md)):
-a master key's text is read from the environment or a file, and decoded and checked for weak
-keys; nothing loads or uses a key yet.
+a master key's text is read from the environment or a file, decoded and checked for weak keys,
+and loaded into a keyring of the cipher's keys; startup doesn't load it yet, and nothing uses it.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
@@ -324,7 +324,8 @@ src/
       config/secret-key.ts       the master key's text from `OBZORARR_SECRET_KEY` or the file
                                  `OBZORARR_SECRET_KEY_FILE` names; no key logic
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
-                                 malformed and weak keys; later the keyring, cipher and `Secret`
+                                 malformed and weak keys; keyring.ts: loads the key and derives
+                                 the AES key and key ID; later the cipher and `Secret`
     components/                  later: ui/ (Ark wrappers), layout/, <feature>/
     shared/                      later: browser-safe shared code
 tests/

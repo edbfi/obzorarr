@@ -29,7 +29,7 @@ the master key read and checked at startup, the cipher every stored secret goes 
 
 - [x] Task 1: key text and the weak-key checks
 - [x] Task 2: reading the key from the environment or a file
-- [ ] Task 3: the keyring
+- [x] Task 3: the keyring
 
 ### Phase 2: the app needs a key
 
