@@ -187,12 +187,12 @@ Setup facts for this stack:
 | Command | Does |
 |---|---|
 | `bun ci` | frozen install; `prepare` runs `svelte-kit sync` and Panda codegen |
-| `bun run --bun dev` | Vite dev server |
-| `bun run --bun build` | production build through adapter-bun into `build/` |
-| `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`) |
+| `bun run --bun dev` | Vite dev server; needs a key in `.env` or the environment, and without one every request fails with the key error |
+| `bun run --bun build` | production build through adapter-bun into `build/`; needs no key and never embeds one |
+| `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
-| `bun run --bun smoke` | Playwright e2e smoke; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
@@ -231,13 +231,18 @@ export const GET: RequestHandler = () => healthResponse();
 
 ## Testing strategy
 
-- **Unit (Vitest, `node` environment):** one test, for the `/healthz` handler: status 200, body
-  `ok`, `cache-control: no-store`. Component tests use happy-dom when components exist; never jsdom.
-- **e2e (Playwright, Chromium, under Bun):** one smoke test against the built adapter-bun server.
-  It checks that `/` returns 200, shows the placeholder heading, hydrates (it waits for the
-  `data-hydrated` attribute the root layout sets when mounted), applies the Panda background token
-  and display text style and logs no console errors, and that `/healthz` returns `ok`.
-- prek runs the unit tests (`tests` hook); CI's `smoke` job builds and runs the smoke test.
+- **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
+  `cache-control: no-store`) and the `secrets` module
+  ([SPEC-secrets.md](SPEC-secrets.md#testing-strategy)). Component tests use happy-dom when
+  components exist; never jsdom.
+- **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
+  Playwright generates for each run, so CI needs no stored secret.
+  - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
+    for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
+    background token and display text style and logs no console errors, and that `/healthz`
+    returns `ok`.
+  - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
+- prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling
 

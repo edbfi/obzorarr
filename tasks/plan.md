@@ -33,13 +33,13 @@ the master key read and checked at startup, the cipher every stored secret goes 
 
 ### Phase 2: the app needs a key
 
-- [ ] Task 4: the app refuses to start without a valid key
+- [x] Task 4: the app refuses to start without a valid key
 
 ### Checkpoint: after task 4
 
-- [ ] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
+- [x] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
   pass with no stored secret.
-- [ ] The built server without a valid key exits non-zero before it listens, and with one serves
+- [x] The built server without a valid key exits non-zero before it listens, and with one serves
   `/` and `/healthz` as before.
 
 ### Phase 3: storing secrets

@@ -54,13 +54,13 @@ malformed; a 64-character hex key gets a hint saying so.
 There is no denylist: no doc, example or test in the repo holds a decodable key, and docs use a
 placeholder that fails as malformed.
 
-**Failing.** Every key error stops startup with one line naming the variable and the check that
-failed. Only the checks a new key can fix add `openssl rand -base64 32`: a missing key, whose
-message offers setting the existing key first (a variable lost from Compose looks like a first
-install), and a malformed or weak key, which never started the app. Both variables set, an
-unreadable file and a file over 4 KiB get no hint: a valid key already in use can hit them, and a
-new key would make every stored secret unreadable. No message, error or test output ever contains a
-key or part of one.
+**Failing.** Every key error stops startup with an error whose message is one line naming the
+variable and the check that failed; Bun prints its stack around it. Only the checks a new key can
+fix add `openssl rand -base64 32`: a missing key, whose message offers setting the existing key
+first (a variable lost from Compose looks like a first install), and a malformed or weak key, which
+never started the app. Both variables set, an unreadable file and a file over 4 KiB get no hint: a
+valid key already in use can hit them, and a new key would make every stored secret unreadable. No
+message, error or test output ever contains a key or part of one.
 
 **Derivation.** The 32 bytes are imported once into WebCrypto as non-extractable HKDF input and used
 for nothing else, so any later use derives a key of its own without touching the cipher's. Each use
@@ -197,10 +197,10 @@ how to generate it, the two variables, what changing it means, and backups.
 As in [docs/SPEC.md](SPEC.md#code-style). The hook stays thin:
 
 ```ts
+import type { ServerInit } from "@sveltejs/kit/hooks";
+import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
 import { building } from "$app/env";
 import * as env from "$app/env/private";
-import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
-import type { ServerInit } from "@sveltejs/kit/hooks";
 
 export const init: ServerInit = async () => {
 	if (!building) await loadKeyring(env);
@@ -228,10 +228,10 @@ Unit tests (Vitest), next to their source; every key in them is generated at tes
   `SecretKeyMismatchError`; every segment's length is checked.
 - **Wrapper:** each form above prints `[redacted]`, and only `reveal()` returns the value.
 
-e2e (Playwright, against the built server): `bun ./build` with no key, with a malformed key and with
-a weak key each exits non-zero before listening, naming the check, and its output never contains the
-key; the existing smoke test passes with the generated key. A key in the developer's `.env` changes
-none of these results.
+e2e (Playwright, against the built server): `bun --no-env-file ./build` with no key, with a
+malformed key and with a weak key each exits non-zero before listening, naming the check, and its
+output never contains the key; the existing smoke test passes with the generated key. A key in the
+developer's `.env` changes none of these results.
 
 ## Commands
 

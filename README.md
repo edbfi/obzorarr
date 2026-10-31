@@ -36,6 +36,51 @@
 | Plex | `@ctrl/plex`, with focused `fetch` methods for missing endpoints |
 | Deployment | `@sveltejs/adapter-bun`: one container, one process, one HTTP port |
 
+## Master key
+
+Obzorarr encrypts the secrets it stores with a master key you keep, and won't start without a
+valid one.
+
+- **First install:** generate a key with `openssl rand -base64 32`.
+- **Existing install:** set the key you already have. A new key makes every stored secret
+  unreadable. If Obzorarr says no key is set after an upgrade or a Compose change, the variable went
+  missing: set your existing key again.
+
+Set exactly one of these variables:
+
+| Variable | Holds |
+| --- | --- |
+| `OBZORARR_SECRET_KEY` | the key itself |
+| `OBZORARR_SECRET_KEY_FILE` | the path of a file holding the key, such as a Docker or Compose secret |
+
+In the environment or a `.env` file:
+
+```sh
+OBZORARR_SECRET_KEY=paste-your-key-here
+```
+
+As a Compose secret, for a first install created with
+`(umask 077; openssl rand -base64 32 > obzorarr_key.txt)`:
+
+```yaml
+services:
+  obzorarr:
+    environment:
+      OBZORARR_SECRET_KEY_FILE: /run/secrets/obzorarr_key
+    secrets:
+      - obzorarr_key
+secrets:
+  obzorarr_key:
+    file: ./obzorarr_key.txt
+```
+
+- An empty variable counts as unset: `OBZORARR_SECRET_KEY=` is the same as leaving it out.
+- The key file may end in one newline.
+- Malformed and weak keys are refused, and the error names the check that failed.
+
+**Backups:** keep a copy of the key with your backups, separately from the database, and restore the
+same key alongside them. Without it, stored secrets can't be read.
+
 ## Working on it
 
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
