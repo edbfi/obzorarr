@@ -274,11 +274,12 @@ panel for the server's owner. It is being rewritten from scratch; the previous v
 unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
-([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is being built ([`tasks/todo.md`](tasks/todo.md)):
-a master key's text is read from the environment or a file, decoded and checked for weak keys,
-and loaded into a keyring of the cipher's keys. The built server loads it in the `init` hook and
-won't start without a valid key; `dev` fails every request instead. Nothing uses the keyring yet.
-The `Secret` wrapper prints a plaintext as `[redacted]` everywhere except `reveal()`.
+([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers: a master key's
+text is read from the environment or a file, decoded and checked for weak keys, and loaded into a
+keyring of the cipher's keys. The built server loads it in the `init` hook and won't start without
+a valid key; `dev` fails every request instead. The cipher encrypts a secret bound to its table,
+field and row, and the `Secret` wrapper prints a plaintext as `[redacted]` everywhere except
+`reveal()`. Nothing stores a secret yet, and no database exists.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
@@ -333,7 +334,9 @@ src/
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
-                                 `[redacted]` everywhere but `reveal()`; later the cipher
+                                 `[redacted]` everywhere but `reveal()`; cipher.ts: encrypts a
+                                 secret bound to its table, field and row, and decrypts it only
+                                 there
     components/                  later: ui/ (Ark wrappers), layout/, <feature>/
     shared/                      later: browser-safe shared code
 tests/

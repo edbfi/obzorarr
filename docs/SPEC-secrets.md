@@ -1,47 +1,30 @@
 # Spec: `secrets`
 
-**Status:** approved by the owner (2026-10-28). Module 1 of the capability map
-([docs/SPEC.md](SPEC.md)). The design is the same in all five edbfi apps (D20, D26); only the
-environment variable prefix, the app name in the associated data and the list of stored secrets
-differ.
+**Status:** built (2026-10-31), module 1 of the capability map ([docs/SPEC.md](SPEC.md)); D20 and
+D26 hold the decisions. The design is the same in all five edbfi apps, and obzorarr is the reference
+([Shared groundwork](../AGENTS.md#shared-groundwork)): only the environment variable prefix, the app
+name in the associated data and the list of stored secrets differ. The sibling apps keep their full
+copies. This file keeps what the code and tests can't say. The full text before this cut is
+`9bc83fd:docs/SPEC-secrets.md`, and the pull request of the commit that cut it quotes every
+amendment made since #272 word for word.
 
 ## Objective
 
 Every later module that stores a secret (the Plex server token, members' Plex tokens in their
 sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) encrypts
-it in the app before it reaches the database, so a stolen database file or backup is unreadable
-without the master key (D20). `secrets` builds that groundwork and nothing that stores anything:
-1. **The master key** is read once at startup from an environment variable or a secret file,
-   checked, and turned into the keys the cipher uses. A missing, malformed or weak key stops the
-   app before it serves a request (D20, D26).
-2. **The cipher** encrypts a secret into one self-describing text value bound to its table, field
-   and row, and decrypts it only under that same binding.
-3. **The secret wrapper** keeps plaintext out of logs, errors and JSON: it prints as a redaction
-   marker everywhere, and its value comes out only through one named call (D26).
+it with the cipher before it reaches the database, so a stolen database file or backup is unreadable
+without the master key (D20).
 
 ## The master key
 
-| Variable | Holds |
-|---|---|
-| `OBZORARR_SECRET_KEY` | the master key |
-| `OBZORARR_SECRET_KEY_FILE` | the path of a file holding it (the form Docker and Compose secrets mount) |
-
-**Reading.**
-- Exactly one of the two must be set. Both set is an error, even when they hold the same key:
-  precedence would hide a stale setting.
+The key comes from `OBZORARR_SECRET_KEY` or from the file `OBZORARR_SECRET_KEY_FILE` names, and the
+README's "Master key" section tells users how to set it. Why the reading rules are as they are:
+- Both set is an error, even when they hold the same key: precedence would hide a stale setting.
 - **Set means non-empty.** An empty variable counts as unset, because Compose writes `VAR=` for a
-  `${VAR}` that isn't defined, and an empty string can never be a key or a path. Only the
-  variable's own text counts: a whitespace-only key is malformed, and so is an empty or
-  whitespace-only key file.
-- A file is read once at startup, must be at most 4 KiB, and may end in one newline (LF or CRLF);
-  anything else around the key is part of it. A file that can't be read is an error naming the
-  variable and the system's error code (such as `ENOENT`), never the path: a key set as the path
-  by mistake would otherwise be echoed, and a base64 key can't be told from a path.
-
-**Format.** A key is exactly 32 bytes in canonical standard base64: 44 characters
-(`A–Z a–z 0–9 + /`) ending in one `=`, which decode to 32 bytes and encode back to the same text.
-`openssl rand -base64 32` prints one. Hex, base64url, other lengths and embedded whitespace are
-malformed; a 64-character hex key gets a hint saying so.
+  `${VAR}` that isn't defined, and an empty string can never be a key or a path.
+- A file that can't be read is an error naming the variable and the system's error code, never the
+  path: a key set as the path by mistake would otherwise be echoed, and a base64 key can't be told
+  from a path.
 
 **Weak-key checks:**
 
@@ -65,66 +48,45 @@ Both variables set, an unreadable file and a file over 4 KiB keep their own fix 
 mention a new key: a new key fixes none of them. No message, error or test output ever contains
 a key or part of one.
 
-**Derivation.** The 32 bytes are imported once into WebCrypto as non-extractable HKDF input and used
-for nothing else, so any later use derives a key of its own without touching the cipher's. Each use
-derives its own key with HKDF-SHA-256, an empty salt and its own `info` label:
+**Derivation.** The 32 bytes are used only as HKDF input: each use derives its own key with
+HKDF-SHA-256, an empty salt and its own `info` label, so a later use never touches the cipher's key.
+The labels are a contract the five apps share:
 
 | `info` | Gives |
 |---|---|
 | `edbfi:secrets:v1:aes-256-gcm` | the non-extractable AES-256-GCM key |
 | `edbfi:secrets:v1:key-id` | 16 bytes, written as 22 characters of unpadded base64url: the key ID |
 
-The key ID is derived, so nobody assigns it, and it reveals nothing about the key. Its one job is a
-clear error: a value written under another key says so, instead of failing as tampered.
-
 The keyring keeps the derived keys and never the HKDF key: whoever holds that can derive the AES
 key's bytes with `deriveBits`, undoing its non-extractability. A later use adds its own label in
 `keyring.ts`.
 
+The key ID is derived, so nobody assigns it, and it reveals nothing about the key. Its one job is a
+clear error: a value written under another key says so, instead of failing as tampered.
+
 ## Startup
 
-`src/hooks.server.ts` is created with SvelteKit's `init` hook, which loads the keys. `init` skips
-the load while the app is being built (`building` from `$app/env`), so a build never needs or embeds
-a key. `setup` later adds its own startup checks after this one.
-- **The built server** (`bun ./build`): adapter-bun awaits `init` before it listens, so a key error
-  stops the process with a non-zero exit code and nothing is ever served.
-- **`bun run --bun dev`:** SvelteKit's dev server runs `init` on the first request and doesn't exit
-  when it fails; every request then fails with the key error in the terminal, so dev fails closed
-  but keeps running.
+The key loads in SvelteKit's `init` hook, so every way of running the app needs one, while a build
+never needs or embeds one. The built server exits with the key error before it listens; `dev` keeps
+running and fails every request, with the key error in the terminal. `setup` later adds its own
+startup checks after this one.
 
-**Declaring the variables.** SvelteKit 3 exposes only the variables declared in `src/env.ts`, so
-`secrets` declares the two there with `defineEnvVars`: private, read when the app starts (not
-inlined at build time), each optional through a schema function that returns the value unchanged and
-never throws, so SvelteKit's own validation can't print a key. The hook imports them from
-`$app/env/private`, and every check stays in `secrets`. They come from the environment or from an
-ignored `.env` file: `dev` reads it through Vite, and Bun loads it into every `bun` process started
-in the repo, the built server included.
+**Declaring the variables.** `src/env.ts` declares the two variables with schemas that return the
+value unchanged and never throw, so SvelteKit's own validation can't print a key; every check stays
+in `secrets`.
 
-Every way of running the app now needs a key: the README says how to make one, and the Playwright
-config generates a fresh one for each run, so CI needs no secret and no change. A developer's own
-`.env` or exported variables never reach a test: `playwright.config.ts` deletes both variables from
-`process.env` and passes the generated key only to its web server, every built server a test
-starts runs as `bun --no-env-file ./build`, and the e2e tests build each server's environment
-without either variable, adding only what the case needs (Playwright's workers are new Bun
-processes, which load `.env` again).
+**Tests never see a developer's key.** Bun loads `.env` into every `bun` process started in the
+repo, Playwright's workers included. So every server an e2e test starts runs as
+`bun --no-env-file ./build` with an environment built from scratch, holding neither variable unless
+the case adds it, and `playwright.config.ts` deletes both variables and passes the key it generates
+only to its web server. Every later e2e test that starts a server follows this rule.
 
 ## The cipher
 
-```ts
-encryptSecret(secret: Secret, binding: SecretBinding): Promise<string>
-decryptSecret(stored: string, binding: SecretBinding): Promise<Secret>
-// SecretBinding = { table: string; field: string; rowId: string }
-```
-
-**The stored value** is one text value in a nullable text column:
-
-```text
-v1.<key id>.<nonce>.<ciphertext and tag>
-```
-
-- Each segment after `v1` is canonical unpadded base64url: the key ID is 22 characters (16 bytes),
-  the nonce 16 characters (12 fresh random bytes from WebCrypto for every encryption), and the
-  ciphertext ends in GCM's 16-byte tag.
+**The stored value** is one text value in a nullable text column,
+`v1.<key id>.<nonce>.<ciphertext and tag>`. Each segment after `v1` is canonical unpadded
+base64url: the key ID is 16 bytes, the nonce 12 fresh random bytes from WebCrypto for every
+encryption, and the ciphertext ends in GCM's 16-byte tag.
 - **A stored secret is never `NULL` or empty; `NULL` means none.** Encrypting an empty secret is an
   error, so an empty string never means "nothing stored". Any stored text that isn't exactly this
   shape is corruption and an error, never a silent empty value. The version is checked first, so a
@@ -135,10 +97,10 @@ v1.<key id>.<nonce>.<ciphertext and tag>
 **The binding.** The associated data is the UTF-8 bytes of the JSON array
 `["v1", <key id>, "obzorarr", <table>, <field>, <row id>]`, written compactly, as `JSON.stringify`
 writes it (no spaces; lone surrogates are escaped, so every binding has exactly one encoding). The
-array can't be read two ways
-(unlike joined strings), and it also binds the version and the key ID. The caller always passes the
-binding of the place it reads from or writes to, never one stored beside the value, so a value
-copied to another row, field or app fails to decrypt. Table, field and row ID must be non-empty.
+array can't be read two ways (unlike joined strings), and it also binds the version and the key ID.
+The caller always passes the binding of the place it reads from or writes to, never one stored
+beside the value, so a value copied to another row, field or app fails to decrypt. Table, field and
+row ID must be non-empty.
 
 A rule for the modules that store secrets: **every row holding an encrypted field has a stable ID
 the app generates before the insert** (an autoincrement ID doesn't exist yet when the value is
@@ -161,92 +123,10 @@ near.
 
 ## The secret wrapper
 
-`Secret` holds one plaintext string in a private field. `reveal()` is the only way to read it, so
-review can list every place a secret is used (`grep reveal\(`). Everything else gets
-`[redacted]`: `String()`, template strings, `JSON.stringify`, `console.log` and Bun's inspect (the
-`nodejs.util.inspect.custom` symbol), and conversion to a primitive. The type has no other
-behaviour.
-
-`encryptSecret` takes a `Secret` and `decryptSecret` returns one, so a decrypted value is never a
-bare string by accident.
-
-## Changing the key
-
-There is one master key and no rotation. A new key makes every stored secret fail with
-`SecretKeyMismatchError`, and the owner enters those secrets again; the README covers this in its
-"Master key" section. Rotation
-with re-encryption is left out until the owner asks for it.
-
-## Backups
-
-The master key is stored apart from the database file and restored with it (D16): a database
-restored without the key it was written with fails with `SecretKeyMismatchError` on every stored
-secret. The README covers this in its "Master key" section. The Turso backup and restore procedure itself stays open
-in D16.
-
-## Project structure
-
-```text
-src/lib/server/config/secret-key.ts             reads the two variables and the file, nothing more
-src/lib/server/security/secrets/key-text.ts     canonical base64 decoding, the weak-key checks
-src/lib/server/security/secrets/keyring.ts      HKDF import and derivation, the key ID, the key
-src/lib/server/security/secrets/cipher.ts       stored format, binding, encrypt, decrypt, errors
-src/lib/server/security/secrets/secret.ts       the wrapper
-  (each with its *.test.ts)
-src/env.ts                                      declares the two variables (SvelteKit's file)
-src/hooks.server.ts                             the `init` hook; thin, calls the keyring
-tests/e2e/secret-key.test.ts                    the built server refuses to start without a key
-```
-
-`config/` reads text and knows nothing about keys; `security/secrets/` imports it, as imports go
-downwards. `playwright.config.ts` gains the generated key, and the README a "Master key" section:
-how to generate it, the two variables, what changing it means, and backups.
-
-## Code style
-
-As in [docs/SPEC.md](SPEC.md#code-style). The hook stays thin:
-
-```ts
-import type { ServerInit } from "@sveltejs/kit/hooks";
-import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
-import { building } from "$app/env";
-import * as env from "$app/env/private";
-
-export const init: ServerInit = async () => {
-	if (!building) await loadKeyring(env);
-};
-```
-
-## Testing strategy
-
-Unit tests (Vitest), next to their source; every key in them is generated at test time:
-- **Reading:** each variable alone, neither, both, an unreadable file (its error names no path, and
-  no part of a key set as the path), a file over 4 KiB, a file
-  with one trailing LF or CRLF and with other whitespace; an empty key with a file, a key with an
-  empty file variable, both empty, and an empty key file.
-- **Format:** canonical keys pass; 43 or 45 characters, a missing `=`, base64url, hex (with its
-  hint), non-canonical trailing bits and embedded whitespace fail.
-- **Weak keys:** a repeated byte, 16 distinct values each twice (exactly 4.0 bits), a doubled
-  16-byte key, an ascending and a descending counter and a base64-encoded passphrase each fail and
-  name their check; 10,000 generated random keys all pass.
-- **Errors never echo a key:** for every failing case, the message contains no part of the key text.
-- **Keyring:** the key ID is stable across loads, 22 characters, and differs between keys; the AES
-  key isn't extractable.
-- **Cipher:** a round trip; two encryptions of one secret differ; another table, field or row ID, a
-  flipped bit in any segment, a swapped key ID and a truncated value each fail with the right error;
-  an empty secret can't be encrypted; a value written under another key fails with
-  `SecretKeyMismatchError`; every segment's length is checked.
-- **Wrapper:** each form above prints `[redacted]`, and only `reveal()` returns the value.
-
-e2e (Playwright, against the built server): `bun --no-env-file ./build` with no key, with a
-malformed key and with a weak key each exits non-zero before listening, naming the check, and its
-output never contains the key; the existing smoke test passes with the generated key. A key in the
-developer's `.env` changes none of these results.
-
-## Commands
-
-The ground floor's commands ([docs/SPEC.md](SPEC.md#commands)). `dev` and `preview` now need a key
-in `.env` or the environment.
+`reveal()` is the only way to read a `Secret`'s plaintext, so `grep reveal\(` lists every place a
+secret is used, for review to check. Services pass a `Secret` to each other, never the bare string:
+`encryptSecret` takes one and `decryptSecret` returns one. Tests compare `reveal()` values, never
+`Secret`s: `toEqual` and `Bun.deepEquals` treat any two `Secret`s as equal.
 
 ## Boundaries
 
@@ -258,18 +138,3 @@ in `.env` or the environment.
 - **Never:** a key or a decodable example key in the repo, logs or test output; deriving a key from
   a password; a database, schema or re-encryption job in this module; a fallback that starts without
   a key.
-
-## Success criteria
-
-1. The unit and e2e tests above pass, with `check`, `lint`, `build`, `smoke` and prek, and CI's
-   `checks`, `smoke` and `ci-ok` pass without a stored secret.
-2. The built server without a valid key exits non-zero before it listens, and with one serves `/`
-   and `/healthz` as before. A key set in the environment reaches the loader through `src/env.ts`
-   (the e2e tests prove it, since the smoke test only passes with the generated key loaded).
-3. The README's "Master key" section and AGENTS.md's status and structure describe the module, and
-   `docs/SPEC.md`'s commands and testing sections are updated.
-
-## Open questions
-
-None for the owner: D26 settles the key format, the checks, changing the key and when the key is
-required.
