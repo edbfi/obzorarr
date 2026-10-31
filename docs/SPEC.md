@@ -150,7 +150,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
-`/admin/settings` are needed (all are in the Module notes or in PRODUCT.md's admin shell) but have
+`/admin/settings` are needed (the Module notes or PRODUCT.md's admin shell describe them) but have
 no brief. The landing brief's signed-out navigation has only Obzorarr and Help, so it needs a way to
 owner sign-in. Each gets its brief before its module is specced.
 
@@ -516,25 +516,26 @@ rest is the shared wording.
   member's own flag and the global flag together. Nobody, the owner included, can save a mode
   below the floor; regenerating a token is refused when the floor is stricter than private link;
   the interface disables the options below the floor and says why. "Apply defaults to existing
-  members" rewrites only the members who follow the default, and reports how many were updated and
+  users" rewrites only the members who follow the default, and reports how many were updated and
   skipped; explicit choices are never overwritten. When the default moves away from private link,
   the tokens of members who follow the default are wiped. With the public lookup on, the current
   year's effective mode becomes public, except that a member's explicit non-public choice stays an
   opt-out when user control is allowed.
-- **Share settings** are one row per member and year, also under concurrent creation: the stored
-  mode, whether it is the default or an explicit choice, the token if any, the slug, the member's
-  own control flag and their logo preference. A token is minted lazily and only in private-link
-  mode, a slug lazily when the recap is first shared or viewed, and each row has at most one of
-  each. A token belongs to one year, and never resolves or shows on another.
+- **Share settings** are created lazily, one row per member and year, also under concurrent
+  creation: the stored mode, whether it is the default or an explicit choice, the token if any, the
+  slug, the member's own control flag and their logo preference. A token is minted lazily and only
+  in private-link mode, a slug lazily when the recap is first shared or viewed, and each row has at
+  most one of each. A token belongs to one year, and never resolves or shows on another.
 - **Tokens** are left out of every payload unless the effective mode is private link, and even then
   only the member and the owner see them.
 - **Resolving a link,** by its shape alone: a long random token is looked up as a private link (its
   year must match; when the member's mode or the floor is members-only, signed-in members pass and
   anonymous visitors get not found; a token whose recap became public is stale). An all-digits id
   resolves only for the member it belongs to and for the owner, who opens any member's recap
-  read-only this way, minting nothing and seeing no token. A 22-character slug (about 131 bits of
-  randomness) names a public or members-only recap, and access is still checked: a private-link
-  recap reached by its slug is not found. Share links never carry the internal user id.
+  read-only this way, still bound by the privacy floor, minting nothing and seeing no token. A
+  22-character slug (about 131 bits of randomness) names a public or members-only recap, and access
+  is still checked: a private-link recap reached by its slug is not found. Share links never carry
+  the internal user id.
 - **Not found:** every anonymous denial (an unknown member, an opt-out, a stale mapping, a wrong or
   revoked link) is the same byte-identical not-found, "We couldn't find a Wrapped page for that
   link." Signed-in members get a more specific forbidden or not-found.
@@ -564,7 +565,7 @@ rest is the shared wording.
   comparison, percentile, binge, first and last. The summary is a page after the slides, not a
   slide.
 - **The slides,** with their empty states; the spike settles their look (D19), and their text is
-  messages (D21):
+  messages (D21). Personality badges carry an emoji.
   - Total time: the hours played (minutes under an hour; it counts up only from 24 hours), with a
     days or weeks comparison.
   - Top movies and top shows: the top 6 with artwork and play or episode counts; empty: "No
@@ -621,11 +622,10 @@ rest is the shared wording.
   private-link years are left out, and no other year's token is revealed; a year without a link
   falls through to the server recap. The logo follows the logo mode (`appearance`); when members
   choose, the member has an eye toggle that saves at once and starts as shown.
-- **The summary page:** "{user}'s {year} Wrapped" or "{year} Server Wrapped", with cards for the
-  hours, top movie, top show, top genre, "Top X%" or the active viewers, and the longest binge
-  (hidden when it rounds to zero), and the actions Watch Again, Share and Return Home (the admin
-  panel, the dashboard or the landing page, by who is viewing). Focus lands on the heading, so a
-  stray Enter doesn't press a button.
+- **The summary page** ends both modes. Its cards and labels follow the recap brief
+  (`/wrapped/2025/me`) as the spike settles them (D19). It offers Watch Again, Share and a way home
+  (the admin panel, the dashboard or the landing page, by who is viewing), and focus lands on its
+  heading, so a stray Enter doesn't press a button.
 - **Voice:** a personal recap says "you" and "your". The server recap speaks as "{server name}
   Community", or "we" and "our" when the server has no name, and always takes plural verbs.
 - **Artwork** goes through the app, so browsers never see the server token, and follows the same
@@ -637,13 +637,13 @@ rest is the shared wording.
 
 #### member-dashboard
 
-- "Welcome back", with a card for the member's own recap ("Appears here once you have viewing
-  history this year") and one for the server recap.
+- Before the member has history this year, their recap card says "Appears here once you have
+  viewing history this year".
 
 #### landing
 
-- **Signed out, lookup off** (the default): the page says that the server requires sign-in to view
-  Wrapped, with Plex sign-in, and refuses a crafted lookup request outright. A signed-in member goes
+- **Signed out, lookup off** (the default): the page offers only Plex sign-in (the landing brief's
+  copy) and refuses a crafted lookup request outright. A signed-in member goes
   to their dashboard.
 - **Lookup on:** a visitor types a Plex username (1–100 characters, trimmed), matched without regard
   to case against fresh mappings that resolve to exactly one member. An unknown name, a member
@@ -670,25 +670,24 @@ rest is the shared wording.
 
 - **A preset is never stored:** applying one writes the ordinary settings of three separately
   versioned groups in one transaction, and if any group changed since the page loaded nothing is
-  written and the message names the stale sections. The page matches presets on five fields (not
-  the logo mode, which lives under appearance), so a different logo mode can't turn a match into
-  Custom. On a fresh install no card is highlighted, and the "your choices don't match a preset"
-  note appears only after the owner changes something. Choosing Custom in first run starts from
-  Balanced's values the first time.
+  written and the message names the stale sections. The page matches presets on five fields (not the
+  logo mode, which lives under appearance), so a different logo mode can't turn a match into Custom.
+  On a fresh install no card is highlighted, and the "your choices don't match a preset" note
+  appears only after the owner interacts with the privacy controls. Choosing Custom in first run
+  starts from Balanced's values the first time.
 - **Previews:** "Current (saved)" and "After you save", with a banner while sections are unsaved,
   each written from three points of view (the owner, a visitor, a member) and always ending with
-  the reminder that sign-in still guards everything else.
+  the reminder that sign-in still guards everything else. A preview never overstates or
+  understates what is exposed.
 - **The advanced cards,** each saved on its own: server recap sharing, the public landing lookup,
-  and members' sharing defaults, with "apply defaults to existing members" behind a confirmation.
+  and members' sharing defaults, with "apply defaults to existing users" behind a confirmation.
 - **First run's privacy panel:** the six cards, the live preview, and the advanced options
   collapsed.
 
 #### slides-admin
 
-- **Order:** one list of built-in and custom slides, reordered by dragging or by labelled up and
-  down buttons, with an enable toggle each. Built-in order and enabling are global across years;
-  any slide type missing from the configuration is added, enabled, whenever a recap loads. First
-  run's panel toggles each built-in slide.
+- **Order:** any slide type missing from the configuration is appended, enabled, whenever a recap
+  loads. First run's panel toggles each built-in slide.
 - **Custom slides:** a title (1–200 characters), content (1–10,000 characters of lightweight text
   markup), enabled, a place in the same order as the built-in slides, and an optional year (none
   means every year). A row shows the year badge, edit, and an inline delete confirmation. A dialog
@@ -733,8 +732,9 @@ rest is the shared wording.
   once. Templates fill in when the AI returns too few facts, and replace them all on any AI error.
   The connection test sends a minimal request and maps an authentication failure, and an unknown
   model or base URL, to their own messages.
-- **The AI form** on `/admin/settings/connections`: the key (stored, shown only as stored), the base
-  URL (HTTPS, without credentials, query or fragment) and the model, each with a clear button; the
+- **The AI form** on `/admin/settings/connections`: the key (stored on the server and never sent
+  back to the browser; the form shows only that one is stored), the base URL (HTTPS only) and the
+  model, each with a clear button; the
   test reuses the stored key only while the URL and model still match what was stored; any of the
   three may come from the environment (`setup`'s locks). On `/admin/slides`, the frequency, with a
   line saying whether AI or templates are in use.
@@ -744,9 +744,9 @@ rest is the shared wording.
 
 #### appearance
 
-- The interface theme and the Wrapped theme are separate settings, each its own form, because the
-  panel the owner works in and the recap members see needn't match; first run's panel sets both.
-- **The logo mode:** always show (the default), always hide, or the member's choice.
+- First run's panel sets both the interface theme and the Wrapped theme.
+- **The logo mode,** saved in its own form: always show (the default), always hide, or the member's
+  choice.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
   readable by scripts by design.
 
@@ -763,11 +763,11 @@ rest is the shared wording.
   `setup`'s redaction. They are kept for 7 days and at most 50,000 entries by default (the System
   tab allows 1–365 days and 1,000–1,000,000 entries), enforced nightly at 03:00 in the instance
   time zone and on demand. The System tab also holds the debug toggle.
-- **`/admin/logs`:** counts by level; filters (levels, a search over message and source that
-  ignores case, source, date range, clear all) that match on the server (row 22); a live view with
-  pause, resume and auto-scroll; a table with expandable metadata to copy; "load more" by cursor
-  (100 by default, 500 at most); export of up to 10,000 entries; and running cleanup and clearing
-  everything, each behind a confirmation.
+- **`/admin/logs`:** counts by level; filters (levels, a search over message and source that ignores
+  case, source, date range, clear all) that match on the server (row 22); a live view over a
+  server-push stream that reconnects when it drops, with pause, resume and auto-scroll; a table with
+  expandable metadata to copy; "load more" by cursor (100 by default, 500 at most); export of up to
+  10,000 entries; and running cleanup and clearing everything, each behind a confirmation.
 
 #### data-admin
 
@@ -775,17 +775,18 @@ rest is the shared wording.
   all. Clearing history leaves the watermark, so without resetting it (row 23) a backfill is needed
   to import it again.
 - **The instance reset** is a danger-zone card that says what comes back (watch statistics, which
-  sync again from Plex), what doesn't (every setting, every member's share settings, every share
-  link already given out, the slide curation, the log history), and what is untouched (anything the
-  environment supplies). Three stages: a dialog that explains and writes nothing; a dialog that
-  shows a new claim token, valid for 60 minutes, with a copy button, where the owner must type
-  RESET exactly; then every table is wiped in one transaction while holding the sync slot (a reset
-  is refused while a sync runs). Afterwards the owner is signed out, the scheduler stops, the reset
-  is logged, the browser lands on the claim, and the token is printed to the console too.
+  sync again from Plex), what doesn't (the owner account with its password, two-factor and linked
+  sign-ins, every setting, every member's share settings, every share link already given out, the
+  slide curation, the log history), and what is untouched (anything the environment supplies). Three
+  stages: a dialog that explains and writes nothing; a dialog that shows a new claim token, valid
+  for 60 minutes, with a copy button, where the owner must type RESET exactly; then every table is
+  wiped in one transaction while holding the sync slot (a reset is refused while a sync runs).
+  Afterwards the owner is signed out, the scheduler stops, the reset is logged, the browser lands on
+  the claim, and the token is printed to the console too.
 
 #### overview
 
-- **`/admin`:** "Server overview for {year}" with a Live badge; cards for distinct viewers in the
+- **`/admin`:** "Server overview for {year}"; cards for distinct viewers in the
   synced history, hours played (and days), total plays and history records; a sync card (the last
   run, its records and duration, the scheduler's state, the next run with its expression and zone,
   or a prompt to set a schedule); a Wrapped card whose "My Wrapped" link appears only when the
@@ -794,7 +795,6 @@ rest is the shared wording.
 - **The Wrapped hub:** a year picker over the years with data (disabled, with an explanation, when
   there is only one), cards for My Wrapped and Server Wrapped, and links to slide configuration,
   privacy and display settings.
-- **The System tab's system information:** the version, uptime and platform.
 
 ## Tech stack
 
@@ -945,11 +945,10 @@ call for anything different; choices 4 and 5 are obzorarr's own.
 3. **Security headers and CSP.** The nonce-based CSP and the security headers on every response
    (Module notes, `setup`) belong to the first module that serves real pages (`setup`, whose claim
    page comes before `sign-in`), not the skeleton.
-4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently
-   (Module notes, `appearance`); the previous app offered five presets, and the design seeds both
-   to After Hours. The skeleton defines After
-   Hours as the only theme, its colours as semantic tokens behind the dark colour-mode condition, and
-   the module that brings back the two theme settings decides whether more presets return and how
-   Panda switches them.
+4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently (the
+   connections brief); the legacy app offered five presets, and the design seeds both to
+   After Hours. The skeleton defines After Hours as the only theme, its colours as semantic tokens
+   behind the dark colour-mode condition, and the module that brings back the two theme settings
+   decides whether more presets return and how Panda switches them.
 5. **CSP and the recap spike.** Whether the recap spike carries the security headers and CSP (choice
    3) is decided by the spike's own spec, since only it knows whether the spike is served to users.
