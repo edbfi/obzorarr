@@ -131,7 +131,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - Connecting Weblate (D21): later work, outside this map. The message files are ready for it.
 - Watched time instead of runtime, until the Plex audit shows the data exists (D23), and a time
   zone per member (D24).
-- The previous app's development-only sign-in bypass: development tooling, not product.
+- The legacy app's development-only sign-in bypass: development tooling, not product.
 - Live now-playing, media playback and anything written to Plex (PRODUCT.md, principle 4).
 - **The container image's first start** (deferred: a note, not a design). It is specified and
   built only when Obzorarr is first tested through its image (`edbfi/obzorarr-docker`); building
@@ -150,102 +150,121 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
-`/admin/settings` are needed (all are in the Module notes or in PRODUCT.md's admin shell) but have no
-brief. The landing brief's signed-out navigation has only Obzorarr and Help, so it needs a way to
+`/admin/settings` are needed (all are in the Module notes or in PRODUCT.md's admin shell) but have
+no brief. The landing brief's signed-out navigation has only Obzorarr and Help, so it needs a way to
 owner sign-in. Each gets its brief before its module is specced.
 
 ### Module notes
 
 What a capability-map row commits to in more detail than a clause fits, carried over from the
-previous app and adapted to the decisions. It is behaviour to keep unless the module's approved
-spec or a decision changes it. Each block moves into its module's `SPEC-<id>.md` when that module
-is specced. Rate limits are listed once, under `sign-in`.
+legacy app and adapted to the decisions. It is behaviour to keep unless the module's approved spec
+or a decision changes it. Each block moves into its module's `SPEC-<id>.md` when that module is
+specced. Rate limits are listed once, under `sign-in`. `i18n`, `setup` and `sign-in` are shared
+with the other edbfi apps (D20): a bullet or clause marked "(obzorarr)" is this app's own, and the
+rest is the shared wording.
+
+#### i18n
+
+- A number in a message that states how the app behaves (a limit, a duration, a count) is passed
+  in as a parameter from the constant the logic uses, never written into the text, so the copy
+  can't drift from the behaviour.
 
 #### setup
 
-- **The setup gate.** Until first run is complete, every request except static assets, the claim,
-  sign-in and first run's own helpers is sent to the current first-run step. The server keeps one
-  current-step pointer: the browser can't skip ahead, each step's action checks that it is the
-  current step, and a step that offers Previous only moves the pointer back; the step indicator
-  can't be clicked. The configuration step saves the panels that later modules add in one
-  submission. The last step summarises the configuration and the sync status, and only its action
-  completes first run.
+- **The setup gate.** Until first run is complete, every page except static assets, the claim,
+  sign-in and first run's own helpers sends the browser to the current first-run step. The server
+  keeps one current-step pointer: the browser can't skip ahead, each step's action checks that it
+  is the current step, and a step that offers Previous only moves the pointer back; the step
+  indicator can't be clicked. The configuration step saves the panels that later modules add in
+  one submission. The last step summarises the configuration (obzorarr: and the sync status), and
+  only its action completes first run.
 - **The bootstrap token** (D20) is 12 random lowercase letters and digits, shown as
   `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
-  is valid for 15 minutes, after which a new one is printed. Claim attempts are limited to 5 per 5 minutes per client.
-- **Environment locks.** A setting the environment supplies wins: its field is read-only, with an
-  "environment" badge and a sentence saying the deployment's configuration owns the value. A
-  submitted locked field is left unchanged, with "Some fields are controlled by environment
-  variables and were not changed." A stored value the environment shadows is deleted at startup.
-  A placeholder from the sample configuration (such as a literal "your token here", or the default
-  local Plex address without a real token) counts as unset.
-- **Settings versions.** Every settings form carries its key group's version, the group's last
-  update time in milliseconds. A save with a missing, blank or older version is refused as a
-  conflict, "Settings changed in another tab. Reload and try again.", with a reload action, and
-  nothing reports success. Each write moves the version strictly forward, even after the clock is
-  corrected, and returns the version it wrote, so two saves in a row from one page both succeed.
-  Groups are narrow (server-recap privacy, user defaults, public lookup, the allowed origins, each
-  appearance field, the time zone, log settings, connections), so saving one form never conflicts
-  with another. Clearing a stored secret moves its group's version too, so a stale tab can't bring
-  it back.
+  is valid for 15 minutes, after which a new one is printed. Claim attempts are rate-limited
+  (`sign-in`). Before the claim there is no allowed origin, so the claim is guarded by the token
+  alone, and its origin becomes the first allowed origin.
+- **Environment locks** (obzorarr, the reference for the apps that adopt them). A setting the
+  environment supplies wins: its field is read-only, with an "environment" badge and a sentence
+  saying the deployment's configuration owns the value. A submitted locked field is left
+  unchanged, with "Some fields are controlled by environment variables and were not changed." A
+  stored value the environment shadows is deleted at startup. A placeholder from the sample
+  configuration (such as a literal "your token here", or the default local Plex address without a
+  real token) counts as unset.
+- **Settings versions** (obzorarr). Every settings form carries its key group's version, the
+  group's last update time in milliseconds. A save with a missing, blank or older version is
+  refused as a conflict, "Settings changed in another tab. Reload and try again.", with a reload
+  action, and nothing reports success. Each write moves the version strictly forward, even after
+  the clock is corrected, and returns the version it wrote, so two saves in a row from one page
+  both succeed. Groups are narrow (server-recap privacy, user defaults, public lookup, the allowed
+  origins, each appearance field, the time zone, log settings, connections), so saving one form
+  never conflicts with another. Clearing a connection value moves its group's version too, so a
+  stale tab can't bring back a cleared secret.
+- **Settings URLs** may not hold credentials, a query or a fragment.
 - **Logging.** Four levels; debug entries are dropped unless debug logging is on. Each entry has a
-  level, a message, a source, structured metadata and a millisecond timestamp. Redaction runs
-  before an entry is written anywhere: credentials in URLs, token-like query parameters, token,
-  authorisation and cookie fields in payloads and headers, and, at any depth, any metadata key that
-  looks like a token, secret, password, cookie, session or key. Plex host names, server names and
-  machine ids appear only as short fingerprints with a coarse category (`plex.direct`, localhost,
-  private IP, container range, public domain, public IP, invalid).
+  level, a message, a source, structured metadata and a millisecond timestamp, and goes to standard
+  output (D11). Redaction runs before an entry is written anywhere: credentials in URLs, token-like
+  query parameters, token, authorisation and cookie fields in payloads and headers, and, at any
+  depth, any metadata key that looks like a token, secret, password, cookie, session or key.
+  (obzorarr) Plex host names, server names and machine ids appear only as short fingerprints with a
+  coarse category (`plex.direct`, localhost, private IP, container range, public domain, public IP,
+  invalid).
 - **Security headers,** on every response, early returns included: framing denied, no MIME
   sniffing, a strict referrer policy, a permissions policy denying camera, microphone and
   geolocation, one-year strict transport security over HTTPS, and a nonce-based content security
-  policy: scripts from the app only; images from the app, inline data and Plex's hosts (including
-  the image proxy Plex uses for some avatars); fonts from the app (DESIGN.md bundles them);
-  connections to the app and Plex only; no framing; the app only as base and form target.
-- **Startup and shutdown.** Startup runs once: migrations (D5), deleting shadowed settings,
-  advancing the authority epoch when the Plex URL or token changed (`identity`), marking
-  interrupted syncs failed (D7), then starting the jobs; a job that fails to start is logged, not
-  fatal. Shutdown stops the jobs, flushes the logs and drains open requests and live streams for a
-  bounded time (default 30 seconds, below the container's stop timeout), then exits even if a Plex
-  call is still outstanding. Streams it closes end cleanly, so browsers reconnect. A second signal
-  exits at once, and a hang-up counts as a stop. Idle connections close after 10 seconds (streams
-  exempt), request bodies are limited to 512 KB by default (the app takes no uploads), and the
-  database file's path comes from the environment.
+  policy: scripts from the app only; images from the app and inline data (obzorarr: and Plex's
+  hosts, including the image proxy Plex uses for some avatars); fonts from the app (DESIGN.md
+  bundles them); connections to the app only (obzorarr: and Plex); no framing; the app only as base
+  and form target.
+- **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
+  each module's startup work (obzorarr: deleting shadowed settings, advancing the authority epoch
+  when the Plex URL or token changed, `identity`, and marking interrupted syncs failed, D7), then
+  starting the jobs; a job that fails to start is logged, not fatal. Shutdown stops the jobs,
+  flushes the logs and drains open requests and live streams for a bounded time, then exits even if
+  an upstream call is still outstanding. Streams it closes end cleanly, so browsers reconnect. A
+  second signal exits at once, and a hang-up counts as a stop. The environment sets the database
+  location, the drain time (default 30 seconds, kept below the container's stop timeout), the idle
+  timeout (default 10 seconds, streams exempt) and the request body limit (default 512 KB;
+  obzorarr takes no uploads).
 - **Trust:** anyone who can read the server console can claim a fresh install.
 
 #### sign-in
 
-- **Request order:** the scanner filter, rate limits, the origin check, startup, security headers,
-  sign-in, the setup gate, then the owner check.
+- **Request order** (startup has already finished in SvelteKit's `init` hook): the scanner filter
+  (obzorarr), rate limits, the origin check, sign-in, the setup gate, then the owner check. Security
+  headers go on every response, an early return from any stage included.
 - **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
-  keeps only the path, never the query string; a signed-in member goes to their dashboard. An
-  owner-only form action answers "forbidden"; a member's form action without a session answers
-  "unauthenticated" rather than failing.
+  keeps only the path, never the query string; where the app has member sessions, a signed-in member
+  goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
+  without a session answers "unauthenticated" rather than failing.
 - **Return paths** are same-origin paths only: one leading slash, no backslashes or control
   characters, at most 2,048 characters. Only the path is kept.
-- **Rate limits,** a fixed window per client address: 60 a minute by default; sign-in 10 per 5
-  minutes; Plex sign-in's polling 60 a minute and its redirect 30 a minute; the claim 5 per 5
-  minutes; JSON endpoints 30 a minute; the landing page 30 a minute and its lookup 10 a minute; the
-  public-address check 12 a minute. Responses carry `Retry-After` and remaining and reset headers,
-  and come as a form error, a JSON error or a branded page, whichever the caller expects. The
-  client address comes from the connection, or from a header the owner names, with a proxy depth
-  (default 1). When no address can be found, limits are skipped with a one-time warning, favouring
-  availability (one process, D17).
+- **Rate limits,** a fixed window per client address: 60 a minute by default; signing in 10 per 5
+  minutes; the claim 5 per 5 minutes; JSON endpoints 30 a minute. (obzorarr) Plex sign-in's polling
+  60 a minute and its redirect 30 a minute, the landing page 30 a minute and its lookup 10 a
+  minute, and the public-address check 12 a minute. Responses carry `Retry-After` and remaining and
+  reset headers, and come as a form error, a JSON error or a branded page, whichever the caller
+  expects. The client address comes from the connection, or from a header and a proxy depth
+  (default 1) set in the environment. When no address can be found, limits are skipped with a
+  one-time warning, favouring availability (one process, D17).
 - **The origin check:** a state-changing request must carry an `Origin` (or, without one, a
-  `Referer`) equal to an allowed origin, or it is refused as forbidden. The one exemption is the
-  Security tab's action that updates the allowed origin, matched on route and action only, so a
-  wrong origin can be repaired without a restart. Saving an origin that doesn't match what the
-  browser sends first shows a dialog that spells out the lockout and how to recover; clearing it is
-  refused when it would lock everyone out; an origin set in the environment locks the field.
-- **The public origin** is the address people open, set in the environment: required when the
-  app is served over plain HTTP, optional behind an HTTPS proxy that keeps the host. It must be a
-  bare scheme, host and port; one with a path, query, fragment or credentials stops startup with an
-  error that doesn't echo the value. Without it, the app takes its origin from proxy headers the
-  owner names (protocol and host, only when every request passes through a proxy that overwrites
-  both), or assumes HTTPS and the `Host` header, and warns once at startup.
+  `Referer`) equal to an allowed origin, or it is refused as forbidden. (obzorarr) The one
+  exemption is the Security tab's action that updates the allowed origin, matched on route and
+  action only, so a wrong origin can be repaired without a restart. Saving an origin that doesn't
+  match what the browser sends first shows a dialog that spells out the lockout and how to
+  recover; clearing it is refused when it would lock everyone out; a public origin set in the
+  environment is the allowed origin, and locks the field.
+- **The public origin** is the address people open, set in the environment, and the basis for
+  links, sign-in redirects, cookies and the origin check. It is required when the app is served
+  over plain HTTP, and optional behind an HTTPS proxy that keeps the host. It is normalised and
+  must be a bare scheme, host and port; one with a path, query, fragment or credentials stops
+  startup with an error that doesn't echo the value. Without it, the app takes its origin from
+  proxy headers named in the environment (protocol and host, only when every request passes
+  through a proxy that overwrites both), or assumes HTTPS and the `Host` header, and warns once at
+  startup.
 - **Forwarded headers:** only the last proxy hop is trusted; its protocol must be `http` or
   `https`; a host with whitespace, control characters or URL-structural characters is rejected;
-  forwarded headers never change the app's own origin or its strict-transport decision. The
-  owner's reverse proxy is trusted only as far as these settings say.
+  forwarded headers never change a public origin set in the environment, or the strict-transport
+  decision. The owner's reverse proxy is trusted only as far as these settings say.
 - **Cookies:** `Secure` exactly when the public origin is HTTPS, deletions included, so a
   plain-HTTP install at home still works; session cookies are `HttpOnly` and `SameSite=Lax`.
 - **Errors:** an unexpected error is logged and the user sees "Something went wrong. Try again.";
@@ -255,13 +274,13 @@ is specced. Rate limits are listed once, under `sign-in`.
   not-found page doesn't show the status number.
 - **Sign-out** is POST only, behind a confirmation; a GET only redirects, so an image tag or a
   prefetch can't sign anyone out.
-- **The scanner filter** answers well-known probe paths (environment files, version-control
-  folders, blog and database-admin tools, framework consoles, script gateways) with a quiet "not
-  found", and known scanner user agents with "forbidden".
-- **The admin shell:** PRODUCT.md's sidebar, and a footer with the owner's avatar, sign-out behind
-  a confirmation and the version as selectable text (a release, a nightly build with its short
-  hash, or a dev tag). On phones the sidebar is a drawer that traps focus, closes on Escape and
-  makes the page behind it inert.
+- **The scanner filter** (obzorarr) answers well-known probe paths (environment files,
+  version-control folders, blog and database-admin tools, framework consoles, script gateways) with
+  a quiet "not found", and known scanner user agents with "forbidden".
+- **The admin shell:** PRODUCT.md's sidebar, and a footer with the signed-in owner (their avatar
+  once linked), sign-out behind a confirmation and the version as selectable text (a release, a
+  nightly build with its short hash, or a dev tag). On phones the sidebar is a drawer that traps
+  focus, closes on Escape and makes the page behind it inert.
 
 #### public-address
 
@@ -278,19 +297,21 @@ is specced. Rate limits are listed once, under `sign-in`.
 
 #### plex-connection
 
-- **Picking a server:** after the one-time Plex sign-in, only servers the account owns are listed.
-  Expanding one shows its connections sorted secure direct, remote, local, relay; local
+- **Requests** send the Plex token in a header, never in the query string, with Plex's client
+  identification headers. Everything is pulled or polled.
+- **Picking a server:** the one-time Plex sign-in opens in a popup by default, or in the same tab on
+  request or when the popup is blocked, and creates no session (D20). Only servers the account owns
+  are listed. Expanding one shows its connections sorted secure direct, remote, local, relay; local
   `plex.direct` addresses are hidden, and a public `plex.direct` address is synthesised when none is
   advertised. Choosing a connection tests and saves it in one step. A custom URL (such as Plex
   behind a reverse proxy) is tested, then saved. Plain HTTP is allowed only for private or local
   hosts, with an explicit opt-in.
 - **From the environment:** when the URL and token come from the environment, a locked card shows
-  the server's name with the URL masked and checks it live, and only the server's owner can
-  continue (D20).
+  the server's name with the URL masked and checks it live, and setup continues only when the
+  token belongs to the server's owner (D20).
 - **The settings form:** the token shows only that one is stored, with a blank field to replace it
   (DESIGN.md), and has a clear button. A test reuses the stored token only while the URL still
-  matches the stored one, so a test never sends a saved secret to a newly typed address. A URL may
-  not hold credentials, a query or a fragment.
+  matches the stored one, so a test never sends a saved secret to a newly typed address.
 - **Errors:** a Plex error reaches the user only as a fixed phrase ("Authentication failed. Check
   the access token.", "This does not appear to be a Plex Media Server", "Connection timed out…").
   A connection test caps the whole request, parsing included, at about 10 seconds. History that
@@ -301,8 +322,8 @@ is specced. Rate limits are listed once, under `sign-in`.
   machine id in it, then its IP address and port), the plain host and port, the public address,
   then the normalised origin, in that order.
 - **Changing the URL or token** advances the authority epoch at the next startup and invalidates
-  the stored machine id and identity proof, so the next sync proves every identity again. The README
-  tells the owner to back up before changing either.
+  the stored machine id and identity proof, so the next sync proves every identity again. This
+  module adds a README line telling the owner to back up the database before changing either.
 
 #### identity
 
@@ -313,9 +334,11 @@ is specced. Rate limits are listed once, under `sign-in`.
   previous mapping is kept rather than guessed. A failure only warns ("Top Contributors may show
   generic usernames") and never blocks the history fetch.
 - **The write** is one transaction that checks the Plex URL and token fingerprint, the authority
-  epoch and the machine id haven't changed during the run; a conflicting pair aborts it. On success
-  users are upserted, stale mappings removed and the proof record stored (epoch, machine id,
-  configuration fingerprint, confirmation time). The mapping is replaced as a whole.
+  epoch and the machine id haven't changed during the run; a conflicting pair of local and Plex
+  accounts aborts it. On success users are upserted, stale mappings removed and the proof record
+  stored (epoch, machine id, configuration fingerprint, confirmation time). The mapping is replaced
+  as a whole: each server-local account id maps to a Plex account id, username, avatar and a flag
+  for the Plex server's owner, which grants nothing in the app (D20).
 - **Freshness:** a mapping is fresh for 24 hours (allowed at 23:59:59, refused at exactly
   24:00:00), and is invalid at once when the URL, token or machine id changes. Everyone but the
   owner needs a fresh, exactly matching mapping to view or act on any recap, whether by slug, token
@@ -328,9 +351,13 @@ is specced. Rate limits are listed once, under `sign-in`.
 
 - **Fetching** uses the server token, 100 plays a page, and stops at the first empty page so a
   misbehaving server can't loop forever.
+- **A play** keeps its history key (unique), rating key, title, type, viewed-at time, server-local
+  account id, library section and artwork reference, and, once enriched, its duration in seconds,
+  genres and release year; an episode also keeps its show's title and key and its season's title.
+  Only the owner clears history (`data-admin`).
 - **Modes:** new activity only (the default) starts at the watermark of the latest completed run; a
-  cancelled or failed run never supplies one. Full history fetches everything, and is what happens
-  when no completed run has a watermark. Backfill starts at the beginning of 1 January of a chosen
+  cancelled or failed run never supplies one. When no completed run has a watermark, a run fetches
+  the full history. Backfill starts at the beginning of 1 January of a chosen
   year (2000–2100) in the instance time zone (D24).
 - **A run:**
   1. Claims the single running slot atomically. Starting while a sync runs answers "conflict",
@@ -343,16 +370,24 @@ is specced. Rate limits are listed once, under `sign-in`.
      keys, so refetching the boundary play or rerunning a backfill changes nothing. Progress
      (processed, inserted, skipped, page) is kept in memory and saved periodically; a cancel takes
      effect between pages.
-  4. If anything was inserted, clears the cached statistics of every year from the watermark's
-     year to the newest play's year, for every member and the server.
+  4. If anything was inserted, clears the cached statistics of every year, counted in the instance
+     time zone (D24), from the watermark's year to the newest play's year, for every member and the
+     server.
   5. Enriches, again only if something was inserted: finds plays missing a duration, genres or a
-     release year across the whole history, fetches metadata for rating keys not already cached
-     (default 8 at a time, 1–20, set in the environment), records failures, applies grouped
-     updates, then clears the cached statistics of exactly the years it touched, older years
-     included. Its counts separate enriched, skipped (cached or already filled) and failed.
-  6. Completes with the count, and the newest viewed-at time as the watermark.
+     release year across the whole history, and fetches metadata for rating keys not cached, or
+     whose failure is past the retry window (row 10), 8 at a time by default (set in the
+     environment, clamped to 1–20). The cache keeps, per rating key, the duration, genres, release
+     year, when it was fetched and whether it failed; a successful entry never expires. It records
+     failures, applies grouped updates, then clears the cached statistics of exactly the years it
+     touched, older years included. Its counts separate enriched, skipped (cached or already
+     filled) and failed.
+  6. Completes with the count, and the newest viewed-at time as the watermark, or keeps the
+     previous watermark when nothing new arrived (row 10).
+- **A run's record:** a sequential id, start and completion times, the plays processed, the
+  watermark, the status (running, completed, failed or cancelled) and the error text.
 - **Failures:** any error fails the run with its message. Inserted plays stay, and the next run is
-  idempotent. An error while cancelling records "cancelled".
+  idempotent. An error while cancelling records "cancelled". A run still marked running at startup
+  is marked failed with "Interrupted by restart".
 - **Live sync** isn't a poller. Opening the server recap or a personal recap, or a successful
   landing lookup, starts a best-effort background sync, guarded in this order: live sync is on (the
   environment wins over the stored setting; on by default), 3 minutes have passed since the last
@@ -361,9 +396,10 @@ is specced. Rate limits are listed once, under `sign-in`.
   progress overlay, and the page reloads its data when the run ends. A landing lookup sets a
   short-lived cookie so the recap shows the overlay and, if the run fails, "Could not refresh your
   viewing history from Plex. Showing the most recent data instead."
-- **Progress streams:** the owner's stream has full progress; the member stream carries only the
-  phase and small counters, never titles, names or error text. Streams reconnect when they drop,
-  and a progress display clears itself a few seconds after the run ends.
+- **Progress streams:** the owner's stream has full progress; the member stream, open only to a
+  signed-in member, carries only the phase and small counters, never titles, names or error text.
+  Streams reconnect when they drop, and a progress display clears itself a few seconds after the run
+  ends.
 - **First run:** the sync step imports the current year with live progress (phase, counters and
   enrichment) and reconnects if the stream drops. Continue is enabled as soon as the sync has
   started, and the sync runs on in the background.
@@ -387,11 +423,11 @@ is specced. Rate limits are listed once, under `sign-in`.
 
 #### plex-sign-in
 
-- **Starting:** the server creates a PIN with Plex, records a sign-in attempt under a random state
-  for 15 minutes, and sets a 15-minute `SameSite` cookie holding that state, one attempt per
-  browser. The member goes to Plex's hosted sign-in page, the only place sign-in redirects to, with
-  a forward URL back to obzorarr. A return path (`sign-in`'s rule) is checked on the server, on the
-  redirect page and again in the browser.
+- **Starting:** the server creates a PIN with Plex, records the PIN id, its expiry and whether the
+  callback was verified under a random state for 15 minutes, and sets a 15-minute `SameSite=Lax`
+  cookie holding that state, one attempt per browser. The user goes to Plex's hosted sign-in page,
+  the only place Plex sign-in redirects to, with a forward URL back to obzorarr. A return path
+  (`sign-in`'s rule) is checked on the server, on the redirect page and again in the browser.
 - **Popup** (the default): the opener polls every 2 seconds for up to 5 minutes. The popup checks
   the state on return, tells the opener it is done (only to speed things up, never as proof) and
   closes; closing it cancels. When the browser blocks the popup, a dialog offers to continue to
@@ -399,16 +435,18 @@ is specced. Rate limits are listed once, under `sign-in`.
 - **Redirect:** chosen explicitly, or automatically for automated browsers. The pending PIN is kept
   in session storage for at most 15 minutes, and a server fallback that keeps no token in the
   browser covers browsers without storage.
-- **Finishing** needs the returned state to match the cookie, then checks membership of the server
-  with the member's own token. On success the user is upserted, a member session of a fixed 7 days
-  (no sliding renewal) is created holding the member's own Plex token, and the member lands on
-  their dashboard. Sign-in responses carry only the username, whether it is the owner, and an
-  allow-listed destination.
-- **Revalidation:** once 15 minutes have passed since the last check, the next request proves
-  membership again against Plex and the live server identity. Lost access, or an explicit
-  "unauthorised" from Plex, deletes every session of that user. Transient failures (timeouts,
-  upstream 5xx) get a grace window of up to 4 failures in a row or 60 minutes, then that one
-  session ends; certificate errors and malformed responses aren't transient.
+- **Finishing** needs the returned state to match the cookie. An owner who linked their Plex account
+  continues as D20 and row 11 say (through two-factor when it is on) and lands in the admin panel.
+  Anyone else needs membership of the server, checked with their own token; then the user is
+  upserted, a member session of a fixed 7 days (no sliding renewal) is created under a random cookie
+  token, holding their own Plex token, and they land on the return path or their dashboard. Expired
+  sessions are deleted lazily. Sign-in responses carry only the username, whether it is the owner,
+  and an allow-listed destination.
+- **Revalidating a member session:** once 15 minutes have passed since the last check, the next
+  request proves membership again against Plex and the live server identity. Lost access, or an
+  explicit "unauthorised" from Plex, deletes every session of that user. Transient failures
+  (timeouts, upstream 5xx) get a grace window of up to 4 failures in a row or 60 minutes, then that
+  one session ends; certificate errors and malformed responses aren't transient.
 - **Access:** a member keeps access only while a fresh mapping (`identity`) proves the server is
   still shared with them. Un-sharing removes access to recaps even while a session lives;
   re-sharing and a sync restore it. Between revalidations a member's session is proof of
@@ -426,8 +464,8 @@ is specced. Rate limits are listed once, under `sign-in`.
 - **The calculators:**
   - Total time and plays: minutes summed, plays counted; a year has history when either is
     positive.
-  - Top movies: grouped by item (row 12), ranked by plays, ties alphabetical, top 10, with the first
-    artwork seen.
+  - Top movies: grouped by rating key and titled from the item (row 12), ranked by plays, ties
+    alphabetical, top 10, with the first artwork seen.
   - Top shows: episode plays grouped by show title, counting plays rather than unique episodes; top
     10.
   - Top genres: each genre on a play counts once; malformed genre data is skipped; top 10.
@@ -446,14 +484,14 @@ is specced. Rate limits are listed once, under `sign-in`.
   - First and last watch: the earliest and latest play; an episode is titled "Show: Episode".
   - Year comparison: none when both years are zero, +100% when last year was zero, otherwise the
     percent change to one decimal.
-  - Percentile (members only): the share of accounts with strictly less watch time among all
+  - Percentile (personal recaps only): the share of accounts with strictly less watch time among all
     accounts with a play that year; a tie doesn't count as less, and the top of N viewers gets
     (N−1)/N.
   - Series completion: unique episodes watched per show against the show's episode count from
     Plex, fetched in a batch; the percentage is rounded and capped at 100; top 10 by episodes
-    watched. When the lookup fails, totals are unknown (row 12).
+    watched. When the lookup fails, the recap still renders with the totals unknown (row 12).
   - Top viewers (server only): the top 10 accounts by minutes, named from the mapping, then the
-    server's local accounts, then "User {id}", so a member who left still counts.
+    stored users, then "User {id}", so a member who left still counts.
 - **Determinism:** plays are read in time order, every tie-break is defined, and five forced
   recomputations give identical results. Fun facts are the one exception.
 - **The cache** keeps one result per account, year and kind for an hour, replaced on recompute. Sync
@@ -564,15 +602,15 @@ is specced. Rate limits are listed once, under `sign-in`.
   history for {year} yet" (personal) or "No {year} data yet" (server), returned as a normal page,
   not an error, and only after access is checked, so an anonymous visitor can't tell an empty year
   from a private one.
-- **Story mode** (the default) is full screen, sized to the dynamic viewport height. A tap anywhere but the left 15% goes forward and the
-  left 15% goes back; a horizontal swipe of more than 50 px moves either way; the arrow keys,
-  space, enter, home, end and escape work, throttled. Phones get round arrow buttons. There's no
-  auto-advance and no timer: segmented progress fills past slides, pulses the current one and dims
-  the rest. "Tap to continue" shows on the first slide. A slide arrives with a short horizontal
-  transition in the direction of travel, then plays its own entrance. Going past the last slide
-  opens the summary. Close returns to the previous page when it was on the same site, otherwise to
-  the landing page. The slide index is kept in the URL fragment as a deep link, without adding
-  history entries, and Watch Again resets it.
+- **Story mode** (the default) is full screen, sized to the dynamic viewport height. A tap anywhere
+  but the left 15% goes forward and the left 15% goes back; a horizontal swipe of more than 50 px
+  moves either way; the arrow keys, space, enter, home, end and escape work, throttled. Phones get
+  round arrow buttons. There's no auto-advance and no timer: segmented progress fills past slides,
+  pulses the current one and dims the rest. "Tap to continue" shows on the first slide. A slide
+  arrives with a short horizontal transition in the direction of travel, then plays its own
+  entrance. Going past the last slide opens the summary. Close returns to the previous page when it
+  was on the same site, otherwise to the landing page. The slide index is kept in the URL fragment
+  as a deep link, without adding history entries, and Watch Again resets it.
 - **Scroll mode** stacks every slide as a full-height section with an "N / total" counter; each
   reveals as it scrolls into view and reverses when scrolled back, and escape closes. Story and
   scroll mode share one position, and both end with the summary (row 14).
@@ -905,8 +943,8 @@ call for anything different; choices 4 and 5 are obzorarr's own.
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
 3. **Security headers and CSP.** The nonce-based CSP and the security headers on every response
-   (Module notes, `setup`) belong to the first module that serves real pages
-   (`setup`, whose claim page comes before `sign-in`), not the skeleton.
+   (Module notes, `setup`) belong to the first module that serves real pages (`setup`, whose claim
+   page comes before `sign-in`), not the skeleton.
 4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently
    (Module notes, `appearance`); the previous app offered five presets, and the design seeds both
    to After Hours. The skeleton defines After
