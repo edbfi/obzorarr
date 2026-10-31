@@ -39,12 +39,11 @@
 ## Master key
 
 Obzorarr encrypts the secrets it stores with a master key you keep, and won't start without a
-valid one.
+valid one. Which key you set depends on one question: has Obzorarr run here before?
 
-- **First install:** generate a key with `openssl rand -base64 32`.
-- **Existing install:** set the key you already have. A new key makes every stored secret
-  unreadable. If Obzorarr says no key is set after an upgrade or a Compose change, the variable went
-  missing: set your existing key again.
+- **First install:** generate a key with `openssl rand -base64 32`, and keep a copy.
+- **Existing install:** set the key it ran with, exactly as you saved it. Never generate a new key
+  to get past a key error: Obzorarr would start, but every secret it stored would be unreadable.
 
 Set exactly one of these variables:
 
@@ -74,11 +73,22 @@ secrets:
     file: ./obzorarr_key.txt
 ```
 
+- A key is 44 characters ending in `=`, with no quotes or spaces around it. A key file may end in
+  one newline.
 - An empty variable counts as unset: `OBZORARR_SECRET_KEY=` is the same as leaving it out.
-- The key file may end in one newline.
-- Malformed and weak keys are refused, and the error names the check that failed.
 
-**Backups:** keep a copy of the key with your backups, separately from the database, and restore the
+**If Obzorarr won't start,** its error names the variable and what's wrong:
+- *No key is set:* on an existing install, the variable went missing in an upgrade or a Compose
+  change. Set your key again.
+- *The key is refused:* on a first install, generate one as the error says. On an existing install,
+  the key changed on its way in. Look for a stray space, a missing character or quotes kept around
+  it, and set it exactly as you saved it.
+
+**Changing the key:** Obzorarr can't move stored secrets to a new key. After a change, each stored
+secret fails with an error saying it was written under another master key. Enter it again, or set
+the old key back, which still reads everything.
+
+**Backups:** keep a copy of the key with your backups, apart from the database, and restore the
 same key alongside them. Without it, stored secrets can't be read.
 
 ## Working on it

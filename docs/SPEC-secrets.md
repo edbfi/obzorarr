@@ -55,12 +55,15 @@ There is no denylist: no doc, example or test in the repo holds a decodable key,
 placeholder that fails as malformed.
 
 **Failing.** Every key error stops startup with an error whose message is one line naming the
-variable and the check that failed; Bun prints its stack around it. Only the checks a new key can
-fix add `openssl rand -base64 32`: a missing key, whose message offers setting the existing key
-first (a variable lost from Compose looks like a first install), and a malformed or weak key, which
-never started the app. Both variables set, an unreadable file and a file over 4 KiB get no hint: a
-valid key already in use can hit them, and a new key would make every stored secret unreadable. No
-message, error or test output ever contains a key or part of one.
+variable and the check that failed; Bun prints its stack around it. A missing, malformed or weak
+key's message ends with one fix that puts the existing key first: `if Obzorarr has run before,
+set the key it ran with; otherwise generate one with: openssl rand -base64 32`. A key already in
+use reaches these checks too, through a variable lost from Compose or a typo (a stray space, a
+cut-off paste, quotes kept around it), and a new key would make every stored secret unreadable.
+The fix can't depend on whether anything is stored: the key loads before any database is open.
+Both variables set, an unreadable file and a file over 4 KiB keep their own fix and never
+mention a new key: a new key fixes none of them. No message, error or test output ever contains
+a key or part of one.
 
 **Derivation.** The 32 bytes are imported once into WebCrypto as non-extractable HKDF input and used
 for nothing else, so any later use derives a key of its own without touching the cipher's. Each use
@@ -124,11 +127,15 @@ v1.<key id>.<nonce>.<ciphertext and tag>
   ciphertext ends in GCM's 16-byte tag.
 - **A stored secret is never `NULL` or empty; `NULL` means none.** Encrypting an empty secret is an
   error, so an empty string never means "nothing stored". Any stored text that isn't exactly this
-  shape is corruption and an error, never a silent empty value.
+  shape is corruption and an error, never a silent empty value. The version is checked first, so a
+  later version with another shape is reported as unknown, not corrupt. The ciphertext is at least
+  17 bytes (one byte and the tag), since an empty secret is never stored.
 - One self-describing column: its parts can't drift apart, and it works on any database engine.
 
 **The binding.** The associated data is the UTF-8 bytes of the JSON array
-`["v1", <key id>, "obzorarr", <table>, <field>, <row id>]`. The array can't be read two ways
+`["v1", <key id>, "obzorarr", <table>, <field>, <row id>]`, written compactly, as `JSON.stringify`
+writes it (no spaces; lone surrogates are escaped, so every binding has exactly one encoding). The
+array can't be read two ways
 (unlike joined strings), and it also binds the version and the key ID. The caller always passes the
 binding of the place it reads from or writes to, never one stored beside the value, so a value
 copied to another row, field or app fails to decrypt. Table, field and row ID must be non-empty.
@@ -139,10 +146,12 @@ encrypted), which never changes for the row's life; names and URLs, which do cha
 of it. A table with one row uses a fixed ID.
 
 **Errors.** Each is its own error class, and none carries the plaintext, the key or the stored
-value:
+value, as a field, a `cause` or in its message (Bun prints an uncaught error's own fields and its
+`cause` chain):
 - `SecretFormatError`: the stored text isn't the format above, or names an unknown version.
 - `SecretKeyMismatchError`: the value's key ID isn't the loaded key's: it was written under another
-  master key. It names the table, field and row ID.
+  master key. It names the table, field and row ID, and says to set the key it was written with, or
+  enter the secret again.
 - `SecretDecryptError`: the tag doesn't verify: the value was changed, or read under another
   binding.
 
@@ -164,14 +173,15 @@ bare string by accident.
 ## Changing the key
 
 There is one master key and no rotation. A new key makes every stored secret fail with
-`SecretKeyMismatchError`, and the owner enters those secrets again; the README says so. Rotation
+`SecretKeyMismatchError`, and the owner enters those secrets again; the README covers this in its
+"Master key" section. Rotation
 with re-encryption is left out until the owner asks for it.
 
 ## Backups
 
 The master key is stored apart from the database file and restored with it (D16): a database
 restored without the key it was written with fails with `SecretKeyMismatchError` on every stored
-secret. The README's key section says this. The Turso backup and restore procedure itself stays open
+secret. The README covers this in its "Master key" section. The Turso backup and restore procedure itself stays open
 in D16.
 
 ## Project structure
