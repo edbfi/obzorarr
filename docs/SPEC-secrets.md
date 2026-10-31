@@ -55,8 +55,12 @@ There is no denylist: no doc, example or test in the repo holds a decodable key,
 placeholder that fails as malformed.
 
 **Failing.** Every key error stops startup with one line naming the variable and the check that
-failed, plus `openssl rand -base64 32` where a new key is the fix. No message, error or test output
-ever contains a key or part of one.
+failed. Only the checks a new key can fix add `openssl rand -base64 32`: a missing key, whose
+message offers setting the existing key first (a variable lost from Compose looks like a first
+install), and a malformed or weak key, which never started the app. Both variables set, an
+unreadable file and a file over 4 KiB get no hint: a valid key already in use can hit them, and a
+new key would make every stored secret unreadable. No message, error or test output ever contains a
+key or part of one.
 
 **Derivation.** The 32 bytes are imported once into WebCrypto as non-extractable HKDF input and used
 for nothing else, so any later use derives a key of its own without touching the cipher's. Each use
@@ -69,6 +73,10 @@ derives its own key with HKDF-SHA-256, an empty salt and its own `info` label:
 
 The key ID is derived, so nobody assigns it, and it reveals nothing about the key. Its one job is a
 clear error: a value written under another key says so, instead of failing as tampered.
+
+The keyring keeps the derived keys and never the HKDF key: whoever holds that can derive the AES
+key's bytes with `deriveBits`, undoing its non-extractability. A later use adds its own label in
+`keyring.ts`.
 
 ## Startup
 

@@ -63,13 +63,13 @@ into WebCrypto as non-extractable HKDF input. It derives the AES-256-GCM key and
 keeps the loaded keyring for the cipher.
 
 **Acceptance criteria:**
-- [ ] Every failure is one line naming the variable and the check, with `openssl rand -base64 32`
+- [x] Every failure is one line naming the variable and the check, with `openssl rand -base64 32`
   where a new key is the fix, and holds no key text.
-- [ ] The key ID equals the test's own WebCrypto HKDF-SHA-256 of the key bytes, with an empty salt
+- [x] The key ID equals the test's own WebCrypto HKDF-SHA-256 of the key bytes, with an empty salt
   and the `edbfi:secrets:v1:key-id` label, as 22 characters of unpadded base64url. It is stable
   across loads of the same key and different for different keys. The AES key isn't extractable;
   task 6's test pins its label.
-- [ ] The cipher reads the keyring through one exported function, which fails before any load and
+- [x] The cipher reads the keyring through one exported function, which fails before any load and
   after a failed load, and otherwise returns the keyring of the latest successful load.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
@@ -96,8 +96,9 @@ then prove with e2e tests that the built server refuses to start without a valid
   by its absolute path) change none of these results.
 - [ ] The smoke test passes with the key Playwright generates, and `build` passes with no key set.
 - [ ] The README has a "Master key" section (making a key, the two variables, an empty variable
-  counting as unset), whose placeholder fails as malformed. SPEC.md's commands and testing
-  sections are updated, and CI needs no stored secret.
+  counting as unset), whose placeholder fails as malformed. It tells an existing install to set
+  its existing key rather than generate a new one. SPEC.md's commands and testing sections are
+  updated, and CI needs no stored secret.
 
 **Verification:** all of the above, then `bun run --bun build` and `bun run --bun smoke`. Manual
 check: `bun run --bun dev` with no key fails every page and endpoint, with the key error in the
@@ -150,6 +151,8 @@ stored format, the binding and the three error classes. This task also closes th
   table, field or row ID is an error, and so is using the cipher with no keyring loaded.
 - [ ] `SecretKeyMismatchError` names the table, field and row ID, and no error carries the
   plaintext, the key or the stored value.
+- [ ] No cipher error holds a stored value or plaintext as a field, because Bun prints an uncaught
+  error's own fields.
 - [ ] The README covers changing the key and backups.
 - [ ] The end-of-work-stream cleanup is done:
   - `tasks/` is deleted;
