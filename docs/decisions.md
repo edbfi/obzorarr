@@ -330,8 +330,11 @@ JSON, and `reveal()` is the only way to read it. There is no rotation: the key I
 a value written under another key fail with its own clear error, and a new key means entering the
 stored secrets again. `secrets` checks the key in SvelteKit's `init` hook from its first version, so
 every way of running the app, dev and CI included, needs one. The key is restored with the database
-file (D16). The details are in [SPEC-secrets.md](SPEC-secrets.md). The design is the same in all
-five edbfi apps; only the variable prefix, the app name and the stored secrets differ.
+file (D16). A missing, malformed or weak key's error puts the key the app ran with before a new one,
+because a lost variable or a typo in a key in use fails the same checks, and the key loads before any
+database could say whether anything is stored (owner decision, 2026-10-31). The details are in
+[SPEC-secrets.md](SPEC-secrets.md). The design is the same in all five edbfi apps; only the variable
+prefix, the app name and the stored secrets differ.
 
 Why: the shared opening keeps `secrets` the same in every app (D20), and comradarr settled its
 design first, with safety first (owner decision, after a council of three models and a review). Each

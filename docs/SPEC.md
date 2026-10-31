@@ -1,8 +1,8 @@
 # Spec: obzorarr
 
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
-(2026-10-18) and built. The capability map below is approved; `secrets` is specified in
-[SPEC-secrets.md](SPEC-secrets.md).
+(2026-10-18) and built. The capability map below is approved; module 1, `secrets`, is built
+([SPEC-secrets.md](SPEC-secrets.md)).
 
 ## Objective
 
@@ -36,7 +36,7 @@ components or services, and dates and numbers formatted for the viewer's locale.
 
 | # | Module id | Responsibility | Depends on | Surfaces |
 |---|---|---|---|---|
-| 1 | `secrets` | Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
+| 1 | `secrets` | **Built.** Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's locale, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `recap-spike` | The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it is committed. No database or sign-in, and its code becomes product code only through `recap`'s spec | `i18n` | a spike route that its spec names (ground-floor choice 5) |
 | 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction (legacy "Logging"), security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin. obzorarr adds environment locks on settings and the per-group versions that catch a save from a stale tab (legacy "Settings concurrency") | `secrets`, `i18n` | first-run setup (no brief yet) |
@@ -84,7 +84,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 | Module | Main homes |
 |---|---|
-| `secrets` | `security/secrets/` (the cipher and the secret wrapper); loading the key in `config/` |
+| `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (Paraglide's settings), `lib/shared/i18n/` (formatting); `paraglideMiddleware` in `hooks.server.ts` |
 | `recap-spike` | `lib/components/recap/` (the slide shell and the three slides); its route |
 | `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
@@ -178,6 +178,7 @@ Setup facts for this stack:
   (`src/app.css`), and `transform: true` turns static `css()` calls into class strings at build
   time.
 - Hook types come from `@sveltejs/kit/hooks`.
+- SvelteKit 3 exposes only the environment variables declared in `src/env.ts`.
 - Tools run under Bun with `--bun`; a lifecycle script (`prepare`) calls each bin as
   `bun --bun <bin>`, because `bun ci` doesn't apply `--bun` to lifecycle scripts.
 - Bun blocks `@parcel/watcher`'s install script (it builds with Node); Panda works without it.
@@ -232,9 +233,10 @@ export const GET: RequestHandler = () => healthResponse();
 ## Testing strategy
 
 - **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
-  `cache-control: no-store`) and the `secrets` module
-  ([SPEC-secrets.md](SPEC-secrets.md#testing-strategy)). Component tests use happy-dom when
-  components exist; never jsdom.
+  `cache-control: no-store`) and the `secrets` module (`config/secret-key.test.ts`, and
+  `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
+  `security/secrets/`, under `src/lib/server/`). Component tests use happy-dom when components
+  exist; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
@@ -263,8 +265,9 @@ obzorarr is a Bun web repo with edbfi-ci's Bun web templates:
   configuration in the Vite plugin; prek green before each commit.
 - **Ask first:** any dependency not in the tech stack table; any change to `biome.json` (it is
   shared by the five rewrite apps); any CI shape that differs from the edbfi-ci template.
-- **Never:** a database, authentication, Plex, sync, a recap slide or any other product feature; a
-  second styling tool or primitive library; Node, npm or npx anywhere, including CI.
+- **Never:** a database, authentication, Plex, sync, a recap slide or any other product feature
+  before its module's approved spec builds it; a second styling tool or primitive library; Node, npm
+  or npx anywhere, including CI.
 
 ## Success criteria
 
