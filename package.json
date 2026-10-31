@@ -4,7 +4,7 @@
 	"license": "AGPL-3.0-only",
 	"version": "0.0.1",
 	"type": "module",
-	"packageManager": "bun@1.4.3",
+	"packageManager": "bun@1.4.4",
 	"scripts": {
 		"prepare": "bun --bun svelte-kit sync && bun --bun panda codegen",
 		"dev": "bun --bun vite dev",
