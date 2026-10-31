@@ -180,9 +180,9 @@ rest is the shared wording.
   only its action completes first run.
 - **The bootstrap token** (D20) is 12 random lowercase letters and digits, shown as
   `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
-  is valid for 15 minutes, after which a new one is printed. Claim attempts are rate-limited
-  (`sign-in`). Before the claim there is no allowed origin, so the claim is guarded by the token
-  alone, and its origin becomes the first allowed origin.
+  is printed with the setup URL and is valid for 15 minutes, after which a new one is printed. Claim
+  attempts are rate-limited (`sign-in`). Before the claim there is no allowed origin, so the claim
+  is guarded by the token alone, and its origin becomes the first allowed origin.
 - **Environment locks** (obzorarr, the reference for the apps that adopt them). A setting the
   environment supplies wins: its field is read-only, with an "environment" badge and a sentence
   saying the deployment's configuration owns the value. A submitted locked field is left
