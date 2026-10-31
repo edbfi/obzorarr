@@ -150,9 +150,9 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
-`/admin/settings` are needed (the Module notes or PRODUCT.md's admin shell describe them) but have
-no brief. The landing brief's signed-out navigation has only Obzorarr and Help, so it needs a way to
-owner sign-in. Each gets its brief before its module is specced.
+`/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
+describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr and
+Help, so it needs a way to owner sign-in. Each gets its brief before its module is specced.
 
 ### Module notes
 
@@ -525,9 +525,10 @@ rest is the shared wording.
   creation: the stored mode, whether it is the default or an explicit choice, the token if any, the
   slug, the member's own control flag and their logo preference. A token is minted lazily and only
   in private-link mode, a slug lazily when the recap is first shared or viewed, and each row has at
-  most one of each. A token belongs to one year, and never resolves or shows on another.
+  most one of each, also under concurrent minting. A token belongs to one year, and never resolves
+  or shows on another.
 - **Tokens** are left out of every payload unless the effective mode is private link, and even then
-  only the member and the owner see them.
+  only the member whose recap it is and the owner see them.
 - **Resolving a link,** by its shape alone: a long random token is looked up as a private link (its
   year must match; when the member's mode or the floor is members-only, signed-in members pass and
   anonymous visitors get not found; a token whose recap became public is stale). An all-digits id
@@ -547,10 +548,10 @@ rest is the shared wording.
   hybrid. Pseudonyms follow position, so they shift when the ranking changes, but the same input
   always gives the same output, and counts and order are kept.
 - **The share dialog,** from the recap or its summary, copies the slug or token link. It shows the
-  mode choices to the member (when user control allows) and to the owner, with options below the
-  floor disabled; offers regenerating only in private-link mode above the floor; says that
-  members-only recipients must sign in; and tells a member without control where that is decided.
-  On the server recap it is only the link.
+  mode choices to the member whose recap it is (when user control allows) and to the owner, with
+  options below the floor disabled; offers regenerating only in private-link mode above the floor;
+  says that members-only recipients must sign in; and tells that member, when user control is off,
+  where that is decided. On the server recap it is only the link.
 - **`/sharing`,** for the current year: the share mode with the floor's notes, copy link,
   regenerate the private link behind a confirmation, the logo preference (only when the logo mode
   lets members choose), and when the session expires. It is served `no-store`, so a floor change
@@ -621,7 +622,7 @@ rest is the shared wording.
   whose recap it is, other years link only to share links that already exist: nothing is minted,
   private-link years are left out, and no other year's token is revealed; a year without a link
   falls through to the server recap. The logo follows the logo mode (`appearance`); when members
-  choose, the member has an eye toggle that saves at once and starts as shown.
+  choose, the member whose recap it is has an eye toggle that saves at once and starts as shown.
 - **The summary page** ends both modes. Its cards and labels follow the recap brief
   (`/wrapped/2025/me`) as the spike settles them (D19). It offers Watch Again, Share and a way home
   (the admin panel, the dashboard or the landing page, by who is viewing), and focus lands on its
@@ -643,7 +644,7 @@ rest is the shared wording.
 #### landing
 
 - **Signed out, lookup off** (the default): the page offers only Plex sign-in (the landing brief's
-  copy) and refuses a crafted lookup request outright. A signed-in member goes
+  copy), with no lookup form, and refuses a crafted lookup request outright. A signed-in member goes
   to their dashboard.
 - **Lookup on:** a visitor types a Plex username (1–100 characters, trimmed), matched without regard
   to case against fresh mappings that resolve to exactly one member. An unknown name, a member
@@ -786,15 +787,15 @@ rest is the shared wording.
 
 #### overview
 
-- **`/admin`:** "Server overview for {year}"; cards for distinct viewers in the
-  synced history, hours played (and days), total plays and history records; a sync card (the last
-  run, its records and duration, the scheduler's state, the next run with its expression and zone,
-  or a prompt to set a schedule); a Wrapped card whose "My Wrapped" link appears only when the
-  owner has plays this year, never linking to a page that would be not found or create a share row
-  for nothing; and quick links.
+- **`/admin`:** cards for distinct viewers in the synced history, hours played (and days), total
+  plays and history records; a sync card (the last run, its records and duration, the scheduler's
+  state, the next run with its expression and zone, or a prompt to set a schedule); a Wrapped card
+  whose "My Wrapped" link appears only when the owner has plays this year, never linking to a page
+  that would be not found or create a share row for nothing; and quick links.
 - **The Wrapped hub:** a year picker over the years with data (disabled, with an explanation, when
   there is only one), cards for My Wrapped and Server Wrapped, and links to slide configuration,
   privacy and display settings.
+- **The System tab's system information:** the version, uptime and platform.
 
 ## Tech stack
 
