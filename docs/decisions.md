@@ -192,16 +192,16 @@ keeps its own copy ([Shared groundwork](../AGENTS.md#shared-groundwork)).
     Plex sign-ins always do. A provider that doesn't send `amr` never gets the offer.
 
 Each app's connection modules add their own first-run steps after `setup`, such as connecting Plex
-here. In obzorarr this replaces the legacy rule that the only administrator is the Plex server's
-proven owner (legacy spec "Users, roles and permissions"; owner decision): the administrator is the
-owner who claimed the instance. Plex stays the authority for everything else. Connecting Plex is
-accepted only when the server token belongs to the server's owner, because identity reconciliation
-needs the owner's reads. Members sign in with Plex and keep access only while the server is shared
-with them. The owner's own recap is that of the Plex account behind the server token (the server's
-local account 1), so it needs no Plex link, as otpravkarr's self-subscription does. The server
-owner's Plex account signing in through the member flow while unlinked gets a member session, never
-the owner's. The three-slide recap spike (D19) runs right after `i18n`: it is a design spike on demo
-fixtures, with no database or sign-in, not a feature module.
+here. In obzorarr this replaces the legacy app's rule that the only administrator is the Plex
+server's proven owner (owner decision): the administrator is the owner who claimed the instance.
+Plex stays the authority for everything else. Connecting Plex is accepted only when the server token
+belongs to the server's owner, because identity reconciliation needs the owner's reads. Members sign
+in with Plex and keep access only while the server is shared with them. The owner's own recap is
+that of the Plex account behind the server token (the server's local account 1), so it needs no Plex
+link, as otpravkarr's self-subscription does. The server owner's Plex account signing in through the
+member flow while unlinked gets a member session, never the owner's. The three-slide recap spike
+(D19) runs right after `i18n`: it is a design spike on demo fixtures, with no database or sign-in,
+not a feature module.
 
 Why: the owner wants the five apps to look and work alike, and everything else depends on these
 modules: every app stores upstream secrets, shows text that must be translatable, needs a safe first
@@ -228,8 +228,7 @@ messages too, and AI fun facts are requested in the viewer's language.
 
 Why: the owner wants full translation support in every app, with Weblate as the translation tool,
 and English and Danish now. Adding translation afterwards touches every screen; building it in from
-the first one costs little. This fixes legacy spec weakness 18 (English only, no localisation
-layer).
+the first one costs little. The legacy app was English only, with no localisation layer.
 
 ### D22. Paraglide JS with i18next JSON v4 messages
 
@@ -275,24 +274,26 @@ may switch every total to it at once, with the label changing too.
 
 Why: Plex's history carries no verified watched time (D12). A total that was watched time for some
 plays and runtime for others couldn't be labelled truthfully, and would make viewers, years and the
-leaderboard incomparable (PRODUCT.md, principle 3). An honest label answers legacy spec weakness 2.
+leaderboard incomparable (PRODUCT.md, principle 3). An honest label answers the legacy app's
+weakness: abandoned plays inflated totals and binge lengths that read as time watched.
 The owner took the agents' recommendation, which two independent reviews agreed with.
 
 ### D24. Statistics use the instance's time zone
 
 Calendar years and every daily bucket (hour, weekday, month, marathon day, streak, binge date) are
 computed on the server in one instance time zone: the environment's zone if it names a valid IANA
-zone, else the owner's setting, else UTC, the same resolution the sync schedule uses (legacy spec
-"Scheduling"). Recaps name the zone, such as "Times in Europe/Copenhagen". A first-run step asks
-for the zone, suggesting the browser's, so no install falls back to UTC unnoticed. Changing the zone
-invalidates the cached statistics of every year, because year boundaries move. Stored timestamps and
-the sync watermark stay in UTC. Formatting still follows each viewer's locale through `Intl` (D21),
-with the instance zone passed explicitly.
+zone, else the owner's setting, else UTC, the same resolution the sync schedule uses. Recaps name
+the zone, such as "Times in Europe/Copenhagen". A first-run step asks for the zone, suggesting the
+browser's, so no install falls back to UTC unnoticed. Changing the zone invalidates the cached
+statistics of every year, because year boundaries move. Stored timestamps and the sync watermark
+stay in UTC. Formatting still follows each viewer's locale through `Intl` (D21), with the instance
+zone passed explicitly.
 
 Why: recaps are shared and cached, so one zone gives every viewer the same recap, which the
-determinism requirement needs (legacy spec "Statistics engine"). A household or friends-and-family
+determinism requirement needs (PRODUCT.md, principle 3). A household or friends-and-family
 server lives mostly in one zone, and the setting already exists for the schedule. A zone per member
-can come later without changing the engine. This fixes legacy spec weakness 1 (everything in UTC).
+can come later without changing the engine. The legacy app bucketed everything in UTC, which put
+the peak hour in the wrong place for most viewers.
 The owner took the agents' recommendation, which two independent reviews agreed with.
 
 ### D25. Other software: the latest stable release only

@@ -36,7 +36,7 @@ It is private by default and built for a household or friends-and-family server:
 - **Owner's setup ritual:** a fresh install is claimed with a one-time token printed to the server console, which creates the owner account; onboarding then offers two-factor and connects Plex, runs the first sync and sets appearance, privacy, slides and fun facts. Settings supplied by the deployment environment are shown read-only and always win.
 - **Data rhythm:** play history arrives by scheduled sync (default daily at midnight in the configured zone) and by a best-effort background sync when someone opens a recap. Statistics are per calendar year. Members open recaps all year, and use peaks at year end.
 - **Member's experience:** members sign in with their Plex account, open their own recap and the server recap, and share a link to theirs. The recap is a portrait-first story with a summary card, widened for desktop; the owner's admin panel is an operational tool that also works on phones, where its sidebar becomes a drawer.
-- **Legacy app:** behaviour reference only (see Evidence on Hand); current rewrite status lives in `docs/SPEC.md`. Its known limitations are revisited, not carried over: watch time is labelled as the runtime of what was played (D23), and statistics use the instance's time zone instead of UTC (D24).
+- **Legacy app:** replaced by this rewrite, not ported; current rewrite status lives in `docs/SPEC.md`. Its known limitations are revisited, not carried over: watch time is labelled as the runtime of what was played (D23), and statistics use the instance's time zone instead of UTC (D24).
 - **Language:** English, the default, and Danish, with dates and numbers formatted for each viewer's locale (D21). The legacy app was English only.
 
 ## Product requirements
@@ -46,6 +46,7 @@ It is private by default and built for a household or friends-and-family server:
 - The owner is the sole administrator. Members have no user, sync or server configuration controls.
 - Viewing hours are labelled with what they measure: the runtime of everything played (D23). No live now-playing dashboard.
 - Keep admin privacy floors in force; do not offer a public choice when members-only is required.
+- Copy is plain, active and specific. In English: no "please", no em dashes as pauses, no marketing adjectives and no passive voice; other languages keep that intent in their own grammar and punctuation. Obzorarr is named as the actor ("Obzorarr finished syncing your viewing history"), "Wrapped" is always capitalised, a failure names what failed, and an empty state says what to do next ("No sync history yet. Run your first sync to see results here.").
 
 ## Confirmed visual direction
 
@@ -59,7 +60,6 @@ What exists:
 - **Direction reference:** `docs/design/references/after-hours.webp`, the selected After Hours reference.
 - **Surface briefs:** `.impeccable/surfaces/*.md`, one per proposed route, each with required content and acceptance criteria. All are marked "proposed design seed for review".
 - **Demo fixtures:** `tests/fixtures/demo-fixtures.json`: one fictional member ("Alex") and one fictional server for 2025 (snapshot date 2025-10-15). They are for stable visual tests only; production values come from the server.
-- **Behaviour reference:** `docs/product/legacy-spec.md`, the shipped legacy app's behaviour, including its QA-derived rules, glossary and a list of known weaknesses. The legacy code is on `legacy-old/v1`, with published releases up to 0.1.11; both are behaviour reference only, not evidence to cite.
 
 What does not exist, and must not be fabricated:
 - No real Plex play history, server names, member names or avatars. Use the fictional fixtures and label them as such.
@@ -76,14 +76,8 @@ What does not exist, and must not be fabricated:
 2. **Plex is the only authority for members.** Members' identity and membership come from Plex and are re-proven, never assigned in the app, and the connected server must belong to the Plex account whose token obzorarr uses. When Plex's answer is incomplete, keep the last proven state rather than guess. Obzorarr reads from Plex and never writes to it.
 3. **Honest numbers: label what is measured.** The same history always yields the same statistics, every total says what it measures, and nothing reports success before it is durable. Watch time is the runtime of what was played, and says so (D23).
 4. **A yearly recap, not a monitor.** No live now-playing, no media playback, no media management. Scope stays on looking back at a year.
-5. **The owner can always recover.** A fresh or reset install is claimed with a token printed to the server console, a misconfigured origin can be repaired without a restart, environment-supplied settings visibly win, and destructive actions explain what they cost before they run.
+5. **The owner can always recover.** A fresh or reset install is claimed with a token printed to the server console, a misconfigured origin can be repaired without a restart while the owner is signed in (otherwise by setting the public origin in the environment and restarting), environment-supplied settings visibly win, and every destructive or risky action asks for confirmation and explains what it costs before it runs.
 
 ## Accessibility and inclusion
 
-Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation.
-
-## Product source and rewrite proposals
-
-Read [the legacy product specification](docs/product/legacy-spec.md) for domain behavior and current gaps. Routes in this handoff describe proposed information architecture, not implemented endpoints.
-
-The new direction changes the interface; preserve the original specification's authorization and lifecycle behavior.
+Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation. Errors are announced in assertive live regions, and a field is marked invalid and linked to its error message only while it has an error; radio groups are named and use a roving tab index; switches expose their switch role and checked state, and toggle buttons their pressed state; dialogs and drawers trap focus, restore it on close and make the page behind them inert; status changes are announced; each settings page has one top-level heading; and every recap slide has an accessible name.

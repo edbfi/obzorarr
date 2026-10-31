@@ -55,12 +55,12 @@ deleted once both specs are approved.
   3. **The summary end card:** "Alex's 2025", 127 movies, 38 series, a 21-day streak and the
      "Members only" badge (icon and text). Share recap is visibly disabled; Back to overview goes
      to `/`.
-- **Story mode works as the legacy spec says** (legacy-spec.md:415-423):
-  - you move through it by tap, swipe and keys;
+- **Story mode,** as `recap` keeps it ([SPEC.md](../SPEC.md), Module notes):
+  - you move through it by tap, swipe and keys, as the Module notes describe;
   - it has no timer, so it has no Pause button (the brief's Pause is dropped);
   - it shows segmented progress;
   - Close always goes to `/`, and the slide index isn't kept in the URL fragment: the spike leaves
-    out the legacy return to the previous page and the deep link.
+    out returning to the previous page and the deep link, which `recap` keeps.
 - **Text:** every string comes from `messages/` in English and Danish, and numbers and months are
   formatted for the locale through `lib/shared/i18n/`.
 - **Fonts:** the dependency that ground-floor choice 1 deferred to the first surface.

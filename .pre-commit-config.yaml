@@ -97,4 +97,4 @@ repos:
         entry: "fold this into an existing doc or the PR body:"
         language: fail
         files: \.md$
-        exclude: ^((README|AGENTS|CLAUDE|PRODUCT|DESIGN)\.md|docs/(SPEC(-[^/]+)?|decisions|product/legacy-spec|research/[^/]+)\.md|tasks/(plan|todo)\.md|(\.impeccable|critique|\.agents|\.claude|\.codex|\.opencode)/.*)$
+        exclude: ^((README|AGENTS|CLAUDE|PRODUCT|DESIGN)\.md|docs/(SPEC(-[^/]+)?|decisions|research/[^/]+)\.md|tasks/(plan|todo)\.md|(\.impeccable|critique|\.agents|\.claude|\.codex|\.opencode)/.*)$
