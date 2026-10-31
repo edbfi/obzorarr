@@ -63,7 +63,7 @@ export async function loadKeyring(env: SecretKeyEnv): Promise<void> {
 			const message = error.check === "missing" ? `${error.message}; ${FIX}` : error.message;
 			throw new KeyringError(error.check, message);
 		}
-		// A key in use reaches these checks too, by a lost variable or a typo, so the fix puts it first.
+		// A key in use reaches these checks too, by a typo, so the fix puts it first.
 		if (error instanceof KeyTextError) {
 			throw new KeyringError(error.check, `${subject} ${error.message}; ${FIX}`);
 		}
