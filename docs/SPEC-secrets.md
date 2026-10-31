@@ -3,10 +3,10 @@
 **Status:** built (2026-10-31), module 1 of the capability map ([docs/SPEC.md](SPEC.md)); D20 and
 D26 hold the decisions. The design is the same in all five edbfi apps, and obzorarr is the reference
 ([Shared groundwork](../AGENTS.md#shared-groundwork)): only the environment variable prefix, the app
-name in the associated data and the list of stored secrets differ. The sibling apps keep their full
-copies. This file keeps what the code and tests can't say. The full text before this cut is
-`9bc83fd:docs/SPEC-secrets.md`, and the pull request of the commit that cut it quotes every
-amendment made since #272 word for word.
+name in the associated data and the list of stored secrets differ. Each sibling app keeps its full
+copy until it builds `secrets`. This file keeps what the code and tests can't say. The full text
+before this cut is `9bc83fd:docs/SPEC-secrets.md`, and the pull request of the commit that cut it
+quotes every amendment made since #272 word for word.
 
 ## Objective
 

@@ -136,6 +136,18 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - The development-only sign-in bypass (legacy "Sign-in and sessions"): development tooling, not
   product.
 - Live now-playing, media playback and anything written to Plex (PRODUCT.md, principle 4).
+- **The container image's first start** (deferred: a note, not a design). It is specified and
+  built only when Obzorarr is first tested through its image (`edbfi/obzorarr-docker`); building
+  images through GitHub, including the nightly build of `main`, is a later goal. The intent, with
+  the app's code unchanged: when `OBZORARR_SECRET_KEY` and `OBZORARR_SECRET_KEY_FILE` are both unset
+  or empty, the image's setup script points `OBZORARR_SECRET_KEY_FILE` at `/config/secret.key`
+  whenever that file exists. It creates the file first (a random 32-byte key in standard base64,
+  written atomically, mode 0600, owned by the app's user) only when `/config/data` is empty and
+  nothing shows an older install (such as the previous app's secret or database variables; the
+  image's own defaults don't count, and the exact checks are decided with the image); otherwise it
+  creates nothing, and the app stops with its own key error. An operator's own key or secret file
+  always wins, and the README tells the operator to keep a copy of the key file. Nothing the v0.1.x
+  images left is ever used as a key; how such an install upgrades is decided with the image.
 
 ### Surfaces with no brief yet
 
