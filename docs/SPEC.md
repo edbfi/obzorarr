@@ -744,7 +744,7 @@ rest is the shared wording.
 
 #### appearance
 
-- First run's panel sets both the interface theme and the Wrapped theme.
+- The interface theme and the Wrapped theme each have their own form; first run's panel sets both.
 - **The logo mode,** saved in its own form: always show (the default), always hide, or the member's
   choice.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is

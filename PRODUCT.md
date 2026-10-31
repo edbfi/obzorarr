@@ -76,7 +76,7 @@ What does not exist, and must not be fabricated:
 2. **Plex is the only authority for members.** Members' identity and membership come from Plex and are re-proven, never assigned in the app, and the connected server must belong to the Plex account whose token obzorarr uses. When Plex's answer is incomplete, keep the last proven state rather than guess. Obzorarr reads from Plex and never writes to it.
 3. **Honest numbers: label what is measured.** The same history always yields the same statistics, every total says what it measures, and nothing reports success before it is durable. Watch time is the runtime of what was played, and says so (D23).
 4. **A yearly recap, not a monitor.** No live now-playing, no media playback, no media management. Scope stays on looking back at a year.
-5. **The owner can always recover.** A fresh or reset install is claimed with a token printed to the server console, a misconfigured origin can be repaired without a restart, environment-supplied settings visibly win, and destructive actions explain what they cost before they run.
+5. **The owner can always recover.** A fresh or reset install is claimed with a token printed to the server console, a misconfigured origin can be repaired without a restart, environment-supplied settings visibly win, and every destructive or risky action asks for confirmation and explains what it costs before it runs.
 
 ## Accessibility and inclusion
 
