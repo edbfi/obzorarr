@@ -113,7 +113,7 @@ terminal.
 
 ## Checkpoint: after task 4
 
-- [ ] Everything passes locally and in CI (`checks`, `smoke`, `ci-ok`) with no stored secret.
+- [x] Everything passes locally and in CI (`checks`, `smoke`, `ci-ok`) with no stored secret.
 
 ## Task 5: the `Secret` wrapper
 
