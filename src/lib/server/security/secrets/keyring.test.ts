@@ -14,8 +14,10 @@ function keyOf(bytes: (index: number) => number): string {
 }
 
 const NOT_LOADED = "no master key is loaded; loadKeyring must succeed first";
-const HINT = "openssl rand -base64 32";
+const FIX =
+	"if Obzorarr has run before, set the key it ran with; otherwise generate one with: openssl rand -base64 32";
 const FILE_SUBJECT = "the key in the file OBZORARR_SECRET_KEY_FILE names";
+const FORMAT = "is not 32 bytes in canonical standard base64 (44 characters ending in one =)";
 
 let dir: string;
 let files = 0;
@@ -23,7 +25,7 @@ let files = 0;
 const contents = new Map<string, string>();
 
 beforeAll(async () => {
-	dir = await mkdtemp(join(tmpdir(), "obzorarr-keyring-"));
+	dir = await mkdtemp(join(tmpdir(), "keyring-test-"));
 });
 
 afterAll(async () => {
@@ -74,23 +76,57 @@ function leaks(message: string, value: string): boolean {
 	return false;
 }
 
+/** Each check of a key's text, with a generated text that fails it first, and what it says. */
+const keyTexts: { check: KeyringCheck; name: string; text: () => string; says: string }[] = [
+	{
+		check: "format",
+		name: "a 43-character key",
+		text: () => `${randomKey().slice(0, 42)}=`,
+		says: FORMAT,
+	},
+	{
+		check: "format",
+		name: "a hex key",
+		text: () => randomBytes().toHex(),
+		says: `${FORMAT}; it looks like hex, which isn't accepted`,
+	},
+	{
+		check: "entropy",
+		name: "a repeated byte",
+		text: () => keyOf(() => 0x61),
+		says: "is weak: at most 4 bits of entropy per byte",
+	},
+	{
+		check: "constant-step",
+		name: "a counter",
+		text: () => keyOf((i) => 0xf0 + i),
+		says: "is weak: its bytes count up or down in one step",
+	},
+	{
+		check: "printable-ascii",
+		name: "a base64-encoded passphrase",
+		// 32 distinct letters, A to Z then a to f: one step of 7 between Z and a.
+		text: () => keyOf((i) => (i < 26 ? 0x41 + i : 0x61 + i - 26)),
+		says: "is weak: every byte is printable ASCII, like text",
+	},
+];
+
 /**
- * One case per check. `names` are the variables the message names; `subject` starts the message
- * of task 1's checks. A new key is the fix, and the hint is given, only for `missing` and those.
+ * One case per check, each with its exact message. A key in use can fail the reading and
+ * key-text checks through a lost variable or a typo, so their fix puts the existing key first;
+ * a new key fixes none of the other checks, so they never mention one.
  */
 const failing: {
 	name: string;
 	env: () => Promise<SecretKeyEnv>;
 	check: KeyringCheck;
-	names: string[];
-	subject?: string;
-	hex?: boolean;
+	message: string;
 }[] = [
 	{
 		name: "neither variable",
 		env: async () => ({}),
 		check: "missing",
-		names: ["OBZORARR_SECRET_KEY", "OBZORARR_SECRET_KEY_FILE"],
+		message: `neither OBZORARR_SECRET_KEY nor OBZORARR_SECRET_KEY_FILE is set; ${FIX}`,
 	},
 	{
 		name: "both variables set",
@@ -99,66 +135,49 @@ const failing: {
 			OBZORARR_SECRET_KEY_FILE: await keyFile(randomKey()),
 		}),
 		check: "both-set",
-		names: ["OBZORARR_SECRET_KEY", "OBZORARR_SECRET_KEY_FILE"],
+		message: "OBZORARR_SECRET_KEY and OBZORARR_SECRET_KEY_FILE are both set; set only one",
 	},
 	{
 		name: "a missing file",
 		env: async () => ({ OBZORARR_SECRET_KEY_FILE: join(dir, "missing") }),
 		check: "unreadable",
-		names: ["OBZORARR_SECRET_KEY_FILE"],
+		message: "OBZORARR_SECRET_KEY_FILE names a file that can't be read (ENOENT)",
 	},
 	{
 		name: "a file of 4,097 bytes",
 		env: async () => ({ OBZORARR_SECRET_KEY_FILE: await keyFile("A".repeat(4097)) }),
 		check: "too-large",
-		names: ["OBZORARR_SECRET_KEY_FILE"],
-	},
-	{
-		name: "a 43-character key",
-		env: async () => ({ OBZORARR_SECRET_KEY: `${randomKey().slice(0, 42)}=` }),
-		check: "format",
-		names: ["OBZORARR_SECRET_KEY"],
-		subject: "OBZORARR_SECRET_KEY",
+		message: "OBZORARR_SECRET_KEY_FILE names a file over 4 KiB",
 	},
 	{
 		name: "an empty key file",
 		env: async () => ({ OBZORARR_SECRET_KEY_FILE: await keyFile("") }),
 		check: "format",
-		names: ["OBZORARR_SECRET_KEY_FILE"],
-		subject: FILE_SUBJECT,
+		message: `${FILE_SUBJECT} ${FORMAT}; ${FIX}`,
 	},
-	{
-		name: "a hex key",
-		env: async () => ({ OBZORARR_SECRET_KEY: randomBytes().toHex() }),
-		check: "format",
-		names: ["OBZORARR_SECRET_KEY"],
-		subject: "OBZORARR_SECRET_KEY",
-		hex: true,
-	},
-	{
-		name: "a repeated byte in a key file",
-		env: async () => ({ OBZORARR_SECRET_KEY_FILE: await keyFile(`${keyOf(() => 0x61)}\n`) }),
-		check: "entropy",
-		names: ["OBZORARR_SECRET_KEY_FILE"],
-		subject: FILE_SUBJECT,
-	},
-	{
-		name: "a counter",
-		env: async () => ({ OBZORARR_SECRET_KEY: keyOf((i) => 0xf0 + i) }),
-		check: "constant-step",
-		names: ["OBZORARR_SECRET_KEY"],
-		subject: "OBZORARR_SECRET_KEY",
-	},
-	{
-		name: "a base64-encoded passphrase in a key file",
-		// 32 distinct letters, A to Z then a to f: one step of 7 between Z and a.
-		env: async () => ({
-			OBZORARR_SECRET_KEY_FILE: await keyFile(keyOf((i) => (i < 26 ? 0x41 + i : 0x61 + i - 26))),
-		}),
-		check: "printable-ascii",
-		names: ["OBZORARR_SECRET_KEY_FILE"],
-		subject: FILE_SUBJECT,
-	},
+	...keyTexts.flatMap(({ check, name, text, says }) => [
+		{
+			name: `${name} in OBZORARR_SECRET_KEY`,
+			env: async () => ({ OBZORARR_SECRET_KEY: text() }),
+			check,
+			message: `OBZORARR_SECRET_KEY ${says}; ${FIX}`,
+		},
+		{
+			name: `${name} in a key file`,
+			env: async () => ({ OBZORARR_SECRET_KEY_FILE: await keyFile(`${text()}\n`) }),
+			check,
+			message: `${FILE_SUBJECT} ${says}; ${FIX}`,
+		},
+	]),
+];
+
+/** The checks whose fix is the existing key or, on a first install, a new one. */
+const FIXABLE: KeyringCheck[] = [
+	"missing",
+	"format",
+	"entropy",
+	"constant-step",
+	"printable-ascii",
 ];
 
 describe("loadKeyring and currentKeyring", () => {
@@ -225,17 +244,23 @@ describe("loadKeyring and currentKeyring", () => {
 		expect(() => currentKeyring()).toThrow(NOT_LOADED);
 	});
 
-	for (const { name, env, check, names, subject, hex } of failing) {
+	for (const { name, env, check, message: expected } of failing) {
 		it(`refuses ${name} with the ${check} check in one line`, async () => {
-			const error = await failure(await env());
+			const keyEnv = await env();
+			const error = await failure(keyEnv);
 			const { message } = error;
 
+			// No key text first, so a failing comparison below can never print one.
+			for (const value of Object.values(keyEnv)) {
+				if (value !== undefined) expect(leaks(message, contents.get(value) ?? value)).toBe(false);
+			}
 			expect(error).toBeInstanceOf(KeyringError);
 			expect(error.check).toBe(check);
-			for (const variable of names) expect(message.includes(variable)).toBe(true);
-			if (subject !== undefined) expect(message.startsWith(`${subject} `)).toBe(true);
-			expect(message.includes(HINT)).toBe(check === "missing" || subject !== undefined);
-			expect(message.includes("hex")).toBe(hex === true);
+			expect(message).toBe(expected);
+			expect(message.endsWith(`; ${FIX}`)).toBe(FIXABLE.includes(check));
+			expect(message.includes("openssl") || message.includes("generate")).toBe(
+				FIXABLE.includes(check),
+			);
 			expect(message.includes("\n")).toBe(false);
 			expect(error.cause).toBeUndefined();
 		});

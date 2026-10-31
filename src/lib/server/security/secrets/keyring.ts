@@ -31,8 +31,8 @@ export class KeyringError extends Error {
 
 const AES_INFO = "edbfi:secrets:v1:aes-256-gcm";
 const KEY_ID_INFO = "edbfi:secrets:v1:key-id";
-const NEW_KEY = "generate a new key with: openssl rand -base64 32";
-const HINT = `; ${NEW_KEY}`;
+const FIX =
+	"if Obzorarr has run before, set the key it ran with; otherwise generate one with: openssl rand -base64 32";
 const SUBJECT: Record<SecretKeyVariable, string> = {
 	OBZORARR_SECRET_KEY: "OBZORARR_SECRET_KEY",
 	OBZORARR_SECRET_KEY_FILE: "the key in the file OBZORARR_SECRET_KEY_FILE names",
@@ -60,15 +60,12 @@ export async function loadKeyring(env: SecretKeyEnv): Promise<void> {
 		// Losing a variable looks like a first install, so the existing key comes first. A key
 		// that can't be read may be valid and in use: a new one would lose every stored secret.
 		if (error instanceof SecretKeyError) {
-			const message =
-				error.check === "missing"
-					? `${error.message}; set one to your existing key, or ${NEW_KEY}`
-					: error.message;
+			const message = error.check === "missing" ? `${error.message}; ${FIX}` : error.message;
 			throw new KeyringError(error.check, message);
 		}
-		// A malformed or weak key never started the app, so replacing it loses nothing.
+		// A key in use reaches these checks too, by a lost variable or a typo, so the fix puts it first.
 		if (error instanceof KeyTextError) {
-			throw new KeyringError(error.check, `${subject} ${error.message}${HINT}`);
+			throw new KeyringError(error.check, `${subject} ${error.message}; ${FIX}`);
 		}
 		throw error;
 	}
