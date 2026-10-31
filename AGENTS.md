@@ -277,6 +277,7 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is being built ([`tasks/todo.md`](tasks/todo.md)):
 a master key's text is read from the environment or a file, decoded and checked for weak keys,
 and loaded into a keyring of the cipher's keys; startup doesn't load it yet, and nothing uses it.
+The `Secret` wrapper prints a plaintext as `[redacted]` everywhere except `reveal()`.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
@@ -325,7 +326,8 @@ src/
                                  `OBZORARR_SECRET_KEY_FILE` names; no key logic
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
-                                 the AES key and key ID; later the cipher and `Secret`
+                                 the AES key and key ID; secret.ts: the `Secret` wrapper,
+                                 `[redacted]` everywhere but `reveal()`; later the cipher
     components/                  later: ui/ (Ark wrappers), layout/, <feature>/
     shared/                      later: browser-safe shared code
 tests/

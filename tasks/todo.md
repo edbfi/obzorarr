@@ -120,10 +120,10 @@ terminal.
 **Description:** `Secret` holds one plaintext string that only `reveal()` returns.
 
 **Acceptance criteria:**
-- [ ] `String()`, template strings, `+`, `JSON.stringify`, `console.log`, `Bun.inspect` and
+- [x] `String()`, template strings, `+`, `JSON.stringify`, `console.log`, `Bun.inspect` and
   `util.inspect` all give `[redacted]`; `console.log` is checked in a child `bun` process's output,
   because Vitest replaces `console`.
-- [ ] `reveal()` returns the value, and the type has no other behaviour.
+- [x] `reveal()` returns the value, and the type has no other behaviour.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
 
@@ -142,7 +142,8 @@ stored format, the binding and the three error classes. This task also closes th
 - [ ] A round trip works, and two encryptions of one secret differ. Another table, field or row
   ID, a flipped bit in any segment, a swapped key ID and a truncated value each fail with the
   right error, and every segment's length is checked. An empty secret can't be encrypted, and a
-  value written under another key fails with `SecretKeyMismatchError`.
+  value written under another key fails with `SecretKeyMismatchError`. Tests compare `reveal()`
+  values, never `Secret`s: `toEqual` and `Bun.deepEquals` treat any two `Secret`s as equal.
 - [ ] A stored value decrypts with an AES-256-GCM key the test derives itself (the
   `edbfi:secrets:v1:aes-256-gcm` label) and the exact associated data
   `["v1", keyId, "obzorarr", table, field, rowId]`.
