@@ -44,7 +44,7 @@ the master key read and checked at startup, the cipher every stored secret goes 
 
 ### Phase 3: storing secrets
 
-- [ ] Task 5: the `Secret` wrapper
+- [x] Task 5: the `Secret` wrapper
 - [ ] Task 6: the cipher, and closing the work stream
 
 ### Checkpoint: complete
