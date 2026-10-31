@@ -192,7 +192,8 @@ obzorarr's; each app cites its own.
   bootstrap token and a bare `http` or `https` `Origin`, or the parsed origin of the `Referer` when
   `Origin` is missing; a claim with neither, or with `Origin: null`, is refused. Only a successful
   claim records that origin as the first allowed origin, atomically with using up the token and
-  creating the owner. The claim's cookie is `SameSite=Strict`.
+  creating the owner. The claim's own cookie is `SameSite=Strict`; the owner session it starts
+  follows `sign-in`'s cookies.
 - **Environment locks** (obzorarr, the reference for the apps that adopt them). A setting the
   environment supplies wins: its field is read-only and says that the deployment's configuration
   owns the value. A submitted locked field is left unchanged, with "Some fields are controlled by
@@ -239,23 +240,23 @@ obzorarr's; each app cites its own.
 
 #### sign-in
 
-- **Request order** (startup has already finished in SvelteKit's `init` hook): the scanner filter
-  (obzorarr), rate limits, the origin check, sign-in, the setup gate, then the owner check. Security
-  headers go on every response, an early return from any stage included.
+- **Request order** (startup has already finished in SvelteKit's `init` hook): (obzorarr: the
+  scanner filter), rate limits, the origin check, sign-in, the setup gate, then the owner check.
+  Security headers go on every response, an early return from any stage included.
 - **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
   keeps only the path, never the query string; where the app has member sessions, a signed-in member
   goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
   without a session answers "unauthenticated" rather than failing.
 - **Return paths** are same-origin paths only: one leading slash, no backslashes or control
   characters, at most 2,048 characters. Only the path is kept.
-- **Rate limits** apply per client address. Responses carry `Retry-After` and remaining and reset
-  headers, and come as a form error, a JSON error or a branded page, whichever the caller expects.
-  (obzorarr) A fixed window, kept in the process (one process, D17): 60 a minute by default; signing
-  in 10 per 5 minutes; the claim 5 per 5 minutes; JSON endpoints 30 a minute; Plex sign-in's polling
-  60 a minute and its redirect 30 a minute; the landing page 30 a minute and its lookup 10 a minute;
-  and the public-address check 12 a minute. The client address comes from the connection, or from a
-  header and a proxy depth (default 1) set in the environment. When no address can be found, limits
-  are skipped with a one-time warning, favouring availability.
+- **Rate limits** apply per client address. The client address comes from the connection, or from a
+  header and a proxy depth (default 1) set in the environment. Responses carry `Retry-After` and
+  remaining and reset headers, and come as a form error, a JSON error or a branded page, whichever
+  the caller expects. (obzorarr) A fixed window, kept in the process (one process, D17): 60 a minute
+  by default; signing in 10 per 5 minutes; the claim 5 per 5 minutes; JSON endpoints 30 a minute;
+  Plex sign-in's polling 60 a minute and its redirect 30 a minute; the landing page 30 a minute and
+  its lookup 10 a minute; and the public-address check 12 a minute. When no address can be found,
+  limits are skipped with a one-time warning, favouring availability.
 - **The origin check:** a state-changing request must carry an `Origin` (or, without one, a
   `Referer`) equal to an allowed origin, or it is refused as forbidden. A public origin set in the
   environment is the allowed origin. Before any allowed origin exists, the claim is the only
@@ -678,8 +679,7 @@ obzorarr's; each app cites its own.
 
 - **Saving** settings from several separately versioned groups writes them in one transaction: if
   any group changed since the page loaded, nothing is written and the message names the stale
-  sections. Presets are matched on five fields (not the logo mode, which lives under appearance), so
-  a different logo mode can't turn a match into Custom.
+  sections.
 - **Previews:** the saved settings and the settings after saving, each written from three points of
   view (the owner, a visitor, a member) and always ending with the reminder that sign-in still
   guards everything else. A preview never overstates or understates what is exposed.
@@ -747,8 +747,7 @@ obzorarr's; each app cites its own.
 #### appearance
 
 - First run's panel sets the interface theme and the Wrapped theme.
-- **The logo mode:** always show (the default), always hide, or the member's
-  choice.
+- **The logo mode:** always show (the default), always hide, or the member's choice.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
   readable by scripts by design.
 
@@ -788,8 +787,10 @@ obzorarr's; each app cites its own.
 
 #### overview
 
-- **`/admin`:** its "My Wrapped" link appears only when the owner has plays this year, never linking
-  to a page that would be not found or create a share row for nothing.
+- **`/admin`:** viewers count distinct accounts in the synced history; with no schedule set, the
+  sync status asks the owner to set one; and its "My Wrapped" link appears only when the owner has
+  plays this year, never linking to a page that would be not found or create a share row for
+  nothing.
 - **The Wrapped hub:** a year picker over the years with data (disabled, with an explanation, when
   there is only one), cards for My Wrapped and Server Wrapped, and links to slide configuration,
   privacy and display settings.
