@@ -230,7 +230,6 @@ PRODUCT.md  DESIGN.md                    Impeccable (needs the root)
 docs/SPEC.md                             project spec + capability map
 docs/SPEC-<id>.md                        one per module being built or changed
 docs/decisions.md                        D<n> entries: decision + why
-docs/product/legacy-spec.md              imported spec; drains to deletion
 docs/research/<topic>.md                 temporary research input
 docs/design/                             images (+ tokens until the first scaffold)
 tasks/plan.md  tasks/todo.md             the active work stream only
@@ -252,8 +251,8 @@ one of those; the cleanup procedures below still apply to every PR.
    staleness.
 2. **End of a work stream** (`tasks/plan.md` complete): delete `tasks/`; fold durable outcomes into
    `docs/SPEC.md` and `docs/decisions.md`; reduce each built `SPEC-<id>.md` to what code and tests
-   can't say, or delete it; delete the `legacy-spec.md` sections a spec now covers; delete research
-   whose outcome has landed; close resolved Impeccable critiques.
+   can't say, or delete it; delete research whose outcome has landed; close resolved Impeccable
+   critiques.
 3. **Monthly prune** (a scheduled task): read every doc against the code and the spec, and open a PR
    that removes stale, duplicated and superseded content, finished work, merged research and closed
    critiques. Flag any doc that grew a lot since the last prune for a human look. Compare this app's

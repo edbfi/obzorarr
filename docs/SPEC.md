@@ -8,7 +8,7 @@
 
 obzorarr is a private year in review for a Plex Media Server: it reads the server's play history and
 gives each member a personal recap, plus a server-wide recap, as an animated story, with an admin
-panel for the server's owner ([PRODUCT.md](../PRODUCT.md), [legacy spec](product/legacy-spec.md)).
+panel for the server's owner ([PRODUCT.md](../PRODUCT.md)).
 
 **This spec covers only the ground floor:** an empty, production-shaped SvelteKit app that builds,
 type-checks, tests, lints and serves on Bun, styled from the design tokens, with the edbfi Bun web
@@ -21,7 +21,7 @@ job is to make the first module spec cheap to build: every later PR adds behavio
 change. Each module gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is
 built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
-[legacy spec](product/legacy-spec.md) and the [surface briefs](../.impeccable/surfaces/).
+[surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
 **Every module keeps to [Code structure](../AGENTS.md#code-structure).** Its spec names the files it
 adds in that layout, and review checks them. In short:
@@ -42,23 +42,23 @@ components or services, and dates and numbers formatted for the viewer's locale.
 | 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, keeping the origin it was claimed from as the first allowed origin. obzorarr adds environment locks on settings and the per-group versions that catch a save from a stale tab | `secrets`, `i18n` | first-run setup (no brief yet) |
 | 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, the origin check, cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter and the origin check's one exempt repair action | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
 | 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
-| 7 | `public-address` | The public-address check (legacy "First-run onboarding" step 3): comparing the browser, app and forwarded origins, classifying the forwarded headers and the source address, the recommended fix and the header recipes for common reverse proxies. It never blocks | `sign-in` | its first-run step; a section of the Security tab |
+| 7 | `public-address` | The public-address check: comparing the browser, app and forwarded origins, classifying the forwarded headers and the source address, the recommended fix and the header recipes for common reverse proxies. It never blocks | `sign-in` | its first-run step; a section of the Security tab |
 | 8 | `plex-connection` | The Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting the server: picking one of the owner's servers through a one-time Plex sign-in, or a URL and token; sorted connections; plain HTTP only for private hosts by opt-in; test and save; environment locks; accepted only when the token belongs to the server's owner (D20). Changing the URL or token advances the authority epoch | `sign-in` | its first-run step; `/admin/settings/connections` (the Plex form) |
 | 9 | `identity` | Identity reconciliation: the all-or-nothing mapping from server-local accounts to Plex accounts, its proof record, the 24-hour freshness and the authority epoch | `plex-connection` | — |
 | 10 | `sync` | History sync: the three modes, a watermark that survives empty runs, enrichment with a retry window for failed lookups, the single running slot, claimed atomically by the start itself so a lost race shows at once, cancel, the admin and member progress streams, live sync when a recap opens, and the schedule with pause, resume and the instance time zone (D24), with every start visible and cancellable. Adds the first-run sync and time zone steps | `identity` | its first-run steps; `/admin/sync` (no brief yet); the time zone in the System tab |
 | 11 | `plex-sign-in` | Sign in with Plex. For members: PIN sign-in in a popup or by redirect, safe return paths, the membership check against a fresh mapping, revalidation with its grace window, member sessions and sign-out. For the owner: linking their Plex account in the account settings, after which Plex signs them in as the owner, through two-factor when it is on. Unlinked, the server owner's Plex account gets a member session (D20) | `two-factor`, `identity` | the sign-in flow and its popup page; the Plex section of the owner's account settings |
 | 12 | `stats` | The statistics engine: every calculator with its tie-breaks and determinism, runtime totals (D23), years and buckets in the instance time zone (D24), top movies grouped by item rather than title, series completion marked unknown when the lookup fails, and the per account-year cache with its invalidation | `sync` | — |
-| 13 | `sharing` | Share modes and the privacy floor, user control, slugs and per-year private-link tokens, identifier resolution with the uniform not-found, the names mode with hybrid comparing the same identity (weakness 5), and the member's sharing page | `plex-sign-in` | `/sharing` |
-| 14 | `recap` | The Wrapped experience, built on the spike's outcome: the slide catalogue with its empty states, story and scroll modes sharing one position and both ending with the summary (weakness 12), year navigation, the voice rules, the logo mode, the artwork proxy with signed URLs, and the server recap with top viewers | `recap-spike`, `stats`, `sharing` | `/wrapped/[year]/[id]` (brief: `/wrapped/2025/me`); the server recap (no brief yet) |
+| 13 | `sharing` | Share modes and the privacy floor, user control, slugs and per-year private-link tokens, identifier resolution with the uniform not-found, the names mode with hybrid comparing the same identity, and the member's sharing page | `plex-sign-in` | `/sharing` |
+| 14 | `recap` | The Wrapped experience, built on the spike's outcome: the slide catalogue with its empty states, story and scroll modes sharing one position and both ending with the summary, year navigation, the voice rules, the logo mode, the artwork proxy with signed URLs, and the server recap with top viewers | `recap-spike`, `stats`, `sharing` | `/wrapped/[year]/[id]` (brief: `/wrapped/2025/me`); the server recap (no brief yet) |
 | 15 | `member-dashboard` | The member overview: the personal and server recap cards, the year picker and the monthly chart | `recap` | `/dashboard` |
 | 16 | `landing` | The landing page with Plex sign-in, and the optional public username lookup (off by default) with its rate limit and uniform not-found | `recap` | `/` |
 | 17 | `privacy-settings` | The privacy presets, the saved and after-saving exposure previews in the same wording onboarding uses, the advanced cards and applying defaults to existing users. Adds its panel to first-run configuration | `sharing` | `/admin/settings/privacy` |
-| 18 | `slides-admin` | Ordering and enabling built-in slides with keyboard controls, and custom slides with checked markup and an optional year (legacy "Slides and the Wrapped experience"). Adds its panel to first-run configuration | `recap` | `/admin/slides` |
+| 18 | `slides-admin` | Ordering and enabling built-in slides with keyboard controls, and custom slides with checked markup and an optional year. Adds its panel to first-run configuration | `recap` | `/admin/slides` |
 | 19 | `fun-facts` | Template fun facts as translated, plural-aware messages, and the optional AI text provider (key, https base URL, model, persona, connection test), asked in the viewer's language with templates as the fallback; placement and frequency. Adds its panel to first-run configuration | `recap` | the fun-fact control on `/admin/slides`; the AI form on `/admin/settings/connections` |
 | 20 | `appearance` | The interface and Wrapped theme settings and the logo mode. It decides whether more presets than After Hours return (ground-floor choice 4). Adds its panel to first-run configuration | `recap` | the appearance rail on `/admin/settings/connections` |
 | 21 | `users-admin` | The per-year users table: watch time, effective share mode, the per-user control toggle and each recap's link. No delete, ban or roles | `sharing`, `stats` | `/admin/users` (no brief yet) |
-| 22 | `logs` | Stored log entries, the logs page with filters that match on the server (weakness 17), the live view, export, the retention job and the log settings | `sign-in` | `/admin/logs` (no brief yet); the log settings in the System tab |
-| 23 | `data-admin` | Clearing cached statistics and play history per year or wholesale, offering to reset the watermark (weakness 8), and the instance reset, which returns to the claim with a new token | `sync`, `stats` | the Data tab of `/admin/settings` (no brief yet) |
+| 22 | `logs` | Stored log entries, the logs page with filters that match on the server, the live view, export, the retention job and the log settings | `sign-in` | `/admin/logs` (no brief yet); the log settings in the System tab |
+| 23 | `data-admin` | Clearing cached statistics and play history per year or wholesale, offering to reset the watermark, and the instance reset, which returns to the claim with a new token | `sync`, `stats` | the Data tab of `/admin/settings` (no brief yet) |
 | 24 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D20) | `two-factor` | the owner's account settings; its button on owner sign-in |
 | 25 | `overview` | The owner dashboard and the Wrapped hub: viewers, hours, plays and records for a year, the sync card, the yearly activity chart, the owner's own recap (only when it has plays) and the server recap, and quick links | `sync`, `stats`, `recap` | `/admin`; the Wrapped hub (no brief yet) |
 
@@ -150,7 +150,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
-`/admin/settings` are needed (all are in the legacy app or in PRODUCT.md's admin shell) but have no
+`/admin/settings` are needed (all are in the Module notes or in PRODUCT.md's admin shell) but have no
 brief. The landing brief's signed-out navigation has only Obzorarr and Help, so it needs a way to
 owner sign-in. Each gets its brief before its module is specced.
 
@@ -166,8 +166,10 @@ is specced. Rate limits are listed once, under `sign-in`.
 - **The setup gate.** Until first run is complete, every request except static assets, the claim,
   sign-in and first run's own helpers is sent to the current first-run step. The server keeps one
   current-step pointer: the browser can't skip ahead, each step's action checks that it is the
-  current step, and a step that offers Previous only moves the pointer back. The last step
-  summarises the configuration and the sync status, and only its action completes first run.
+  current step, and a step that offers Previous only moves the pointer back; the step indicator
+  can't be clicked. The configuration step saves the panels that later modules add in one
+  submission. The last step summarises the configuration and the sync status, and only its action
+  completes first run.
 - **The bootstrap token** (D20) is 12 random lowercase letters and digits, shown as
   `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
   is valid for 15 minutes, after which a new one is printed. Claim attempts are limited to 5 per 5 minutes per client.
@@ -260,6 +262,19 @@ is specced. Rate limits are listed once, under `sign-in`.
   a confirmation and the version as selectable text (a release, a nightly build with its short
   hash, or a dev tag). On phones the sidebar is a drawer that traps focus, closes on Escape and
   makes the page behind it inert.
+
+#### public-address
+
+- **The check** runs by itself and never blocks. It compares three origins: the one the browser
+  uses, the one the app believes it has, and the one a proxy forwards (last hop only). It classifies
+  the forwarded headers (usable, missing, partial, invalid) and the source address (loopback,
+  private LAN, container range, overlay network, public, unknown).
+- **Outcomes:** already matches (success); set the public origin to the shown value and restart
+  (warning); open the app at its intended public address (warning); or the check couldn't finish
+  (danger), saying that this doesn't prove a misconfiguration, with a way to run it again.
+- **Details** show the evidence, note that the public-origin setting needs no forwarding headers,
+  and give copyable header recipes for the common reverse proxies. In the Security tab only a
+  manual rerun shows a toast.
 
 #### plex-connection
 
@@ -448,6 +463,301 @@ is specced. Rate limits are listed once, under `sign-in`.
   missing. Names are anonymised and artwork URLs signed after the cache read, per request, and
   recap pages are served with `no-store`, so access rules apply to every request.
 
+#### sharing
+
+- **Share modes,** from most open to most private: public (anyone with the link; a slug link);
+  private link (only holders of the year's long random token, which the member and the owner need
+  too; regenerating it invalidates the old link); and server members only (any signed-in member,
+  whose session proves membership; a slug link).
+- **Global settings:** a default share mode for members who haven't chosen (members-only on a
+  fresh install), whether members may choose (user control), and the server recap's mode, which is
+  public or members-only only; an invalid or missing value means members-only.
+- **The effective mode:** a member who never chose follows the live default. An explicit choice is
+  kept, but the effective mode is the stricter of the choice and the default, so the default is
+  also the privacy floor; relaxing the floor reveals stored choices again. User control is the
+  member's own flag and the global flag together. Nobody, the owner included, can save a mode
+  below the floor; regenerating a token is refused when the floor is stricter than private link;
+  the interface disables the options below the floor and says why. "Apply defaults to existing
+  members" rewrites only the members who follow the default, and reports how many were updated and
+  skipped; explicit choices are never overwritten. When the default moves away from private link,
+  the tokens of members who follow the default are wiped. With the public lookup on, the current
+  year's effective mode becomes public, except that a member's explicit non-public choice stays an
+  opt-out when user control is allowed.
+- **Share settings** are one row per member and year, also under concurrent creation: the stored
+  mode, whether it is the default or an explicit choice, the token if any, the slug, the member's
+  own control flag and their logo preference. A token is minted lazily and only in private-link
+  mode, a slug lazily when the recap is first shared or viewed, and each row has at most one of
+  each. A token belongs to one year, and never resolves or shows on another.
+- **Tokens** are left out of every payload unless the effective mode is private link, and even then
+  only the member and the owner see them.
+- **Resolving a link,** by its shape alone: a long random token is looked up as a private link (its
+  year must match; when the member's mode or the floor is members-only, signed-in members pass and
+  anonymous visitors get not found; a token whose recap became public is stale). An all-digits id
+  resolves only for the member it belongs to and for the owner, who opens any member's recap
+  read-only this way, minting nothing and seeing no token. A 22-character slug (about 131 bits of
+  randomness) names a public or members-only recap, and access is still checked: a private-link
+  recap reached by its slug is not found. Share links never carry the internal user id.
+- **Not found:** every anonymous denial (an unknown member, an opt-out, a stale mapping, a wrong or
+  revoked link) is the same byte-identical not-found, "We couldn't find a Wrapped page for that
+  link." Signed-in members get a more specific forbidden or not-found.
+- **Names** in shared statistics (today the server recap's top viewers; fun facts and percentiles
+  carry no names; the owner's pages always show real names) are real, anonymous ("User #N" by
+  leaderboard position) or hybrid: the signed-in viewer sees their own name and everyone else is
+  anonymised, and anonymous visitors see everyone anonymised. Hybrid compares the viewer on the same
+  identity the leaderboard uses (row 13). A fresh install, and an unreadable stored value, use
+  hybrid. Pseudonyms follow position, so they shift when the ranking changes, but the same input
+  always gives the same output, and counts and order are kept.
+- **The share dialog,** from the recap or its summary, copies the slug or token link. It shows the
+  mode choices to the member (when user control allows) and to the owner, with options below the
+  floor disabled; offers regenerating only in private-link mode above the floor; says that
+  members-only recipients must sign in; and tells a member without control where that is decided.
+  On the server recap it is only the link.
+- **`/sharing`,** for the current year: the share mode with the floor's notes, copy link,
+  regenerate the private link behind a confirmation, the logo preference (only when the logo mode
+  lets members choose), and when the session expires. It is served `no-store`, so a floor change
+  shows at once.
+
+#### recap
+
+- **The catalogue:** sixteen built-in slides the owner configures, plus fun-fact slides placed
+  automatically, custom slides, and a top-viewers slide that replaces the percentile on the server
+  recap. The default order, all enabled: total time, top movies, top shows, genres, distribution,
+  weekday patterns, content type, decade, series completion, rewatch, marathon, streak, year
+  comparison, percentile, binge, first and last. The summary is a page after the slides, not a
+  slide.
+- **The slides,** with their empty states; the spike settles their look (D19), and their text is
+  messages (D21):
+  - Total time: the hours played (minutes under an hour; it counts up only from 24 hours), with a
+    days or weeks comparison.
+  - Top movies and top shows: the top 6 with artwork and play or episode counts; empty: "No
+    movies watched this year", "No shows watched this year".
+  - Genres: the top 5 as bars scaled to the leader, each genre with its own fixed colour; empty: "No
+    genre data available".
+  - Distribution: months and hours, side by side on wide screens, otherwise one chart with a
+    toggle, the peak labelled.
+  - Weekday patterns: Monday first, the peak day and the weekend's share of minutes.
+  - Content type: a donut and cards (tracks only if there are any) and a badge: 60% or more of one
+    type is Movie Buff, TV Addict or Music Lover; movies and episodes both at 40% or more is
+    All-Rounder; otherwise Balanced Viewer.
+  - Decade: a timeline and an era badge ("Y2K vibes", "Classic cinema lover", …); empty: "No
+    release year data available".
+  - Series completion: the top 5 with progress in colour steps, and a badge: Completionist (5 or
+    more complete), Dedicated Viewer (2 or more), Serial Sampler (10 or more series), otherwise
+    Explorer; empty: "No series data available".
+  - Rewatch: the top 5 with ×N, and a badge by total rewatches: Creature of Habit (more than 50),
+    Comfort Seeker (more than 20), Has Favorites (more than 10), otherwise Explorer; empty: "Every
+    play this year was something new."
+  - Marathon: the date, the duration, the item count, and six thumbnails, then "+N more".
+  - Streak: the days and the date range, flame tiers at 14 and 30 days, messages at 3, 7, 14 and 30.
+  - Year comparison: two bars, an arrow and ±%; under 5% reads "About the same", with stronger
+    wording above 25% and 50%; empty: "No previous year data available".
+  - Percentile: "Top X%", where X is max(1, 100 − rank), highlighted at 10 or better, with messages
+    at 1, 5, 10, 25 and 50.
+  - Binge: the wall-clock span, the content time, the plays, and its date and time.
+  - First and last: two cards.
+  - Fun fact: an icon, the fact and an optional comparison.
+  - Custom: the title and the sanitised rich text (`slides-admin`).
+  - Top viewers: "Top Contributors", the top 10 with gold, silver and bronze, and compact durations
+    ("2d 3h").
+- **Empty years:** an enabled slide always shows, with its own empty state; nothing is hidden for
+  lack of data. When a year has no history at all, the whole recap is replaced by "No viewing
+  history for {year} yet" (personal) or "No {year} data yet" (server), returned as a normal page,
+  not an error, and only after access is checked, so an anonymous visitor can't tell an empty year
+  from a private one.
+- **Story mode** (the default) is full screen, sized to the dynamic viewport height. A tap anywhere but the left 15% goes forward and the
+  left 15% goes back; a horizontal swipe of more than 50 px moves either way; the arrow keys,
+  space, enter, home, end and escape work, throttled. Phones get round arrow buttons. There's no
+  auto-advance and no timer: segmented progress fills past slides, pulses the current one and dims
+  the rest. "Tap to continue" shows on the first slide. A slide arrives with a short horizontal
+  transition in the direction of travel, then plays its own entrance. Going past the last slide
+  opens the summary. Close returns to the previous page when it was on the same site, otherwise to
+  the landing page. The slide index is kept in the URL fragment as a deep link, without adding
+  history entries, and Watch Again resets it.
+- **Scroll mode** stacks every slide as a full-height section with an "N / total" counter; each
+  reveals as it scrolls into view and reverses when scrolled back, and escape closes. Story and
+  scroll mode share one position, and both end with the summary (row 14).
+- **Around the slides:** the mode toggle sits top right (icon only on phones; on a personal recap
+  only when there is history). Year navigation is a pill at the bottom left, shown only when the
+  server has more than one year of data; "previous" is the older year. For anyone but the member
+  whose recap it is, other years link only to share links that already exist: nothing is minted,
+  private-link years are left out, and no other year's token is revealed; a year without a link
+  falls through to the server recap. The logo follows the logo mode (`appearance`); when members
+  choose, the member has an eye toggle that saves at once and starts as shown.
+- **The summary page:** "{user}'s {year} Wrapped" or "{year} Server Wrapped", with cards for the
+  hours, top movie, top show, top genre, "Top X%" or the active viewers, and the longest binge
+  (hidden when it rounds to zero), and the actions Watch Again, Share and Return Home (the admin
+  panel, the dashboard or the landing page, by who is viewing). Focus lands on the heading, so a
+  stray Enter doesn't press a button.
+- **Voice:** a personal recap says "you" and "your". The server recap speaks as "{server name}
+  Community", or "we" and "our" when the server has no name, and always takes plural verbs.
+- **Artwork** goes through the app, so browsers never see the server token, and follows the same
+  rules as its page: each artwork reference in a statistics payload becomes a signed URL that
+  encodes the path, the kind (server or member), the year, the member, a hash of the share token if
+  there is one, and a 30-minute expiry. Every request checks access again, so regenerating a
+  private link also revokes its old artwork URLs. Responses are private and `no-cache`, and
+  conditional requests are passed on to Plex.
+
+#### member-dashboard
+
+- "Welcome back", with a card for the member's own recap ("Appears here once you have viewing
+  history this year") and one for the server recap.
+
+#### landing
+
+- **Signed out, lookup off** (the default): the page says that the server requires sign-in to view
+  Wrapped, with Plex sign-in, and refuses a crafted lookup request outright. A signed-in member goes
+  to their dashboard.
+- **Lookup on:** a visitor types a Plex username (1–100 characters, trimmed), matched without regard
+  to case against fresh mappings that resolve to exactly one member. An unknown name, a member
+  without history this year, an ambiguous identity, and an opted-out or non-public member all get
+  the same not-found message. On success the app starts a live sync without waiting (`sync`),
+  mints or reuses the public slug, and redirects to the current year's recap. The lookup never
+  creates members or share rows, never mints or reveals a private-link token, and never uses the
+  internal id.
+
+#### privacy-settings
+
+- **Presets:** five set six fields at once (the names mode, the members' default share mode, the
+  server recap's mode, the public lookup, user control and the logo mode), and a sixth card,
+  Custom, lights up when the advanced fields match no preset. Every preset keeps the logo always
+  shown.
+
+  | Preset | Names | Members' default | Server recap | Public lookup | User control |
+  |---|---|---|---|---|---|
+  | Maximum Privacy | anonymous | members-only | members-only | off | no |
+  | Internal Community | real | members-only | members-only | off | yes |
+  | Balanced (recommended; a fresh install's values) | hybrid | members-only | members-only | off | yes |
+  | Public Showcase | real | public | public | on | yes |
+  | Anonymous Public | anonymous | public | public | on | no: anonymity only holds if members can't reveal themselves |
+
+- **A preset is never stored:** applying one writes the ordinary settings of three separately
+  versioned groups in one transaction, and if any group changed since the page loaded nothing is
+  written and the message names the stale sections. The page matches presets on five fields (not
+  the logo mode, which lives under appearance), so a different logo mode can't turn a match into
+  Custom. On a fresh install no card is highlighted, and the "your choices don't match a preset"
+  note appears only after the owner changes something. Choosing Custom in first run starts from
+  Balanced's values the first time.
+- **Previews:** "Current (saved)" and "After you save", with a banner while sections are unsaved,
+  each written from three points of view (the owner, a visitor, a member) and always ending with
+  the reminder that sign-in still guards everything else.
+- **The advanced cards,** each saved on its own: server recap sharing, the public landing lookup,
+  and members' sharing defaults, with "apply defaults to existing members" behind a confirmation.
+- **First run's privacy panel:** the six cards, the live preview, and the advanced options
+  collapsed.
+
+#### slides-admin
+
+- **Order:** one list of built-in and custom slides, reordered by dragging or by labelled up and
+  down buttons, with an enable toggle each. Built-in order and enabling are global across years;
+  any slide type missing from the configuration is added, enabled, whenever a recap loads. First
+  run's panel toggles each built-in slide.
+- **Custom slides:** a title (1–200 characters), content (1–10,000 characters of lightweight text
+  markup), enabled, a place in the same order as the built-in slides, and an optional year (none
+  means every year). A row shows the year badge, edit, and an inline delete confirmation. A dialog
+  creates or edits one (title, content, a year or all years, enabled, and a preview rendered on the
+  server), and a failed validation keeps what was typed.
+- **Checked markup:** content is rendered on the server, then reduced to an allow-list: headings,
+  paragraphs, line breaks, rules, lists, emphasis, code, quotes, links and images. Saving is
+  refused, with a specific reason that doesn't echo the input, when the content has script tags,
+  inline event handlers, script-scheme links or base64-embedded scripts. The output also loses every
+  class and inline style (an author's class could otherwise pick up the app's own full-screen layout
+  classes); links open in a new tab without a referrer and only with web and mail schemes; and
+  inline images are raster formats only, never vector or markup images.
+
+#### fun-facts
+
+- **Every recap load** makes fresh fun facts: never cached, none for a member without history, and
+  an error never stops the recap from rendering. They draw on the hours, days and plays; the top
+  movie and its plays; the top show and its episodes; the percentile (fixed at the median for the
+  server); the longest binge's hours and plays; the peak hour and month; the first and last titles;
+  the number of different movies and shows; the scope; and "could watch X N times" ratios against
+  well-known long-running shows and film series.
+- **Templates** come in eight categories, each with the conditions it needs and thresholds set a
+  little above the comparison, so a "1×" fact never appears: time equivalents (flights, reading
+  books, walking, sleep cycles, film marathons, coffee breaks, commutes, podcasts); content
+  comparisons (the top movie 3 or more times, the top show 10 or more episodes, variety);
+  behaviour (the 90th or 75th percentile, a night owl with the peak at 21:00 or later, an early bird
+  with the peak at 09:00 or earlier and 10 or more plays, the peak month, plays a day); binges (6
+  hours, 3 hours, 5 items); time patterns (first, last, bookends, and a fallback with no
+  condition); achievements (100 and 200 hours, 500 and 1,000 plays, 50 movies, 50 episodes of one
+  show, the top movie 10 times, 20 shows); social comparisons (number one, top 5%, top 15%, above
+  average, climbing, and community fallbacks); and trivia (the show ratios). They are drawn by
+  weighted random draw without replacement, percentile templates are left out for the server, and
+  when none applies there are none. They follow the recap's voice rule.
+- **Placement:** few (2), normal (4, the default), many (8) or a custom 1–15 a recap; at most one
+  fewer than the number of slides; never first or last; spread evenly through the recap.
+- **AI mode** is on when a key and a valid HTTPS base URL are set: any text service with a
+  chat-completions style interface, with a default model name, and reasoning-style models
+  recognised by name and sent the request shape they need. Four personas: witty, wholesome, nerdy
+  and random. The system prompt fixes the persona, a celebratory tone, the voice rule for the scope,
+  an emoji icon per fact and a strict structured reply. Requests have a short timeout and two
+  retries on rate limits, server errors, timeouts and network failures; other client errors fail at
+  once. Templates fill in when the AI returns too few facts, and replace them all on any AI error.
+  The connection test sends a minimal request and maps an authentication failure, and an unknown
+  model or base URL, to their own messages.
+- **The AI form** on `/admin/settings/connections`: the key (stored, shown only as stored), the base
+  URL (HTTPS, without credentials, query or fragment) and the model, each with a clear button; the
+  test reuses the stored key only while the URL and model still match what was stored; any of the
+  three may come from the environment (`setup`'s locks). On `/admin/slides`, the frequency, with a
+  line saying whether AI or templates are in use.
+- **First run's panel:** enable, frequency, key, base URL, model, persona and the connection test.
+  A missing key never blocks and falls back to templates, and the last step says when fun facts run
+  on templates and points to the connection settings.
+
+#### appearance
+
+- The interface theme and the Wrapped theme are separate settings, each its own form, because the
+  panel the owner works in and the recap members see needn't match; first run's panel sets both.
+- **The logo mode:** always show (the default), always hide, or the member's choice.
+- The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
+  readable by scripts by design.
+
+#### users-admin
+
+- A table per year: each member (avatar, an owner badge on the server owner's account, a masked
+  email), their watch time, their effective share mode (Public, Members-only, Link or Default), the
+  member's control toggle and a link to their recap; a legend; and a note that synced viewers who
+  never signed in follow the global names setting. On phones the table becomes cards.
+
+#### logs
+
+- **Entries** go to standard output (D11) and, in small batches, into the database, both after
+  `setup`'s redaction. They are kept for 7 days and at most 50,000 entries by default (the System
+  tab allows 1–365 days and 1,000–1,000,000 entries), enforced nightly at 03:00 in the instance
+  time zone and on demand. The System tab also holds the debug toggle.
+- **`/admin/logs`:** counts by level; filters (levels, a search over message and source that
+  ignores case, source, date range, clear all) that match on the server (row 22); a live view with
+  pause, resume and auto-scroll; a table with expandable metadata to copy; "load more" by cursor
+  (100 by default, 500 at most); export of up to 10,000 entries; and running cleanup and clearing
+  everything, each behind a confirmation.
+
+#### data-admin
+
+- **Clearing:** the Data tab counts and clears cached statistics and play history, per year or
+  all. Clearing history leaves the watermark, so without resetting it (row 23) a backfill is needed
+  to import it again.
+- **The instance reset** is a danger-zone card that says what comes back (watch statistics, which
+  sync again from Plex), what doesn't (every setting, every member's share settings, every share
+  link already given out, the slide curation, the log history), and what is untouched (anything the
+  environment supplies). Three stages: a dialog that explains and writes nothing; a dialog that
+  shows a new claim token, valid for 60 minutes, with a copy button, where the owner must type
+  RESET exactly; then every table is wiped in one transaction while holding the sync slot (a reset
+  is refused while a sync runs). Afterwards the owner is signed out, the scheduler stops, the reset
+  is logged, the browser lands on the claim, and the token is printed to the console too.
+
+#### overview
+
+- **`/admin`:** "Server overview for {year}" with a Live badge; cards for distinct viewers in the
+  synced history, hours played (and days), total plays and history records; a sync card (the last
+  run, its records and duration, the scheduler's state, the next run with its expression and zone,
+  or a prompt to set a schedule); a Wrapped card whose "My Wrapped" link appears only when the
+  owner has plays this year, never linking to a page that would be not found or create a share row
+  for nothing; and quick links.
+- **The Wrapped hub:** a year picker over the years with data (disabled, with an explanation, when
+  there is only one), cards for My Wrapped and Server Wrapped, and links to slide configuration,
+  privacy and display settings.
+- **The System tab's system information:** the version, uptime and platform.
+
 ## Tech stack
 
 The stack decisions are in [decisions.md](decisions.md) (D1–D12). Versions are exact pins in
@@ -597,8 +907,9 @@ call for anything different; choices 4 and 5 are obzorarr's own.
 3. **Security headers and CSP.** The nonce-based CSP and the security headers on every response
    (Module notes, `setup`) belong to the first module that serves real pages
    (`setup`, whose claim page comes before `sign-in`), not the skeleton.
-4. **Themes.** The legacy app lets the owner pick the admin panel's theme and the recap's theme
-   independently, from five presets; the design seeds both to After Hours. The skeleton defines After
+4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently
+   (Module notes, `appearance`); the previous app offered five presets, and the design seeds both
+   to After Hours. The skeleton defines After
    Hours as the only theme, its colours as semantic tokens behind the dark colour-mode condition, and
    the module that brings back the two theme settings decides whether more presets return and how
    Panda switches them.
