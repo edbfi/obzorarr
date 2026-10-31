@@ -292,13 +292,11 @@ so run `build` first, and it needs Chromium once per machine:
 - The animated recap starts with a three-slide spike ([D19](docs/decisions.md#d19-the-animated-recap)).
   Its design isn't committed, and no other recap slide is built, before the spike's spec is approved
   and the spike has run.
-- The legacy spec describes behaviour to keep, not the technology: its header names the superseded
-  sections.
 - Never bring code over from `legacy-old/v1`; rebuild from the spec. Published releases up to 0.1.11
   and their tags stay as they are.
 
 **Read next.**
-- Product: [PRODUCT.md](PRODUCT.md), [legacy spec](docs/product/legacy-spec.md).
+- Product: [PRODUCT.md](PRODUCT.md).
 - Design: [DESIGN.md](DESIGN.md), the [surface briefs](.impeccable/surfaces/) (one per route),
   [screens and references](docs/design/), [design tokens](panda.config.ts),
   [demo fixtures](tests/fixtures/demo-fixtures.json).

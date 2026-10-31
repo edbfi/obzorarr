@@ -16,37 +16,6 @@
 > approved `docs/SPEC-<id>.md` files cover them, and the file goes once nothing is left (AGENTS.md,
 > cleanup procedures).
 
-## Status
-
-Shipped and actively maintained. Obzorarr is a mature, single-instance, self-hosted application with
-640+ commits, a long tail of structured "dogfood" QA rounds, property-based and unit test suites that
-pin most of the rules described below, and a published container image maintained in a sibling
-repository. Everything in this document describes behaviour that exists and has been exercised in
-practice unless it is explicitly marked as a gap, a latent bug, or an idea.
-
-## Purpose
-
-Obzorarr is a "Wrapped for Plex": it reads viewing history from a Plex Media Server, builds yearly
-statistics for every person who watches on that server, and presents them as an animated, phone-first
-slideshow in the style of Spotify Wrapped. It is aimed at the hobbyist who runs a Plex server for
-family and friends and wants to give each of them a personalised, shareable year-end recap, plus a
-server-wide community recap with a leaderboard.
-
-It sits beside the media server in a self-hosted stack and depends on nothing else. In particular it
-deliberately **does not require Tautulli** or any other history collector: it talks only to the Plex
-server and to Plex's own account service. Operators who already run Tautulli gain nothing extra and
-lose nothing by having it.
-
-What Obzorarr deliberately does not do:
-
-- It does not manage, request, download or organise media; it only reads history and metadata.
-- It does not track real-time "now playing" sessions or build live dashboards; it is a yearly recap.
-- It does not have its own accounts or passwords. Identity is always the Plex account, and the only
-  administrator is the owner of the configured Plex server.
-- It does not measure actual seconds watched. A play counts for the full runtime of the item.
-- It does not store or expose anything to the public internet by default; public exposure is an
-  explicit administrator choice.
-
 ## Product feel and goals
 
 The tone and the engineering history point to a handful of opinionated goals:
@@ -652,9 +621,6 @@ in that priority after a live identity check.
 **AI text provider (optional).** Any service exposing a chat-completions style interface over https;
 configured by key, base URL and model; used only for fun facts; always with a template fallback.
 
-**Web fonts.** Theme typefaces are loaded on demand from a public web-font service, once per theme; the
-content security policy allows exactly that origin.
-
 ## User interface
 
 ### Information architecture
@@ -886,39 +852,3 @@ Concrete problems found in the source, tests and history, with generic direction
     while the service allows it; the service is the source of truth.
 20. **Dormant code paths:** a current-streak field, a session-extension routine and a rate-limit cleanup
     routine exist but are never used.
-
-## Glossary
-
-| Term | Meaning |
-| --- | --- |
-| Wrapped / recap | The yearly statistics slideshow, personal or server-wide. |
-| Server Wrapped | The server-wide recap: aggregate statistics plus the top-viewers leaderboard. |
-| Story mode / scroll mode | Tap-through full-screen slides versus one continuous scrolling page. |
-| Slide | One screen of the recap; sixteen built-in kinds plus fun facts, custom slides and top viewers. |
-| Summary page | The end card after the last slide with headline numbers and share/replay actions. |
-| Fun fact | A generated one-liner with an optional comparison, from templates or an AI provider, interspersed between slides. |
-| Bootstrap / claim token | The console-printed one-time token that lets exactly one browser perform first-run setup. |
-| Claim | The 30-minute, single-browser right to run onboarding, held in a cookie. |
-| Public origin | The address users open in the browser; the basis for links, sign-in redirects, cookies and cross-site checks. |
-| Public-address diagnostic | The check comparing browser origin, app origin and proxy-forwarded origin, with recommended fixes. |
-| Environment-locked | A setting supplied by the deployment environment, shown read-only with a badge. |
-| Server token | The Plex token configured by the admin, used for all server-side Plex reads. |
-| Local account id | Plex's server-local viewer id found in history rows; the owner is always 1. |
-| Identity mapping / reconciliation | The all-or-nothing rebuild of local-id-to-Plex-identity mappings on every sync; fresh for 24 hours. |
-| Authority epoch | A counter advanced whenever the Plex URL or token changes, invalidating identity proofs. |
-| Sync | A run that imports play history from Plex; modes: new activity, full, backfill from year. |
-| Live sync | A best-effort background sync triggered by viewing a recap, with a 3-minute cooldown. |
-| Watermark | The latest viewed-at time of the last completed sync; the start point of the next incremental run. |
-| Enrichment | The post-sync phase filling duration, genres and release year from item metadata. |
-| Share mode | Public, Private Link or Server Members Only; the effective mode is the stricter of the user's choice and the global default. |
-| Privacy floor | The global default share mode acting as the minimum privacy level nobody can go below. |
-| Mode source | Whether a user's share row follows the default or holds an explicit choice. |
-| Public slug | The 22-character opaque identifier used in public and members-only links. |
-| Share token | The long random per-year token that unlocks a private-link recap; regenerable. |
-| Names mode | Real, Anonymous ("User #N") or Hybrid (own name visible, others anonymised). |
-| Privacy preset | One of five bundles of six privacy fields, plus the client-only Custom card. |
-| Public landing lookup | The admin-enabled username search on the landing page that opens eligible current-year recaps without sign-in. |
-| Uniform not-found | The identical response given to anonymous visitors for every denied or missing recap. |
-| Settings version | The timestamp carried by each settings form for optimistic concurrency. |
-| Logo mode | Always show, always hide, or user choice for the Obzorarr logo on recap pages. |
-| Instance reset | The staged, admin-only wipe that returns the instance to the claim screen with a 60-minute token. |
