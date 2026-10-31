@@ -182,154 +182,10 @@ cannot jump ahead, every step action re-checks that it is the current step, and 
    mode pointing to the Connections settings, and "Go to Dashboard", which is the only thing that
    actually marks onboarding complete and clears the claim.
 
-### Sign-in and sessions
-
-Identity is Plex's PIN-based sign-in:
-
-- The server mints a PIN with Plex, records a transaction with a random state, and sets a 15-minute
-  same-site cookie carrying that state. The user is sent to Plex's hosted sign-in page with a forward
-  URL back to Obzorarr. An optional return path must be a safe same-origin path (single leading
-  slash, no backslashes or control characters, at most 2048 characters) and is validated on the server,
-  on the redirect page and again on the client.
-- **Popup mode (default):** the opener polls every two seconds for up to five minutes; the popup page
-  verifies the state on return, announces completion to the opener (as a speed-up only, never as
-  proof), and closes. Closing the popup counts as cancel. If the popup is blocked (common in Safari and
-  privacy browsers), a modal offers "Continue to Plex" in the same tab or cancel.
-- **Redirect mode:** chosen explicitly, or automatically for automated browsers. The pending PIN is
-  kept in session storage with a 15-minute staleness limit; a token-free server fallback covers
-  browsers without storage.
-- Completion requires that the callback state matched the cookie, then checks membership of the
-  configured server with the user's token. During onboarding it additionally requires an active claim
-  and ownership. On success the user row is upserted, a **7-day session** is created holding the user's
-  own Plex token, and the user lands in the admin panel or the dashboard (onboarding always wins).
-- **Revalidation:** after 15 minutes since the last check, the next request re-proves membership and
-  ownership against Plex and the live server identity. Lost access or an explicit "unauthorised" from
-  Plex deletes **all** of the user's sessions. Transient failures (timeouts, upstream 5xx) get a grace
-  window: up to four consecutive failures or 60 minutes, then that one session is invalidated.
-  Certificate errors and malformed responses are not transient. Revalidation is skipped while
-  onboarding is incomplete so a flaky Plex cannot strand the owner mid-setup.
-- Logout is a POST-only action with a confirmation dialog; a GET does nothing but redirect, so an
-  image tag or prefetch cannot sign someone out.
-- A development-only bypass can impersonate the owner, a random member, or a named account; it is
-  inert outside development mode.
-
 ### Data collection: sync
-
-Sync pulls the server's complete play history through the Plex history endpoint using the **server
-token**, page by page (pages of 100, stopping early on an empty page so a misbehaving server cannot
-loop forever), optionally filtered by "viewed after" a watermark.
-
-Three ways to choose the start point:
-
-| Mode | Start point |
-| --- | --- |
-| New activity only (default) | The high-water mark of the most recent *completed* run. Cancelled and failed runs never supply a watermark. |
-| Full | No completed run with a watermark exists, so everything is fetched. |
-| Backfill from year | Midnight UTC on 1 January of a chosen year (2000–2100). |
-
-Phases of a run:
-
-1. **Claim the single running slot** atomically. This is the only real single-flight guard; the admin
-   button also pre-checks and answers "conflict" with a persistent, screen-reader-announced banner if a
-   sync is already running. Cancel answers "bad request" when nothing is running.
-2. **Account reconciliation** (below). A failure here only warns ("Top Contributors may show generic
-   usernames") and never blocks history.
-3. **History fetch.** Each item must have a history key, library section, type, integer viewed-at and
-   account id; otherwise the whole envelope is rejected and the sync fails. Items without a rating key
-   or title (deleted media, non-library content) are skipped, counted and logged. Rows are inserted with
-   duplicates ignored on the history key, so re-fetching the boundary record or re-running a backfill is
-   idempotent. Progress (processed, inserted, skipped, page) is kept in memory and persisted
-   periodically; the abort signal is honoured between pages.
-4. **Cache invalidation.** If anything was inserted, cached statistics are cleared for every year from
-   the watermark year to the newest viewed-at year, for every user and for the server.
-5. **Enrichment.** Only if something was inserted: scan the whole history table for rows missing
-   duration, genres or release year; fetch metadata for rating keys not already in the metadata cache
-   with bounded concurrency (default 8, clamped 1–20); record failures as "fetch failed" so they are
-   never retried; apply grouped updates; then clear cached statistics for exactly the years touched,
-   which may include older years outside the sync window. Counts distinguish enriched, skipped (cache
-   hit or already filled) and genuinely failed.
-6. **Completion.** Mark completed with the count and the maximum viewed-at as the new watermark.
-
-Failure rules: any error marks the run failed with its message; inserted rows stay (no rollback) and
-the next run is idempotent. An error while cancellation is in progress records *cancelled*. Any run
-still marked running at process start is marked failed with "Interrupted by restart", otherwise the
-stuck row would block every future sync. A known weakness: an incremental run that finds nothing
-leaves no watermark, so the following run re-fetches full history (harmless because of dedup, but
-slow).
-
-**Live sync.** Not a poller. Opening the server recap, a personal recap, or a successful landing
-lookup fires a best-effort background sync, guarded in order by: the feature being enabled (environment
-value wins over the stored setting; default on), a **3-minute cooldown** counted from the last
-*completed* live sync, nothing already running, and an in-process lock with a 30-minute safety release.
-The page renders immediately with current data; signed-in viewers see a progress overlay and the page
-reloads its data when the run ends. A landing lookup sets a short-lived cookie so the destination page
-knows to show the overlay and, if the run fails, a toast: "Could not refresh your viewing history from
-Plex. Showing the most recent data instead."
-
-**Progress streams.** Two live streams exist: an admin stream with full progress and a reduced
-member stream (phase and small counters only, never titles, names or error text). The reduced stream
-is open to anonymous visitors only while onboarding is incomplete; the gate is re-checked on every tick
-so an anonymous stream closes when onboarding finishes. Scheduled runs do not populate the in-memory
-progress record, so they show no live progress and cannot be cancelled from the UI (a weakness).
 
 **Clearing data.** The admin can clear cached statistics or play history per year or wholesale. Clearing
 history does **not** reset the watermark, so a backfill is required to re-import it.
-
-### Identity reconciliation
-
-Plex history records a *server-local* account id, not a global identity, so each sync rebuilds the
-mapping from four sources: the owner's identity from Plex, the list of **accepted** shares for this
-exact machine (not deleted or left, consistent invitation ids, no duplicates, and any pagination
-evidence must exactly describe the whole list), the server's own local account list, and proof that the
-owner owns this server resource. The rule is **all-or-nothing**: if any source is partial or any shared
-user cannot be correlated with a local account, the previous snapshot is kept rather than guessed. The
-write happens in one transaction that re-checks that the Plex URL/token fingerprint, authority epoch and
-machine id did not change while it ran; conflicting pairs abort the run. On success, user rows are
-upserted, stale mappings removed and a proof record stored.
-
-A mapping is **fresh for 24 hours** (allowed at 23:59:59, denied at exactly 24:00:00). Non-admins need a
-fresh, exactly matching mapping to view or act on any recap, whether by slug, token or id. Changing the
-Plex URL or token advances an "authority epoch" at startup and invalidates the proof, so the next sync
-must re-prove every identity; the operator documentation tells operators to back up before changing either.
-
-### Statistics engine
-
-Statistics are computed from history rows whose viewed-at falls inside the calendar year in **UTC**
-(all date bucketing is server-side UTC, not the viewer's zone — a known limitation). Watch time is the
-sum of item durations (full runtime; abandoned plays count in full; duplicates were already dropped at
-ingest; a missing duration counts as zero). Per-user and server-wide statistics run the same
-calculators; user stats filter by local account id and add a percentile; server stats add the number
-of active viewers and a top-viewers leaderboard, and their series completion counts unique episodes
-across everyone.
-
-| Statistic | Definition and rules |
-| --- | --- |
-| Total time and plays | Minutes summed; plays counted. "Has history" means either is positive. |
-| Top movies | Grouped by **title** (same-titled films merge), ranked by plays, ties alphabetical, top 10 kept, first artwork seen. |
-| Top shows | Episode plays grouped by show title; count is episode plays, not unique episodes; top 10. |
-| Top genres | Each genre on a play counts once; malformed genre data is skipped silently; top 10. |
-| Monthly / hourly / weekday distributions | Fixed 12 / 24 / 7 buckets of minutes and plays; their sums must equal the totals. Weekday is stored Sunday-first and displayed Monday-first. |
-| Content type | Counts and minutes for movies, episodes, tracks; unknown types ignored. |
-| Decades | By release year, labelled "2000s" style, oldest first; unknown years skipped. |
-| Rewatches | Items (by rating key) played **2 or more** times; top 10 by count. |
-| Marathon day | The UTC date with the most minutes, earliest wins ties, **capped at 1,440 minutes** because summed runtimes can exceed a day; up to 10 item titles kept. |
-| Streak | Longest run of consecutive UTC days with at least one play; earlier run wins ties; several plays in a day count once. |
-| Binge session | Plays sorted by time; a play joins the session if it starts within **30 minutes** of the previous play's end; the longest session by content minutes wins, earlier wins ties; a single play is a valid session. |
-| First / last watch | Earliest and latest play; episodes titled "Show: Episode". |
-| Year comparison | Null if both years are zero; +100% if last year was zero; otherwise percent change to one decimal. |
-| Percentile (personal only) | Share of accounts with *strictly less* watch time among all accounts with any play that year; ties count as not-less; the top of N viewers gets (N−1)/N. |
-| Series completion | Unique episodes watched per show against the show's total episode count fetched from Plex in a batch; percent rounded and capped at 100; top 10 by episodes watched. If the batch lookup fails the recap still renders but totals equal watched, so shows read as complete (weakness). |
-| Top viewers (server only) | Top 10 local accounts by minutes; names from the account mapping, then local users, then "User {id}". |
-
-Determinism is a tested requirement: rows are read in time order, every tie-break is defined, and five
-forced recomputations must produce identical results. Fun facts are the deliberate exception (random
-or AI-generated on each load).
-
-**Caching.** A computed result is stored per (account, year, kind) with a **one-hour** time-to-live,
-replaced on recompute, invalidated by sync and enrichment per year, cleared by the admin per year or
-wholesale, and treated as missing if it fails the strict read-back schema (arrays of exactly 12/24/7,
-rewatch count at least 2, percentages 0–100). Anonymisation and artwork signing are applied *after* the
-cache read, per request, and recap pages are served no-store.
 
 ### Slides and the Wrapped experience
 
@@ -558,24 +414,6 @@ keeps the current state (an inactive scheduler stays inactive and says so). Paus
 operator flag distinct from "currently executing". A log-retention job runs nightly at 03:00 in the same
 zone.
 
-**Time zone resolution:** the environment zone (only if it names a known IANA zone; case-insensitive,
-canonicalised), else the admin's System setting (only if known), else UTC. Fixed offsets such as +02:00
-are rejected because they have no daylight-saving rules and "midnight local" would be wrong half the
-year. Zone changes apply live to both jobs. Admin scheduler actions are serialised through one queue and
-write their state before touching the live job; tests require the stored state and the live job to agree
-after many interleavings.
-
-### Settings concurrency
-
-Every settings form carries the version (latest update time) of its key group; a save with a missing,
-blank or older version answers "conflict" with "Settings changed in another tab. Reload and try again."
-and a reload action, and the success path is cancelled. Every successful write advances the version
-strictly (never backwards, even after a clock correction) and returns the version it actually wrote so
-two consecutive saves from one page succeed. Key groups are deliberately narrow (server-recap privacy,
-user defaults, public lookup, cross-site origin, each appearance field, scheduler zone, log settings,
-connections) so saving one form cannot falsely conflict with another. Deleting a connection value also
-bumps a bookkeeping marker so a stale tab cannot resurrect a cleared secret.
-
 ### Instance reset
 
 Under Data settings, a danger-zone card explains what comes back (watch statistics, which re-sync from
@@ -599,25 +437,6 @@ container range, public domain, public IP, invalid). The bootstrap token never p
 logger at all. Retention defaults to 7 days and 50,000 entries, enforced nightly and on demand.
 
 ## External integrations
-
-**Plex Media Server and Plex's account service.** Authentication is a token in a header (never in the
-query string) plus client identification headers. Two kinds of token are used: the **server token**
-configured by the admin (history, metadata, server identity, local accounts, artwork, owner identity,
-accepted shares, owned-resource proof) and the **user's own token** from their session (their list of
-servers, for membership and the onboarding server picker). Everything is pull/poll; nothing is pushed
-from Plex. Data read: play history with pagination and a viewed-after filter; per-item metadata (duration,
-genres, release year, episode counts and artwork for shows); the server's root for reachability and
-friendly name; the identity endpoint for the machine identifier; the local account list; the owner's
-profile; accepted shares for the machine; the resources list with secure connections. Nothing is ever
-written to Plex. Failure handling is described per workflow above; the general rule is: history
-validation failure fails the sync, metadata failure never does, identity-source incompleteness keeps the
-previous mapping, membership-check transience gets a grace window, and every connection error is
-sanitised to a fixed phrase ("Authentication failed. Check the access token.", "This does not appear to
-be a Plex Media Server", "Connection timed out…") before reaching a user. Connection tests cap the
-whole request including parsing at about ten seconds. Server-URL matching tolerates plex.direct hostnames
-(embedded machine id, embedded IP and port), plain host and port, public address, and normalised origin,
-in that priority after a live identity check.
-
 **AI text provider (optional).** Any service exposing a chat-completions style interface over https;
 configured by key, base URL and model; used only for fun facts; always with a template fallback.
 
@@ -681,174 +500,24 @@ close, inert backgrounds behind modals, status announcements, one top-level head
 and accessible names on every slide. All copy is English only; there is no localisation layer, and
 time-of-day statistics are presented in UTC rather than the viewer's local time.
 
-## Configuration and operations
-
-**Deployment shape.** A single self-hosted instance (one process plus an optional thin front process)
-with one embedded relational store on a persistent volume, typically run as a container behind the
-operator's reverse proxy. There is no clustering; rate limits, live-sync locks and sync progress are
-process-local.
-
-**Configurable by environment (authoritative, locks the UI field):** Plex server URL and token; the AI
-provider key, base URL and model; the **public origin** (the address people open in the browser —
-required for plain-HTTP deployments, optional only behind an HTTPS proxy that preserves the host; must be a
-bare scheme+host+port, normalised, and a value with a path, query, fragment or credentials stops startup
-with an error that never echoes the value); optional header names for proxy-supplied protocol/host (only
-without the public origin and only when every request passes through a proxy that overwrites both) and
-for the client address (with a proxy depth count, default 1, for per-client rate limiting); the time
-zone; metadata concurrency; live-sync enablement; listen host and port; persistence path; client idle
-timeout (default 10 s, streams exempt); shutdown drain budget (default 30 s, to be kept below the
-container stop timeout); request body limit (default half a megabyte; the app has no uploads). Placeholder
-values from the sample configuration (for example a literal "your token here" or the default localhost
-Plex address without a real token) are treated as unset so an unedited sample never trips onboarding.
-
-**Configurable in the admin UI:** everything listed under the settings screens, plus slide order,
-custom slides, fun-fact frequency, and per-user sharing overrides.
-
-**Startup sequence (once, memoised):** run pending schema migrations; delete stored settings shadowed by
-authoritative environment values; if the effective Plex URL/token fingerprint changed, advance the
-authority epoch and invalidate the cached machine id and identity proof; warn once about the retired
-proxy-trust switch and delete it; mark interrupted syncs failed; start log retention and restore the
-scheduler in the effective zone (failures here are logged, not fatal); print the bootstrap banner on the
-first request while onboarding is incomplete. On shutdown, stop both jobs, flush logs, drain open requests
-and streams up to the budget, then exit even if a Plex call is still outstanding; a second signal exits
-immediately; a hang-up is treated like a stop.
-
-**Front process.** When the public origin is set, a small front binds the public port before the app
-loads, forwards requests over a private local socket, stamps the origin itself on every request (client
-headers cannot change it), suspends the idle timer while the app starts, answers service-unavailable
-while unreachable, and owns graceful shutdown. Without the public origin the app serves directly and
-derives its origin from proxy headers or assumes https plus the host header, warning once at startup.
-
-**Persistence and backups.** One file-based relational store plus its write-ahead files on the configured
-path; back it up before changing the Plex URL or token. Migrations run automatically on start. Only watch
-statistics are reconstructible from Plex; settings, sharing choices and share links are not.
-
-**Upgrades.** The schema has evolved through ten migrations (release-year and show-key columns, indexes,
-mode source, sign-in transactions, update timestamps for concurrency, cascading share settings, public
-slugs, de-duplication of share rows). Upgrade backfills are conservative: public lookup stays off until an
-administrator enables it; an old proxy-trust switch is ignored and removed with a warning.
-
-**Health and smoke checks.** A production smoke check starts the real entry point and requires a redirect
-to the claim page with the exact setup title and form, then a clean exit. A lookup QA script verifies the
-opaque redirect, the uniform not-found, the eleventh-lookup rate limit, the 24-hour freshness boundary and
-fail-closed behaviour on authority changes.
-
-**Privacy posture.** Data stays on the operator's instance. Public exposure is opt-in per surface
-(personal default mode, server recap mode, landing lookup). Secrets are never returned to the browser.
-Logs redact tokens and fingerprint hosts. Artwork never leaks the server token. No analytics or telemetry
-exist.
-
 ## Security
 
-- **Request pipeline:** scanner filter → rate limiting → cross-site origin check → initialisation →
-  security headers → authentication → onboarding gate → admin authorisation.
-- **Scanner filter:** quiet not-found for well-known probe paths (environment files, version-control
-  directories, blog and database-admin tooling, framework consoles, script gateways) and forbidden for
-  known scanner user agents.
-- **Rate limits (fixed window, per client address; skipped with a one-time warning if no address can be
-  determined, favouring availability):** default 60/min; sign-in family 10 per 5 min; sign-in polling
-  60/min; sign-in redirect 30/min; onboarding claim 5 per 5 min; API 30/min; landing page 30/min; landing
-  lookup 10/min; admin diagnostic 12/min. Responses carry retry-after and remaining/reset headers and come
-  as a form-action error, a structured error body or a branded page depending on the caller.
-- **Cross-site request protection:** state-changing requests must present an origin (or referrer) equal
-  to the configured origin; missing or mismatched gets forbidden. If no origin is configured after
-  onboarding and it was not explicitly skipped, every state-changing request is refused (so the warning
-  banner is not cosmetic). The single exemption is the Security page's own origin-update action, keyed on
-  route and action only, so a bad origin can be repaired without a restart. Cookies are additionally
-  same-site restricted (lax for sessions, strict for the claim).
-- **Origin and forwarded headers:** only the last proxy hop is trusted; protocol must be http or https;
-  hosts with whitespace, control characters or URL-structural characters are rejected; forwarded headers
-  never change the app's own notion of its URL or its strict-transport decision.
-- **Headers on every response, including early returns:** deny framing, no sniffing, strict referrer
-  policy, a permissions policy denying camera/microphone/geolocation, one-year strict transport (https
-  only), and a nonce-based content security policy allowing scripts from self only, images from self and
-  Plex's hosts (including the image proxy Plex uses for some avatars) and inline data, fonts from the
-  web-font service, network connections to self and Plex only, no framing, self-only base and form
-  targets.
-- **Cookies:** the secure flag is set exactly when the public origin is https (including on deletion), so
-  plain-HTTP LAN installs still work; session and claim cookies are http-only; the theme cookie is
-  script-readable by design.
-- **Credentialed URLs:** settings URLs may not embed credentials, query or fragment; the AI base URL must
-  be https; plain-HTTP Plex is allowed only for private hosts with an explicit opt-in.
-- **Error sanitiser:** unexpected errors are logged and the user sees "Something went wrong. Try again.";
-  expected errors pass through; network failures map to fixed phrases; stacks never reach the client.
-- **Anti-enumeration and link hygiene:** uniform anonymous not-found on recaps and lookups; no sequential
-  ids in share links; return paths restricted to safe same-origin paths and stripped to the pathname;
-  sign-in redirects allowed only to Plex's hosted sign-in; sign-in responses redacted to username, admin
-  flag and an allow-listed destination.
 - **Content injection:** custom slide content is rejected when it contains scripts, handlers or
   script-scheme links, and rendered output is reduced to an allow-list with classes and styles stripped and
   image sources restricted to raster formats.
-- **Secrets:** the server token, AI key, thumbnail signing secret and claim proof are never sent to the
-  browser; the claim token is never logged; test buttons never send a stored secret to a changed
-  address.
-- **Trust assumptions:** anyone who can read the server console can claim a fresh install; the operator's
-  reverse proxy is trusted only to the extent the public-origin setting says; Plex's account service is
-  the identity authority; a signed-in session is taken as proof of membership for members-only pages
-  between revalidations.
-
-## Non-functional requirements
-
-- **Scale:** a household or friends-and-family server — tens of viewers, a few hundred thousand history
-  rows at most. Sync is paged and idempotent; enrichment is concurrency-bounded and cached forever per
-  item; statistics are computed per account-year on demand and cached for an hour.
-- **Latency:** recap pages render immediately from current data and refresh in the background; admin
-  pages stream progress rather than polling pages.
-- **Reliability:** one sync at a time, interrupted runs self-heal at boot, scheduler intent survives
-  restarts, identity mapping fails closed (keeps the previous snapshot) rather than guessing, cache
-  entries that fail validation self-heal by recomputation, settings writes are optimistic-concurrency
-  safe across tabs and clock corrections.
-- **Graceful shutdown:** open requests and live streams get a bounded drain; force-closed streams end
-  cleanly so browsers reconnect.
-- **Determinism:** the same history must always yield the same statistics; only fun facts may vary.
-
 ## Known weaknesses and improvement ideas
 
 Concrete problems found in the source, tests and history, with generic directions:
 
-1. **All date bucketing is UTC.** Hourly, weekday, monthly, marathon-day and streak calculations ignore
-   the viewer's or server's zone, so "peak hour" is wrong for most people. Compute distributions in the
-   configured scheduler zone (or a per-user zone) and say which zone is used.
-2. **Watch time is full runtime, not time watched.** Plex history does not carry watched duration, but
-   abandoned plays inflate totals and binge lengths. Consider weighting by view offset where available,
-   or at least labelling totals as "runtime of everything you played".
-3. **Top movies group by title.** Same-titled films merge; remakes and foreign-title collisions are
-   miscounted. Group by rating key and display the title.
-4. **Series completion degrades silently.** When the episode-count lookup fails, shows read as 100%
-   complete. Prefer hiding the percentage or marking totals unknown.
 5. **Hybrid anonymisation likely mis-identifies the viewer.** The leaderboard is keyed by local account
    id but the viewer is compared by internal user id, so "your own name" probably shows only when the
    two coincide. Compare on the same identity.
-6. **Scheduled syncs are invisible.** Only admin-triggered and live syncs publish progress and can be
-   cancelled. Unify all sync starts behind the same progress record.
-7. **Empty incremental runs drop the watermark**, causing a needless full re-fetch next time. Carry the
-   previous watermark forward when nothing new arrives.
 8. **Clearing history does not reset the watermark**, so cleared rows never come back without a manual
    backfill. Offer to reset the watermark when clearing.
-9. **Metadata cache never expires and never retries failures.** Transient Plex errors permanently leave
-   items without duration or genres. Add a retry window for failed keys and a long expiry.
-10. **Pre-check and claim of the sync slot are not atomic**: a lost race after the button already said
-    "started" surfaces only as a background failure. Make the start path return the claim result.
-11. **Copy drift:** the claim page says claims expire after 10 minutes (real value 30); onboarding
-    fun-fact options describe 1–2 / 3–5 / 6–10 while the backend uses 2 / 4 / 8; the settings index
-    describes Security and Data sections inaccurately; the binge slide hint says "2+ plays" while the
-    engine accepts single-play sessions; the summary page says "Your Year in Review" on the server recap;
-    the percentile slide's "out of N viewers" line can never render. Pin copy to constants shared with
-    the logic.
 12. **Scroll-to-story position is not carried over** when switching modes, and scroll mode has no
     summary. Share one position store between modes and end scroll mode with the summary.
-13. **Rate limiting, live-sync locks and sync progress are process-local**, and limits are skipped when
-    no client address is known. Fine for one instance, but document it and consider a persisted limiter.
-14. **Sessions never slide or rotate**; a 7-day fixed lifetime signs active users out mid-week. Consider
-    sliding expiry with rotation on privilege change.
 15. **Three premium recap themes exist but are unreachable** from the UI; either expose them or drop them.
 16. **Anonymisation is positional**, so a user's pseudonym changes whenever rankings change; a stable
     per-user pseudonym (seeded hash) would make year-over-year sharing coherent.
 17. **Logs page client-side filter** matches message only while the server matches message or source;
     unify.
-18. **No localisation layer** and English-only copy; the slide system is a good candidate for
-    message catalogues since all strings are already centralised for the privacy copy.
-19. **Property test out of date:** one sharing property still claims users cannot enable private-link,
-    while the service allows it; the service is the source of truth.
-20. **Dormant code paths:** a current-streak field, a session-extension routine and a rate-limit cleanup
-    routine exist but are never used.
