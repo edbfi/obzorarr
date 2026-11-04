@@ -296,9 +296,9 @@ obzorarr's; each app cites its own.
   relative.
 - **The address hint:** when `ORIGIN` is set and doesn't match the address the browser is on, or
   when `ORIGIN` is unset and that address's host and port don't match the `Host` header, the claim
-  and owner sign-in pages suggest `ORIGIN=<that address>` (or fixing or removing `ORIGIN`) or the
-  proxy line `proxy_set_header Host $http_host`, so someone without a session can recover.
-  (obzorarr) `public-address` adds it, with the check behind it.
+  and owner sign-in pages suggest setting `ORIGIN=<that address>` (or removing a wrong `ORIGIN`) or
+  adding the proxy line `proxy_set_header Host $http_host`, so someone without a session can
+  recover. (obzorarr) `public-address` adds it, with the check behind it.
 - **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name (an
   app prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
   variable). When set, it must be a bare `http` or `https` origin (a trailing `/` is fine; no path,
