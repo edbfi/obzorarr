@@ -23,7 +23,7 @@ Use the shared [design system](../../DESIGN.md). Match hierarchy, density and pa
 
 ## Required content
 
-Plex address 'https://plex.example', key 'Stored •••• 4821', replace field blank labelled 'New token'. Test connection and Save connection. Public address read-only with lock label 'Managed by deployment'. Appearance selected After Hours; Interface theme and Wrapped theme independent. Muted receipt 'Connection verified'.
+Plex address 'https://plex.example', key 'Stored •••• 4821', replace field blank labelled 'New token'. Test connection and Save connection. Public address read-only: when `ORIGIN` is set, its value with lock label 'Managed by deployment'; otherwise 'Not set: links use the address you're on'. Appearance selected After Hours; Interface theme and Wrapped theme independent. Muted receipt 'Connection verified'.
 
 ## Acceptance criteria
 
@@ -41,6 +41,7 @@ Never reveal stored token. Separate save actions per form. Re-test credentials a
 Use the images for composition and visual character. Use DESIGN.md, PRODUCT.md, this brief's acceptance criteria and the demo fixtures for exact values and behavior. Body copy, chart axes, tiny icons and font glyphs remain illustrative raster renderings. Rebuild them as native accessible UI and verify them against the specification. A PNG cannot verify focus order, screen-reader announcements, permission checks or real responsiveness.
 
 - Appearance has two independent values, interfaceTheme and wrappedTheme; seed both to After Hours. Do not copy the raster's invented Ocean/Cinema theme names.
+- Public address follows Required content: `ORIGIN` is optional, so don't copy the raster's caption that the address is used for generated links.
 
 ## Handoff prompt
 
