@@ -261,7 +261,7 @@ obzorarr's; each app cites its own.
   `vite.config.ts` (SvelteKit 3 takes its options in the `sveltekit()` call, with no `kit:`
   wrapper). Remote functions stay off. A config test asserts both, so SvelteKit's only remaining
   check before `handle` is the remote-function one, which nothing uses. The cross-origin check
-  replaces it.
+  replaces SvelteKit's form check.
 - **The cross-origin check** asks the browser, so the app doesn't need to know its own address and
   stores none. It runs first in `handle` for every method except GET, HEAD and OPTIONS, and for
   every content type (form, JSON, multipart, `text/plain`, empty). Internal `event.fetch`
@@ -275,11 +275,11 @@ obzorarr's; each app cites its own.
     `Host` header, with default ports normalised. Browsers send `Sec-Fetch-Site` only to HTTPS,
     `localhost` and loopback addresses, so over plain HTTP outside loopback every browser gets
     this comparison.
-  - A request with neither `Origin` nor `Sec-Fetch-Site` doesn't come from a browser. It passes
-    only on an explicit list of machine routes, the API-key endpoints and other machine routes the
-    app's approved docs already name, with the credentials those docs require (obzorarr: none). The
-    session cookie is never honoured on it: such a request that carries only a session cookie gets
-    a 403.
+  - A request with neither `Origin` nor `Sec-Fetch-Site` doesn't come from a browser. It passes only
+    on an explicit list of machine routes (obzorarr: none, so it refuses every such request): the
+    API-key endpoints and other machine routes the app's approved docs already name, each with the
+    credentials those docs require. The session cookie is never honoured on it: such a request that
+    carries only a session cookie gets a 403.
   - A refusal is a 403 with the app's own "Access denied" page, or a JSON error for JSON callers,
     with the security headers and in the viewer's language.
 - **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
@@ -287,24 +287,26 @@ obzorarr's; each app cites its own.
   `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. The claim, sign-in, and
   the start of OIDC sign-in (and of Plex sign-in, where the app has it) are POSTs that need it: when
   a browser stripped `Origin`, they get a 403 that says so (the "Access denied" page, or a JSON
-  error for JSON callers). OIDC and Plex sign-in keep the address in the flow's state. The OIDC
-  callback address is saved when the owner configures OIDC, and must match. Links shown on GET pages
-  for copying, such as the OIDC callback to register (obzorarr: and recap share links), are built in
-  the browser from the address the user is on, or from `ORIGIN` when it is set. App code never uses
-  `event.url.origin` or `event.url.protocol` for security, cookies or rendered URLs, which a test
-  that searches the code enforces, and redirects stay relative.
-- **The address hint:** when the address the browser is on doesn't match what the app receives,
-  the claim and owner sign-in pages suggest `ORIGIN=<that address>` or the proxy line
-  `proxy_set_header Host $http_host`, so someone without a session can recover. (obzorarr)
-  `public-address` adds it, with the check behind it.
-- **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name
-  (adapter-bun's `envPrefix` would then reject the master key's variable). When set, it must be a
-  bare `http` or `https` origin (a trailing `/` is fine; no path, query, fragment or credentials),
-  compared as a parsed origin, or startup stops with an error that doesn't echo the value.
-  adapter-bun 1.0.0 ignores `ORIGIN`; from 1.0.1 a set `ORIGIN` also corrects SvelteKit's
-  `event.url`, and an empty `ORIGIN=""` throws with the value in the message, so the container
-  image's entrypoint unsets an empty `ORIGIN` and its templates leave it out (the image's work, not
-  this repo's).
+  error for JSON callers). OIDC sign-in (and Plex sign-in, where the app has it) keeps the address
+  in the flow's state. The OIDC callback address is saved when the owner configures OIDC, and must
+  match. Links shown on GET pages for copying, such as the OIDC callback to register (obzorarr: and
+  recap share links), are built in the browser from the address the user is on, or from `ORIGIN`
+  when it is set. App code never uses `event.url.origin` or `event.url.protocol` for security,
+  cookies or rendered URLs, which a test that searches the code enforces, and redirects stay
+  relative.
+- **The address hint:** when `ORIGIN` is set and doesn't match the address the browser is on, or
+  when `ORIGIN` is unset and that address's host and port don't match the `Host` header, the claim
+  and owner sign-in pages suggest `ORIGIN=<that address>` (or fixing or removing `ORIGIN`) or the
+  proxy line `proxy_set_header Host $http_host`, so someone without a session can recover.
+  (obzorarr) `public-address` adds it, with the check behind it.
+- **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name (an
+  app prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
+  variable). When set, it must be a bare `http` or `https` origin (a trailing `/` is fine; no path,
+  query, fragment or credentials), compared as a parsed origin, or startup stops with an error that
+  doesn't echo the value. adapter-bun 1.0.0 ignores `ORIGIN`; from 1.0.1 a set `ORIGIN` also
+  corrects SvelteKit's `event.url`, and an empty `ORIGIN=""` throws with the value in the message,
+  so the container image's entrypoint unsets an empty `ORIGIN` and its templates leave it out (the
+  image's work, not this repo's).
 - **When `ORIGIN` or a proxy fix is still needed:** behind a proxy that rewrites `Host`, over plain
   HTTP for every browser, and over HTTPS only for browsers without `Sec-Fetch-Site` (Safari before
   16.4, Firefox before 90, Chrome before 76). The proxy fix is `proxy_set_header Host $http_host`
@@ -316,21 +318,21 @@ obzorarr's; each app cites its own.
   closes it. DNS rebinding reaches only actions that need no sign-in, because cookies don't follow
   a rebind, and those are gated by a console token or rate-limited.
 - **Tests:** the cross-origin check is one pure module, unit-tested against a matrix of headers and
-  copied to each app as D20 shares the opening modules. One Playwright test sends a cross-site form
-  POST to the built server (`bun ./build`), on `localhost` and on a plain-HTTP host name that isn't
-  loopback (such as Chromium's `--host-resolver-rules="MAP app.test 127.0.0.1"`), with a
-  same-origin POST that carries no `Sec-Fetch-*` headers.
+  copied to each app as D20 shares the opening modules. One Playwright test against the built server
+  (`bun ./build`) checks that a cross-site form POST is refused and that a same-origin POST carrying
+  no `Sec-Fetch-*` headers passes, both on `localhost` and on a plain-HTTP host name that isn't
+  loopback (such as Chromium's `--host-resolver-rules="MAP app.test 127.0.0.1"`).
 - **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
   whitespace, control characters or URL-structural characters is rejected; forwarded headers never
   set the browser's address or change the strict-transport decision. (obzorarr) Only the last proxy
   hop is trusted, and the owner's reverse proxy only as far as the client-address header and proxy
   depth in the environment say (the rate limits).
-- **Cookies:** session cookies are named after the app (obzorarr: `obzorarr_session`), because
-  cookies ignore ports and apps on one address would otherwise sign each other out. They are
-  host-only, `HttpOnly` and `SameSite=Lax`. Every cookie is `Secure` exactly when the browser's
-  address is `https`, so a plain-HTTP install at home still works. Every cookie write and deletion
-  sets `secure` explicitly (SvelteKit's default is `Secure` on every host but `localhost`), and a
-  deletion whose scheme isn't known uses `secure: false`, which works over HTTP and HTTPS.
+- **Cookies:** session cookies are named after the app (obzorarr: `obzorarr_session` for the owner
+  session), because cookies ignore ports and apps on one address would otherwise sign each other
+  out. They are host-only, `HttpOnly` and `SameSite=Lax`. Every cookie is `Secure` exactly when the
+  browser's address is `https`, so a plain-HTTP install at home still works. Every cookie write and
+  deletion sets `secure` explicitly (SvelteKit's default is `Secure` on every host but `localhost`),
+  and a deletion whose scheme isn't known uses `secure: false`, which works over HTTP and HTTPS.
 - **A wrong address never locks the owner out.** No stored address can stop password sign-in: a
   wrong `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored,
   so OIDC may need registering again after a move, but password sign-in always remains (D20).
