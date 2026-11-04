@@ -117,8 +117,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: the password rules: the minimum length, whether a list of common passwords is
-  refused, and whether repeated failed sign-ins lock the account or slow it down (lockout or
-  backoff).
+  refused, and how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
+  where the app's approved docs allow one).
 - The first module with a background job closes the job half of D14: `sign-in` if its session
   cleanup is a job, otherwise `sync`.
 - `plex-connection`: D18, including the watched-time question (D23) and the history and mapping
@@ -207,8 +207,8 @@ obzorarr's; each app cites its own.
   the clock is corrected, and returns the version it wrote, so two saves in a row from one page
   both succeed. Groups are narrow (server-recap privacy, user defaults, public lookup, each
   appearance field, the time zone, log settings, connections), so saving one form never conflicts
-  with another. Clearing a connection value moves its group's version too, so a
-  stale tab can't bring back a cleared secret.
+  with another. Clearing a connection value moves its group's version too, so a stale tab can't
+  bring back a cleared secret.
 - **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
 - **Logging.** Four levels; debug entries are dropped unless debug logging is on. Each entry has a
   level, a message, a source, structured metadata and a millisecond timestamp, and goes to standard
@@ -222,10 +222,10 @@ obzorarr's; each app cites its own.
   sniffing, a referrer policy of `same-origin` or `strict-origin-when-cross-origin`, never
   `no-referrer` (which makes browsers send `Origin: null` on the app's own form posts), a
   permissions policy denying camera, microphone and geolocation, one-year strict transport security
-  over HTTPS, and a nonce-based content security policy: scripts from the app only; images from the app and inline data (obzorarr: and Plex's
-  hosts, including the image proxy Plex uses for some avatars); fonts from the app (DESIGN.md
-  bundles them); connections to the app only (obzorarr: and Plex); no framing; the app only as base
-  and form target.
+  over HTTPS, and a nonce-based content security policy: scripts from the app only; images from the
+  app and inline data (obzorarr: and Plex's hosts, including the image proxy Plex uses for some
+  avatars); fonts from the app (DESIGN.md bundles them); connections to the app only (obzorarr: and
+  Plex); no framing; the app only as base and form target.
 - **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
   each module's startup work (obzorarr: deleting shadowed settings, advancing the authority epoch
   when the Plex URL or token changed, `identity`, and marking interrupted syncs failed, D7), then
@@ -267,32 +267,40 @@ obzorarr's; each app cites its own.
   every content type (form, JSON, multipart, `text/plain`, empty). Internal `event.fetch`
   subrequests (`event.isSubRequest`) skip it.
   - An `Origin` header, whenever it is present, must parse as one bare `http` or `https` origin;
-    `null`, a malformed value or several values are refused.
+    `null`, a malformed value or several values are refused. This applies on every branch below.
   - With `ORIGIN` set, a present `Origin` must equal `ORIGIN`, compared as parsed origins. Without
     `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.
   - With `ORIGIN` unset, a present `Sec-Fetch-Site` passes only as `same-origin` or `none`
     (`same-site` and `cross-site` are refused). Otherwise `Origin`'s host and port must equal the
     `Host` header, with default ports normalised. Browsers send `Sec-Fetch-Site` only to HTTPS,
-    `localhost` and loopback addresses, so over plain HTTP every browser gets this comparison.
+    `localhost` and loopback addresses, so over plain HTTP outside loopback every browser gets
+    this comparison.
   - A request with neither `Origin` nor `Sec-Fetch-Site` doesn't come from a browser. It passes
-    only on the app's own list of machine routes (obzorarr: none), and the session cookie is never
-    honoured on it: such a request that carries only a session cookie is refused.
-  - A refusal is the app's own "Access denied" page, or a JSON error for JSON callers, with the
-    security headers and in the viewer's language.
+    only on an explicit list of machine routes, the API-key endpoints and other machine routes the
+    app's approved docs already name, with the credentials those docs require (obzorarr: none). The
+    session cookie is never honoured on it: such a request that carries only a session cookie gets
+    a 403.
+  - A refusal is a 403 with the app's own "Access denied" page, or a JSON error for JSON callers,
+    with the security headers and in the viewer's language.
 - **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
-  POST that passed the cross-origin check. It decides the cookies' `Secure` flag, Plex sign-in's
-  forward URL and the OIDC `redirect_uri`. The claim, sign-in, and the start of Plex and OIDC
-  sign-in are POSTs that need it: when a browser stripped `Origin`, they get an "Access denied"
-  page that says so. Plex and OIDC sign-in keep the address in the flow's state. The OIDC callback
-  address is saved when the owner configures OIDC, and must match. Links shown on pages for
-  copying, such as the OIDC callback to register (obzorarr: and recap share links), are built in
+  POST that passed the cross-origin check. It decides the cookies' `Secure` flag, the OIDC
+  `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. The claim, sign-in, and
+  the start of OIDC sign-in (and of Plex sign-in, where the app has it) are POSTs that need it: when
+  a browser stripped `Origin`, they get a 403 that says so (the "Access denied" page, or a JSON
+  error for JSON callers). OIDC and Plex sign-in keep the address in the flow's state. The OIDC
+  callback address is saved when the owner configures OIDC, and must match. Links shown on GET pages
+  for copying, such as the OIDC callback to register (obzorarr: and recap share links), are built in
   the browser from the address the user is on, or from `ORIGIN` when it is set. App code never uses
   `event.url.origin` or `event.url.protocol` for security, cookies or rendered URLs, which a test
   that searches the code enforces, and redirects stay relative.
+- **The address hint:** when the address the browser is on doesn't match what the app receives,
+  the claim and owner sign-in pages suggest `ORIGIN=<that address>` or the proxy line
+  `proxy_set_header Host $http_host`, so someone without a session can recover. (obzorarr)
+  `public-address` adds it, with the check behind it.
 - **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name
   (adapter-bun's `envPrefix` would then reject the master key's variable). When set, it must be a
-  bare `http` or `https` origin, compared as a parsed origin: a trailing `/` is fine, but a path,
-  query, fragment or credentials stop startup with an error that doesn't echo the value.
+  bare `http` or `https` origin (a trailing `/` is fine; no path, query, fragment or credentials),
+  compared as a parsed origin, or startup stops with an error that doesn't echo the value.
   adapter-bun 1.0.0 ignores `ORIGIN`; from 1.0.1 a set `ORIGIN` also corrects SvelteKit's
   `event.url`, and an empty `ORIGIN=""` throws with the value in the message, so the container
   image's entrypoint unsets an empty `ORIGIN` and its templates leave it out (the image's work, not
@@ -300,7 +308,8 @@ obzorarr's; each app cites its own.
 - **When `ORIGIN` or a proxy fix is still needed:** behind a proxy that rewrites `Host`, over plain
   HTTP for every browser, and over HTTPS only for browsers without `Sec-Fetch-Site` (Safari before
   16.4, Firefox before 90, Chrome before 76). The proxy fix is `proxy_set_header Host $http_host`
-  (not `$host`, which drops a non-default port).
+  (not `$host`, which drops a non-default port). Remote functions would need it too; they stay
+  off.
 - **Accepted residual risks.** Over plain HTTP, the `Origin` and `Host` comparison can't tell `http`
   from `https`, which is harmless on a port that speaks only HTTP; over HTTPS it affects only
   browsers without `Sec-Fetch-Site`, and only against a network attacker, and HSTS or `ORIGIN`
@@ -314,16 +323,17 @@ obzorarr's; each app cites its own.
 - **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
   whitespace, control characters or URL-structural characters is rejected; forwarded headers never
   set the browser's address or change the strict-transport decision. (obzorarr) Only the last proxy
-  hop is trusted, and the owner's reverse proxy only as far as these settings say.
-- **Cookies:** the session cookie is named after the app (obzorarr: `obzorarr_session`), because
-  cookies ignore ports and apps on one address would otherwise sign each other out. It is
+  hop is trusted, and the owner's reverse proxy only as far as the client-address header and proxy
+  depth in the environment say (the rate limits).
+- **Cookies:** session cookies are named after the app (obzorarr: `obzorarr_session`), because
+  cookies ignore ports and apps on one address would otherwise sign each other out. They are
   host-only, `HttpOnly` and `SameSite=Lax`. Every cookie is `Secure` exactly when the browser's
   address is `https`, so a plain-HTTP install at home still works. Every cookie write and deletion
   sets `secure` explicitly (SvelteKit's default is `Secure` on every host but `localhost`), and a
   deletion whose scheme isn't known uses `secure: false`, which works over HTTP and HTTPS.
-- **A wrong address never locks the owner out.** Nothing stored can stop password sign-in: a wrong
-  `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored, so OIDC
-  may need registering again after a move, but password sign-in always remains (D20).
+- **A wrong address never locks the owner out.** No stored address can stop password sign-in: a
+  wrong `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored,
+  so OIDC may need registering again after a move, but password sign-in always remains (D20).
 - **Errors:** an unexpected error is logged and the user sees "Something went wrong. Try again.";
   expected errors pass through; network failures map to fixed phrases; stack traces never reach the
   browser. Error pages are titled "Page not found", "Access denied", "Too many requests" or
@@ -351,8 +361,8 @@ obzorarr's; each app cites its own.
   `ORIGIN=<the shown address>` and restart (warning); `ORIGIN` names another address, so open the
   app there, or fix or remove `ORIGIN` and restart (warning); or the check couldn't finish
   (danger), saying that this doesn't prove a misconfiguration, with a way to run it again.
-- **Without a session:** the claim and owner sign-in pages show the same suggestion when the check
-  finds a mismatch, so someone who can't sign in can still recover.
+- **Without a session:** it provides the address hint on the claim and owner sign-in pages
+  (`sign-in`).
 - **Details** show the evidence, note that `ORIGIN` needs no forwarding headers, and give copyable
   header recipes for the common reverse proxies. In the Security tab only a manual rerun shows a
   toast.
