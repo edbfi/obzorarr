@@ -222,7 +222,8 @@ obzorarr's; each app cites its own.
   sniffing, a referrer policy of `same-origin` or `strict-origin-when-cross-origin`, never
   `no-referrer` (which makes browsers send `Origin: null` on the app's own form posts), a
   permissions policy denying camera, microphone and geolocation, one-year strict transport security
-  over HTTPS, and a nonce-based content security policy: scripts from the app only; images from the
+  over HTTPS (known when `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a host
+  that isn't loopback, since browsers send it only to HTTPS and loopback addresses), and a nonce-based content security policy: scripts from the app only; images from the
   app and inline data (obzorarr: and Plex's hosts, including the image proxy Plex uses for some
   avatars); fonts from the app (DESIGN.md bundles them); connections to the app only (obzorarr: and
   Plex); no framing; the app only as base and form target.
@@ -284,9 +285,10 @@ obzorarr's; each app cites its own.
     with the security headers and in the viewer's language.
 - **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
   POST that passed the cross-origin check. It decides the cookies' `Secure` flag, the OIDC
-  `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. The claim, sign-in, and
-  the start of OIDC sign-in (and of Plex sign-in, where the app has it) are POSTs that need it: when
-  a browser stripped `Origin`, they get a 403 that says so (the "Access denied" page, or a JSON
+  `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. Every POST that sets or
+  deletes a cookie needs it, such as the claim, sign-in, the two-factor challenge, recovery,
+  sign-out and the start of OIDC sign-in (and of Plex sign-in, where the app has it): when a
+  browser stripped `Origin`, they get a 403 that says so (the "Access denied" page, or a JSON
   error for JSON callers). OIDC sign-in (and Plex sign-in, where the app has it) keeps the address
   in the flow's state. The OIDC callback address is saved when the owner configures OIDC, and must
   match. Links shown on GET pages for copying, such as the OIDC callback to register (obzorarr: and
