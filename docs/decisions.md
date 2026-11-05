@@ -232,8 +232,9 @@ the first one costs little. The legacy app was English only, with no localisatio
 
 ### D22. Paraglide JS with i18next JSON v4 messages
 
-Translation (D21) uses Paraglide JS 2 (`@inlang/paraglide-js`) through its Vite plugin, SvelteKit's
-official i18n integration. Messages live in `messages/en.json` and `messages/da.json` in i18next
+Translation (D21) uses Paraglide JS 3 (`@inlang/paraglide-js`) through its Vite plugin, SvelteKit's
+official i18n integration. This entry first named version 2; 3.0.0 shipped before `i18n` was
+specified, and D2's rule (the latest stable release, locked) moved it to 3. Messages live in `messages/en.json` and `messages/da.json` in i18next
 JSON v4, through `@inlang/plugin-i18next` 6.2.0 or later (which fixed its plural handling), with
 plurals under CLDR suffixes. Weblate reads that format as "i18next JSON v4" (`i18nextv4`),
 monolingual, with `messages/en.json` as the base file.

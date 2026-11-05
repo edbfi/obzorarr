@@ -1,48 +1,9 @@
-# Input for the `i18n` and `recap-spike` specs
+# Input for the `recap-spike` spec
 
 The owner approved these decisions on 2026-10-29, after a council review (Claude Opus 5.5,
-GPT 6.1 Sol, Gemini 4 Argon) and a sol-loop review. Each spec records its own part; this file is
-deleted once both specs are approved.
-
-## `i18n`
-
-- **The switcher:** `src/lib/components/layout/LanguageSwitcher.svelte`, a labelled native
-  `<select>` that uses only tokens and sets Paraglide's default cookie, `PARAGLIDE_LOCALE`. It is
-  shown on the placeholder `/`, and each shell places it when that shell is built. The landing
-  brief (`.impeccable/surfaces/route.md`) gains it in its signed-out navigation. It needs no
-  surface brief of its own.
-- **Danish text:** agents write the English and the Danish messages. The owner may spot-check them
-  but doesn't approve them, and Weblate corrects them later.
-- **Completeness:** a Vitest test, `src/lib/shared/i18n/messages.test.ts`. It checks that both files
-  have the same keys and the same `{{…}}` placeholders, and that each plural message has exactly
-  the categories `Intl.PluralRules(locale)` gives (en and da: `one`, `other`). It runs in the
-  existing `tests` hook and in CI, so no new hook is needed. It sits in `src/` only because Vitest
-  runs `src/**`; its sources are `messages/*.json`.
-- **D22's three checks:**
-  - **Pinned versions:** `check`, `test`, `build` and `smoke` pass with them.
-  - **Serving:** an e2e test against `bun ./build` shows that the middleware serves non-empty pages
-    in both languages (`Accept-Language: da`, then switching with the switcher). This also closes
-    D16's "browser interaction with a real component".
-  - **Weblate round trip:** a one-off run through `uvx` of translate-toolkit's `I18NextV4File`
-    reads and writes `messages/da.json` with a plural and an interpolation. It passes when the
-    parsed JSON is equal (the library rewrites indentation), Paraglide compiles the result, and
-    both plural branches render. The evidence goes in the PR body.
-- **Plugins load from disk:** `@inlang/paraglide-js` and `@inlang/plugin-i18next` (6.2.0 or later)
-  are exact-pinned dev dependencies, with
-  `"modules": ["./node_modules/@inlang/plugin-i18next/dist/index.js"]`. Nothing is fetched at
-  build time or in CI. With no network, `paraglide-js compile` 2.29.3 and inlang SDK 4.0.4 loaded
-  this local path. The first task checks it again with the pinned versions. The files Paraglide
-  writes into `project.inlang/` besides `settings.json` stay untracked, through Paraglide's own
-  `.gitignore`.
-- **Compiled output:** `src/lib/paraglide/`, gitignored, imported as `#lib/paraglide/…`.
-  - **When it compiles:** in `prepare` and `check` before `svelte-check`, and through Paraglide's
-    Vite plugin in dev, build and Vitest.
-  - **Its options, kept in one place:** that folder, and the strategy `cookie` →
-    `preferredLanguage` → `baseLocale` (D22; no URL prefixes).
-  - **Panda:** its `include` excludes the folder.
-  - **The stack table:** both packages join SPEC.md's tech-stack table.
-- **SPEC.md, "Where modules live":** `messages/` and `project.inlang/` are at the repo root, not
-  under `src/lib/server/`.
+GPT 6.1 Sol, Gemini 4 Argon) and a sol-loop review. Each spec records its own part: the `i18n` part
+is in [SPEC-i18n.md](../SPEC-i18n.md), and this file is deleted once `recap-spike`'s spec is
+approved.
 
 ## `recap-spike`
 
