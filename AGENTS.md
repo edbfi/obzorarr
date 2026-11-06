@@ -179,8 +179,7 @@ symmetry.
   obzorarr, which comes first by priority. The map below names it once it's known.
 - **Port after the reference has built it.** Another app specifies a shared module only once the
   reference has built it, starting from the reference's spec and tests. Its `SPEC-<id>.md` names
-  the reference and what differs in its first lines. Specs copied before this rule (`secrets`) are
-  kept in step with the reference instead.
+  the reference and what differs in its first lines.
 - **Say who else needs a change.** A PR that changes a shared area names, in its body, the sibling
   apps that need the same change. Correctness and security fixes reach them soon; wording can wait.
 - **What may differ:** the environment prefix, the app name, the stored secrets, the database
@@ -231,7 +230,7 @@ docs/SPEC.md                             project spec + capability map
 docs/SPEC-<id>.md                        one per module being built or changed
 docs/decisions.md                        D<n> entries: decision + why
 docs/research/<topic>.md                 temporary research input
-docs/design/                             images (+ tokens until the first scaffold)
+docs/design/                             images
 tasks/plan.md  tasks/todo.md             the active work stream only
 .impeccable/surfaces/*.md  critique/     Impeccable-managed
 ```
@@ -273,12 +272,8 @@ panel for the server's owner. It is being rewritten from scratch; the previous v
 unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). Product modules
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
-([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers: a master key's
-text is read from the environment or a file, decoded and checked for weak keys, and loaded into a
-keyring of the cipher's keys. The built server loads it in the `init` hook and won't start without
-a valid key; `dev` fails every request instead. The cipher encrypts a secret bound to its table,
-field and row, and the `Secret` wrapper prints a plaintext as `[redacted]` everywhere except
-`reveal()`. Nothing stores a secret yet, and no database exists.
+([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores
+a secret yet, and no database exists.
 
 **Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
 `bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage

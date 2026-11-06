@@ -1,9 +1,8 @@
 # Input for the `recap-spike` spec
 
 The owner approved these decisions on 2026-10-29, after a council review (Claude Opus 5.5,
-GPT 6.1 Sol, Gemini 4 Argon) and a sol-loop review. Each spec records its own part: the `i18n` part
-is in [SPEC-i18n.md](../SPEC-i18n.md), and this file is deleted once `recap-spike`'s spec is
-approved.
+GPT 6.1 Sol, Gemini 4 Argon) and a sol-loop review. This file is deleted once `recap-spike`'s spec
+is approved.
 
 ## `recap-spike`
 

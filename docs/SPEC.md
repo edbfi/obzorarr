@@ -930,7 +930,6 @@ export const GET: RequestHandler = () => healthResponse();
 
 - [`panda.config.ts`](../panda.config.ts) holds every design token: colours, type styles,
   spacing, radii, layout sizes, breakpoints and motion durations, under the names DESIGN.md uses.
-  It replaced the seed token files that came with the design package.
 - Colours are semantic tokens behind a colour-mode condition (`_dark`), dark by default
   (`class="dark"` on `<html>` in `src/app.html`); After Hours is the only theme, and other themes
   can be added later without touching components (ground-floor choice 4).
@@ -987,8 +986,8 @@ obzorarr is a Bun web repo with edbfi-ci's Bun web templates:
    manual`, with no Node on `PATH`.
 2. The built server (`bun ./build`) serves `/` with the placeholder page and `/healthz` with `ok`
    when started with a valid key.
-3. `panda.config.ts` holds every design token; the seed token files are gone, and nothing in `src/`
-   uses a raw colour, size or font value.
+3. `panda.config.ts` holds every design token, and nothing in `src/` uses a raw colour, size or font
+   value.
 4. Only folders with real files exist; `#lib` resolves in app code, tests and `svelte-check`.
 5. CI on the PR runs `checks`, `smoke` and `ci-ok` green; `audit` runs outside PRs.
 
