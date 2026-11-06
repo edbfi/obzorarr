@@ -218,8 +218,8 @@ not the browser's region, so server and browser always agree; `en` formats as `I
     which differ from each other and from the instance zone (D24).
   - Callers pass the instance zone, or `"UTC"` for a calendar value such as a month's name.
 
-Numbers inside a message use `{{name, number}}` instead. Other formatters (relative times, lists)
-come with the first module that needs one.
+Counts and quantities inside a message use `{{name, number}}` instead. Other formatters (relative
+times, lists) come with the first module that needs one.
 
 ## The message check
 
@@ -227,7 +227,8 @@ come with the first module that needs one.
 Vitest runs `src/**`. The check finds every problem in a set of message files, and the tests run it
 on `messages/*.json` and on small in-memory files that break each rule once. It checks that:
 - every value is a non-empty string, so the files stay flat;
-- every message name fits the rule above, and no message is both one key and plural forms;
+- every message name fits the rule above, no key contains `_ordinal_`, and no message is both one
+  key and plural forms;
 - English and Danish have the same messages;
 - every form of a message, in both languages, has the same placeholders, names and formats;
 - no placeholder has a format other than `number`;
@@ -265,8 +266,9 @@ The build runs D22's three validations, and a concurrency check, with the pinned
   - Biome finds nothing to reformat;
   - Paraglide compiles the result;
   - both plural forms render.
-- **Concurrency:** 200 concurrent requests in both languages against the built server, through a
-  temporary route that awaits a random delay in its `load`, each render in their own language.
+- **Concurrency:** it passes when 200 concurrent requests in both languages against the built
+  server, through a temporary route that awaits a random delay in its `load`, each render in their
+  own language.
 
 The temporary message, route and script aren't committed; the scripts and their output go in the
 build PR's body.
@@ -367,6 +369,8 @@ the messages, so a fresh clone type-checks without a dev server having run.
   - the testing section gains the new tests.
 - **`docs/decisions.md`:** D22's "Still to validate" paragraph goes, with the outcome in the PR
   body; D16 drops browser interaction with a real component.
+- **"The viewer's locale"** becomes "the viewer's language" in D21 and D24, PRODUCT.md, and
+  SPEC.md's capability-map note and row 2 (or names `en-GB`, if the owner picks it).
 - **AGENTS.md:** the status and the structure tree.
 - **The landing brief:** the switcher in its signed-out navigation.
 
@@ -394,6 +398,6 @@ the messages, so a fresh clone type-checks without a dev server having run.
     on the only other one.
 - **For the owner: dates and numbers in English.** English formats as `en`, the American
   convention: "11/5/2026, 11:30 PM". Danish is unaffected. `en-GB` would give "05/11/2026, 23:30"
-  for every English reader instead. Following each viewer's region would need a setting of its own.
-  The recommendation is to keep `en`: it is what most English interfaces use, and the recap mostly
-  shows months, hours and counts, which read the same either way.
+  for every English reader instead. Hours differ too: "11 PM" against "23". Month names and counts
+  read the same. Following each viewer's region would need a setting of its own. The recommendation
+  is to keep `en`, which is what most English interfaces use.
