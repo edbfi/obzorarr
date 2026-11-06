@@ -857,9 +857,10 @@ obzorarr's; each app cites its own.
 
 ## Tech stack
 
-The stack decisions are in [decisions.md](decisions.md) (D1–D12). Versions are exact pins in
-`package.json` (Bun from its `packageManager` field) and `bun.lock`; Dependabot moves them. Every
-package is a dev dependency, so adapter-bun bundles it and `bun ./build` needs no `node_modules`.
+The stack decisions are in [decisions.md](decisions.md) (D1–D12, D27). Versions are exact pins in
+`package.json` (Bun from its `packageManager` field) and `bun.lock`; Dependabot moves them to the
+newest stable release (D27). Every package is a dev dependency, so adapter-bun bundles it and
+`bun ./build` needs no `node_modules`.
 
 | Part | Package |
 |---|---|

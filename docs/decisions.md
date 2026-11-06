@@ -19,9 +19,9 @@ admin panel) keeps sessions, origin checks and deployment simple, and all five a
 
 ### D2. TypeScript 6, strict
 
-The latest stable TypeScript 6.x at bootstrap, locked; no prereleases, and major upgrades wait until
-the Svelte tooling supports them. Strict type checking, run explicitly (the `check` script): running
-TypeScript under Bun doesn't type-check it. External input is validated at runtime.
+The newest stable TypeScript 6.x (D27); TypeScript 7 waits until the Svelte tooling supports it.
+Strict type checking, run explicitly (the `check` script): running TypeScript under Bun doesn't
+type-check it. External input is validated at runtime.
 
 Why: [SvelteKit 3 requires TypeScript 6](https://svelte.dev/docs/kit/migrating-to-sveltekit-3#Updated-dependencies).
 
@@ -351,6 +351,20 @@ rewritten from scratch with no stored data to carry over, and a key change is ra
 by entering a few secrets again (owner decision). Checking the key from the first version makes it
 part of installing obzorarr from the start, rather than a surprise when a later module first stores
 a secret.
+
+### D27. Dependencies: the newest stable release
+
+Every dependency stays on its newest stable release, majors included: the packages, Bun, the GitHub
+Actions and the prek hooks. No prereleases. A new dependency joins at its newest stable release.
+Dependabot (`.github/dependabot.yml`, from edbfi-ci's templates) opens most updates, and they merge
+once CI passes; an update it misses, or a major that fails the checks or needs code changes, is
+moved by hand soon after, not left behind. The one exception is a major that another part of the stack doesn't support yet:
+it waits, on the newest release of the major before, until that part does (TypeScript 7 until the
+Svelte tooling supports it, D2).
+
+Why: the owner wants every app on the newest stable release of everything (owner decision). Small,
+frequent updates are cheaper than a backlog of skipped majors, and D25 holds the services the apps
+talk to to the same rule.
 
 ## Open
 
