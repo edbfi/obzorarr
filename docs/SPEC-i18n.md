@@ -9,8 +9,8 @@ siblings port this spec once it is built.
 ## Objective
 
 Every later module writes its user-facing text as messages in English and Danish, and shows numbers
-and dates in the viewer's locale (D21). `i18n` builds that groundwork, and no product text beyond the
-placeholder page:
+and dates in the viewer's locale (D21). `i18n` builds that groundwork, and no product text beyond
+the placeholder page:
 1. **Messages** in `messages/en.json` and `messages/da.json`, which Paraglide JS compiles into typed
    message functions (D22).
 2. **Choosing the language:** each request uses the viewer's choice, then the browser's preferred
@@ -25,24 +25,26 @@ It also runs the validations D22 lists.
 ## Versions
 
 `@inlang/paraglide-js` 3.2.0 and `@inlang/plugin-i18next` 6.5.3, exact-pinned dev dependencies
-(the owner approved both packages on 2026-10-29). Paraglide JS 3.0.0 shipped on 2026-11-03, after D22
-named version 2. D2's rule applies (the latest stable release, locked), so D22 now names 3. Its
-breaking changes touch nothing here: the `additionalFiles` option and the middleware's locale
-splitting are gone, and Vite builds default to a new output layout, which the config below sets
-explicitly. TypeScript stays on 6.x (D2). Paraglide 3 writes its declarations itself and needs no
-TypeScript.
+(the owner approved both packages on 2026-10-29). Paraglide JS 3 is the current major release, and
+D22 left the choice to the agents. Its breaking changes touch nothing here: the `additionalFiles`
+option and the middleware's locale splitting are gone, and Vite builds default to a new output
+layout, which the config below sets explicitly. TypeScript stays on 6.x (D2): Paraglide 3 writes its
+declarations itself and needs no TypeScript.
 
 ## Messages
 
 **The files** are i18next JSON v4 (D22): one flat object per language, formatted by Biome like the
 rest of the repo.
 
-**Keys** are flat, in snake_case (lowercase letters, digits and underscores), and start with the
-module or surface that owns them (`landing_title`, `error_not_found_title`). So each key is a
-JavaScript name, `m.landing_title()`, and Paraglide's escaped names and the `m["a.b"]()` form of
-nested keys never appear. A key that ends in a CLDR plural category (`_zero`, `_one`, `_two`,
-`_few`, `_many`, `_other`) is a plural form, and no other key ends in one. Once Weblate is connected,
-keys aren't renamed, because translations are tied to them.
+**Keys** match `^[a-z][a-z0-9]*(_[a-z0-9]+)+$`: snake_case, starting with the module or surface
+that owns them (`landing_title`, `error_not_found_title`). So each key is a JavaScript name,
+`m.landing_title()`, and Paraglide's escaped names and the `m["a.b"]()` form of nested keys never
+appear.
+- **Plural forms:** a key that ends in a CLDR plural category (`_zero`, `_one`, `_two`, `_few`,
+  `_many`, `_other`) is a plural form, and no other key ends in one.
+- **`_ordinal`:** no key contains `_ordinal_`, which the plugin reads as an ordinal plural.
+- **Renaming:** once Weblate is connected, keys aren't renamed, because translations are tied to
+  them.
 
 **Placeholders** are `{{name}}`.
 - A number is written `{{name, number}}`, which Paraglide formats with `Intl.NumberFormat` in the
@@ -55,11 +57,17 @@ keys aren't renamed, because translations are tied to them.
   behaviour.
 
 **Plurals** are `<key>_one` and `<key>_other`, chosen by `count`. English and Danish both have
-exactly these two categories (`Intl.PluralRules`), and Danish uses `other` for 0.
+exactly these two categories (`Intl.PluralRules`). Danish uses `one` for every number below 2 except
+0 (0.5 and 1.5 included), so every plural form keeps `{{count, number}}` rather than writing the
+number out ("1 time" would misstate 1.5 hours).
 
 **Messages are plain text.** They are rendered as text, never with `{@html}`, so a placeholder
-filled with a name can't inject markup. Markup inside a message, such as a link in a sentence, is
-left to the first module that needs it.
+filled with a name can't inject markup.
+- **No tags:** the plugin reads anything shaped like a tag (`<address>`, `<br/>`, `</b>`) as markup,
+  and Paraglide drops it from the text without a warning. In the probe, `ORIGIN=<address>` rendered
+  as `ORIGIN=`. A value to fill in is a placeholder (`ORIGIN={{address}}`).
+- **Markup inside a message,** such as a link in a sentence, is left to the first module that needs
+  it.
 
 **Not translated through the messages:**
 - the name Obzorarr;
@@ -108,16 +116,22 @@ export default defineConfig({
   write. Running `check` beside `dev` would then rewrite the folder under the dev server.
 - The plugin is added to `vite.config.ts` as `paraglideVitePlugin({ project: "./project.inlang" })`,
   with nothing else.
+- `tsconfig.json` includes `project.inlang/*.ts`, so `check` type-checks the config.
 
-**The compiled output** is `src/lib/paraglide/`, imported as `#lib/paraglide/messages.js` and
-`#lib/paraglide/runtime.js`.
-- It is gitignored: a root `.gitignore` line, besides the one Paraglide writes into the folder,
-  which Biome also honours. Panda's `exclude` skips it.
-- It compiles in `prepare` and in `check` (the CLI, before `svelte-check`), and through the Vite
-  plugin in dev, build and Vitest.
-- It is generated code that imports nothing from the app, and it is browser-safe. So any layer may
-  import it, `lib/shared/` and browser code included, without breaking the import rules.
-- A message that doesn't exist is a type error that `check` reports.
+**Generated files** are gitignored by two root `.gitignore` lines, which Biome also honours:
+- `src/lib/paraglide/`, the compiled output;
+- `project.inlang/cache/`, where Paraglide 3 keeps its compile cache. It writes no `.gitignore` of
+  its own there, and without the line `lint` fails on the cache files.
+
+**The compiled output** compiles in `prepare` and in `check` (the CLI, before `svelte-check`), and
+through the Vite plugin in dev, build and Vitest. Panda's `exclude` skips it.
+- **`#lib/paraglide/messages.js` and `#lib/paraglide/runtime.js`** are browser-safe.
+- **`#lib/paraglide/server.js`,** the middleware, is imported only by `src/hooks.server.ts`: it
+  loads `async_hooks` for AsyncLocalStorage.
+- **The import rules:** the output is generated code that imports nothing from the app. It isn't one
+  of the app's layers, so `lib/shared/`, components, services and routes import it as they import
+  `#styled-system`.
+- **A message that doesn't exist** is a type error that `check` reports.
 
 ## Choosing the language
 
@@ -140,18 +154,29 @@ export default defineConfig({
 - **Caching:** the middleware adds `Vary: Cookie, Accept-Language` to every response. No page is
   prerendered, since a prerendered page would have one language for everyone.
 - **First in `handle`:** the language handle refuses nothing and never reads the body. Later modules
-  add their stages after it with `sequence`, so every response is in the viewer's language,
-  `sign-in`'s refusals and error pages included.
+  add their stages after it with `sequence`. Errors thrown while rendering a route reach
+  `+error.svelte` in the viewer's language.
 
-**In the browser,** `src/hooks.client.ts` makes Paraglide's `getLocale()` return the page's
-`<html lang>`. The server's choice holds for the whole page, until it reloads. Without this,
-Paraglide's browser runtime would choose again from `navigator.languages`, and those needn't match
-the `Accept-Language` header the server saw. On its first call it would also store whatever it chose
-in the cookie: the browser's language would become a stored choice the viewer never made, and a
-later change of browser language would no longer count (D21's order). The probe showed both: a
-browser that sent `Accept-Language: fr-FR` but listed Danish second in `navigator.languages` got
-English from the server, Danish after a client-side navigation, and `PARAGLIDE_LOCALE=da` without
-choosing. With the hook it stayed in English, and no cookie was written.
+**A later stage that refuses a request returns its response; it never throws.** An error thrown out
+of a `handle` stage, `error(403)` included, leaves the middleware. SvelteKit then renders its
+fallback page in English, without `<html lang>` or `Vary` (two council reviewers reproduced this).
+A response returned from inside the chain is still in the request's language and gets `Vary`, but it
+skips `transformPageChunk`, so a refusal page that a stage builds sets its own `<html lang>`. This
+binds `setup`'s gate and `sign-in`'s refusals.
+
+**In the browser,** `src/hooks.client.ts` reads the page's `<html lang>` once, when the app starts,
+and makes Paraglide's `getLocale()` return it, or English if it isn't `en` or `da`. The server's
+choice holds for the whole page, until it reloads. It is read once because a browser's page
+translation can rewrite `<html lang>` later.
+- **Why:** without the hook, Paraglide's browser runtime would choose again from
+  `navigator.languages`, which needn't match the `Accept-Language` header the server saw.
+- **The unasked cookie:** on its first call, the runtime would also store whatever it chose in the
+  cookie. The browser's language would become a stored choice the viewer never made, and a later
+  change of browser language would no longer count (D21's order).
+- **What the probe showed:** a browser that sent `Accept-Language: fr-FR` but listed Danish second
+  in `navigator.languages` got English from the server, Danish after a client-side navigation, and
+  `PARAGLIDE_LOCALE=da` without choosing. With the hook it stayed in English, and no cookie was
+  written.
 
 **An accepted limit:** a tab keeps its language until it reloads. If the viewer switches language in
 another tab, text that a server `load` or action returns to the first tab follows the new cookie
@@ -184,25 +209,29 @@ tokens. Its label is a message.
 
 `src/lib/shared/i18n/format.ts` is browser-safe and formats in the current language
 (`getLocale()`), on the server and in the browser alike:
-- `formatNumber(value, options?)`: `Intl.NumberFormat`.
-- `formatDateTime(value, options)`: `Intl.DateTimeFormat`. The type requires `options.timeZone`, so
-  nothing is formatted in the server's or the browser's own zone, which differ from each other and
-  from the instance zone (D24). Callers pass the instance zone, or `"UTC"` for a calendar value such
-  as a month's name.
+- `formatNumber(value: number, options?: Intl.NumberFormatOptions)`: `Intl.NumberFormat`.
+- `formatDateTime(value: Date, options: Intl.DateTimeFormatOptions & { timeZone: string })`:
+  `Intl.DateTimeFormat`.
+  - **The zone is required,** so nothing is formatted in the server's or the browser's own zone,
+    which differ from each other and from the instance zone (D24).
+  - Callers pass the instance zone, or `"UTC"` for a calendar value such as a month's name.
 
 Numbers inside a message use `{{name, number}}` instead. Other formatters (relative times, lists)
 come with the first module that needs one.
 
 ## The message check
 
-`src/lib/shared/i18n/messages.test.ts` reads `messages/*.json`. It sits in `src/` only because
-Vitest runs `src/**`. It checks that:
+`src/lib/shared/i18n/messages.test.ts` holds the check and its tests. It sits in `src/` only because
+Vitest runs `src/**`. The check finds every problem in a set of message files, and the tests run it
+on `messages/*.json` and on small in-memory files that break each rule once. It checks that:
 - every value is a non-empty string, so the files stay flat;
 - every key fits the key rule above;
 - English and Danish have the same messages, with plural forms grouped under their message;
 - each message has the same placeholders, names and formats, in both languages;
-- placeholders have no format or `number`;
-- each plural message has exactly the forms `Intl.PluralRules(locale)` gives for each language.
+- no placeholder has a format other than `number`;
+- each plural message has exactly the forms `Intl.PluralRules(locale)` gives for each language, and
+  every form contains `{{count, number}}`;
+- no value holds anything shaped like a tag.
 
 It runs in the existing `tests` hook and in CI, so no new hook is needed.
 
@@ -217,25 +246,28 @@ The build runs D22's three validations, and a concurrency check, with the pinned
   - a Danish browser (Playwright locale `da-DK`) gets `/` in Danish with `<html lang="da">`;
   - choosing English in the switcher reloads `/` in English, writes `PARAGLIDE_LOCALE=en` with
     `SameSite=Lax` and without `Secure` over plain HTTP, and the next visit stays in English;
-  - a browser whose `navigator.languages` would choose Danish while its `Accept-Language` doesn't
-    gets English, the switcher shows English after hydration, and no cookie is written;
+  - a browser with locale `fr-FR`, whose `navigator.languages` an init script sets to `fr-FR`,
+    `da-DK`, gets English, the switcher shows English after hydration, and no cookie is written.
+    Playwright's `locale` sets both the header and `navigator.languages`, so only the script can
+    split them;
   - none of these logs a console error.
 
   The existing smoke test keeps passing in English, Playwright's default locale.
-- **A Weblate round trip:** a one-off `uv run --script` with translate-toolkit's `I18NextV4File`
-  reads `messages/da.json`, changes a plural message, and writes it back with tab indentation (what
-  Weblate's `json_indent_style: tabs` writes). It passes when:
+- **A Weblate round trip:** a one-off `uv run --script` with translate-toolkit's `I18NextV4File`.
+  It reads `messages/da.json` with a temporary plural message that has `{{count, number}}` and
+  another placeholder, changes it, and writes it back with tab indentation. Weblate's
+  `json_indent_style: tabs` sets exactly that indentation on the same class
+  (`weblate/trans/file_format_params.py`). It passes when:
   - the file parses to the same JSON before the edit;
   - Biome finds nothing to reformat;
   - Paraglide compiles the result;
   - both plural forms render.
-
-  The script and its output go in the PR body; the script isn't committed.
 - **Concurrency:** the probe's 200 concurrent requests are repeated once against the built server,
-  with a temporary route that awaits in its `load`, and the result goes in the PR body.
+  with a temporary route that awaits in its `load`.
 
-The probe behind this spec already passed all four with these versions; its evidence is in this
-spec's PR body.
+The temporary message, route and script aren't committed; the scripts and their output go in the
+build PR's body. The probe behind this spec passed all four with these versions (this spec's PR
+body).
 
 ## Weblate
 
@@ -262,10 +294,12 @@ tests/e2e/i18n.test.ts                         serving both languages, the switc
 ```
 
 The build also changes:
-- `package.json`: the two packages, and the Paraglide compile in `prepare` and `check`;
+- `package.json`: the two packages, and the Paraglide compile in `prepare` and `check`, after
+  `svelte-kit sync` and before Panda's codegen;
 - `vite.config.ts`: the plugin;
+- `tsconfig.json`: `project.inlang/*.ts`;
 - `panda.config.ts`: `exclude`;
-- `.gitignore`: the compiled output.
+- `.gitignore`: the two generated folders.
 
 ## Code style
 
@@ -284,17 +318,21 @@ export const handle: Handle = ({ event, resolve }) =>
 
 ```ts
 // src/hooks.client.ts
-import { assertIsLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
+import { baseLocale, isLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
 
 // The page keeps the language the server chose for it (SPEC-i18n.md, "Choosing the language").
-overwriteGetLocale(() => assertIsLocale(document.documentElement.lang));
+const lang = document.documentElement.lang;
+const locale = isLocale(lang) ? lang : baseLocale;
+overwriteGetLocale(() => locale);
 ```
 
 ## Testing strategy
 
-- **Unit (Vitest):** the message check, and `format.test.ts`, which runs both languages through
-  Paraglide's `locale` option and checks that `formatDateTime` follows the time zone it is given,
-  not the machine's.
+- **Unit (Vitest):**
+  - the message check;
+  - `format.test.ts`, which runs the formatters inside `paraglideMiddleware` with a request for each
+    language (the language comes from the request, as in the app), and checks that `formatDateTime`
+    follows the time zone it is given, not the machine's.
 - **e2e (Playwright, against the built server):** `i18n.test.ts` as listed under
   [Validation](#validation); `smoke.test.ts` unchanged.
 - **One-off evidence in the PR body:** the Weblate round trip and the concurrency check.
@@ -308,20 +346,27 @@ the messages, so a fresh clone type-checks without a dev server having run.
 
 - **Always:** every user-facing string as a message in both languages (titles, labels, alt text and
   accessible names included); numbers in messages as `{{name, number}}`; dates through
-  `formatDateTime` with an explicit zone; messages rendered as text.
+  `formatDateTime` with an explicit zone; messages rendered as text; refusals in `handle` returned,
+  never thrown.
 - **Ask first:** another language; another message format or Paraglide's URL strategy; markup inside
   messages; any dependency beyond the two packages.
-- **Never:** text written into a component or service; `{{name, datetime}}` in a message; a
-  prerendered page with translated text; the server writing the language cookie; connecting Weblate
-  in this module.
+- **Never:** text written into a component or service; `{{name, datetime}}` or a tag in a message;
+  a prerendered page with translated text; the server writing the language cookie; connecting
+  Weblate in this module.
 
 ## Docs this module changes when built
 
-- `docs/SPEC.md`: the tech-stack table gains both packages; the testing section gains the new tests.
-- `docs/decisions.md`: D22's "Still to validate" paragraph goes, with the outcome in the PR body;
-  D16 drops browser interaction with a real component.
-- AGENTS.md: the status and the structure tree.
-- The landing brief: the switcher in its signed-out navigation.
+- **`docs/SPEC.md`:**
+  - the status line, and row 2 of the capability map marked built;
+  - the `i18n` line of "Open decisions each module closes" goes;
+  - the tech-stack table gains both packages;
+  - the setup fact on `prepare` and `check` gains the compile;
+  - the Commands row for `bun ci` gains the compile;
+  - the testing section gains the new tests.
+- **`docs/decisions.md`:** D22's "Still to validate" paragraph goes, with the outcome in the PR
+  body; D16 drops browser interaction with a real component.
+- **AGENTS.md:** the status and the structure tree.
+- **The landing brief:** the switcher in its signed-out navigation.
 
 ## Success criteria
 
@@ -334,6 +379,14 @@ the messages, so a fresh clone type-checks without a dev server having run.
 
 ## Open questions
 
-None for the owner. Two choices were the agents' to make, under D22's "the owner left the choice to
-the agents": Paraglide JS 3 rather than 2, and the browser keeping the server's language instead of
-choosing again.
+- **For the owner: the switcher and the keyboard.** In Chrome and Edge on Windows and Linux, an
+  arrow key on a focused, closed `<select>` changes its value and fires `change`. A keyboard user
+  who presses Down to look at the options reloads the page in the other language and loses focus,
+  which fails WCAG 2.2 success criterion 3.2.2 (On Input). The approved design is a native
+  `<select>`, so this is the owner's call:
+  - **A pair of buttons** (recommended): one per language, each named in its own language, the
+    current one marked with `aria-current`. One press switches. Nothing changes on arrow keys, and
+    with two languages nothing is hidden.
+  - **The select with an apply button:** the closest to the approved design, one step more.
+  - **Keeping it as approved,** recorded as an accepted limit: with two languages, any change lands
+    on the only other one.

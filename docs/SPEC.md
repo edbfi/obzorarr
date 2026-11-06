@@ -167,7 +167,7 @@ app and adapted to the decisions. It is behaviour to keep unless the module's ap
 decision changes it. Layout, placement, visuals and exact wording are not behaviour: where a note
 describes them, DESIGN.md and the surface's brief win, and for a surface with no brief yet the note
 is only a starting point for that brief. Each block moves into its module's `SPEC-<id>.md` when that
-module is specced. Rate limits are listed once, under `sign-in`. `i18n`, `setup` and `sign-in` are
+module is specced. Rate limits are listed once, under `sign-in`. `setup` and `sign-in` are
 shared with the other edbfi apps (D20): a bullet or clause marked "(obzorarr)" is this app's own,
 and the rest is the shared wording; a "(obzorarr)" mark inside a bullet covers the rest of that
 bullet, and "(obzorarr: …)" only its own parentheses. Decision numbers in these blocks are
@@ -238,8 +238,9 @@ obzorarr's; each app cites its own.
 #### sign-in
 
 - **Request order** (startup has already finished in SvelteKit's `init` hook): the language
-  (`i18n`, which refuses nothing), the cross-origin check, (obzorarr: the scanner filter), rate limits, sign-in, the setup gate, then the owner check.
-  Security headers go on every response, an early return from any stage included.
+  (`i18n`, which refuses nothing), the cross-origin check, (obzorarr: the scanner filter), rate
+  limits, sign-in, the setup gate, then the owner check. Security headers go on every response, an
+  early return from any stage included.
 - **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
   keeps only the path, never the query string; where the app has member sessions, a signed-in member
   goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
