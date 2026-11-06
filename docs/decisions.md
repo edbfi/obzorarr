@@ -51,8 +51,8 @@ The database is embedded Turso (`@tursodatabase/database`) through Drizzle
 Kit generates SQL migrations, which are reviewed and committed. Migrations run before the app
 accepts requests or starts jobs, with one migration owner per database.
 
-Drizzle must be `1.0.0-rc.5-5935859` (the verified reference, D15) or a later release that keeps its
-Turso transaction fix (Drizzle
+Drizzle must be the plain `1.0.0-rc.5` or a later `rc`-tagged or stable release (D27; validation
+open in D15) that keeps its Turso transaction fix (Drizzle
 [`25abe07`](https://github.com/drizzle-team/drizzle-orm/commit/25abe0785e09cb562d999c9b6b8d92d85e3e7053),
 using the API from [Turso #7898](https://github.com/tursodatabase/turso/pull/7898)). Never
 `1.0.0-rc.4`: it can roll back unrelated writes that share the connection, and upgrading Turso alone
@@ -367,6 +367,11 @@ The one exception to the newest release is a major that another part of the stac
 yet: it waits, on the newest release of the major before, until that part does (TypeScript 7 until
 the Svelte tooling supports it, D2).
 
+The one exception to "no prereleases" is Drizzle ORM and Drizzle Kit with embedded Turso: they
+follow the `rc` dist-tag until 1.0.0 is stable, because the stable 0.x line has no
+`tursodatabase/database` driver (D5). Never a build whose version carries a commit hash, which sorts
+above the plain release candidate. Turso itself stays on its newest stable release.
+
 Why: the owner wants every app on the newest stable release of everything (owner decision). Small,
 frequent updates are cheaper than a backlog of skipped majors, and D25 holds the services the apps
 talk to to the same rule.
@@ -388,8 +393,8 @@ before the first background job lands.
 
 The exact Drizzle ORM and Drizzle Kit pair for Turso is still to be validated in the app: migrations,
 type checking, production builds and rollback isolation (D5). Only a focused rollback-isolation check
-has passed (Drizzle `1.0.0-rc.5-5935859` with Turso `0.8.3` and `0.9.0-pre.1`). Closes with the first
-database module.
+has passed (Drizzle `1.0.0-rc.5-5935859` with Turso `0.8.3`); the plain `1.0.0-rc.5` carries the
+same fix, and the validation uses it. Closes with the first database module.
 
 ### D16. Runtime validation gaps
 
