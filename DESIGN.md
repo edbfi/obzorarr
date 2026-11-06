@@ -153,7 +153,7 @@ Controls use 8px corners, panels 12px, dialogs 16px. Use pill radius only for sm
 
 ## Components
 
-Inputs have visible labels; use helper/error IDs and aria-invalid on failure. A password field may reveal only newly typed input; a stored service secret is a noninteractive stored-state receipt plus a blank replacement field. Subscriber player credentials are a separate revealable field type.
+Inputs have visible labels; use helper/error IDs and aria-invalid on failure. A password field may reveal only newly typed input; a stored service secret is a noninteractive stored-state receipt plus a blank replacement field.
 
 Use a solid primary button, bordered secondary button, ghost navigation action and danger button for destructive confirmation. Disabled controls remain visibly labelled and expose disabled state. During saving, use a verb such as Saving… and prevent duplicate requests. Do not announce success before durable completion.
 
@@ -165,7 +165,7 @@ Tables use 44px standard rows, 36px only for dense desktop operation, 14px label
 
 - Preserve this app's palette and type hierarchy across every route; do not blend the five applications into one theme.
 - Keep welcome/experience screens expressive and operational controls quiet.
-- Treat product permissions, status transitions and budget arithmetic as behavior supplied by the server.
+- Treat product permissions and status transitions as behavior supplied by the server.
 - Use [demo fixtures](tests/fixtures/demo-fixtures.json) for stable visual tests, then substitute real server data.
 - Follow each surface brief's raster corrections instead of copying accidental generated labels or extra actions.
 - Use existing project primitives and tokens. This repository's rewrite stack specifies Panda CSS and Ark UI; map these values into those systems without adding a competing component library.

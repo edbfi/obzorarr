@@ -17,7 +17,7 @@ is approved.
      to `/`.
 - **Story mode,** as `recap` keeps it ([SPEC.md](../SPEC.md), Module notes):
   - you move through it by tap, swipe and keys, as the Module notes describe;
-  - it has no timer, so it has no Pause button (the brief's Pause is dropped);
+  - it has no timer, so it has no Pause button;
   - it shows segmented progress;
   - Close always goes to `/`, and the slide index isn't kept in the URL fragment: the spike leaves
     out returning to the previous page and the deep link, which `recap` keeps.

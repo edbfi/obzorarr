@@ -275,12 +275,8 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores
 a secret yet, and no database exists.
 
-**Commands** (what each does: [docs/SPEC.md](docs/SPEC.md#commands)): `bun ci`, then
-`bun run --bun <dev|build|preview|check|test|smoke|lint>`; `prek run --all-files --hook-stage
-manual` is CI's `checks` job. `dev` and `preview` need a master key (the README's
-[Master key](README.md#master-key)); `smoke` brings its own. `smoke` runs against the built server,
-so run `build` first, and it needs Chromium once per machine:
-`bunx --bun playwright install chromium`.
+**Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
+and `preview` need, see the README's [Master key](README.md#master-key).
 
 **Boundaries.**
 - The animated recap starts with a three-slide spike ([D19](docs/decisions.md#d19-the-animated-recap)).
