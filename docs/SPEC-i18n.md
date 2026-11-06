@@ -1,9 +1,7 @@
 # Spec: `i18n`
 
-**Status:** draft, awaiting the owner's approval. Module 2 of the capability map
-([docs/SPEC.md](SPEC.md)). D21 and D22 hold the decisions. The owner settled the switcher, who
-writes the Danish text, the message check and how D22's validations run on 2026-10-29, and the
-switcher's buttons on 2026-11-06. obzorarr is the reference app for `i18n`
+**Status:** approved by the owner (2026-11-06). Module 2 of the capability map
+([docs/SPEC.md](SPEC.md)). D21 and D22 hold the decisions. obzorarr is the reference app for `i18n`
 ([Shared groundwork](../AGENTS.md#shared-groundwork)), and its siblings port this spec once it is
 built.
 
@@ -26,7 +24,7 @@ It also runs the validations D22 lists.
 ## Versions
 
 `@inlang/paraglide-js` 3.2.0 and `@inlang/plugin-i18next` 6.5.3, exact-pinned dev dependencies
-(the owner approved both packages on 2026-10-29). Paraglide JS 3 is the current major release. Its
+(the owner approved both packages on 2026-10-29, and Paraglide JS 3 on 2026-11-06). Version 3's
 breaking changes touch nothing here: the `additionalFiles` option and the middleware's locale
 splitting are gone, and Vite builds default to a new output layout, which the config below sets
 explicitly. TypeScript stays on 6.x (D2): Paraglide 3 writes its declarations itself and needs no
@@ -213,9 +211,10 @@ focus (WCAG 2.2, 3.2.2 On Input).
 ## Formatting
 
 `src/lib/shared/i18n/format.ts` is browser-safe and formats in the current language
-(`getLocale()`), on the server and in the browser alike. The locale is the language, `en` or `da`,
-not the browser's region, so server and browser always agree; `en` formats as `Intl` does for
-`en`, with the month first and a 12-hour clock.
+(`getLocale()`), on the server and in the browser alike. The language picks the `Intl` locale, not
+the browser's region, so server and browser always agree: `da` formats as `da`, and `en` as `en-GB`
+(the owner's choice, 2026-11-06), with the day first and a 24-hour clock ("05/11/2026, 23:30").
+A message's `{{name, number}}` formats as `en`, which groups numbers the same way.
 - `formatNumber(value: number, options?: Intl.NumberFormatOptions)`: `Intl.NumberFormat`.
 - `formatDateTime(value: Date, options: Intl.DateTimeFormatOptions & { timeZone: string })`:
   `Intl.DateTimeFormat`.
@@ -340,8 +339,9 @@ overwriteGetLocale(() => locale);
 - **Unit (Vitest):**
   - the message check;
   - `format.test.ts`, which runs the formatters inside `paraglideMiddleware` with a request for each
-    language (the language comes from the request, as in the app), and checks that `formatDateTime`
-    follows the time zone it is given, not the machine's.
+    language (the language comes from the request, as in the app), and checks that English dates
+    format as `en-GB` and that `formatDateTime` follows the time zone it is given, not the
+    machine's.
 - **e2e (Playwright, against the built server):** `i18n.test.ts` as listed under
   [Validation](#validation); `smoke.test.ts` unchanged.
 - **One-off evidence in the PR body:** the Weblate round trip and the concurrency check.
@@ -375,7 +375,7 @@ the messages, so a fresh clone type-checks without a dev server having run.
 - **`docs/decisions.md`:** D22's "Still to validate" paragraph goes, with the outcome in the PR
   body; D16 drops browser interaction with a real component.
 - **"The viewer's locale"** becomes "the viewer's language" in D21 and D24, PRODUCT.md, and
-  SPEC.md's capability-map note and row 2 (or names `en-GB`, if the owner picks it).
+  SPEC.md's capability-map note and row 2.
 - **AGENTS.md:** the status and the structure tree.
 - **The landing brief:** the switcher in its signed-out navigation.
 
@@ -387,11 +387,3 @@ the messages, so a fresh clone type-checks without a dev server having run.
    switcher changes it. `/healthz` is unchanged.
 3. The validations have passed, with their evidence in the build PR's body.
 4. The docs listed above say what was built.
-
-## Open questions
-
-- **For the owner: dates and numbers in English.** English formats as `en`, the American
-  convention: "11/5/2026, 11:30 PM". Danish is unaffected. `en-GB` would give "05/11/2026, 23:30"
-  for every English reader instead. Hours differ too: "11 PM" against "23". Month names and counts
-  read the same. Following each viewer's region would need a setting of its own. The recommendation
-  is to keep `en`, which is what most English interfaces use.
