@@ -358,9 +358,9 @@ Every dependency stays on its newest stable release, majors included: the packag
 Actions and the prek hooks. No prereleases. A new dependency joins at its newest stable release.
 Dependabot (`.github/dependabot.yml`, from edbfi-ci's templates) opens most updates, and they merge
 once CI passes; an update it misses, or a major that fails the checks or needs code changes, is
-moved by hand soon after, not left behind. The one exception is a major that another part of the stack doesn't support yet:
-it waits, on the newest release of the major before, until that part does (TypeScript 7 until the
-Svelte tooling supports it, D2).
+moved by hand soon after, not left behind. The one exception is a major that another part of the
+stack doesn't support yet: it waits, on the newest release of the major before, until that part
+does (TypeScript 7 until the Svelte tooling supports it, D2).
 
 Why: the owner wants every app on the newest stable release of everything (owner decision). Small,
 frequent updates are cheaper than a backlog of skipped majors, and D25 holds the services the apps
