@@ -2,9 +2,10 @@
 
 **Status:** draft, awaiting the owner's approval. Module 2 of the capability map
 ([docs/SPEC.md](SPEC.md)). D21 and D22 hold the decisions. The owner settled the switcher, who
-writes the Danish text, the message check and how D22's validations run on 2026-10-29. obzorarr is
-the reference app for `i18n` ([Shared groundwork](../AGENTS.md#shared-groundwork)), and its
-siblings port this spec once it is built.
+writes the Danish text, the message check and how D22's validations run on 2026-10-29, and the
+switcher's buttons on 2026-11-06. obzorarr is the reference app for `i18n`
+([Shared groundwork](../AGENTS.md#shared-groundwork)), and its siblings port this spec once it is
+built.
 
 ## Objective
 
@@ -184,14 +185,18 @@ until that tab reloads.
 
 ## The language switcher
 
-`src/lib/components/layout/LanguageSwitcher.svelte` is a labelled native `<select>` styled only with
-tokens. Its label is a message.
-- **The options:** each names its language in that language ("English", "Dansk"), with `lang` on
-  the option. The names come from `Intl.DisplayNames`, with the first letter upper-cased in that
+`src/lib/components/layout/LanguageSwitcher.svelte` is a labelled group of native buttons, one per
+language, styled only with tokens. The group's label is a message. The owner chose buttons over the
+approved `<select>` (2026-11-06): in Chrome and Edge on Windows and Linux, an arrow key on a closed
+`<select>` fires `change`, so a keyboard user looking at the options would be switched and lose
+focus (WCAG 2.2, 3.2.2 On Input).
+- **The buttons:** each names its language in that language ("English", "Dansk"), with `lang` on
+  the button. The current language's button has `aria-current="true"`, and pressing it does
+  nothing. The names come from `Intl.DisplayNames`, with the first letter upper-cased in that
   language, through a helper private to the component. They are the same in every language, so they
   aren't messages, and a viewer who can't read the current language still finds their own.
-- **Choosing a language** calls Paraglide's `setLocale`, which writes `PARAGLIDE_LOCALE` and reloads
-  the page in the new language. The cookie has path `/`, lasts about 400 days and is
+- **Pressing another language** calls Paraglide's `setLocale`, which writes `PARAGLIDE_LOCALE` and
+  reloads the page in the new language. The cookie has path `/`, lasts about 400 days and is
   `SameSite=Lax`. It is `Secure` exactly when the page is on `https` (`cookieSecure: "auto"`), as
   `sign-in`'s cookie rule asks.
 - **Who writes the cookie:** only the browser, so it is readable by scripts, and it holds only a
@@ -248,12 +253,12 @@ The build runs D22's three validations, and a concurrency check, with the pinned
   It also closes D16's "browser interaction with a real component". It checks that:
   - a Danish browser (Playwright locale `da-DK`) gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`;
-  - choosing English in the switcher reloads `/` in English, writes `PARAGLIDE_LOCALE=en` with
+  - pressing "English" in the switcher reloads `/` in English, writes `PARAGLIDE_LOCALE=en` with
     `SameSite=Lax` and without `Secure` over plain HTTP, and the next visit stays in English;
   - a browser with locale `fr-FR`, whose `navigator.languages` an init script sets to `fr-FR`,
-    `da-DK`, gets English, the switcher shows English after hydration, and no cookie is written.
-    Playwright's `locale` sets both the header and `navigator.languages`, so only the script can
-    split them;
+    `da-DK`, gets English, the switcher marks English as current after hydration, and no cookie is
+    written. Playwright's `locale` sets both the header and `navigator.languages`, so only the
+    script can split them;
   - none of these logs a console error.
 
   The existing smoke test keeps passing in English, Playwright's default locale.
@@ -385,17 +390,6 @@ the messages, so a fresh clone type-checks without a dev server having run.
 
 ## Open questions
 
-- **For the owner: the switcher and the keyboard.** In Chrome and Edge on Windows and Linux, an
-  arrow key on a focused, closed `<select>` changes its value and fires `change`. A keyboard user
-  who presses Down to look at the options reloads the page in the other language and loses focus,
-  which fails WCAG 2.2 success criterion 3.2.2 (On Input). The approved design is a native
-  `<select>`, so this is the owner's call:
-  - **A pair of buttons** (recommended): one per language, each named in its own language, the
-    current one marked with `aria-current`. One press switches. Nothing changes on arrow keys, and
-    with two languages nothing is hidden.
-  - **The select with an apply button:** the closest to the approved design, one step more.
-  - **Keeping it as approved,** recorded as an accepted limit: with two languages, any change lands
-    on the only other one.
 - **For the owner: dates and numbers in English.** English formats as `en`, the American
   convention: "11/5/2026, 11:30 PM". Danish is unaffected. `en-GB` would give "05/11/2026, 23:30"
   for every English reader instead. Hours differ too: "11 PM" against "23". Month names and counts
