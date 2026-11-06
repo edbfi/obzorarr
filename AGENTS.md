@@ -231,7 +231,7 @@ docs/SPEC.md                             project spec + capability map
 docs/SPEC-<id>.md                        one per module being built or changed
 docs/decisions.md                        D<n> entries: decision + why
 docs/research/<topic>.md                 temporary research input
-docs/design/                             images (+ tokens until the first scaffold)
+docs/design/                             images
 tasks/plan.md  tasks/todo.md             the active work stream only
 .impeccable/surfaces/*.md  critique/     Impeccable-managed
 ```
