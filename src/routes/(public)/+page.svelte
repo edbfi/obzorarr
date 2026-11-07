@@ -1,4 +1,5 @@
 <script lang="ts">
+import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 </script>
 
@@ -17,9 +18,9 @@ import { css } from "#styled-system/css";
 >
 	<p class={css({ textStyle: "label", color: "primary" })}>Obzorarr</p>
 	<h1 class={css({ textStyle: "display", marginBlockStart: "section", textWrap: "balance" })}>
-		Your year in stories.
+		{m.landing_title()}
 	</h1>
 	<p class={css({ marginBlockStart: "lg", color: "muted" })}>
-		Sign-in with Plex is being rebuilt. Your recap is visible to server members only.
+		{m.landing_sign_in_status()}
 	</p>
 </main>

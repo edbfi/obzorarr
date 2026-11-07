@@ -48,17 +48,17 @@ into `<html lang>`, and keep the page's language in the browser. The placeholder
 text from the messages.
 
 **Acceptance criteria:**
-- [ ] `tests/e2e/i18n.test.ts`, against the built server: a `da-DK` browser gets `/` in Danish
+- [x] `tests/e2e/i18n.test.ts`, against the built server: a `da-DK` browser gets `/` in Danish
   with `<html lang="da">` and `Vary: Cookie, Accept-Language`; a browser whose header says `fr-FR`
   and whose `navigator.languages` an init script sets to `fr-FR`, `da-DK` gets English, and no
   cookie is written after hydration; neither logs a console error. The smoke test passes
   unchanged in English.
-- [ ] The placeholder renders its messages as text, never with `{@html}`, and keeps Obzorarr as
+- [x] The placeholder renders its messages as text, never with `{@html}`, and keeps Obzorarr as
   it is.
-- [ ] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
+- [x] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
   contain the token. `hooks.server.ts` and `hooks.client.ts` are as the spec's Code style gives
   them, and the `init` hook is unchanged.
-- [ ] The concurrency check passes: 200 concurrent requests in both languages against the built
+- [x] The concurrency check passes: 200 concurrent requests in both languages against the built
   server, through a temporary route that awaits a random delay in its `load`, each render in their
   own language. The script and its output are in the PR body; neither it nor the route is
   committed.
