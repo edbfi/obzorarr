@@ -37,7 +37,7 @@ It is private by default and built for a household or friends-and-family server:
 - **Data rhythm:** play history arrives by scheduled sync (default daily at midnight in the configured zone) and by a best-effort background sync when someone opens a recap. Statistics are per calendar year. Members open recaps all year, and use peaks at year end.
 - **Member's experience:** members sign in with their Plex account, open their own recap and the server recap, and share a link to theirs. The recap is a portrait-first story with a summary card, widened for desktop; the owner's admin panel is an operational tool that also works on phones, where its sidebar becomes a drawer.
 - **Legacy app:** replaced by this rewrite, not ported; current rewrite status lives in `docs/SPEC.md`. Its known limitations are revisited, not carried over: watch time is labelled as the runtime of what was played (D23), and statistics use the instance's time zone instead of UTC (D24).
-- **Language:** English, the default, and Danish, with dates and numbers formatted for each viewer's locale (D21). The legacy app was English only.
+- **Language:** English, the default, and Danish, with dates and numbers formatted for each viewer's language (D21). The legacy app was English only.
 
 ## Product requirements
 

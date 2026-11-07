@@ -224,7 +224,7 @@ Every edbfi app is built for translation from its first screen. No user-facing t
 components or services: it comes from message files, one per language. English is the source
 language and the default, and Danish is the second language. Each request uses the viewer's own
 choice, then the browser's preferred languages, then English. Dates, times and numbers are formatted
-for the viewer's locale through `Intl`, never in a fixed format. The message files use a format
+for the viewer's language through `Intl`, never in a fixed format. The message files use a format
 Weblate reads, plurals included, so a Weblate project can be connected later without changing code.
 Connecting Weblate is later work and belongs to no module yet. Text the owner writes, such as
 custom slides, is content and isn't translated through the message files. Fun-fact templates are
@@ -249,11 +249,6 @@ handling), with plurals under CLDR suffixes. Weblate reads that format as "i18ne
   AsyncLocalStorage, so concurrent requests can't mix languages. Under SvelteKit 3 it passes the
   translated request on a copy of the event, because `event.request` is read-only.
 - Dates, times and numbers stay with `Intl` (D21).
-
-Still to validate in the `i18n` module: the pinned versions with SvelteKit 3, TypeScript 6 and Bun;
-building and serving through adapter-bun (Paraglide issue
-[#725](https://github.com/opral/paraglide-js/issues/725) reports the middleware returning nothing in
-builds that use instrumentation); and a Weblate round trip of a plural message.
 
 Why: it is the integration SvelteKit itself points to. Compiled, tree-shaken message functions add
 almost nothing to the bundle and are checked by strict TypeScript. A language per request through
@@ -290,7 +285,7 @@ zone, else the owner's setting, else UTC, the same resolution the sync schedule 
 the zone, such as "Times in Europe/Copenhagen". A first-run step asks for the zone, suggesting the
 browser's, so no install falls back to UTC unnoticed. Changing the zone invalidates the cached
 statistics of every year, because year boundaries move. Stored timestamps and the sync watermark
-stay in UTC. Formatting still follows each viewer's locale through `Intl` (D21), with the instance
+stay in UTC. Formatting still follows each viewer's language through `Intl` (D21), with the instance
 zone passed explicitly.
 
 Why: recaps are shared and cached, so one zone gives every viewer the same recap, which the
