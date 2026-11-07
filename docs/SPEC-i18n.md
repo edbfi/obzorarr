@@ -17,8 +17,9 @@ obzorarr's code and tests. What differs: their placeholder's English and Danish 
 shells place the switcher, any brief that gains it, and the decision numbers. Everything else, the
 cookie name included, stays the same, so a language chosen in one app carries over to the others on
 the same host. The one-off validations D22 asked for (the pinned versions with no Node on `PATH`,
-the Weblate round trip, the adapter-bun build and the concurrency check) passed; their scripts and
-output are in the bodies of #297, #298 and #301, for a port that wants to run them again.
+the Weblate round trip, the adapter-bun build and the concurrency check) passed. Their scripts and
+output are in the bodies of #297 and #298, for a port that wants to run them again, and #301 lists
+each with its evidence.
 
 ## Versions
 
@@ -79,10 +80,11 @@ but doesn't approve it, and Weblate corrects it later.
 
 **The message check,** `src/lib/shared/i18n/messages.test.ts`, holds the check and its tests. It
 sits in `src/` only because Vitest runs `src/**`, so it runs in prek's `tests` hook and in CI. It
-finds every problem in `messages/*.json` against the rules above: flat, non-empty string values;
-names, `_ordinal_` and one key or plural forms; the same messages in every language; the same
-placeholders, names and formats in every form; `number` as the only format; exactly the plural forms
-`Intl.PluralRules` gives each language, each with `{{count, number}}`; and no tags.
+finds every problem in `messages/*.json` against the rules above: one file for each of the
+project's languages and no other; flat, non-empty string values; names, `_ordinal_` and one key or
+plural forms; the same messages in every language; the same placeholders, names and formats in
+every form; `number` as the only format; exactly the plural forms `Intl.PluralRules` gives each
+language, each with `{{count, number}}`; and no tags.
 
 ## The toolchain
 
