@@ -311,7 +311,8 @@ src/
   routes/
     +layout.svelte               loads app.css and the favicon; marks <html data-hydrated> once
                                  mounted
-    (public)/+page.svelte        `/`: placeholder page, its text from the messages
+    (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
+                                 language switcher
     healthz/+server.ts           `/healthz`: public one-word status
     (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
@@ -329,13 +330,15 @@ src/
                                  `[redacted]` everywhere but `reveal()`; cipher.ts: encrypts a
                                  secret bound to its table, field and row, and decrypts it only
                                  there
-    components/                  later: ui/ (Ark wrappers), layout/, <feature>/
+    components/                  later: ui/ (Ark wrappers), <feature>/
+      layout/LanguageSwitcher.svelte
+                                 one native button per language, named in that language
     shared/                      later: browser-safe shared code
 tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
-  e2e/i18n.test.ts               the built server serves each viewer's language, and the browser
-                                 keeps it
+  e2e/i18n.test.ts               the built server serves each viewer's language, the browser
+                                 keeps it, and the switcher changes it
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate

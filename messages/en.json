@@ -1,4 +1,5 @@
 {
 	"landing_title": "Your year in stories.",
-	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Your recap is visible to server members only."
+	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Your recap is visible to server members only.",
+	"language_switcher_label": "Language"
 }

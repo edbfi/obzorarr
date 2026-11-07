@@ -17,6 +17,13 @@ export default defineConfig({
 		".dark": { colorScheme: "dark" },
 		body: { bg: "background", color: "text", textStyle: "body" },
 		"::selection": { bg: "primary", color: "background" },
+		// Every control's keyboard focus (DESIGN.md, "Components").
+		":focus-visible": {
+			outlineStyle: "solid",
+			outlineWidth: "2px",
+			outlineColor: "secondary",
+			outlineOffset: "2px",
+		},
 	},
 
 	theme: {

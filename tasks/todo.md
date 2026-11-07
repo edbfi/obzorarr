@@ -80,17 +80,17 @@ testing section and the `smoke` Commands row).
 the landing brief's signed-out navigation.
 
 **Acceptance criteria:**
-- [ ] It is a labelled group of native buttons, the label a message, each button naming its
+- [x] It is a labelled group of native buttons, the label a message, each button naming its
   language in that language with `lang` set, from `Intl.DisplayNames` with the first letter
   upper-cased in that language ("English", "Dansk"), through a helper private to the component,
   never a message or a literal. The current language's button has
   `aria-current="true"` and does nothing when pressed; another calls `setLocale`. It is styled
   only with tokens.
-- [ ] `i18n.test.ts` gains: pressing "English" from a Danish browser reloads `/` in English and
+- [x] `i18n.test.ts` gains: pressing "English" from a Danish browser reloads `/` in English and
   writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and the
   next visit stays in English; in the `fr-FR` case the switcher marks English as current after
   hydration. No console errors.
-- [ ] The landing brief's signed-out navigation has the switcher, written through
+- [x] The landing brief's signed-out navigation has the switcher, written through
   `.agents/skills/impeccable/scripts/impeccable surface-brief write`, and D16 no longer lists
   browser interaction with a real component.
 
