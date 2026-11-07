@@ -23,6 +23,9 @@ The newest stable TypeScript 6.x (D27); TypeScript 7 waits until the Svelte tool
 Strict type checking, run explicitly (the `check` script): running TypeScript under Bun doesn't
 type-check it. External input is validated at runtime.
 
+Dependabot's TypeScript 7 PR stays open even while its checks fail. Never close it or tell
+Dependabot to ignore the major version: it brings the upgrade once the Svelte tooling supports 7.
+
 Why: [SvelteKit 3 requires TypeScript 6](https://svelte.dev/docs/kit/migrating-to-sveltekit-3#Updated-dependencies).
 
 ### D3. Bun everywhere, no Node
