@@ -299,16 +299,19 @@ The tree as it stands; `later:` marks the folders that modules add. Its rules ar
 
 ```text
 src/
-  app.html                       document shell; `class="dark"` sets the default colour mode
+  app.html                       document shell; `class="dark"` sets the default colour mode,
+                                 and `handle` writes the request's language into `<html lang>`
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
   app.d.ts                       SvelteKit ambient types
   env.ts                         declares `OBZORARR_SECRET_KEY` and `OBZORARR_SECRET_KEY_FILE`:
                                  private, read at runtime, optional
-  hooks.server.ts                the `init` hook: loads the keyring, except while building
+  hooks.server.ts                the `init` hook: loads the keyring, except while building;
+                                 `handle`: each request's language, through Paraglide's middleware
+  hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css and the favicon; marks <html data-hydrated> once
                                  mounted
-    (public)/+page.svelte        `/`: placeholder page
+    (public)/+page.svelte        `/`: placeholder page, its text from the messages
     healthz/+server.ts           `/healthz`: public one-word status
     (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
@@ -331,6 +334,8 @@ src/
 tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
+  e2e/i18n.test.ts               the built server serves each viewer's language, and the browser
+                                 keeps it
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate
