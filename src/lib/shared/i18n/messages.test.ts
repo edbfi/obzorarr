@@ -10,10 +10,11 @@ const pluralCategories = ["zero", "one", "two", "few", "many", "other"];
 const pluralSuffix = new RegExp(`_(${pluralCategories.join("|")})$`);
 const messageName = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
 /**
- * What the plugin reads as markup (`<b>`, `</b>`, `<br/>`), and tags with `name=` attributes too,
- * spaces around the `=` included. Prose such as `I <3 you and > me` has no `=`, so it isn't a tag.
+ * What the plugin reads as markup (`<b>`, `</b>`, `<br/>`), and a tag with a `name=` attribute
+ * anywhere in it too, spaces around the `=` included. Without an `=`, prose such as
+ * `a<b and c>d` looks like a tag with bare attributes, so a tag with only bare ones isn't reported.
  */
-const tagShape = /<\/?[A-Za-z0-9][\w.-]*(\s+[\w:-]+\s*=[^<>]*)?\s*\/?>/;
+const tagShape = /<\/?[A-Za-z0-9][\w.-]*((\s+[\w:-]+)*\s+[\w:-]+\s*=[^<>]*)?\s*\/?>/;
 
 /** One key of one file; `text` is missing when the value isn't a string. */
 interface Form {
@@ -455,6 +456,17 @@ describe("the check", () => {
 			}),
 			problems: ["da: recap_plays has no plural forms, but da needs exactly one, other"],
 		},
+		{
+			// No key that isn't a plural form ends in a plural category: such a key is one.
+			clause: "a key that ends in a plural category without being a plural",
+			files: broken(both({ setup_step_one: "Step one" })),
+			problems: [
+				"en: setup_step_one has no {{count, number}}",
+				"da: setup_step_one has no {{count, number}}",
+				"en: setup_step has the plural forms one, but en needs exactly one, other",
+				"da: setup_step has the plural forms one, but da needs exactly one, other",
+			],
+		},
 
 		// Every plural form contains `{{count, number}}`.
 		{
@@ -505,6 +517,8 @@ describe("the check", () => {
 			'<a href="/help">',
 			'<img src ="/poster.jpg">',
 			'<img src = "/poster.jpg" />',
+			'<input disabled name="x">',
+			'<input disabled class="muted">',
 			"<0>",
 		].map((tag) => ({
 			clause: `the tag ${tag}`,
