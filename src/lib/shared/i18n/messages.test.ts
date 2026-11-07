@@ -9,8 +9,11 @@ import { baseLocale } from "#lib/paraglide/runtime.js";
 const pluralCategories = ["zero", "one", "two", "few", "many", "other"];
 const pluralSuffix = new RegExp(`_(${pluralCategories.join("|")})$`);
 const messageName = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
-/** What the plugin reads as markup (`<b>`, `</b>`, `<br/>`), and tags with attributes too. */
-const tagShape = /<\/?[A-Za-z0-9][\w.-]*(\s[^<>]*)?\/?>/;
+/**
+ * What the plugin reads as markup (`<b>`, `</b>`, `<br/>`), and tags with `name=` attributes too.
+ * Prose such as `I <3 you and > me` has no `=`, so it isn't a tag.
+ */
+const tagShape = /<\/?[A-Za-z0-9][\w.-]*(\s+[\w:-]+=[^<>]*)?\s*\/?>/;
 
 /** One key of one file; `text` is missing when the value isn't a string. */
 interface Form {
@@ -443,11 +446,12 @@ describe("the check", () => {
 		expect(checkMessages(files, "en")).toEqual(problems);
 	});
 
-	it("doesn't take angle brackets that aren't a tag for one", () => {
-		expect(
-			checkMessages(broken(both({ landing_title: "1 < 2 and 3 > 2, <- back" })), "en"),
-		).toEqual([]);
-	});
+	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me"])(
+		"doesn't take the angle brackets in %s for a tag",
+		(text) => {
+			expect(checkMessages(broken(both({ landing_title: text })), "en")).toEqual([]);
+		},
+	);
 
 	it("reports every problem in a file with several", () => {
 		const files = broken({
