@@ -34,7 +34,7 @@ The tasks are in [todo.md](todo.md).
 
 ### Phase 1: the toolchain
 
-- [ ] Task 1: Paraglide compiles the messages
+- [x] Task 1: Paraglide compiles the messages
 
 ### Phase 2: each page in the viewer's language
 

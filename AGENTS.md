@@ -314,6 +314,7 @@ src/
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
     assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon
+    paraglide/                   the compiled messages (generated, gitignored)
     server/                      server-only: services/health.ts; later db/ (schema per aggregate),
                                  providers/plex/ (and the optional AI text provider),
                                  services/<domain>/, jobs/, http/ (SSRF-safe fetch), logging/
@@ -331,10 +332,16 @@ tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   fixtures/demo-fixtures.json    design fixtures
+messages/en.json  messages/da.json
+                                 the messages, flat i18next JSON v4, at the root where Weblate
+                                 reads them
+project.inlang/                  settings.json: the locales and the i18next plugin;
+                                 paraglide.config.ts: Paraglide's options, which the CLI and the
+                                 Vite plugin both read
 drizzle/                         later: reviewed migrations
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
-vite.config.ts                   SvelteKit (all its configuration), Panda and Vitest
+vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 

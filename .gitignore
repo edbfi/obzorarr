@@ -3,6 +3,8 @@ node_modules/
 .svelte-kit/
 build/
 styled-system/
+src/lib/paraglide/
+project.inlang/cache/
 
 # Environment: only the example is committed
 .env*
