@@ -333,7 +333,9 @@ src/
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
-    shared/                      later: browser-safe shared code
+    shared/                      browser-safe shared code
+      i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
+                                 `formatDateTime` needs a time zone
 tests/
   e2e/smoke.test.ts              Playwright smoke against the built server
   e2e/secret-key.test.ts         the built server refuses to start without a valid key

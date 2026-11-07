@@ -109,7 +109,7 @@ yet", whose landing sentence names the signed-out navigation's items).
 
 ## Checkpoint: after task 3
 
-- [ ] Everything passes locally and in CI (`checks`, `smoke`, `ci-ok`), and the built server serves
+- [x] Everything passes locally and in CI (`checks`, `smoke`, `ci-ok`), and the built server serves
   and switches both languages.
 
 ## Task 4: formatting numbers and dates
@@ -118,9 +118,9 @@ yet", whose landing sentence names the signed-out navigation's items).
 in the current language, with the time zone required.
 
 **Acceptance criteria:**
-- [ ] `format.test.ts` runs both inside `paraglideMiddleware` with a request for each language:
+- [x] `format.test.ts` runs both inside `paraglideMiddleware` with a request for each language:
   `da` formats as `da`, and `en` as `en-GB`, with the day first and a 24-hour clock.
-- [ ] `formatDateTime` follows the zone it is given, not the machine's, and its type refuses a
+- [x] `formatDateTime` follows the zone it is given, not the machine's, and its type refuses a
   call without `timeZone`.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
