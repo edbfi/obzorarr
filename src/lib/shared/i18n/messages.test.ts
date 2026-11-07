@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { baseLocale } from "#lib/paraglide/runtime.js";
+import { baseLocale, locales } from "#lib/paraglide/runtime.js";
 
 // The message check (SPEC-i18n.md, "Messages"). It sits in `src/` only because Vitest runs
 // `src/**`, and it runs in prek's `tests` hook and in CI.
@@ -52,13 +52,25 @@ const show = ({ name, format }: Placeholder) => (format ? `{{${name}, ${format}}
 const inCldrOrder = (categories: string[]) =>
 	[...categories].sort((a, b) => pluralCategories.indexOf(a) - pluralCategories.indexOf(b));
 
-/** Every problem in a set of message files, keyed by their language. */
-function checkMessages(files: Record<string, unknown>, base: string): string[] {
+/**
+ * Every problem in a set of message files, keyed by their language, for a project with these
+ * `locales` and this `base` language.
+ */
+function checkMessages(
+	files: Record<string, unknown>,
+	locales: readonly string[],
+	base: string,
+): string[] {
 	const problems: string[] = [];
-	// Language → message name → message. A file that isn't an object is reported and left out.
+	// Language → message name → message. A missing file, or one that isn't an object, is reported
+	// and left out; so is a file for a language the project doesn't have, which Paraglide ignores.
 	const languages = new Map<string, Map<string, Message>>();
 
-	for (const locale of [base, ...Object.keys(files).filter((locale) => locale !== base)]) {
+	for (const locale of [base, ...locales.filter((locale) => locale !== base)]) {
+		if (!Object.hasOwn(files, locale)) {
+			problems.push(`${locale}: there is no file for this language`);
+			continue;
+		}
 		const file = files[locale];
 		if (typeof file !== "object" || file === null || Array.isArray(file)) {
 			problems.push(`${locale}: the file isn't one JSON object of messages`);
@@ -126,6 +138,11 @@ function checkMessages(files: Record<string, unknown>, base: string): string[] {
 		}
 
 		languages.set(locale, messages);
+	}
+	for (const locale of Object.keys(files)) {
+		if (!locales.includes(locale)) {
+			problems.push(`${locale}: the project has no such language, so Paraglide ignores the file`);
+		}
 	}
 
 	// English and Danish have the same messages.
@@ -197,8 +214,7 @@ function readMessageFiles(): Record<string, unknown> {
 describe("messages/*.json", () => {
 	it("has no problems", () => {
 		const files = readMessageFiles();
-		expect(Object.keys(files)).toContain(baseLocale);
-		expect(checkMessages(files, baseLocale)).toEqual([]);
+		expect(checkMessages(files, locales, baseLocale)).toEqual([]);
 	});
 });
 
@@ -236,19 +252,47 @@ function broken(changes: Changes): Record<string, unknown> {
 
 const both = (messages: Record<string, unknown>): Changes => ({ en: messages, da: messages });
 
+/** The check for a project with English and Danish, English the base. */
+const check = (files: Record<string, unknown>) => checkMessages(files, ["en", "da"], "en");
+
 describe("the check", () => {
 	it("finds nothing in a valid pair", () => {
-		expect(checkMessages(valid, "en")).toEqual([]);
+		expect(check(valid)).toEqual([]);
 	});
 
 	// Each case breaks one clause of one rule and nothing else, so it reports only that clause.
 	it.each<{ clause: string; files: Record<string, unknown>; problems: string[] }>([
-		// Every value is a non-empty string, so the files stay flat.
+		// Every language the project has has its file, and no file is for another.
 		{
-			clause: "a file that isn't one object",
-			files: { ...valid, da: ["Dit år i historier."] },
-			problems: ["da: the file isn't one JSON object of messages"],
+			clause: "a missing Danish file",
+			files: { en: valid.en },
+			problems: ["da: there is no file for this language"],
 		},
+		{
+			clause: "a missing English file",
+			files: { da: valid.da },
+			problems: ["en: there is no file for this language"],
+		},
+		{
+			clause: "a misnamed Danish file",
+			files: { en: valid.en, "da-DK": valid.da },
+			problems: [
+				"da: there is no file for this language",
+				"da-DK: the project has no such language, so Paraglide ignores the file",
+			],
+		},
+		{
+			clause: "a file for a language the project doesn't have",
+			files: { ...valid, de: valid.en },
+			problems: ["de: the project has no such language, so Paraglide ignores the file"],
+		},
+
+		// Every value is a non-empty string, so the files stay flat.
+		...[["Dit år i historier."], null, "Dit år i historier."].map((file) => ({
+			clause: `a file that is ${JSON.stringify(file)}`,
+			files: { ...valid, da: file },
+			problems: ["da: the file isn't one JSON object of messages"],
+		})),
 		{
 			clause: "a nested value",
 			files: broken({ en: { landing_title: { text: "Your year in stories." } } }),
@@ -432,6 +476,25 @@ describe("the check", () => {
 				"da: recap_plays_other has no {{count, number}}",
 			],
 		},
+		{
+			clause: "plural forms that count with another name",
+			files: broken({
+				en: {
+					recap_plays_one: "{{total, number}} play of {{title}}",
+					recap_plays_other: "{{total, number}} plays of {{title}}",
+				},
+				da: {
+					recap_plays_one: "{{total, number}} afspilning af {{title}}",
+					recap_plays_other: "{{total, number}} afspilninger af {{title}}",
+				},
+			}),
+			problems: [
+				"en: recap_plays_one has no {{count, number}}",
+				"en: recap_plays_other has no {{count, number}}",
+				"da: recap_plays_one has no {{count, number}}",
+				"da: recap_plays_other has no {{count, number}}",
+			],
+		},
 
 		// No value holds anything shaped like a tag.
 		...["<address>", "<br/>", "<br />", "</b>", '<a href="/help">', "<0>"].map((tag) => ({
@@ -443,13 +506,13 @@ describe("the check", () => {
 			],
 		})),
 	])("reports $clause", ({ files, problems }) => {
-		expect(checkMessages(files, "en")).toEqual(problems);
+		expect(check(files)).toEqual(problems);
 	});
 
-	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me"])(
+	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me", "a<b and c>d", "<5 minutes (>1 play)"])(
 		"doesn't take the angle brackets in %s for a tag",
 		(text) => {
-			expect(checkMessages(broken(both({ landing_title: text })), "en")).toEqual([]);
+			expect(check(broken(both({ landing_title: text })))).toEqual([]);
 		},
 	);
 
@@ -473,7 +536,7 @@ describe("the check", () => {
 				landing_title: { text: "Dit år i historier." },
 			},
 		});
-		expect(checkMessages(files, "en")).toEqual([
+		expect(check(files)).toEqual([
 			"en: landing_title is empty",
 			"en: Landing_hint isn't a valid message name (snake_case, starting with its owner)",
 			"en: recap_rank_ordinal_title contains _ordinal_, which the plugin reads as an ordinal plural",
