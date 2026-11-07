@@ -158,7 +158,8 @@ First-run setup and its steps, owner sign-in, the owner's account settings, the 
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
 `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
 describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr, Help
-and the language switcher, so it needs a way to owner sign-in. Each gets its brief before its module is specced.
+and the language switcher, so it needs a way to owner sign-in. Each gets its brief before its
+module is specced.
 
 ### Module notes
 
