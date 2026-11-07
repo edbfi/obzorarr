@@ -2,7 +2,8 @@
 
 The spec is [docs/SPEC-i18n.md](../docs/SPEC-i18n.md), and the plan is [plan.md](plan.md). Each
 task is one PR and writes its tests first. Each one adds its files to AGENTS.md's structure, ticks
-off its items here, and runs `bun run --bun check`, `bun run --bun test`, `bun run --bun lint` and
+off its items in `tasks/`, names the sibling apps in its PR body (AGENTS.md, Shared groundwork), and
+runs `bun run --bun check`, `bun run --bun test`, `bun run --bun lint` and
 `prek run --all-files --hook-stage manual` before every commit. Paths under `src/lib/` are
 shortened to `lib/`.
 
@@ -57,11 +58,12 @@ text from the messages.
 - [ ] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
   contain the token. `hooks.server.ts` and `hooks.client.ts` are as the spec's Code style gives
   them, and the `init` hook is unchanged.
-- [ ] The concurrency check passes: 200 concurrent requests in both languages, through a temporary
-  route that awaits a random delay in its `load`, each render in their own language. The script
-  and its output are in the PR body, and the route isn't committed.
+- [ ] The concurrency check passes: 200 concurrent requests in both languages against the built
+  server, through a temporary route that awaits a random delay in its `load`, each render in their
+  own language. The script and its output are in the PR body; neither it nor the route is
+  committed.
 
-**Verification:** all of the above, then `bun run --bun build` and `bun run --bun smoke`. Manual
+**Verification:** `bun run --bun test`, `check`, `lint`, `build`, `smoke`, prek. Manual
 check: in `dev`, a browser set to Danish sees the placeholder in Danish.
 
 **Dependencies:** task 1.
@@ -79,8 +81,9 @@ the landing brief's signed-out navigation.
 
 **Acceptance criteria:**
 - [ ] It is a labelled group of native buttons, the label a message, each button naming its
-  language in that language with `lang` set, from `Intl.DisplayNames` through a helper private to
-  the component, never a message or a literal. The current language's button has
+  language in that language with `lang` set, from `Intl.DisplayNames` with the first letter
+  upper-cased in that language ("English", "Dansk"), through a helper private to the component,
+  never a message or a literal. The current language's button has
   `aria-current="true"` and does nothing when pressed; another calls `setLocale`. It is styled
   only with tokens.
 - [ ] `i18n.test.ts` gains: pressing "English" from a Danish browser reloads `/` in English and
@@ -138,8 +141,7 @@ and runs on `messages/*.json` in the existing `tests` hook. This task also close
 - [ ] The check passes on `messages/*.json`. Every rule in the spec's list, each clause on its
   own, has an in-memory file that breaks only it and is reported, and a file with several problems
   reports them all.
-- [ ] The PR body lists every validation in the spec with its evidence or the PR that holds it,
-  and names the sibling apps that port the module.
+- [ ] The PR body lists every validation in the spec with its evidence or the PR that holds it.
 - [ ] The end-of-work-stream cleanup is done:
   - the rest of the spec's "Docs this module changes when built" list;
   - `tasks/` is deleted;
