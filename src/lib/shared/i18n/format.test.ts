@@ -72,7 +72,7 @@ describe.each([
 	});
 
 	// A month stored as its first instant in UTC is still the month before in New York.
-	it("keeps a calendar value's month in UTC", async () => {
+	it("gives a calendar value its month only when the zone is UTC", async () => {
 		const firstOfMonth = new Date("2026-11-01T00:00:00Z");
 		const month = (timeZone: string) => () =>
 			formatDateTime(firstOfMonth, { month: "long", timeZone });
