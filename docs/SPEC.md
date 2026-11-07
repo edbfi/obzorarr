@@ -948,10 +948,12 @@ export const GET: RequestHandler = () => healthResponse();
 ## Testing strategy
 
 - **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
-  `cache-control: no-store`) and the `secrets` module (`config/secret-key.test.ts`, and
+  `cache-control: no-store`), the `secrets` module (`config/secret-key.test.ts`, and
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
-  `security/secrets/`, under `src/lib/server/`). Component tests use happy-dom when components
-  exist; never jsdom.
+  `security/secrets/`, under `src/lib/server/`), and `src/lib/shared/i18n/format.test.ts`, which
+  runs the formatters inside `paraglideMiddleware` with a request for each language and checks that
+  English formats as `en-GB` and that `formatDateTime` follows the zone it is given, not the
+  machine's. Component tests use happy-dom when components exist; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits

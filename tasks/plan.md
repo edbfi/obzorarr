@@ -43,14 +43,14 @@ The tasks are in [todo.md](todo.md).
 
 ### Checkpoint: after task 3
 
-- [ ] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
+- [x] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
   pass.
-- [ ] The built server serves `/` in Danish to a Danish browser and in English otherwise, the
+- [x] The built server serves `/` in Danish to a Danish browser and in English otherwise, the
   switcher changes it, and `/healthz` is unchanged.
 
 ### Phase 3: the tools later modules write through
 
-- [ ] Task 4: formatting numbers and dates
+- [x] Task 4: formatting numbers and dates
 - [ ] Task 5: the message check, and closing the work stream
 
 ### Checkpoint: complete
