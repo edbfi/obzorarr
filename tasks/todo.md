@@ -1,8 +1,8 @@
 # Tasks: `i18n`
 
 The spec is [docs/SPEC-i18n.md](../docs/SPEC-i18n.md), and the plan is [plan.md](plan.md). Each
-task is one PR and writes its tests first. Each one adds its files to AGENTS.md's structure, and
-runs `bun run --bun check`, `bun run --bun test`, `bun run --bun lint` and
+task is one PR and writes its tests first. Each one adds its files to AGENTS.md's structure, ticks
+off its items here, and runs `bun run --bun check`, `bun run --bun test`, `bun run --bun lint` and
 `prek run --all-files --hook-stage manual` before every commit. Paths under `src/lib/` are
 shortened to `lib/`.
 
@@ -16,14 +16,18 @@ English and Danish, which the page starts using in task 2. Run the Weblate round
 - [ ] `@inlang/paraglide-js` 3.2.1 and `@inlang/plugin-i18next` 6.5.3 are exact-pinned dev
   dependencies. `project.inlang/settings.json` and `project.inlang/paraglide.config.ts` are as the
   spec gives them, and the Vite plugin is added with nothing else.
-- [ ] A fresh clone's `bun ci` compiles the messages, and `check` compiles them after
-  `svelte-kit sync` and before Panda's codegen, then type-checks `project.inlang/*.ts`. A call to a
-  message that doesn't exist fails `check`. Running `check` while `dev` is up doesn't rewrite the
-  output under the dev server.
+- [ ] `prepare` and `check` compile the messages after `svelte-kit sync` and before Panda's
+  codegen, calling the CLI as `bun --bun <bin>`, so a fresh clone's `bun ci` compiles them, and
+  `check` then type-checks `project.inlang/*.ts`. Everything passes with no Node on `PATH` (CI's
+  shims). Running `check` while `dev` is up doesn't rewrite the output under the dev server.
+- [ ] A call to a message that doesn't exist fails `check`, shown with a probe that isn't
+  committed, its output in the PR body.
 - [ ] `src/lib/paraglide/` and `project.inlang/cache/` are gitignored, Panda's `exclude` skips the
   output, and `lint` and prek pass with it present.
+- [ ] The message files are flat and Biome-formatted, their names fit the spec's rule, and they
+  leave out the name Obzorarr.
 - [ ] The Weblate round trip passes all four of the spec's conditions, with the script and its
-  output in the PR body.
+  output in the PR body; neither the script nor its temporary message is committed.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, `build`, `smoke`, prek.
 
@@ -48,6 +52,8 @@ text from the messages.
   and whose `navigator.languages` an init script sets to `fr-FR`, `da-DK` gets English, and no
   cookie is written after hydration; neither logs a console error. The smoke test passes
   unchanged in English.
+- [ ] The placeholder renders its messages as text, never with `{@html}`, and keeps Obzorarr as
+  it is.
 - [ ] `app.html` has `<html lang="%lang%">` with the Biome suppression just above it, which doesn't
   contain the token. `hooks.server.ts` and `hooks.client.ts` are as the spec's Code style gives
   them, and the `init` hook is unchanged.
@@ -62,7 +68,7 @@ check: in `dev`, a browser set to Danish sees the placeholder in Danish.
 
 **Files:** `src/app.html`, `src/hooks.server.ts`, `src/hooks.client.ts`,
 `src/routes/(public)/+page.svelte`, `tests/e2e/i18n.test.ts`, `AGENTS.md`, `docs/SPEC.md` (the
-testing section).
+testing section and the `smoke` Commands row).
 
 **Size:** M.
 
@@ -73,24 +79,28 @@ the landing brief's signed-out navigation.
 
 **Acceptance criteria:**
 - [ ] It is a labelled group of native buttons, the label a message, each button naming its
-  language in that language with `lang` set. The current language's button has
-  `aria-current="true"` and does nothing when pressed. It is styled only with tokens.
+  language in that language with `lang` set, from `Intl.DisplayNames` through a helper private to
+  the component, never a message or a literal. The current language's button has
+  `aria-current="true"` and does nothing when pressed; another calls `setLocale`. It is styled
+  only with tokens.
 - [ ] `i18n.test.ts` gains: pressing "English" from a Danish browser reloads `/` in English and
   writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and the
   next visit stays in English; in the `fr-FR` case the switcher marks English as current after
   hydration. No console errors.
-- [ ] The landing brief's signed-out navigation has the switcher, and D16 no longer lists browser
-  interaction with a real component.
+- [ ] The landing brief's signed-out navigation has the switcher, written through
+  `.agents/skills/impeccable/scripts/impeccable surface-brief write`, and D16 no longer lists
+  browser interaction with a real component.
 
-**Verification:** `bun run --bun build`, `bun run --bun smoke`, `check`, `lint`, prek. Manual
-check: keyboard only at 360 and 1440 px, and at 200% zoom: both buttons are reachable, focus is
-visible, and pressing the current language does nothing.
+**Verification:** `bun run --bun test`, `build`, `smoke`, `check`, `lint`, prek. Manual check at
+360, 390, 768 and 1440 px, at 200% zoom and with reduced motion: both buttons are
+reachable by keyboard, focus is visible, and pressing the current language does nothing.
 
 **Dependencies:** task 2.
 
 **Files:** `lib/components/layout/LanguageSwitcher.svelte`, `src/routes/(public)/+page.svelte`,
 `messages/en.json`, `messages/da.json`, `tests/e2e/i18n.test.ts`, `.impeccable/surfaces/route.md`,
-`docs/decisions.md`, `AGENTS.md`.
+`docs/decisions.md`, `AGENTS.md`, `docs/SPEC.md` (the testing section, and "Surfaces with no brief
+yet", whose landing sentence names the signed-out navigation's items).
 
 **Size:** M.
 
@@ -112,7 +122,7 @@ in the current language, with the time zone required.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, prek.
 
-**Dependencies:** task 2.
+**Dependencies:** task 1.
 
 **Files:** `lib/shared/i18n/format.ts`, `format.test.ts`, `AGENTS.md`, `docs/SPEC.md` (the testing
 section).
@@ -125,9 +135,11 @@ section).
 and runs on `messages/*.json` in the existing `tests` hook. This task also closes the work stream.
 
 **Acceptance criteria:**
-- [ ] The check passes on `messages/*.json`, and each of the spec's seven rules has an in-memory
-  file that breaks it once and is reported.
-- [ ] The PR body lists every validation in the spec with its evidence or the PR that holds it.
+- [ ] The check passes on `messages/*.json`. Every rule in the spec's list, each clause on its
+  own, has an in-memory file that breaks only it and is reported, and a file with several problems
+  reports them all.
+- [ ] The PR body lists every validation in the spec with its evidence or the PR that holds it,
+  and names the sibling apps that port the module.
 - [ ] The end-of-work-stream cleanup is done:
   - the rest of the spec's "Docs this module changes when built" list;
   - `tasks/` is deleted;

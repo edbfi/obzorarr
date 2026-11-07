@@ -21,8 +21,9 @@ The tasks are in [todo.md](todo.md).
   write the cookie the viewer never asked for (SPEC-i18n.md, "In the browser").
 - **The server and the browser change together.** Task 2 adds both hooks, because each half alone
   is wrong: the server's choice means nothing if the browser chooses again on hydration.
-- **Each validation's evidence goes in the body of the PR that runs it:** the Weblate round trip
-  in task 1's, the concurrency check in task 2's, and the full list in task 5's, which closes D22.
+- **Each validation's evidence goes in the body of the PR that runs it:** the pinned versions with
+  no Node on `PATH` and the Weblate round trip in task 1's, the concurrency check in task 2's, and
+  the full list in task 5's, which closes D22.
   The temporary messages, route and scripts are never committed (SPEC-i18n.md, "Validation").
 - **Facts change in the task that changes them.** Each task updates SPEC.md's tech stack,
   Commands and testing sections, and AGENTS.md's structure, as its files land. Task 5 does the
@@ -70,10 +71,11 @@ The tasks are in [todo.md](todo.md).
 
 ## Porting to the other apps
 
-The siblings port this plan once task 5 merges, starting from its spec and tests. What differs:
-the app's name in the messages, its own Danish copy, where its shells place the switcher, the
-brief that gains it, and the decision numbers. Everything else, the cookie name included, stays
-the same, so a language chosen in one app carries over to the others on the same host.
+Once task 5 merges, comradarr, zondarr, otpravkarr and zimuarr each specify `i18n` from this
+app's spec, code and tests (AGENTS.md, Shared groundwork). What differs: their placeholder's
+English and Danish text, where their shells place the switcher, any brief that gains it, and the
+decision numbers. Everything else, the cookie name included, stays the same, so a language chosen
+in one app carries over to the others on the same host.
 
 ## Open questions
 
