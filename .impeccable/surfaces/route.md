@@ -27,7 +27,7 @@ Heading 'Your year in stories.' Text 'Sign in with Plex to see your personal rec
 
 ## Acceptance criteria
 
-Signed-out navigation contains only Obzorarr and Help. Sign-in uses provider redirect. Do not show real viewer details.
+Signed-out navigation contains only Obzorarr, Help and the language switcher (`LanguageSwitcher.svelte`, docs/SPEC-i18n.md). Sign-in uses provider redirect. Do not show real viewer details.
 
 - Preserve audience boundaries from [product context](../../PRODUCT.md).
 - Use canonical data in [demo fixtures](../../tests/fixtures/demo-fixtures.json); do not infer calculations from raster text.

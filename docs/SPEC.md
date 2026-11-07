@@ -157,8 +157,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
 Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
 `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
-describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr and
-Help, so it needs a way to owner sign-in. Each gets its brief before its module is specced.
+describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr, Help
+and the language switcher, so it needs a way to owner sign-in. Each gets its brief before its module is specced.
 
 ### Module notes
 
@@ -938,6 +938,8 @@ export const GET: RequestHandler = () => healthResponse();
 - Only `@pandacss/preset-base` is loaded (utilities and conditions), so no preset palette competes
   with the app's tokens, and `strictTokens` makes a raw value in `css()` a type error that `check`
   reports.
+- Keyboard focus is one global rule in `globalCss`: DESIGN.md's 2px `secondary` ring with a 2px
+  offset on every `:focus-visible` element, so controls don't each restyle it.
 - The placeholder page uses only Panda tokens: no raw colour, size or font values in components.
   It stays quiet: no projector-light imagery or recap motion, which belong to the landing and recap
   modules.
@@ -957,9 +959,12 @@ export const GET: RequestHandler = () => healthResponse();
     returns `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
-    `Vary: Cookie, Accept-Language`, and that a browser whose `Accept-Language` says `fr-FR` but
-    whose `navigator.languages` lists `da-DK` gets English and writes no cookie after hydration,
-    neither logging a console error. The smoke test runs in English, Playwright's default.
+    `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
+    writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
+    the next visit in English; and that a browser whose `Accept-Language` says `fr-FR` but whose
+    `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
+    hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
+    smoke test runs in English, Playwright's default.
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling

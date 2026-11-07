@@ -402,9 +402,10 @@ same fix, and the validation uses it. Closes with the first database module.
 
 ### D16. Runtime validation gaps
 
-Not yet validated for this stack: browser interaction with a real component, production containers,
-realistic load, and job recovery after a restart. Hydration is validated: the e2e smoke test waits
-for the hydrated app in Chromium against the built server, with no console errors.
+Not yet validated for this stack: production containers, realistic load, and job recovery after a
+restart. Hydration is validated: the e2e smoke test waits for the hydrated app in Chromium against
+the built server, with no console errors. So is browser interaction with a real component:
+`i18n.test.ts` presses the language switcher and follows the reload it causes.
 A crash test doesn't prove recovery from power loss or storage faults. The Turso backup and restore
 procedure is still to be defined and tested; the master key is restored with the database file
 (D26). Each closes with the work that first depends on it.

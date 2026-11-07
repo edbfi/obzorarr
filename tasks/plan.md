@@ -39,7 +39,7 @@ The tasks are in [todo.md](todo.md).
 ### Phase 2: each page in the viewer's language
 
 - [x] Task 2: each request gets the viewer's language, and the browser keeps it
-- [ ] Task 3: the language switcher
+- [x] Task 3: the language switcher
 
 ### Checkpoint: after task 3
 

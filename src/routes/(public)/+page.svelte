@@ -1,4 +1,5 @@
 <script lang="ts">
+import LanguageSwitcher from "#lib/components/layout/LanguageSwitcher.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 </script>
@@ -16,7 +17,18 @@ import { css } from "#styled-system/css";
 		paddingInline: { base: "mobileGutter", tablet: "tabletGutter", desktop: "desktopGutter" },
 	})}
 >
-	<p class={css({ textStyle: "label", color: "primary" })}>Obzorarr</p>
+	<div
+		class={css({
+			display: "flex",
+			flexWrap: "wrap",
+			alignItems: "center",
+			justifyContent: "space-between",
+			gap: "md",
+		})}
+	>
+		<p class={css({ textStyle: "label", color: "primary" })}>Obzorarr</p>
+		<LanguageSwitcher />
+	</div>
 	<h1 class={css({ textStyle: "display", marginBlockStart: "section", textWrap: "balance" })}>
 		{m.landing_title()}
 	</h1>
