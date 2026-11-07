@@ -23,7 +23,7 @@ It also runs the validations D22 lists.
 
 ## Versions
 
-`@inlang/paraglide-js` 3.2.0 and `@inlang/plugin-i18next` 6.5.3, exact-pinned dev dependencies
+`@inlang/paraglide-js` 3.2.1 and `@inlang/plugin-i18next` 6.5.3, exact-pinned dev dependencies
 (the owner approved both packages on 2026-10-29, and Paraglide JS 3 on 2026-11-06). Version 3's
 breaking changes touch nothing here: the `additionalFiles` option and the middleware's locale
 splitting are gone, and Vite builds default to a new output layout, which the config below sets
