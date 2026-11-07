@@ -14,20 +14,20 @@ shortened to `lib/`.
 English and Danish, which the page starts using in task 2. Run the Weblate round trip.
 
 **Acceptance criteria:**
-- [ ] `@inlang/paraglide-js` 3.2.1 and `@inlang/plugin-i18next` 6.5.3 are exact-pinned dev
+- [x] `@inlang/paraglide-js` 3.2.1 and `@inlang/plugin-i18next` 6.5.3 are exact-pinned dev
   dependencies. `project.inlang/settings.json` and `project.inlang/paraglide.config.ts` are as the
   spec gives them, and the Vite plugin is added with nothing else.
-- [ ] `prepare` and `check` compile the messages after `svelte-kit sync` and before Panda's
+- [x] `prepare` and `check` compile the messages after `svelte-kit sync` and before Panda's
   codegen, calling the CLI as `bun --bun <bin>`, so a fresh clone's `bun ci` compiles them, and
   `check` then type-checks `project.inlang/*.ts`. Everything passes with no Node on `PATH` (CI's
   shims). Running `check` while `dev` is up doesn't rewrite the output under the dev server.
-- [ ] A call to a message that doesn't exist fails `check`, shown with a probe that isn't
+- [x] A call to a message that doesn't exist fails `check`, shown with a probe that isn't
   committed, its output in the PR body.
-- [ ] `src/lib/paraglide/` and `project.inlang/cache/` are gitignored, Panda's `exclude` skips the
+- [x] `src/lib/paraglide/` and `project.inlang/cache/` are gitignored, Panda's `exclude` skips the
   output, and `lint` and prek pass with it present.
-- [ ] The message files are flat and Biome-formatted, their names fit the spec's rule, and they
+- [x] The message files are flat and Biome-formatted, their names fit the spec's rule, and they
   leave out the name Obzorarr.
-- [ ] The Weblate round trip passes all four of the spec's conditions, with the script and its
+- [x] The Weblate round trip passes all four of the spec's conditions, with the script and its
   output in the PR body; neither the script nor its temporary message is committed.
 
 **Verification:** `bun run --bun test`, `check`, `lint`, `build`, `smoke`, prek.

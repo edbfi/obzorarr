@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"strict": true
 	},
-	"include": ["src", "tests", "*.ts"]
+	"include": ["src", "tests", "*.ts", "project.inlang/*.ts"]
 }

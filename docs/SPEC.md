@@ -871,6 +871,7 @@ newest stable release (D27). Every package is a dev dependency, so adapter-bun b
 | Adapter | `@sveltejs/adapter-bun` |
 | Styling | `@pandacss/dev`, `@pandacss/vite` (its Vite plugin), `@pandacss/preset-base` |
 | Primitives | `@ark-ui/svelte` |
+| Translation | `@inlang/paraglide-js` (compiles the messages), `@inlang/plugin-i18next` (reads their i18next JSON v4 files) |
 | Type check | `svelte-check` |
 | Unit tests | `vitest` (`node` environment); `happy-dom` joins with the first component test |
 | e2e | `@playwright/test` (Chromium) |
@@ -884,7 +885,8 @@ Setup facts for this stack:
   `#styled-system/*` maps to the generated `./styled-system/*/index.js`.
 - Assets are imported through Vite from `src/lib/assets/`: the root layout takes the favicon from
   `#lib/assets/obzorarr-icon.svg`, so there's no `static/` folder.
-- `svelte-kit sync` runs before Panda's codegen, in `prepare` and in `check`.
+- `prepare` and `check` run `svelte-kit sync`, then Paraglide's compile, then Panda's codegen.
+  Dev, build and Vitest compile the messages through Paraglide's Vite plugin.
 - The Panda Vite plugin appends the generated CSS to the stylesheet that declares the layer order
   (`src/app.css`), and `transform: true` turns static `css()` calls into class strings at build
   time.
@@ -898,11 +900,11 @@ Setup facts for this stack:
 
 | Command | Does |
 |---|---|
-| `bun ci` | frozen install; `prepare` runs `svelte-kit sync` and Panda codegen |
+| `bun ci` | frozen install; `prepare` runs `svelte-kit sync`, the message compile and Panda codegen |
 | `bun run --bun dev` | Vite dev server; needs a key in `.env` or the environment, and without one every request fails with the key error |
 | `bun run --bun build` | production build through adapter-bun into `build/`; needs no key and never embeds one |
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
-| `bun run --bun check` | `svelte-kit sync`, Panda codegen, then `svelte-check` failing on any error or warning |
+| `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
 | `bun run --bun smoke` | Playwright e2e: the browser smoke test and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |

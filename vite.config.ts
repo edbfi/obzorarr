@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import pandacss from "@pandacss/vite";
 import adapter from "@sveltejs/adapter-bun";
 import { sveltekit } from "@sveltejs/kit/vite";
@@ -15,6 +16,7 @@ export default defineConfig({
 		}),
 		// Static css() calls become class strings at build time, so no styling runtime ships.
 		pandacss({ transform: true }),
+		paraglideVitePlugin({ project: "./project.inlang" }),
 	],
 	// The dev server serves the generated Panda runtime.
 	server: { fs: { allow: ["styled-system"] } },

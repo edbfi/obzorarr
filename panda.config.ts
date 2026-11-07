@@ -8,7 +8,8 @@ export default defineConfig({
 	preflight: true,
 	strictTokens: true,
 	include: ["./src/**/*.{ts,svelte}"],
-	exclude: [],
+	// Paraglide's compiled messages hold no styles.
+	exclude: ["./src/lib/paraglide/**"],
 	outdir: "styled-system",
 
 	globalCss: {
