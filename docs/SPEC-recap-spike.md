@@ -51,7 +51,7 @@ Story mode is `recap`'s ([SPEC.md](SPEC.md#recap), Module notes), less what the 
 heading, progress and Close; a bottom bar holds Previous and Next; both stay in view (sticky). One
 step shows at a time: total time, monthly hours, then the summary end card. A step taller than the
 screen, at 200% zoom say, scrolls the page itself, so ↑, ↓ and the scroll wheel work wherever focus
-is.
+is. Each move scrolls the page to the top of the story at once, before the new step enters.
 
 **The summary is the story's third step,** where the Module notes make `recap`'s summary a page
 after the slides. Three equal steps are the honest test of the story; the verdict records which
@@ -63,7 +63,7 @@ after the slides. Three equal steps are the honest test of the story; the verdic
 |---|---|---|---|
 | Tap | anywhere on the step but its left 15% | the left 15% | — |
 | Swipe | leftward, more than 50 px | rightward, more than 50 px | — |
-| Keys | → , Space, Enter | ← | Home: the first step; End: the summary; Escape: Close |
+| Keys | →, Space, Enter | ← | Home: the first step; End: the summary; Escape: Close |
 | Buttons | Next | Previous | — |
 
 - **A tap** is a press that moves less than 10 px. Only the primary pointer's primary button counts
@@ -78,7 +78,7 @@ after the slides. Three equal steps are the honest test of the story; the verdic
   Enter on a focused button or link activates it; otherwise both move the story (Space on a link
   doesn't follow it, and doesn't scroll). ↑ and ↓ are left to the browser.
 - **Throttled:** a move within the `story` duration (320 ms) of the last one is ignored, so a held
-  key, a quick double tap or a button press that is also a tap can't skip a step.
+  key, a quick double tap or a double click can't skip a step.
 - **Previous and Next** show at every width (the screen shows them on desktop too, and the Module
   notes' phone buttons are the minimum). Each is a labelled 44 px button. At either end, the button
   that can't move is `aria-disabled` and does nothing on a click, Enter or Space, not `disabled` or
@@ -88,18 +88,18 @@ after the slides. Three equal steps are the honest test of the story; the verdic
 
 **Semantics.** The page's `h1` is the visible "Your 2025 story" in the top bar. The story follows
 the WAI-ARIA Authoring Practices' carousel pattern: a region named by that heading with
-`aria-roledescription="carousel"`; each step a group with `aria-roledescription="slide"` named
-"1 of 3", "2 of 3", "3 of 3", with its own `h2`; the steps' container `aria-live="polite"`, since
+`aria-roledescription` "carousel"; each step a group with `aria-roledescription` "slide", named
+"1 of 3", "2 of 3", "3 of 3", with its own `h2`. Screen readers speak `aria-roledescription`
+verbatim, so both words are messages ("karrusel", "dias" in Danish); the steps' container `aria-live="polite"`, since
 nothing moves on its own. Progress is three segments, past, current and remaining, drawn with tokens
 and hidden from assistive technology.
 
 **Focus.** Only the current step is in the page; a step leaving is `inert` until its transition
 ends.
-- Focus on a control in the bars (Close, Previous, Next) stays there.
-- Focus inside the leaving step moves to the new step's `h2` (`tabindex="-1"`), so it never falls to
-  the page.
-- Arriving at the summary always moves focus to its `h2`, so a stray Enter doesn't press a button
-  (Module notes).
+- Arriving at the summary always moves focus to its `h2` (`tabindex="-1"`), even from a control in
+  the bars, so a stray Enter doesn't press a button (Module notes).
+- On the other steps, focus on a control in the bars (Close, Previous, Next) stays there, and focus
+  inside the leaving step moves to the new step's `h2`, so it never falls to the page.
 
 **Without JavaScript** the first step shows and nothing moves. `recap`'s scroll mode decides the
 no-script path; the spike doesn't.
@@ -120,7 +120,7 @@ dominant idea and wraps long and translated text without hiding Close, Previous 
 sits behind text or figures (DESIGN.md).
 
 1. **Total time.** The `h2` is the sentence "842 hours of everything you played in 2025" (D23: never
-   "watched"), its number at poster size (below, "Imagery and tokens"); then "Movie Buff" as fixed
+   "watched"), its number in the `display` text style at poster size (below, "Imagery and tokens"); then "Movie Buff" as fixed
    message text, not a computed badge. Beside the text, the cyan projector beam over an abstract
    cinema silhouette.
 2. **Monthly hours.** The `h2` "Hours of everything you played in 2025, month by month", and a chart
@@ -176,6 +176,7 @@ languages; the owner may spot-check the Danish.
 |---|---|
 | `recap_spike_page_title` | Your {{year}} story · Obzorarr |
 | `recap_spike_story_label` | Your {{year}} story |
+| `recap_spike_carousel_role`, `recap_spike_slide_role` | carousel, slide |
 | `recap_spike_slide_position` | {{current, number}} of {{total, number}} |
 | `recap_spike_close` | Close |
 | `recap_spike_previous`, `recap_spike_next` | Previous slide, Next slide |
@@ -285,7 +286,7 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
 - **e2e (Playwright, against the built server):** `recap-spike.test.ts` checks that:
   - `/spike/recap` answers 200 in English and, for a Danish browser, in Danish with
     `<html lang="da">`, with the month names in the language ("May", "maj");
-  - → , Space, Enter, ←, Home and End move the story and the step's name changes ("2 of 3"); Enter
+  - →, Space, Enter, ←, Home and End move the story and the step's name changes ("2 of 3"); Enter
     on a focused Close follows the link instead;
   - clicking Next moves one step; clicking the `aria-disabled` Next on the summary, or Previous on
     the first step, does nothing; Enter on a focused Next moves exactly one step;
@@ -296,11 +297,16 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
   - Close, Escape and Back to overview all go to `/`;
   - with reduced motion (`emulateMedia`), the next step's final state shows at once: the month bars
     at their final widths and no running animation;
+  - at a short viewport, a move from a step scrolled to its bottom leaves the page at the top;
   - at 360 px nothing scrolls sideways;
   - no console errors.
 
-  `smoke.test.ts` also checks that the three bundled families load (`document.fonts`), since a
-  wrong family name would fall back to the system font with every other test green. A mouse drag
+  Moves in the e2e are spaced past the `story` duration (waiting for the leaving step to detach),
+  so the throttle never drops a key the test meant.
+
+  `smoke.test.ts` also checks that the three bundled families load: for each of Panda's three
+  `fonts` values, `document.fonts.load("16px <family>")` returns at least one face. A wrong family
+  name returns none, where `document.fonts.check()` would pass it. A mouse drag
   can't show how a touch browser shares a gesture with scrolling, so touch is in the owner's
   review.
 
@@ -330,8 +336,8 @@ The owner gives the verdict: what `recap` keeps (the shell, the summary as a ste
 it, the imagery, the poster size), what changes, and whether it needs custom work beyond Panda and
 Ark. The verdict PR then:
 - moves D19 to Decided with that verdict;
-- deletes the route, `lib/components/recap/`, `recap-spike.test.ts` and the `recap_spike_…`
-  messages, always: `recap`'s spec adopts what the verdict keeps from git history, by naming the
+- deletes the route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages
+  and the entrance keyframes in `panda.config.ts`, always: `recap`'s spec adopts what the verdict keeps from git history, by naming the
   commit before the verdict PR;
 - deletes the two new tokens, unless the verdict keeps them;
 - closes ground-floor choice 5 as "no headers needed";
@@ -357,11 +363,14 @@ Ark. The verdict PR then:
   `@lucide/svelte`); ground-floor choice 1 (fonts bundled); the `smoke` command row; the testing
   section.
 - **`AGENTS.md`:** the status and the structure tree, with the spike's files marked temporary.
+- **`PRODUCT.md`:** "No bundled font files yet" goes.
 
-**The verdict PR:** D19, choice 5 and row 3 as above; the spike's entries in SPEC.md's testing
-section and `smoke` row and in AGENTS.md's tree go, and the fonts and icons stay; this spec is
-reduced to what code can't say, as cleanup procedure 2 asks, since the code it describes is
-deleted.
+**The verdict PR:** D19, choice 5 and row 3 as above. In SPEC.md, the spike's entries in the
+testing section, the `smoke` row and "Where modules live", and the `recap-spike` line of "Open
+decisions", go; in AGENTS.md, the spike's files in the tree and the boundary that waits for the
+spike. The fonts and icons stay. If the verdict keeps a new token, DESIGN.md is refreshed from
+Panda's config. This spec is reduced to what code can't say, as cleanup procedure 2 asks, since the
+code it describes is deleted.
 
 ## Success criteria
 
