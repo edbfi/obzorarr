@@ -25,19 +25,19 @@
 		"@fontsource-variable/instrument-sans": "5.3.0",
 		"@fontsource-variable/space-grotesk": "5.3.0",
 		"@fontsource/ibm-plex-mono": "5.3.0",
-		"@inlang/paraglide-js": "3.2.1",
+		"@inlang/paraglide-js": "3.2.2",
 		"@inlang/plugin-i18next": "6.5.3",
 		"@pandacss/dev": "2.5.0",
 		"@pandacss/preset-base": "2.5.0",
 		"@pandacss/vite": "2.5.0",
 		"@playwright/test": "1.65.0",
-		"@sveltejs/adapter-bun": "1.0.0",
-		"@sveltejs/kit": "3.1.1",
+		"@sveltejs/adapter-bun": "1.0.1",
+		"@sveltejs/kit": "3.2.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"svelte": "5.57.3",
 		"svelte-check": "4.7.8",
 		"typescript": "6.0.3",
-		"vite": "8.3.6",
+		"vite": "8.3.8",
 		"vitest": "5.1.0"
 	}
 }
