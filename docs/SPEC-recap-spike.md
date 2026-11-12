@@ -74,9 +74,9 @@ after the slides. Three equal steps are the honest test of the story; the verdic
   horizontal drags to the story; a cancelled gesture (`pointercancel`) moves nothing, and text isn't
   selected during a drag.
 - **Keys** are read on the whole page, but not when Shift, Ctrl, Alt or Meta is held, so browser
-  shortcuts such as Alt+← and Shift+Space still work. Space on a focused button presses it, and Enter on a focused button or
-  link activates it; otherwise both move the story (Space on a link doesn't follow it, and doesn't
-  scroll). ↑ and ↓ are left to the browser.
+  shortcuts such as Alt+← and Shift+Space still work. Space on a focused button presses it, and
+  Enter on a focused button or link activates it; otherwise both move the story (Space on a link
+  doesn't follow it, and doesn't scroll). ↑ and ↓ are left to the browser.
 - **Throttled:** a move within the `story` duration (320 ms) of the last one is ignored, so a held
   key, a quick double tap or a button press that is also a tap can't skip a step.
 - **Previous and Next** show at every width (the screen shows them on desktop too, and the Module
@@ -300,8 +300,9 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
   - no console errors.
 
   `smoke.test.ts` also checks that the three bundled families load (`document.fonts`), since a
-  wrong family name would fall back to the system font with every other test green. A mouse drag can't show how a touch browser
-  shares a gesture with scrolling, so touch is in the owner's review.
+  wrong family name would fall back to the system font with every other test green. A mouse drag
+  can't show how a touch browser shares a gesture with scrolling, so touch is in the owner's
+  review.
 
 ## Commands
 
