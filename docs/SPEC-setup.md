@@ -34,8 +34,8 @@ ends at the claim ("Before `sign-in`", below).
 
 Each of the app's own variables is read once, at startup, by its own file in `config/`, and
 `src/env.ts` declares it (SvelteKit 3 exposes only declared variables). For these, an empty variable
-counts as unset (D26's rule), and a check that fails stops startup with one line naming the variable
-and what is wrong, never echoing the value.
+counts as unset (D26's rule; `ORIGIN` differs, below), and a check that fails stops startup with one
+line naming the variable and what is wrong, never echoing the value.
 
 | Variable | Default | Checked |
 |---|---|---|
@@ -47,7 +47,9 @@ and what is wrong, never echoing the value.
 **adapter-bun's own variables** are read and checked by the adapter (1.0.1), with its own defaults
 and messages, which may echo a malformed value; the app adds no code for them, and the README lists
 them:
-- `SHUTDOWN_TIMEOUT` (default 30 s): the drain time, kept below the container's stop timeout;
+- `SHUTDOWN_TIMEOUT` (default 30 s): the drain time. The container's stop timeout must exceed it
+  plus the app's 5-second cleanup; the README says so, and the image sets `stop_grace_period`
+  (Docker's default is 10 seconds);
 - `CONNECTION_IDLE_TIMEOUT` (default 10 s, at most 255 s): the idle timeout. The adapter already
   exempts event streams;
 - `BODY_SIZE_LIMIT` (default 512 KB) (obzorarr: takes no uploads).
@@ -79,7 +81,8 @@ while building:
    failed, D7);
 5. starting the jobs (none yet). A job that fails to start is logged, not fatal.
 
-A failure in steps 1–4 stops startup, with the error logged and a non-zero exit.
+A failure in steps 1–4 is logged and thrown from `init`: the built server exits non-zero before it
+listens, and the dev server stays up with every request failing, as the key error already does.
 
 **Shutdown.** adapter-bun 1.0.1 already drains open requests for `SHUTDOWN_TIMEOUT`, then closes
 the rest, exits at once on a second signal, and emits `sveltekit:shutdown` without waiting for its
@@ -87,9 +90,10 @@ listeners. The app adds:
 - **On the signal** (`SIGTERM`, `SIGINT`, and `SIGHUP`, which counts as a stop and is passed on to
   the adapter as `SIGTERM`): stop the jobs and timers and close open streams cleanly, so browsers
   reconnect, while the adapter drains.
-- **On `sveltekit:shutdown`:** flush the logs and close the database, then exit 0.
-- **A deadline:** if that cleanup hasn't finished within 5 seconds, the app exits non-zero anyway,
-  even with an upstream call still outstanding.
+- **On `sveltekit:shutdown`:** wait for the jobs stopped on the signal, close the database, then
+  flush the logs (so a closing error is written) and exit 0.
+- **A deadline:** if that cleanup hasn't finished 5 seconds after `sveltekit:shutdown`, the app
+  exits non-zero anyway, even with an upstream call still outstanding.
 
 ## The database
 
@@ -166,9 +170,9 @@ check compares the browser's `Origin` with `event.url`, which adapter-bun builds
     API-key endpoints and other machine routes the app's approved docs already name, each with the
     credentials those docs require. The session cookie is never honoured on it: such a request that
     carries only a session cookie gets a 403.
-  - A refusal is a 403 with the app's own "Access denied" page, or a JSON error for JSON callers,
-    with the security headers and in the viewer's language. Until `sign-in` builds the error pages,
-    the page is the title and its one-line description.
+  - A refusal is a 403 with the app's own "Access denied" page, or a JSON error (`{ message }`)
+    for JSON callers, with the security headers and in the viewer's language. Until `sign-in`
+    builds the error pages, the page is the title and its one-line description.
 - **When `ORIGIN` or a proxy fix is still needed:** behind a proxy that rewrites `Host`, over plain
   HTTP for every browser, and over HTTPS only for browsers without `Sec-Fetch-Site` (Safari before
   16.4, Firefox before 90, Chrome before 76). The proxy fix is `proxy_set_header Host $http_host`
@@ -192,8 +196,9 @@ On every response that passes through `handle`, early returns and error pages in
   the app's own form posts);
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`;
 - `Strict-Transport-Security: max-age=31536000` over HTTPS only, known when `ORIGIN` is `https`, or
-  when the browser sent `Sec-Fetch-Site` to a host that isn't loopback (browsers send it only to
-  HTTPS and loopback addresses). Never `includeSubDomains`: other apps may share the domain. An
+  when `ORIGIN` is unset and the browser sent `Sec-Fetch-Site` to a host that isn't `localhost`,
+  `*.localhost` or a loopback address (`127.0.0.0/8`, `[::1]`), since browsers send it only to
+  HTTPS and those hosts. Never `includeSubDomains`: other apps may share the domain. An
   accepted risk: HSTS covers every port of the host name, so another app on the same host over plain
   HTTP becomes unreachable from that browser until it moves to HTTPS.
 
@@ -212,6 +217,11 @@ On every response that passes through `handle`, early returns and error pages in
 
 No page is prerendered (`i18n` already forbids it), so every page gets its own nonce.
 
+**A page a `handle` stage builds itself,** such as the cross-origin refusal, never passes through
+SvelteKit's renderer, which adds the policy above and fills `<html lang>`. The stage sets both
+itself, with a fixed, stricter policy, since the page has no scripts: `default-src 'none';
+style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'`.
+
 **A limit:** responses produced before `handle` carry none of these headers: the built files
 (scripts, styles, fonts), which adapter-bun serves itself, and the adapter's own 400 and 413
 answers. None is a document, so framing and the CSP don't apply to them, and Bun sends each file
@@ -220,8 +230,8 @@ with its real content type.
 ## First run
 
 **The setup gate** is the last `setup` stage in `handle`. Until first run is complete, every request
-except the claim, `/healthz` and the responses produced before `handle` gets a 303 to the current
-first-run step (sign-in and first run's own helpers join the exceptions when their modules add
+except the current first-run step, `/healthz` and the responses produced before `handle` gets a
+303 to that step (sign-in and first run's own helpers join the exceptions when their modules add
 them). It reads first run's state from memory, which startup loads and the claim updates (one
 process, D17).
 
@@ -245,8 +255,8 @@ summarises the configuration and the sync status.
 - once the instance is claimed, none is printed again.
 
 **The claim** is `/setup`, the first step, and a POST form action. In this order:
-1. **The fields:** the username and password are checked against the rules below, with nothing
-   awaited. A field error leaves the token unused.
+1. **The fields:** after the form is read, the username and password are checked against the rules
+   below, with nothing awaited. A field error leaves the token unused.
 2. **The token:** checked and used up, with no `await` between the two. A wrong or expired token
    gets one error, "That setup token isn't valid. Use the newest one printed in the server console.",
    and never reaches the hash, so a guess costs the server nothing.
@@ -263,17 +273,19 @@ stores no address, and nothing but the owner row and the pointer.
 
 **Owner credentials,** in `security/password.ts`, which `sign-in`'s password change and recovery
 reuse:
-- **Username:** trimmed and normalised to Unicode NFC, 1–64 characters, no control characters.
-  Stored as entered, and compared after NFC and `toLowerCase()`, so case doesn't matter.
+- **Username:** trimmed and normalised to Unicode NFC, then 1–64 characters (Unicode code points),
+  no control characters (`\p{Cc}`). Stored in that form, case kept, and compared after
+  `toLowerCase()`, so case doesn't matter.
 - **Password:** normalised to NFC, then 15–128 characters (Unicode code points), any characters,
   no composition rules. It may not contain, ignoring case, the app's name or, when the username has
   4 or more characters, the username, and it may not be on the bundled list of common passwords
   (below). 15 is NIST SP 800-63B-4's minimum for a password that is the only factor, which it is
   until two-factor is turned on.
 - **The common-password list,** `security/common-passwords.txt`: the entries of 15 or more
-  characters from a public list of the most common passwords (SecLists, MIT licence, named with
-  its source in `password.ts`), compared after NFC and lower-casing. NIST requires checking a
-  blocklist, and length alone lets `aaaaaaaaaaaaaaa` through.
+  characters from one file of SecLists' `Passwords/Common-Credentials/` (MIT licence), whose path
+  and commit `password.ts` and the build PR name. Vite bundles it with `?raw`, like the
+  migrations. It is compared after NFC and lower-casing. NIST requires checking a blocklist, and
+  length alone accepts the long passwords such lists hold.
 - **Hashing:** `Bun.password` with argon2id and Bun's defaults, of the NFC form, so `sign-in`
   verifies what was hashed. The password is never logged or returned.
 - The form has one password field with a control that shows what was typed (DESIGN.md), and no
@@ -352,7 +364,8 @@ tests/e2e/global-setup.ts                   claims the instance for the other te
 The build also changes `package.json` (the three packages, adapter-bun 1.0.1 and `db:generate`),
 `vite.config.ts` (the form check off and the CSP), `playwright.config.ts` (a temporary database per
 run, the token captured from the server's output, the global setup), `messages/` (the claim page's
-and the refusal's text, `setup_…`), the README (the variables and first run) and `.gitignore`
+text, `setup_…`, and the refusal's, `error_access_denied_…`, which `sign-in`'s error pages
+reuse), the README (the variables and first run) and `.gitignore`
 (already ignores `/data/` and `*.db*`).
 
 The claim page follows its brief, [`route-setup.md`](../.impeccable/surfaces/route-setup.md),
@@ -374,10 +387,12 @@ and shows the language switcher.
     second claim; two at once leaving one owner; a failed transaction printing a new token; and the
     gate's decision for each path.
 - **e2e (Playwright, against the built server):** the web server starts with a generated key and a
-  temporary database, Playwright captures the token from its output, and the global setup claims
-  the instance through the form in a browser, so the smoke and language tests run on a claimed
-  instance as before; the temporary database is removed afterwards. `setup.test.ts` starts its own
-  fresh servers and checks that:
+  temporary database. Its `wait.stdout` pattern runs from the token line through adapter-bun's
+  "Listening on" and replaces the `url` check, because Playwright races the two and the URL could
+  win before the token is captured. The global setup claims the instance through the form in a
+  browser, so the smoke and language tests run on a claimed instance as before. The temporary
+  database is removed once the server process has exited, which is after the global teardown.
+  `setup.test.ts` starts its own fresh servers and checks that:
   - every page sends a fresh instance to `/setup`, and `/healthz` still answers `ok`;
   - a wrong token is refused, the right one claims, and `/setup` then answers 404;
   - a cross-site form POST is refused, and a same-origin POST with no `Sec-Fetch-*` headers passes,
@@ -385,7 +400,8 @@ and shows the language switcher.
     `--host-resolver-rules="MAP app.test 127.0.0.1"`);
   - the headers are on a page, `/healthz`, a 404, a refusal and the gate's redirect, and HSTS isn't,
     over plain HTTP;
-  - the page's scripts carry the CSP nonce and the browser reports no CSP violation;
+  - the page's scripts carry the CSP nonce, the refusal page carries its own policy, and the
+    browser reports no CSP violation;
   - the server refuses to start with an `ORIGIN` holding credentials (`https://u:p@host`) or a path
     (`https://host/app`), or with an unwritable database folder, without echoing either value;
   - `SIGHUP` and `SIGTERM` each shut it down with exit code 0;

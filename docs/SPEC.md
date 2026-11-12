@@ -707,8 +707,8 @@ numbers in these blocks are obzorarr's; each app cites its own.
 - **The AI form** on `/admin/settings/connections`: the key (stored on the server and never sent
   back to the browser; the form shows only that one is stored), the base URL (HTTPS only) and the
   model, each with a clear button; the test reuses the stored key only while the URL and model still
-  match what was stored; any of the three may come from the environment (`setup`'s locks). On
-  `/admin/slides`, the frequency, with a line saying whether AI or templates are in use.
+  match what was stored; any of the three may come from the environment (`plex-connection`'s
+  locks). On `/admin/slides`, the frequency, with a line saying whether AI or templates are in use.
 - **First run's panel:** enable, frequency, key, base URL, model, persona and the connection test.
   A missing key never blocks and falls back to templates, and the last step says when fun facts run
   on templates and points to the connection settings.
@@ -917,8 +917,8 @@ call for anything different; choices 4 and 5 are obzorarr's own.
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
 3. **Security headers and CSP.** The nonce-based CSP and the security headers on every response
-   (Module notes, `setup`) belong to the first module that serves real pages (`setup`, whose claim
-   page comes before `sign-in`), not the skeleton.
+   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)) belong to the first module that
+   serves real pages (`setup`, whose claim page comes before `sign-in`), not the skeleton.
 4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently (the
    connections brief); the legacy app offered five presets, and the design seeds both to
    After Hours. The skeleton defines After Hours as the only theme, its colours as semantic tokens
