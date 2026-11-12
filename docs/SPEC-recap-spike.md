@@ -14,23 +14,30 @@ a browser rather than a raster. It answers D19's questions:
 2. **What changes** before `recap`'s brief and spec are written.
 3. **Whether `recap` needs custom work beyond Panda and Ark,** and where.
 
+**The design input** is the surface brief
+[`route-wrapped-2025-me.md`](../.impeccable/surfaces/route-wrapped-2025-me.md), with this spec's
+corrections, and DESIGN.md. The brief is input only: `recap`'s brief follows from the verdict.
+
 The spike is not product. It has no database, sign-in, Plex, statistics or sharing, it is linked
 from nowhere, and the PR that records D19's verdict deletes it.
 
-**Left out on purpose,** because `recap` builds them (Module notes in [SPEC.md](SPEC.md#recap)) and
-none changes what the spike can settle: every other slide, scroll mode, the empty recap, the share
-dialog, returning to the previous page, the slide index in the URL fragment, year navigation, the
-logo mode, artwork, the server recap, and loading and failure states (the data is fixed, so there
-are none).
+**Left out on purpose,** because `recap` builds them (Module notes in [SPEC.md](SPEC.md#recap), D23,
+D24) and none changes what the spike can settle: every other slide, scroll mode, the empty recap,
+the share dialog, returning to the previous page, the slide index in the URL fragment, year
+navigation, the logo mode, artwork, the server recap, the total's days or weeks comparison, the
+time-zone note ("Times in …"), the note when runtimes are missing, and loading and failure states
+(the data is fixed, so there are none).
 
 ## The route and its data
 
 `/spike/recap` (`src/routes/spike/recap/`), served by the built server like `/`, through the same
 `handle` (so in the viewer's language), and not linked from anywhere.
-- **`+page.server.ts`** loads the member's figures from `tests/fixtures/demo-fixtures.json` (`year`,
-  `member`, `hours`, `movies`, `series`, `longestStreakDays`, `monthlyHours`) and returns only those.
-  So the slides take their figures as props, as `recap`'s will from the statistics, and never import
-  the fixture.
+- **`+page.server.ts`** imports `tests/fixtures/demo-fixtures.json` statically, so Vite bundles it
+  into the build and nothing reads `tests/` at runtime. The import from `tests/` is deliberate: the
+  fixture is the canonical demo data (DESIGN.md), and copying it would make two. It returns only the
+  member's figures under the `obzorarr` key (`year`, `member`, `hours`, `movies`, `series`,
+  `longestStreakDays`, `monthlyHours`), so the slides take their figures as props, as `recap`'s will
+  from the statistics, and never import the fixture.
 - **`+page.svelte`** renders the story with the three slides, and sets the page title.
 - **No security headers or CSP** (ground-floor choice 5). The spike serves fictional figures, stores
   nothing and is deleted before `setup` is built, so it never meets `setup`'s gate or headers. The
@@ -40,95 +47,116 @@ are none).
 
 Story mode is `recap`'s ([SPEC.md](SPEC.md#recap), Module notes), less what the spike leaves out.
 
-**The story** fills the screen, sized to the dynamic viewport height, with no app shell. It shows
-one slide at a time: total time, monthly hours, then the summary end card. The summary is the
-story's end, the third step of its progress.
+**The story** is at least the dynamic viewport's height, with no app shell. A top bar holds the page
+heading, progress and Close; a bottom bar holds Previous and Next; both stay in view (sticky). One
+step shows at a time: total time, monthly hours, then the summary end card. A step taller than the
+screen, at 200% zoom say, scrolls the page itself, so ↑, ↓ and the scroll wheel work wherever focus
+is.
+
+**The summary is the story's third step,** where the Module notes make `recap`'s summary a page
+after the slides. Three equal steps are the honest test of the story; the verdict records which
+`recap` keeps.
 
 **Moving** (one move goes one step; nothing loops):
 
 | Input | Forward | Back | Other |
 |---|---|---|---|
-| Tap | anywhere on the story but its left 15% | the left 15% | — |
+| Tap | anywhere on the step but its left 15% | the left 15% | — |
 | Swipe | leftward, more than 50 px | rightward, more than 50 px | — |
-| Keys | → , Space, Enter | ← | Home: the first slide; End: the summary; Escape: Close |
+| Keys | → , Space, Enter | ← | Home: the first step; End: the summary; Escape: Close |
 | Buttons | Next | Previous | — |
 
-- **A tap** is a press that moves less than 10 px. A press on a control (Close, Previous, Next, a
-  link or a button) is that control's, never a tap. A swipe counts only when it moves further
-  horizontally than vertically, so scrolling a tall slide never moves the story.
-- **Keys** are read on the whole page, but not when Ctrl, Alt or Meta is held, so browser shortcuts
-  such as Alt+← still work. Space and Enter on a focused control press it; they move the story only
-  when focus isn't on a control. ↑ and ↓ are left to the browser, to scroll a tall slide.
+- **A tap** is a press that moves less than 10 px. Only the primary pointer's primary button counts
+  (a right-click or a second finger moves nothing). A press on a control (Close, Previous, Next, a
+  link or a button) is that control's, never a tap.
+- **A swipe** counts only when it moves further horizontally than vertically. The story sets
+  `touch-action: pan-y pinch-zoom`, so the browser keeps vertical scrolling and zoom and leaves
+  horizontal drags to the story; a cancelled gesture (`pointercancel`) moves nothing, and text isn't
+  selected during a drag.
+- **Keys** are read on the whole page, but not when Shift, Ctrl, Alt or Meta is held, so browser
+  shortcuts such as Alt+← and Shift+Space still work. Space on a focused button presses it, and Enter on a focused button or
+  link activates it; otherwise both move the story (Space on a link doesn't follow it, and doesn't
+  scroll). ↑ and ↓ are left to the browser.
 - **Throttled:** a move within the `story` duration (320 ms) of the last one is ignored, so a held
-  key or a quick double tap can't skip a slide mid-transition.
+  key, a quick double tap or a button press that is also a tap can't skip a step.
 - **Previous and Next** show at every width (the screen shows them on desktop too, and the Module
   notes' phone buttons are the minimum). Each is a labelled 44 px button. At either end, the button
-  that can't move is `aria-disabled`, not `disabled` or removed, so a keyboard user's focus never
-  falls to the page.
-- **Close** is a labelled link to `/`, at the top of every step. Escape does the same. The spike
-  always closes to `/`.
-- **"Tap to continue"** shows on the first slide only.
+  that can't move is `aria-disabled` and does nothing on a click, Enter or Space, not `disabled` or
+  removed, so a keyboard user's focus never falls to the page.
+- **Close** is a labelled 44 px link to `/`. Escape does the same. The spike always closes to `/`.
+- **"Tap to continue"** shows on the first step only.
 
-**Progress** is three segments, past, current and remaining, drawn with tokens and hidden from
-assistive technology. The story follows the WAI-ARIA Authoring Practices' carousel pattern: the
-story is a region named "Your 2025 story" with `aria-roledescription="carousel"`, each step a group
-with `aria-roledescription="slide"` named "1 of 3", "2 of 3", "3 of 3", and the slide's container is
-`aria-live="polite"`, since nothing moves on its own.
+**Semantics.** The page's `h1` is the visible "Your 2025 story" in the top bar. The story follows
+the WAI-ARIA Authoring Practices' carousel pattern: a region named by that heading with
+`aria-roledescription="carousel"`; each step a group with `aria-roledescription="slide"` named
+"1 of 3", "2 of 3", "3 of 3", with its own `h2`; the steps' container `aria-live="polite"`, since
+nothing moves on its own. Progress is three segments, past, current and remaining, drawn with tokens
+and hidden from assistive technology.
 
-**Focus:** moving by keys or a tap leaves focus where it was; Previous and Next keep it. Arriving at
-the summary moves focus to its heading, so a stray Enter doesn't press a button (Module notes).
+**Focus.** Only the current step is in the page; a step leaving is `inert` until its transition
+ends.
+- Focus on a control in the bars (Close, Previous, Next) stays there.
+- Focus inside the leaving step moves to the new step's `h2` (`tabindex="-1"`), so it never falls to
+  the page.
+- Arriving at the summary always moves focus to its `h2`, so a stray Enter doesn't press a button
+  (Module notes).
 
-**Without JavaScript** the first slide shows and nothing moves. `recap`'s scroll mode decides the
+**Without JavaScript** the first step shows and nothing moves. `recap`'s scroll mode decides the
 no-script path; the spike doesn't.
 
 **The story shell is the spike's own code, not Ark UI's Carousel** (`@ark-ui/svelte` 5.25.1, Zag's
 carousel 1.47.0). The Carousel is a scroll-snap track: its transition is the browser's smooth
 scroll, whose duration the app can't set (DESIGN.md caps the story transition at 320 ms, from a
-token), and it doesn't read the reduced-motion preference. It handles keys only inside its indicator
-group, and has no tap zones or throttle. All slides sit side by side in one horizontally scrolling
-track, so a slide taller than the screen at 200% zoom would scroll on both axes. What Ark would have
-given, the region and slide roles and the previous and next buttons, is a few attributes and two
-buttons. The verdict records whether `recap` keeps this shell.
+token), and it doesn't read the reduced-motion preference. It handles ←, →, Home and End only while
+it holds focus, never Space, Enter or Escape, and has no tap zones or throttle. All steps sit side by
+side in one horizontally scrolling track, so a step taller than the screen at 200% zoom would scroll
+on both axes. What Ark would have given, the region and slide roles and the previous and next
+buttons, is a few attributes and two buttons. The verdict records whether `recap` keeps this shell.
 
 ## The three slides
 
-All figures come from the fixture; nothing is computed from the raster. Every slide keeps one
-dominant idea and wraps long and translated text without hiding Close, Previous or Next. A slide
-taller than the screen scrolls inside the story; nothing is clipped. No imagery sits behind text or
-figures (DESIGN.md).
+All figures come from the fixture; nothing is computed from the raster. Every step keeps one
+dominant idea and wraps long and translated text without hiding Close, Previous or Next. No imagery
+sits behind text or figures (DESIGN.md).
 
-1. **Total time.** The poster number, "842", in the display face at poster size, with "hours of
-   everything you played in 2025" (D23: never "watched"), then "Movie Buff" as fixed message text,
-   not a computed badge. Beside the text, the cyan projector beam over an abstract cinema silhouette
-   (below, "Imagery").
-2. **Monthly hours.** The title "Hours of everything you played in 2025, month by month", and a chart
-   of the twelve months: a list, one row per month, each with the month's short name, a bar and its
-   hours as text. Bars are proportional to the busiest month and drawn with tokens; the list is the
-   chart's text, so a screen reader reads every month and its hours, and it fits at 360 px and at
-   200% zoom without a chart library.
-3. **The summary end card.** "Your recap" above the heading "Alex's 2025", then 127 movies, 38 series
-   and "Longest streak" 21 days, each with a decorative icon, and the "Members only" badge (icon and
-   text, a tinted `secondary` background with readable text, never colour alone). "Share recap" is a
-   native `disabled` button that stays visibly labelled. "Back to overview" is a link to `/`.
+1. **Total time.** The `h2` is the sentence "842 hours of everything you played in 2025" (D23: never
+   "watched"), its number at poster size (below, "Imagery and tokens"); then "Movie Buff" as fixed
+   message text, not a computed badge. Beside the text, the cyan projector beam over an abstract
+   cinema silhouette.
+2. **Monthly hours.** The `h2` "Hours of everything you played in 2025, month by month", and a chart
+   of the twelve months: a list labelled by that heading (`aria-labelledby`), one row per month,
+   each with the month's short name, a bar and its hours as text ("42 hours", a plural message, so
+   a screen reader never reads "Jan 42" as a date). Bars are proportional to the
+   busiest month and drawn with tokens; the list is the chart's text, so a screen reader reads every
+   month and its hours, and it fits at 360 px and at 200% zoom without a chart library.
+3. **The summary end card.** "Your recap" above the `h2` "Alex’s 2025", then 127 movies, 38 series
+   and "Longest streak" 21 days, each with a decorative icon and its number in the display size, and
+   the "Members only" badge (icon and text, a tinted `secondary` background with readable text,
+   never colour alone). "Share recap" is a native `disabled` button that stays visibly labelled.
+   "Back to overview" is a link to `/`.
 
-**Poster numbers keep their whole sentence.** Each figure shown large ("842 hours of everything…",
+**Large numbers keep their whole sentence.** Each figure shown large ("842 hours of everything…",
 "127 movies", "38 series", "21 days") is one plural message with `{{count, number}}`, as
 [SPEC-i18n.md](SPEC-i18n.md#messages) requires, so the plural and the word order stay the
 translator's. The component splits the formatted message around the formatted count
 (`formatNumber(count)`, which formats a whole number exactly as the message's `number` format does)
-and styles that part large. If the count isn't found, the message shows unstyled. A caption without
-its count would read "1 hours" on real data and break the message check's rule.
+and styles that part large. It matches the count only where no digit or group separator touches it,
+so a count of 20 is never found inside "2025". If the count isn't found, the message shows unstyled.
+A caption without its count would read "1 hours" on real data and break the message check's rule.
 
 ## Motion
 
 Svelte's built-in transitions, `prefersReducedMotion` from `svelte/motion` and CSS, with every
-duration from Panda's motion tokens (`token("durations.story")` in script, the token name in
-`css()`), never a literal. No animation library.
+duration from Panda's motion tokens, never a literal. No animation library.
+- **Durations in script:** `Story.svelte` converts `token("durations.story")` ("320ms") to a number
+  once, and the transitions and the throttle use that number. CSS uses the token names.
 - **Between steps:** the new step slides in from the side it comes from and fades, over `story`
-  (320 ms).
-- **Each step's entrance,** when it becomes current, the first on load included: the total and its
-  caption fade and rise; the month bars grow from zero together; the summary's figures fade in. All
-  over `story`.
+  (320 ms), through Svelte's transitions, with no duration under reduced motion.
+- **Each step's entrance** is a CSS keyframe animation in `panda.config.ts`, run only under
+  `_motionSafe`: the total and its caption fade and rise; the month bars grow from zero together;
+  the summary's figures fade in. All over `story`. CSS, because Svelte doesn't play `in:`
+  transitions when a server-rendered page hydrates, and so the first step animates on load and is
+  never hidden waiting for JavaScript.
 - **Progress:** a segment fills over `feedback` (160 ms).
 - **No count-up.** The numbers are their final text from the first frame, so a screen reader or a
   translated layout never meets an intermediate value.
@@ -155,8 +183,9 @@ languages; the owner may spot-check the Danish.
 | `recap_spike_total_time` (plural) | {{count, number}} hours of everything you played in {{year}} |
 | `recap_spike_total_badge` | Movie Buff |
 | `recap_spike_monthly_title` | Hours of everything you played in {{year}}, month by month |
+| `recap_spike_monthly_hours` (plural) | {{count, number}} hours |
 | `recap_spike_summary_eyebrow` | Your recap |
-| `recap_spike_summary_title` | {{name}}'s {{year}} |
+| `recap_spike_summary_title` | {{name}}’s {{year}} |
 | `recap_spike_summary_movies` (plural) | {{count, number}} movies |
 | `recap_spike_summary_series` (plural) | {{count, number}} series |
 | `recap_spike_summary_streak_label` | Longest streak |
@@ -188,7 +217,7 @@ The fonts stay after the verdict: every page uses them.
 
 The summary and the controls need nine icons (close, previous, next, back, share, lock, film, TV
 and flame), and DESIGN.md asks for one 20 px line family with a 1.5–2 px stroke. The spike adds
-`@lucide/svelte` 1.72.0 (ISC), exact-pinned, imported one icon per path
+`@lucide/svelte` 1.72.0 (ISC), an exact-pinned dev dependency, imported one icon per path
 (`@lucide/svelte/icons/x`) at size 20 with a 2 px stroke and `currentColor`. Every icon here is
 decorative (`aria-hidden`): the control or figure beside it has the text. It is a new dependency,
 for the owner's approval, and stays after the verdict because every later surface needs icons.
@@ -199,20 +228,27 @@ The projector beam is a CSS gradient and the silhouette an inline SVG in the tot
 decorative (`aria-hidden`), coloured only through tokens, sharp at every width and with no asset
 pipeline. The verdict records whether `recap` needs drawn or raster art instead.
 
-The spike adds one token to `panda.config.ts`, `gradients.beam` (the beam, from `primary` fading
-into `background`), for the owner's approval with this spec, since DESIGN.md has none. It goes with
-the verdict PR unless the verdict keeps it. The story's height is `preset-base`'s `dvh` keyword, so
-it needs no token. Nothing else departs from DESIGN.md's
-tokens, and the spike uses no Ark primitive: nothing in it is a dialog, menu or form control.
+**Two new tokens,** for the owner's approval with this spec, since DESIGN.md has neither:
+- **`fontSizes.poster`:** the total's number, a fluid `clamp()` that fits 360 px and reaches about
+  three times `display` at 1440 px, as on the screen. The summary's figures use `display`.
+- **`gradients.beam`:** the beam, from `primary` fading to transparent, so it shows no edge over the
+  silhouette. A semantic token, because it refers to semantic colours.
+
+Both go with the verdict PR unless the verdict keeps them. The story's height is `preset-base`'s
+`dvh` keyword. Dimensions only the spike uses (a progress segment's thickness, the beam's and the
+silhouette's size) use Panda's `[…]` escape hatch, which `strictTokens` allows, and leave with the
+spike. Nothing else departs from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in
+it is a dialog, menu or form control.
 
 ## Project structure
 
 ```text
 src/routes/spike/recap/+page.server.ts         the fixture's member figures
 src/routes/spike/recap/+page.svelte            the story with its three slides; the page title
-src/lib/components/recap/Story.svelte          the story shell: progress, Close, Previous, Next,
-                                               taps, swipes, keys, focus, transitions
-src/lib/components/recap/story-input.ts        a key or a pointer gesture to a move (+ test)
+src/lib/components/recap/Story.svelte          the story shell: the bars, progress, taps, swipes,
+                                               keys, focus, transitions
+src/lib/components/recap/story-input.ts        a key or pointer gesture to a move, and the
+                                               throttle (+ test)
 src/lib/components/recap/count-emphasis.ts     a message split around its count (+ test)
 src/lib/components/recap/TotalTimeSlide.svelte the total, Movie Buff, the beam and silhouette
 src/lib/components/recap/MonthlyHoursSlide.svelte
@@ -220,11 +256,15 @@ src/lib/components/recap/SummaryCard.svelte
 tests/e2e/recap-spike.test.ts                  the spike against the built server
 ```
 
+The components sit in `lib/components/recap/`, the home the capability map gives `recap-spike`,
+rather than beside the one route that uses them, so `recap` can adopt them from git history.
+
 The build also changes:
 - `package.json` and `bun.lock`: the font packages and `@lucide/svelte`;
 - `src/routes/+layout.svelte`: the font imports;
-- `panda.config.ts`: the font tokens, the beam token and any keyframes the entrances need;
-- `messages/en.json` and `messages/da.json`.
+- `panda.config.ts`: the font tokens, the two new tokens and the entrance keyframes;
+- `messages/en.json` and `messages/da.json`;
+- `tests/e2e/smoke.test.ts`: the font check.
 
 `Story.svelte` takes the slides as snippets and knows nothing of their content, so `recap` can
 judge it apart from them. Progress stays inside it: nothing else uses it.
@@ -232,28 +272,36 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
 ## Testing strategy
 
 - **Unit (Vitest, `node`):**
-  - `story-input.test.ts`: each key to its move, modifiers ignored; a tap in the left 15% and
-    elsewhere; swipes either way past 50 px; a short or mostly vertical drag doing nothing.
+  - `story-input.test.ts`: each key to its move, modifiers ignored; Space and Enter on a focused
+    button or link; Shift held; a tap in the left 15% and elsewhere; swipes either way past 50 px;
+    a short or mostly vertical drag, a cancelled one, and a press of another button or pointer,
+    doing nothing; the throttle ignoring a move within
+    320 ms and taking one after it.
   - `count-emphasis.test.ts`: English and Danish messages split around their count, thousands
-    included ("1,234", "1.234"), and a message without the count left whole.
+    included ("1,234", "1.234"); a count that also appears inside the year (20 in a message holding
+    2025); a message without the count left whole.
 
   No component test is needed, so `happy-dom` doesn't join yet (SPEC.md, tech stack).
 - **e2e (Playwright, against the built server):** `recap-spike.test.ts` checks that:
   - `/spike/recap` answers 200 in English and, for a Danish browser, in Danish with
-    `<html lang="da">`, with the fixture's figures formatted for the language;
-  - → , Space, Enter, ←, Home and End move the story and the slide's name changes ("2 of 3");
-    Enter on a focused Close follows the link instead;
+    `<html lang="da">`, with the month names in the language ("May", "maj");
+  - → , Space, Enter, ←, Home and End move the story and the step's name changes ("2 of 3"); Enter
+    on a focused Close follows the link instead;
+  - clicking Next moves one step; clicking the `aria-disabled` Next on the summary, or Previous on
+    the first step, does nothing; Enter on a focused Next moves exactly one step;
   - a click in the left 15% goes back and elsewhere forward, and a mouse drag of more than 50 px
-    moves the story (the gestures use Pointer Events, so the mouse exercises them);
-  - arriving at the summary focuses its heading; Share recap is disabled; Next is `aria-disabled`
-    there and Previous on the first slide;
+    moves the story;
+  - arriving at the summary focuses its `h2`; then ← moves to "2 of 3" with focus inside that step;
+    Share recap is disabled;
   - Close, Escape and Back to overview all go to `/`;
   - with reduced motion (`emulateMedia`), the next step's final state shows at once: the month bars
-    at full width and no running animation;
+    at their final widths and no running animation;
   - at 360 px nothing scrolls sideways;
   - no console errors.
 
-  `smoke.test.ts` keeps passing with the fonts loaded.
+  `smoke.test.ts` also checks that the three bundled families load (`document.fonts`), since a
+  wrong family name would fall back to the system font with every other test green. A mouse drag can't show how a touch browser
+  shares a gesture with scrolling, so touch is in the owner's review.
 
 ## Commands
 
@@ -272,38 +320,47 @@ then opens `http://localhost:3000/spike/recap`, and reviews:
 - **200% zoom** at 1440 px;
 - **the keyboard alone:** →, Space, Enter, ←, Home, End and Escape, Tab through Close, Previous,
   Next and the summary's actions, with the focus ring visible;
+- **touch** on a phone on the same network (or the device toolbar's touch emulation): a horizontal
+  swipe moves the story, and a vertical scroll of a tall step doesn't;
 - **reduced motion** (the system setting, or the device toolbar's rendering emulation);
 - **Danish:** press "Dansk" on `/`, then open the spike again; then "English" to return.
 
-The owner gives the verdict: what `recap` keeps, what changes, and whether it needs custom work
-beyond Panda and Ark. The verdict PR then:
+The owner gives the verdict: what `recap` keeps (the shell, the summary as a step or a page after
+it, the imagery, the poster size), what changes, and whether it needs custom work beyond Panda and
+Ark. The verdict PR then:
 - moves D19 to Decided with that verdict;
-- deletes the route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages and
-  the beam token, unless the verdict keeps them;
+- deletes the route, `lib/components/recap/`, `recap-spike.test.ts` and the `recap_spike_…`
+  messages, always: `recap`'s spec adopts what the verdict keeps from git history, by naming the
+  commit before the verdict PR;
+- deletes the two new tokens, unless the verdict keeps them;
 - closes ground-floor choice 5 as "no headers needed";
-- marks row 3 built and updates SPEC.md, AGENTS.md and this spec as below.
+- marks row 3 built, removes the spike's entries from SPEC.md and AGENTS.md, and reduces this spec
+  (below).
 
-`setup`'s build starts only after the verdict PR merges. `recap`'s spec adopts spike code from git
-history by naming the commit before the verdict PR.
+`setup`'s build starts only after the verdict PR merges.
 
 ## Boundaries
 
 - **Always:** fixture figures only, passed as props; every string a message in both languages;
   durations from motion tokens; the final state under reduced motion; D23's wording.
-- **Ask first:** any dependency beyond the four packages above; any token beyond the beam; any
+- **Ask first:** any dependency beyond the four packages above; any token beyond the two above; any
   slide or state beyond the three steps.
 - **Never:** a link to the spike; a database, sign-in, Plex, statistics or a real member's data; a
   Pause control or a timer; "watched" for a runtime total; an animation library; the spike surviving
   the verdict PR.
 
-## Docs this module changes when built
+## Docs this module changes
 
-- **`docs/SPEC.md`:** the status line; row 3 of the capability map; the tech-stack table (the font
-  packages and `@lucide/svelte`); ground-floor choice 1 (fonts bundled); the `smoke` command row;
-  the testing section.
-- **`AGENTS.md`:** the status and the structure tree.
-- **This spec:** reduced at the verdict to what code can't say, as cleanup procedure 2 asks, since
-  the code it describes is deleted.
+**The build PRs,** as the code lands:
+- **`docs/SPEC.md`:** the status line; the tech-stack table (the font packages and
+  `@lucide/svelte`); ground-floor choice 1 (fonts bundled); the `smoke` command row; the testing
+  section.
+- **`AGENTS.md`:** the status and the structure tree, with the spike's files marked temporary.
+
+**The verdict PR:** D19, choice 5 and row 3 as above; the spike's entries in SPEC.md's testing
+section and `smoke` row and in AGENTS.md's tree go, and the fonts and icons stay; this spec is
+reduced to what code can't say, as cleanup procedure 2 asks, since the code it describes is
+deleted.
 
 ## Success criteria
 
