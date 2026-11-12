@@ -40,8 +40,8 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 1 | `secrets` | **Built.** Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | **Built.** The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `recap-spike` | The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it is committed. No database or sign-in, and its code becomes product code only through `recap`'s spec | `i18n` | a spike route that its spec names (ground-floor choice 5) |
-| 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
-| 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
+| 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
+| 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
 | 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
 | 7 | `public-address` | The public-address check, which only diagnoses: comparing the address the browser uses with the `Host` the app receives, `ORIGIN` when set and the forwarded address, classifying the forwarded headers and the source address, suggesting `ORIGIN=<address>` or the proxy line `proxy_set_header Host $http_host`, and the header recipes for common reverse proxies. It never blocks and saves nothing, and its suggestion also shows on the claim and owner sign-in pages, so someone without a session can recover | `sign-in` | its first-run step; a section of the Security tab; its hint on the claim and owner sign-in pages |
 | 8 | `plex-connection` | The Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting the server: picking one of the owner's servers through a one-time Plex sign-in, or a URL and token; sorted connections; plain HTTP only for private hosts by opt-in; test and save; environment locks on settings and the per-group versions that catch a save from a stale tab; accepted only when the token belongs to the server's owner (D20). Changing the URL or token advances the authority epoch | `sign-in` | its first-run step; `/admin/settings/connections` (the Plex form) |
@@ -88,8 +88,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
 | `recap-spike` | `lib/components/recap/` (the slide shell and the three slides); its route |
-| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
-| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token hashing, the in-memory rate limiter, scanner filter, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
+| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`, `security/cross-origin.ts`, `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the cross-origin check, the setup gate and the headers in `hooks.server.ts` |
+| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token hashing, the in-memory rate limiter, scanner filter); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `public-address` | `services/public-address/`; its first-run step, its section of the Security tab and its hint on the claim and owner sign-in pages |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`, `services/settings/` (environment locks and settings versions); `routes/(admin)/admin/settings/connections/` |
@@ -154,10 +154,10 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 First-run setup's steps after the claim, owner sign-in, the owner's account settings, the server
 recap, the Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and
-System tabs of `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
-describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr, Help
-and the language switcher, so it needs a way to owner sign-in. Each gets its brief before its
-module is specced.
+System tabs of `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's
+admin shell describe them) but have no brief. The landing brief's signed-out navigation has only
+Obzorarr, Help and the language switcher, so it needs a way to owner sign-in. Each gets its brief
+before its module is specced.
 
 ### Module notes
 
@@ -169,15 +169,15 @@ is only a starting point for that brief. Each block moves into its module's `SPE
 module is specced (`setup`'s is in [SPEC-setup.md](SPEC-setup.md)). Rate limits are listed once,
 under `sign-in`. `sign-in` is shared with the other edbfi apps (D20): a bullet or clause marked
 "(obzorarr)" is this app's own, and the rest is the shared wording; a "(obzorarr)" mark inside a
-bullet covers the rest of that bullet, and "(obzorarr: …)" only its own parentheses. Decision numbers in these blocks are
-obzorarr's; each app cites its own.
+bullet covers the rest of that bullet, and "(obzorarr: …)" only its own parentheses. Decision
+numbers in these blocks are obzorarr's; each app cites its own.
 
 #### sign-in
 
-- **Request order** (startup has already finished in SvelteKit's `init` hook): the language
-  (`i18n`, which refuses nothing), the cross-origin check, (obzorarr: the scanner filter), rate
-  limits, sign-in, the setup gate, then the owner check. Security headers go on every response, an
-  early return from any stage included.
+- **Request order** (startup has already finished in SvelteKit's `init` hook): the language (`i18n`,
+  which refuses nothing), the cross-origin check (`setup`), (obzorarr: the scanner filter), rate
+  limits, sign-in, the setup gate (`setup`), then the owner check. Security headers go on every
+  response, an early return from any stage included.
 - **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
   keeps only the path, never the query string; where the app has member sessions, a signed-in member
   goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
@@ -192,31 +192,6 @@ obzorarr's; each app cites its own.
   Plex sign-in's polling 60 a minute and its redirect 30 a minute; the landing page 30 a minute and
   its lookup 10 a minute; and the public-address check 12 a minute. When no address can be found,
   limits are skipped with a one-time warning, favouring availability.
-- **SvelteKit's own form check is off:** `sveltekit({ csrf: { trustedOrigins: ['*'] } })` in
-  `vite.config.ts` (SvelteKit 3 takes its options in the `sveltekit()` call, with no `kit:`
-  wrapper). Remote functions stay off. A config test asserts both, so SvelteKit's only remaining
-  check before `handle` is the remote-function one, which nothing uses. The cross-origin check
-  replaces SvelteKit's form check.
-- **The cross-origin check** asks the browser, so the app doesn't need to know its own address and
-  stores none. It is the first check in `handle`, after only the language (`i18n`), for every
-  method except GET, HEAD and OPTIONS, and for every content type (form, JSON, multipart,
-  `text/plain`, empty). Internal `event.fetch` subrequests (`event.isSubRequest`) skip it.
-  - An `Origin` header, whenever it is present, must parse as one bare `http` or `https` origin;
-    `null`, a malformed value or several values are refused. This applies on every branch below.
-  - With `ORIGIN` set, a present `Origin` must equal `ORIGIN`, compared as parsed origins. Without
-    `Origin`, `Sec-Fetch-Site` must be `same-origin` or `none`.
-  - With `ORIGIN` unset, a present `Sec-Fetch-Site` passes only as `same-origin` or `none`
-    (`same-site` and `cross-site` are refused). Otherwise `Origin`'s host and port must equal the
-    `Host` header, with default ports normalised. Browsers send `Sec-Fetch-Site` only to HTTPS,
-    `localhost` and loopback addresses, so over plain HTTP outside loopback every browser gets
-    this comparison.
-  - A request with neither `Origin` nor `Sec-Fetch-Site` doesn't come from a browser. It passes only
-    on an explicit list of machine routes (obzorarr: none, so it refuses every such request): the
-    API-key endpoints and other machine routes the app's approved docs already name, each with the
-    credentials those docs require. The session cookie is never honoured on it: such a request that
-    carries only a session cookie gets a 403.
-  - A refusal is a 403 with the app's own "Access denied" page, or a JSON error for JSON callers,
-    with the security headers and in the viewer's language.
 - **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
   POST that passed the cross-origin check. It decides the cookies' `Secure` flag, the OIDC
   `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. Every POST that sets or
@@ -235,29 +210,6 @@ obzorarr's; each app cites its own.
   and owner sign-in pages suggest setting `ORIGIN=<that address>` (or removing a wrong `ORIGIN`) or
   adding the proxy line `proxy_set_header Host $http_host`, so someone without a session can
   recover. (obzorarr) `public-address` adds it, with the check behind it.
-- **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name (an
-  app prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
-  variable). When set, it must be a bare `http` or `https` origin (a trailing `/` is fine; no path,
-  query, fragment or credentials), compared as a parsed origin, or startup stops with an error that
-  doesn't echo the value. adapter-bun 1.0.0 ignores `ORIGIN`; from 1.0.1 a set `ORIGIN` also
-  corrects SvelteKit's `event.url`, and an empty `ORIGIN=""` throws with the value in the message,
-  so the container image's entrypoint unsets an empty `ORIGIN` and its templates leave it out (the
-  image's work, not this repo's).
-- **When `ORIGIN` or a proxy fix is still needed:** behind a proxy that rewrites `Host`, over plain
-  HTTP for every browser, and over HTTPS only for browsers without `Sec-Fetch-Site` (Safari before
-  16.4, Firefox before 90, Chrome before 76). The proxy fix is `proxy_set_header Host $http_host`
-  (not `$host`, which drops a non-default port). Remote functions would need it too; they stay
-  off.
-- **Accepted residual risks.** Over plain HTTP, the `Origin` and `Host` comparison can't tell `http`
-  from `https`, which is harmless on a port that speaks only HTTP; over HTTPS it affects only
-  browsers without `Sec-Fetch-Site`, and only against a network attacker, and HSTS or `ORIGIN`
-  closes it. DNS rebinding reaches only actions that need no sign-in, because cookies don't follow
-  a rebind, and those are gated by a console token or rate-limited.
-- **Tests:** the cross-origin check is one pure module, unit-tested against a matrix of headers and
-  copied to each app as D20 shares the opening modules. One Playwright test against the built server
-  (`bun ./build`) checks that a cross-site form POST is refused and that a same-origin POST carrying
-  no `Sec-Fetch-*` headers passes, both on `localhost` and on a plain-HTTP host name that isn't
-  loopback (such as Chromium's `--host-resolver-rules="MAP app.test 127.0.0.1"`).
 - **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
   whitespace, control characters or URL-structural characters is rejected; forwarded headers never
   set the browser's address or change the strict-transport decision. (obzorarr) Only the last proxy
@@ -334,12 +286,13 @@ obzorarr's; each app cites its own.
 - **Changing the URL or token** advances the authority epoch at the next startup and invalidates
   the stored machine id and identity proof, so the next sync proves every identity again. This
   module adds a README line telling the owner to back up the database before changing either.
-- **Environment locks** (moved from `setup`; obzorarr is the reference for the apps that adopt
-  them, which port them from here). A setting the environment supplies wins: its field is read-only and says that the deployment's configuration
-  owns the value. A submitted locked field is left unchanged, with "Some fields are controlled by
-  environment variables and were not changed." A stored value the environment shadows is deleted at
-  startup. A placeholder from the sample configuration (such as a literal "your token here", or the
-  default local Plex address without a real token) counts as unset.
+- **Environment locks** (moved from `setup`; obzorarr is the reference for the apps that adopt them,
+  which port them from here). A setting the environment supplies wins: its field is read-only and
+  says that the deployment's configuration owns the value. A submitted locked field is left
+  unchanged, with "Some fields are controlled by environment variables and were not changed." A
+  stored value the environment shadows is deleted at startup. A placeholder from the sample
+  configuration (such as a literal "your token here", or the default local Plex address without a
+  real token) counts as unset.
 - **Settings versions** (moved from `setup`). Every settings form carries its key group's version,
   the group's last update time in milliseconds. A save with a missing, blank or older version is
   refused as a conflict, "Settings changed in another tab. Reload and try again.", with a reload
@@ -351,8 +304,8 @@ obzorarr's; each app cites its own.
   bring back a cleared secret.
 - **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
 - **In logs** (moved from `setup`), Plex host names, server names and machine ids appear only as
-  short fingerprints with a coarse category (`plex.direct`, localhost, private IP, container range, public domain, public IP,
-  invalid).
+  short fingerprints with a coarse category (`plex.direct`, localhost, private IP, container range,
+  public domain, public IP, invalid).
 
 #### identity
 
