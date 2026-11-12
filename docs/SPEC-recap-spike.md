@@ -89,10 +89,10 @@ after the slides. Three equal steps are the honest test of the story; the verdic
 **Semantics.** The page's `h1` is the visible "Your 2025 story" in the top bar. The story follows
 the WAI-ARIA Authoring Practices' carousel pattern: a region named by that heading with
 `aria-roledescription` "carousel"; each step a group with `aria-roledescription` "slide", named
-"1 of 3", "2 of 3", "3 of 3", with its own `h2`. Screen readers speak `aria-roledescription`
-verbatim, so both words are messages ("karrusel", "dias" in Danish); the steps' container `aria-live="polite"`, since
-nothing moves on its own. Progress is three segments, past, current and remaining, drawn with tokens
-and hidden from assistive technology.
+"1 of 3", "2 of 3", "3 of 3", with its own `h2`. Screen readers speak `aria-roledescription` verbatim,
+so both words are messages ("karrusel", "dias" in Danish); the steps' container
+`aria-live="polite"`, since nothing moves on its own. Progress is three segments, past, current and
+remaining, drawn with tokens and hidden from assistive technology.
 
 **Focus.** Only the current step is in the page; a step leaving is `inert` until its transition
 ends.
@@ -120,9 +120,9 @@ dominant idea and wraps long and translated text without hiding Close, Previous 
 sits behind text or figures (DESIGN.md).
 
 1. **Total time.** The `h2` is the sentence "842 hours of everything you played in 2025" (D23: never
-   "watched"), its number in the `display` text style at poster size (below, "Imagery and tokens"); then "Movie Buff" as fixed
-   message text, not a computed badge. Beside the text, the cyan projector beam over an abstract
-   cinema silhouette.
+   "watched"), its number in the `display` text style at poster size (below, "Imagery and
+   tokens"); then "Movie Buff" as fixed message text, not a computed badge. Beside the text, the
+   cyan projector beam over an abstract cinema silhouette.
 2. **Monthly hours.** The `h2` "Hours of everything you played in 2025, month by month", and a chart
    of the twelve months: a list labelled by that heading (`aria-labelledby`), one row per month,
    each with the month's short name, a bar and its hours as text ("42 hours", a plural message, so
@@ -337,8 +337,8 @@ it, the imagery, the poster size), what changes, and whether it needs custom wor
 Ark. The verdict PR then:
 - moves D19 to Decided with that verdict;
 - deletes the route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages
-  and the entrance keyframes in `panda.config.ts`, always: `recap`'s spec adopts what the verdict keeps from git history, by naming the
-  commit before the verdict PR;
+  and the entrance keyframes in `panda.config.ts`, always: `recap`'s spec adopts what the verdict
+  keeps from git history, by naming the commit before the verdict PR;
 - deletes the two new tokens, unless the verdict keeps them;
 - closes ground-floor choice 5 as "no headers needed";
 - marks row 3 built, removes the spike's entries from SPEC.md and AGENTS.md, and reduces this spec
