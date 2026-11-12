@@ -25,14 +25,14 @@ test("/ serves the placeholder page, hydrated and styled, without console errors
 
 test("the bundled fonts load under the names Panda's font tokens give them", async ({ page }) => {
 	await page.goto("/");
-	// For each token, `load()` returns the faces that would render its first family. A name the
-	// bundled CSS doesn't register returns none, where `document.fonts.check()` would pass it
-	// (SPEC-recap-spike.md, "Testing strategy").
+	// Each token's first family, loaded alone: `load()` returns its bundled faces, and none for a
+	// name the bundled CSS doesn't register, where `document.fonts.check()` would pass it. Loading
+	// the whole stack could match a bundled fallback instead (docs/SPEC.md, "Testing strategy").
 	const faces = await page.evaluate(async () => {
 		const root = getComputedStyle(document.documentElement);
 		const counts: Record<string, number> = {};
 		for (const name of ["display", "body", "mono"]) {
-			const family = root.getPropertyValue(`--fonts-${name}`).trim();
+			const family = root.getPropertyValue(`--fonts-${name}`).split(",")[0]?.trim() ?? "";
 			counts[name] = (await document.fonts.load(`16px ${family}`)).length;
 		}
 		return counts;
