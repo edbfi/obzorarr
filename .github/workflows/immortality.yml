@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copy as .github/workflows/immortality.yml.
 # GitHub disables scheduled workflows in a public repository after 60 days
 # without activity. Once a month this job re-enables this repository's

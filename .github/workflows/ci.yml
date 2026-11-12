@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copy as .github/workflows/ci.yml; adapt commands, directories and runners to the repo.
 # Give each repo its own weekly minute. Every added PR job belongs in ci-ok. No paths: filter:
 # a skipped workflow leaves the required checks pending.

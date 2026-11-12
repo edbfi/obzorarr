@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Copy to the repo root; preserve existing project hooks. Keep this filename: Dependabot's
 # pre-commit updater can't read prek.toml. CI runs prek run --all-files --hook-stage manual.
 default_install_hook_types: [pre-commit, commit-msg]

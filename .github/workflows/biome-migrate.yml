@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: AGPL-3.0-or-later
 # Commits `biome migrate` and Biome's formatter output (never lint fixes) to Dependabot's Biome PRs, then
 # re-enables auto-merge on the new head, because this workflow races dependabot-auto-merge.yml.
 # A Biome release can reformat source without any configuration change. The migrate job formats the tracked files
