@@ -71,6 +71,7 @@ each, each test first, then the verdict PR once the owner has reviewed the spike
 | Focus falls to the page when a step leaves | High | Task 2's e2e: ← from the summary keeps focus inside "2 of 3"; task 4's checks focus mid-transition |
 | The throttle drops keys in the e2e and makes it flaky | Medium | Moves in the e2e wait past the `story` duration (task 2) |
 | The large number is matched inside the year in a translation | Low | `count-emphasis.test.ts`'s year case (task 3) |
+| Clipping the slide-in with `overflow: hidden` on the story breaks the sticky bars | Medium | Task 4 clips with `overflow-x: clip`, and its mid-transition check covers 360 px |
 | The first step's entrance doesn't play on load, or hides it without JavaScript | Medium | Entrances are CSS keyframes under `_motionSafe` (task 4), checked with and without JavaScript |
 | The agents' Danish reads badly | Low | The owner reviews the spike in Danish (task 4's checklist) |
 
