@@ -1,6 +1,6 @@
 # Spec: `recap-spike`
 
-**Status:** draft for the owner's approval. Module 3 of the capability map ([docs/SPEC.md](SPEC.md));
+**Status:** approved by the owner (2026-11-12). Module 3 of the capability map ([docs/SPEC.md](SPEC.md));
 it closes D19. `recap-spike` is obzorarr's own: the recap isn't a shared area
 ([Shared groundwork](../AGENTS.md#shared-groundwork)), so no sibling ports it.
 
@@ -221,7 +221,7 @@ and flame), and DESIGN.md asks for one 20 px line family with a 1.5–2 px strok
 `@lucide/svelte` 1.72.0 (ISC), an exact-pinned dev dependency, imported one icon per path
 (`@lucide/svelte/icons/x`) at size 20 with a 2 px stroke and `currentColor`. Every icon here is
 decorative (`aria-hidden`): the control or figure beside it has the text. It is a new dependency,
-for the owner's approval, and stays after the verdict because every later surface needs icons.
+approved by the owner with this spec, and stays after the verdict because every later surface needs icons.
 
 ## Imagery and tokens
 
@@ -229,7 +229,7 @@ The projector beam is a CSS gradient and the silhouette an inline SVG in the tot
 decorative (`aria-hidden`), coloured only through tokens, sharp at every width and with no asset
 pipeline. The verdict records whether `recap` needs drawn or raster art instead.
 
-**Two new tokens,** for the owner's approval with this spec, since DESIGN.md has neither:
+**Two new tokens,** approved by the owner with this spec, since DESIGN.md has neither:
 - **`fontSizes.poster`:** the total's number, a fluid `clamp()` that fits 360 px and reaches about
   three times `display` at 1440 px, as on the screen. The summary's figures use `display`.
 - **`gradients.beam`:** the beam, from `primary` fading to transparent, so it shows no edge over the
