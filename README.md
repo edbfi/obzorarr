@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="src/lib/assets/obzorarr-icon.svg" alt="obzorarr logo" width="256" height="256">
+  <img src="src/lib/assets/obzorarr-icon.svg" alt="obzorarr logo" width="160" height="158">
 </p>
 
 <h1 align="center">obzorarr</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/edbfi/obzorarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--only-blue.svg?style=flat" alt="License: AGPL-3.0-only"></a>
+  <a href="https://github.com/edbfi/obzorarr/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg?style=flat" alt="License: AGPL-3.0-or-later"></a>
   <a href="https://github.com/oven-sh/bun" title="Bun source"><img src="https://img.shields.io/badge/Bun-000000?style=flat&logo=bun&logoColor=white" alt="Bun"></a>
   <a href="https://github.com/sveltejs/kit" title="SvelteKit source"><img src="https://img.shields.io/badge/SvelteKit-FF3E00?style=flat&logo=svelte&logoColor=white" alt="SvelteKit"></a>
   <a href="https://github.com/microsoft/TypeScript" title="TypeScript source"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white" alt="TypeScript"></a>
@@ -94,3 +94,13 @@ same key alongside them. Without it, stored secrets can't be read.
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
 The product and design context is in [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and
 [docs/](docs/); the skeleton's scope is [docs/SPEC.md](docs/SPEC.md).
+
+## License
+
+Obzorarr's original code is free software: you may redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free Software Foundation,
+either version 3 of the License, or (at your option) any later version (`AGPL-3.0-or-later`).
+See [LICENSE](LICENSE) for the full license text.
+
+Third-party components, vendored skills and other upstream materials retain their respective
+licenses and copyright notices.
