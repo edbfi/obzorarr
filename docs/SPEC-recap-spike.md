@@ -1,8 +1,8 @@
 # Spec: `recap-spike`
 
-**Status:** approved by the owner (2026-11-12). Module 3 of the capability map ([docs/SPEC.md](SPEC.md));
-it closes D19. `recap-spike` is obzorarr's own: the recap isn't a shared area
-([Shared groundwork](../AGENTS.md#shared-groundwork)), so no sibling ports it.
+**Status:** approved by the owner (2026-11-12). Module 3 of the capability map
+([docs/SPEC.md](SPEC.md)); it closes D19. `recap-spike` is obzorarr's own: the recap isn't a shared
+area ([Shared groundwork](../AGENTS.md#shared-groundwork)), so no sibling ports it.
 
 ## Objective
 
@@ -216,12 +216,13 @@ The fonts stay after the verdict: every page uses them.
 
 ## Icons
 
-The summary and the controls need nine icons (close, previous, next, back, share, lock, film, TV
-and flame), and DESIGN.md asks for one 20 px line family with a 1.5–2 px stroke. The spike adds
+The summary and the controls need nine icons (close, previous, next, back, share, lock, film, TV and
+flame), and DESIGN.md asks for one 20 px line family with a 1.5–2 px stroke. The spike adds
 `@lucide/svelte` 1.72.0 (ISC), an exact-pinned dev dependency, imported one icon per path
 (`@lucide/svelte/icons/x`) at size 20 with a 2 px stroke and `currentColor`. Every icon here is
 decorative (`aria-hidden`): the control or figure beside it has the text. It is a new dependency,
-approved by the owner with this spec, and stays after the verdict because every later surface needs icons.
+approved by the owner with this spec, and stays after the verdict because every later surface needs
+icons.
 
 ## Imagery and tokens
 
