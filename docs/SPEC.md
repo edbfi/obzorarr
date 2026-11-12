@@ -3,7 +3,7 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built.
+built, and module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
 
 ## Objective
 
@@ -40,11 +40,11 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 1 | `secrets` | **Built.** Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | **Built.** The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `recap-spike` | The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it is committed. No database or sign-in, and its code becomes product code only through `recap`'s spec | `i18n` | a spike route that its spec names (ground-floor choice 5) |
-| 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner. obzorarr adds environment locks on settings and the per-group versions that catch a save from a stale tab | `secrets`, `i18n` | first-run setup (no brief yet) |
+| 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
 | 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
 | 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
 | 7 | `public-address` | The public-address check, which only diagnoses: comparing the address the browser uses with the `Host` the app receives, `ORIGIN` when set and the forwarded address, classifying the forwarded headers and the source address, suggesting `ORIGIN=<address>` or the proxy line `proxy_set_header Host $http_host`, and the header recipes for common reverse proxies. It never blocks and saves nothing, and its suggestion also shows on the claim and owner sign-in pages, so someone without a session can recover | `sign-in` | its first-run step; a section of the Security tab; its hint on the claim and owner sign-in pages |
-| 8 | `plex-connection` | The Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting the server: picking one of the owner's servers through a one-time Plex sign-in, or a URL and token; sorted connections; plain HTTP only for private hosts by opt-in; test and save; environment locks; accepted only when the token belongs to the server's owner (D20). Changing the URL or token advances the authority epoch | `sign-in` | its first-run step; `/admin/settings/connections` (the Plex form) |
+| 8 | `plex-connection` | The Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting the server: picking one of the owner's servers through a one-time Plex sign-in, or a URL and token; sorted connections; plain HTTP only for private hosts by opt-in; test and save; environment locks on settings and the per-group versions that catch a save from a stale tab; accepted only when the token belongs to the server's owner (D20). Changing the URL or token advances the authority epoch | `sign-in` | its first-run step; `/admin/settings/connections` (the Plex form) |
 | 9 | `identity` | Identity reconciliation: the all-or-nothing mapping from server-local accounts to Plex accounts, its proof record, the 24-hour freshness and the authority epoch | `plex-connection` | — |
 | 10 | `sync` | History sync: the three modes, a watermark that survives empty runs, enrichment with a retry window for failed lookups, the single running slot, claimed atomically by the start itself so a lost race shows at once, cancel, the admin and member progress streams, live sync when a recap opens, and the schedule with pause, resume and the instance time zone (D24), with every start visible and cancellable. Adds the first-run sync and time zone steps | `identity` | its first-run steps; `/admin/sync` (no brief yet); the time zone in the System tab |
 | 11 | `plex-sign-in` | Sign in with Plex. For members: PIN sign-in in a popup or by redirect, safe return paths, the membership check against a fresh mapping, revalidation with its grace window, member sessions and sign-out. For the owner: linking their Plex account in the account settings, after which Plex signs them in as the owner, through two-factor when it is on. Unlinked, the server owner's Plex account gets a member session (D20) | `two-factor`, `identity` | the sign-in flow and its popup page; the Plex section of the owner's account settings |
@@ -88,11 +88,11 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
 | `recap-spike` | `lib/components/recap/` (the slide shell and the three slides); its route |
-| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
-| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token and password hashing, the in-memory rate limiter, scanner filter, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
+| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`; `routes/setup/`, and the setup gate and the headers in `hooks.server.ts` |
+| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token hashing, the in-memory rate limiter, scanner filter, the cross-origin check), `vite.config.ts` (SvelteKit's own form check off); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
 | `public-address` | `services/public-address/`; its first-run step, its section of the Security tab and its hint on the claim and owner sign-in pages |
-| `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`; `routes/(admin)/admin/settings/connections/` |
+| `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`, `services/settings/` (environment locks and settings versions); `routes/(admin)/admin/settings/connections/` |
 | `identity` | `services/identity/`, `db/` account-mapping schema |
 | `sync` | `services/sync/`, `jobs/sync.ts`, `db/` history, metadata and sync-run schema; `routes/(admin)/admin/sync/`, the progress streams under `routes/api/` |
 | `plex-sign-in` | `services/plex-sign-in/`, `db/` member-session and sign-in-attempt schema; the sign-in routes under `routes/(public)/` |
@@ -116,9 +116,9 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 - `recap-spike`: D19.
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
 - `sign-in`: how long an owner session lasts.
-- `sign-in`: the password rules: the minimum length, whether a list of common passwords is
-  refused, and how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
-  where the app's approved docs allow one).
+- `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
+  where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
+  the first password ([SPEC-setup.md](SPEC-setup.md#first-run)).
 - The first module with a background job closes the job half of D14: `sign-in` if its session
   cleanup is a job, otherwise `sync`.
 - `plex-connection`: D18, including the watched-time question (D23) and the history and mapping
@@ -152,9 +152,9 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Surfaces with no brief yet
 
-First-run setup and its steps, owner sign-in, the owner's account settings, the server recap, the
-Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and System tabs of
-`/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
+First-run setup's steps after the claim, owner sign-in, the owner's account settings, the server
+recap, the Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and
+System tabs of `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's admin shell
 describe them) but have no brief. The landing brief's signed-out navigation has only Obzorarr, Help
 and the language switcher, so it needs a way to owner sign-in. Each gets its brief before its
 module is specced.
@@ -166,73 +166,11 @@ app and adapted to the decisions. It is behaviour to keep unless the module's ap
 decision changes it. Layout, placement, visuals and exact wording are not behaviour: where a note
 describes them, DESIGN.md and the surface's brief win, and for a surface with no brief yet the note
 is only a starting point for that brief. Each block moves into its module's `SPEC-<id>.md` when that
-module is specced. Rate limits are listed once, under `sign-in`. `setup` and `sign-in` are
-shared with the other edbfi apps (D20): a bullet or clause marked "(obzorarr)" is this app's own,
-and the rest is the shared wording; a "(obzorarr)" mark inside a bullet covers the rest of that
-bullet, and "(obzorarr: …)" only its own parentheses. Decision numbers in these blocks are
+module is specced (`setup`'s is in [SPEC-setup.md](SPEC-setup.md)). Rate limits are listed once,
+under `sign-in`. `sign-in` is shared with the other edbfi apps (D20): a bullet or clause marked
+"(obzorarr)" is this app's own, and the rest is the shared wording; a "(obzorarr)" mark inside a
+bullet covers the rest of that bullet, and "(obzorarr: …)" only its own parentheses. Decision numbers in these blocks are
 obzorarr's; each app cites its own.
-
-#### setup
-
-- **The setup gate.** Until first run is complete, every page except static assets, the claim,
-  sign-in and first run's own helpers sends the browser to the current first-run step. The server
-  keeps one current-step pointer: the browser can't skip ahead, each step's action checks that it is
-  the current step, and a step that offers Previous only moves the pointer back. Only the last
-  step's action completes first run. (obzorarr) The step indicator can't be clicked, the
-  configuration step saves the panels that later modules add in one submission, and the last step
-  summarises the configuration and the sync status.
-- **The bootstrap token** (D20) is 12 random lowercase letters and digits, shown as
-  `xxxx-xxxx-xxxx`, held only in memory (never logged or stored) and compared in constant time. It
-  is printed with the setup URL and is valid for 15 minutes, after which a new one is printed. Claim
-  attempts are rate-limited (`sign-in`).
-- **The claim** is a POST, cross-origin-checked like any other (`sign-in`), and it stores no
-  address. It needs a valid bootstrap token and the browser's address (`sign-in`). Using up the
-  token and creating the owner are one atomic step, and the owner session it starts follows
-  `sign-in`'s cookies.
-- **Environment locks** (obzorarr, the reference for the apps that adopt them). A setting the
-  environment supplies wins: its field is read-only and says that the deployment's configuration
-  owns the value. A submitted locked field is left unchanged, with "Some fields are controlled by
-  environment variables and were not changed." A stored value the environment shadows is deleted at
-  startup. A placeholder from the sample configuration (such as a literal "your token here", or the
-  default local Plex address without a real token) counts as unset.
-- **Settings versions** (obzorarr). Every settings form carries its key group's version, the
-  group's last update time in milliseconds. A save with a missing, blank or older version is
-  refused as a conflict, "Settings changed in another tab. Reload and try again.", with a reload
-  action, and nothing reports success. Each write moves the version strictly forward, even after
-  the clock is corrected, and returns the version it wrote, so two saves in a row from one page
-  both succeed. Groups are narrow (server-recap privacy, user defaults, public lookup, each
-  appearance field, the time zone, log settings, connections), so saving one form never conflicts
-  with another. Clearing a connection value moves its group's version too, so a stale tab can't
-  bring back a cleared secret.
-- **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
-- **Logging.** Four levels; debug entries are dropped unless debug logging is on. Each entry has a
-  level, a message, a source, structured metadata and a millisecond timestamp, and goes to standard
-  output (D11). Redaction runs before an entry is written anywhere: credentials in URLs, token-like
-  query parameters, token, authorisation and cookie fields in payloads and headers, and, at any
-  depth, any metadata key that looks like a token, secret, password, cookie, session or key.
-  (obzorarr) Plex host names, server names and machine ids appear only as short fingerprints with a
-  coarse category (`plex.direct`, localhost, private IP, container range, public domain, public IP,
-  invalid).
-- **Security headers,** on every response, early returns included: framing denied, no MIME
-  sniffing, a referrer policy of `same-origin` or `strict-origin-when-cross-origin`, never
-  `no-referrer` (which makes browsers send `Origin: null` on the app's own form posts), a
-  permissions policy denying camera, microphone and geolocation, one-year strict transport security
-  over HTTPS (known when `ORIGIN` is `https`, or when the browser sent `Sec-Fetch-Site` to a host
-  that isn't loopback, since browsers send it only to HTTPS and loopback addresses), and a nonce-based content security policy: scripts from the app only; images from the
-  app and inline data (obzorarr: and Plex's hosts, including the image proxy Plex uses for some
-  avatars); fonts from the app (DESIGN.md bundles them); connections to the app only (obzorarr: and
-  Plex); no framing; the app only as base and form target.
-- **Startup and shutdown.** Startup runs once, before any request is served: migrations (D5), then
-  each module's startup work (obzorarr: deleting shadowed settings, advancing the authority epoch
-  when the Plex URL or token changed, `identity`, and marking interrupted syncs failed, D7), then
-  starting the jobs; a job that fails to start is logged, not fatal. Shutdown stops the jobs,
-  flushes the logs and drains open requests and live streams for a bounded time, then exits even if
-  an upstream call is still outstanding. Streams it closes end cleanly, so browsers reconnect. A
-  second signal exits at once, and a hang-up counts as a stop. The environment sets the drain time
-  (default 30 seconds, kept below the container's stop timeout). (obzorarr) It also sets the
-  database location, the idle timeout (default 10 seconds, streams exempt) and the request body
-  limit (default 512 KB; obzorarr takes no uploads).
-- **Trust:** anyone who can read the server console can claim a fresh install.
 
 #### sign-in
 
@@ -396,6 +334,25 @@ obzorarr's; each app cites its own.
 - **Changing the URL or token** advances the authority epoch at the next startup and invalidates
   the stored machine id and identity proof, so the next sync proves every identity again. This
   module adds a README line telling the owner to back up the database before changing either.
+- **Environment locks** (moved from `setup`; obzorarr is the reference for the apps that adopt
+  them, which port them from here). A setting the environment supplies wins: its field is read-only and says that the deployment's configuration
+  owns the value. A submitted locked field is left unchanged, with "Some fields are controlled by
+  environment variables and were not changed." A stored value the environment shadows is deleted at
+  startup. A placeholder from the sample configuration (such as a literal "your token here", or the
+  default local Plex address without a real token) counts as unset.
+- **Settings versions** (moved from `setup`). Every settings form carries its key group's version,
+  the group's last update time in milliseconds. A save with a missing, blank or older version is
+  refused as a conflict, "Settings changed in another tab. Reload and try again.", with a reload
+  action, and nothing reports success. Each write moves the version strictly forward, even after
+  the clock is corrected, and returns the version it wrote, so two saves in a row from one page
+  both succeed. Groups are narrow (server-recap privacy, user defaults, public lookup, each
+  appearance field, the time zone, log settings, connections), so saving one form never conflicts
+  with another. Clearing a connection value moves its group's version too, so a stale tab can't
+  bring back a cleared secret.
+- **Settings URLs:** upstream base URLs may not hold credentials, a query or a fragment.
+- **In logs** (moved from `setup`), Plex host names, server names and machine ids appear only as
+  short fingerprints with a coarse category (`plex.direct`, localhost, private IP, container range, public domain, public IP,
+  invalid).
 
 #### identity
 
