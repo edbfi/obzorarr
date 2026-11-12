@@ -48,8 +48,8 @@ line naming the variable and what is wrong, never echoing the value.
 and messages, which may echo a malformed value; the app adds no code for them, and the README lists
 them:
 - `SHUTDOWN_TIMEOUT` (default 30 s): the drain time. The container's stop timeout must exceed it
-  plus the app's 5-second cleanup; the README says so, and the image sets `stop_grace_period`
-  (Docker's default is 10 seconds);
+  plus the app's 5-second cleanup; the README says so, and the image's Compose templates set
+  `stop_grace_period` (Docker's default is 10 seconds);
 - `CONNECTION_IDLE_TIMEOUT` (default 10 s, at most 255 s): the idle timeout. The adapter already
   exempts event streams;
 - `BODY_SIZE_LIMIT` (default 512 KB) (obzorarr: takes no uploads).
