@@ -1,10 +1,10 @@
 # Spec: `setup`
 
-**Status:** approved by the owner (2026-11-12). Module 4 of the capability map ([docs/SPEC.md](SPEC.md));
-it closes D15 and the logging half of D14, and ground-floor choice 3. `setup` is shared (D20,
-[Shared groundwork](../AGENTS.md#shared-groundwork)) and obzorarr is its reference: comradarr,
-zondarr, otpravkarr and zimuarr each specify theirs from this spec and obzorarr's code and tests once
-it is built.
+**Status:** approved by the owner (2026-11-12). Module 4 of the capability map
+([docs/SPEC.md](SPEC.md)); it closes D15 and the logging half of D14, and ground-floor choice 3.
+`setup` is shared (D20, [Shared groundwork](../AGENTS.md#shared-groundwork)) and obzorarr is its
+reference: comradarr, zondarr, otpravkarr and zimuarr each specify theirs from this spec and
+obzorarr's code and tests once it is built.
 
 **Reading the marks.** A bullet or clause marked "(obzorarr)" is this app's own; the rest is the
 shared wording. A "(obzorarr)" mark inside a bullet covers the rest of that bullet, and
