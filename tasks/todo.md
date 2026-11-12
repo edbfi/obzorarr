@@ -18,7 +18,7 @@ Every page, `/` included, uses them from here on.
   `document.fonts.load("16px <family>")` returns at least one face.
 - [ ] `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans` and
   `@fontsource/ibm-plex-mono` are exact-pinned dev dependencies at their newest stable release
-  (5.3.0 when the spec was approved, D27).
+  (5.3.0 when the spec was approved, D27); if that has moved, the spec's version moves with it.
 - [ ] The root layout imports each variable package's default CSS and `ibm-plex-mono/400.css` and
   `/500.css`; the built server serves the font files itself, with no request to another host.
 - [ ] Panda's `fonts` tokens name `Space Grotesk Variable`, `Instrument Sans Variable` and
@@ -47,8 +47,10 @@ its `h2` for now. No motion yet: moves are instant.
   unit list for keys, pointers and the throttle; `story-input.ts` is pure and has no DOM imports.
 - [ ] `tests/e2e/recap-spike.test.ts` first fails, then passes, covering the spec's e2e items for
   answering in both languages, keys, buttons, `aria-disabled`, taps and drags, focus at the summary
-  and after ←, Close, Escape and Back to overview, scrolling to the top after a move, no sideways
-  scroll at 360 px and no console errors, with moves spaced past the `story` duration.
+  and after ←, Close and Escape, no sideways scroll at 360 px and no console errors, with moves
+  spaced past the `story` duration.
+- [ ] `Story.svelte` converts `token("durations.story")` to a number once, and the throttle uses
+  it; no duration is written as a literal.
 - [ ] `+page.server.ts` imports the fixture statically and returns only the seven member figures;
   the steps take them as props.
 - [ ] `@lucide/svelte` is an exact-pinned dev dependency at its newest stable release, imported
@@ -58,18 +60,19 @@ its `h2` for now. No motion yet: moves are instant.
 - [ ] Built through `/impeccable` from the brief, checked at 360, 390, 768 and 1440 px, 200% zoom
   and with the keyboard, with screenshots in the PR body.
 
-**Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek. Manual check: on a touch screen
-or touch emulation, a horizontal swipe moves and a vertical scroll doesn't.
+**Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek. Manual checks, with their
+evidence in the PR body: on a touch screen or touch emulation, a horizontal swipe moves and a
+vertical scroll doesn't; with JavaScript off, the first step shows.
 
 **Dependencies:** task 1.
 
 **Files:** `src/routes/spike/recap/+page.server.ts`, `src/routes/spike/recap/+page.svelte`,
 `lib/components/recap/Story.svelte`, `lib/components/recap/story-input.ts` (+ test),
 `tests/e2e/recap-spike.test.ts`, `messages/en.json`, `messages/da.json`, `package.json`,
-`bun.lock`, `docs/SPEC.md` (the tech-stack table, the `smoke` Commands row, the testing section),
-`AGENTS.md`.
+`bun.lock`, `docs/SPEC.md` (the status line: being built; the tech-stack table, the `smoke`
+Commands row, the testing section), `AGENTS.md`.
 
-**Size:** L.
+**Size:** L. One coherent unit: `story-input.ts` alone would merge as dead code.
 
 ## Task 3: the three steps' content
 
@@ -80,8 +83,15 @@ two approved tokens.
 **Acceptance criteria:**
 - [ ] `lib/components/recap/count-emphasis.test.ts` first fails, then passes, covering the spec's
   cases, the count inside the year included.
-- [ ] `recap-spike.test.ts` gains the month names in each language ("May", "maj"), the summary's
-  figures, Share recap disabled and the badge's text.
+- [ ] `recap-spike.test.ts` gains the month names in each language ("May", "maj"), Share recap
+  disabled, Back to overview going to `/`, a move from the monthly step scrolled to its bottom
+  leaving the page at the top (at a short viewport), and the reduced-motion case (the next
+  step's final state at once, with the month bars at their final widths and no running
+  animation), which guards task 4.
+- [ ] The steps match the spec's "The three slides" and "Text": D23's wording, the month list
+  labelled by its heading, each row's hours as a plural message, the Danish title without a
+  genitive, the badge as icon and text, and Share recap a native `disabled` button; the message
+  check passes.
 - [ ] `fontSizes.poster` and `gradients.beam` (a semantic token fading `primary` to transparent)
   are in `panda.config.ts`; spike-only sizes use the `[…]` escape hatch; nothing else departs from
   DESIGN.md's tokens.
@@ -109,12 +119,15 @@ two approved tokens.
 final state at once. The PR body hands the spike to the owner with the spec's review checklist.
 
 **Acceptance criteria:**
-- [ ] `recap-spike.test.ts` gains the reduced-motion case first, failing, then passing: the next
-  step's final state shows at once, with the month bars at their final widths and no running
-  animation.
-- [ ] With JavaScript off, the first step shows its final content (the entrance never hides it).
-- [ ] `Story.svelte` converts `token("durations.story")` to a number once; no duration is written
-  as a literal anywhere.
+- [ ] `recap-spike.test.ts` first fails, then passes: without reduced motion, a move leaves an
+  animation running (`document.getAnimations()` isn't empty). Task 3's reduced-motion case stays
+  green.
+- [ ] During a transition, the leaving step is `inert`, focus stays where the spec puts it, and
+  nothing scrolls sideways at 360 px; the e2e checks focus and overflow mid-transition.
+- [ ] The transitions use the duration task 2 converted, and the progress fill the `feedback`
+  token; no duration is written as a literal anywhere.
+- [ ] With JavaScript off, the first step still shows its final content (a manual check, its
+  evidence in the PR body).
 - [ ] Nothing loops or moves on its own, and there is no count-up.
 - [ ] Checked through `/impeccable` at the four widths with and without reduced motion.
 - [ ] The PR body gives the owner the run commands and the review checklist from the spec, and
@@ -125,7 +138,8 @@ final state at once. The PR body hands the spike to the owner with the spec's re
 **Dependencies:** task 3.
 
 **Files:** `lib/components/recap/Story.svelte`, the three slide components, `panda.config.ts` (the
-keyframes), `tests/e2e/recap-spike.test.ts`, `docs/SPEC.md` (the testing section), `AGENTS.md`.
+keyframes), `tests/e2e/recap-spike.test.ts`, `docs/SPEC.md` (the status line: built, awaiting the
+verdict; the testing section), `AGENTS.md`.
 
 **Size:** M.
 
@@ -136,7 +150,8 @@ owner's review and the verdict" and "Docs this module changes" list.
 
 **Acceptance criteria:**
 - [ ] D19 moves to Decided with the owner's verdict: what `recap` keeps, what changes, and whether
-  it needs custom work beyond Panda and Ark, naming the commit `recap` adopts code from.
+  it needs custom work beyond Panda and Ark, naming the commit `recap` adopts code from (so
+  `recap`'s spec points to D19 rather than naming it again).
 - [ ] The route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages and
   the entrance keyframes are deleted; the two new tokens too, unless the verdict keeps them, in
   which case DESIGN.md is refreshed from Panda's config.
@@ -145,7 +160,7 @@ owner's review and the verdict" and "Docs this module changes" list.
   the preservation map in the PR body (cleanup procedures 2 and 4).
 
 **Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek; `git grep -e recap_spike -e
-spike/recap` finds nothing outside the reduced spec.
+spike/recap -- src tests messages panda.config.ts` finds nothing.
 
 **Dependencies:** task 4 and the owner's verdict.
 
