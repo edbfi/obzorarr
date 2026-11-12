@@ -1,6 +1,6 @@
 # Spec: `setup`
 
-**Status:** draft for the owner's approval. Module 4 of the capability map ([docs/SPEC.md](SPEC.md));
+**Status:** approved by the owner (2026-11-12). Module 4 of the capability map ([docs/SPEC.md](SPEC.md));
 it closes D15 and the logging half of D14, and ground-floor choice 3. `setup` is shared (D20,
 [Shared groundwork](../AGENTS.md#shared-groundwork)) and obzorarr is its reference: comradarr,
 zondarr, otpravkarr and zimuarr each specify theirs from this spec and obzorarr's code and tests once
@@ -285,7 +285,7 @@ reuse:
   characters from one file of SecLists' `Passwords/Common-Credentials/` (MIT licence), whose path
   and commit `password.ts` and the build PR name. Vite bundles it with `?raw`, like the
   migrations. It is compared after NFC and lower-casing. NIST requires checking a blocklist, and
-  length alone accepts the long passwords such lists hold.
+  length alone accepts the long passwords such lists hold (the owner chose the list, 2026-11-12).
 - **Hashing:** `Bun.password` with argon2id and Bun's defaults, of the NFC form, so `sign-in`
   verifies what was hashed. The password is never logged or returned.
 - The form has one password field with a control that shows what was typed (DESIGN.md), and no
@@ -312,8 +312,8 @@ No release is cut between `setup` and `sign-in`.
 (obzorarr) The capability map gives `setup` environment locks, settings versions, the rule on
 settings URLs and Plex fingerprints in logs. None has anything to act on before
 `plex-connection`'s connection form, the first setting the owner edits and the first Plex value
-logged, so their Module notes move to `plex-connection` (for the owner's approval with this spec;
-the capability map's rows 4 and 8 change with it). zondarr, which adopts environment locks, ports
+logged, so their Module notes move to `plex-connection` (approved by the owner with this spec; the
+capability map's rows 4 and 8 change with it). zondarr, which adopts environment locks, ports
 them from `plex-connection` instead.
 
 ## Validation
