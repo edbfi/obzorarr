@@ -2,6 +2,33 @@
   "telemetry": false,
   "updateCheck": false,
   "detector": {
-    "extensions": [{ "ext": ".svelte", "engine": "html" }]
+    "extensions": [
+      {
+        "ext": ".svelte",
+        "engine": "html"
+      }
+    ],
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "display",
+        "createdAt": "2026-11-12T19:44:31.594Z",
+        "reason": "agent: panda.config.ts textStyles reference Panda font tokens by name (display, body, mono), whose values are DESIGN.md's Space Grotesk, Instrument Sans and IBM Plex Mono"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "body",
+        "createdAt": "2026-11-12T19:44:31.666Z",
+        "reason": "agent: panda.config.ts textStyles reference Panda font tokens by name (display, body, mono), whose values are DESIGN.md's Space Grotesk, Instrument Sans and IBM Plex Mono"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "mono",
+        "createdAt": "2026-11-12T19:44:31.722Z",
+        "reason": "agent: panda.config.ts textStyles reference Panda font tokens by name (display, body, mono), whose values are DESIGN.md's Space Grotesk, Instrument Sans and IBM Plex Mono"
+      }
+    ]
   }
 }

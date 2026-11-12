@@ -36,9 +36,9 @@ export default defineConfig({
 
 		tokens: {
 			fonts: {
-				// System fallbacks until the first surface bundles the font files locally.
-				display: { value: '"Space Grotesk", system-ui, sans-serif' },
-				body: { value: '"Instrument Sans", system-ui, sans-serif' },
+				// The family names the fontsource packages register (src/routes/+layout.svelte).
+				display: { value: '"Space Grotesk Variable", system-ui, sans-serif' },
+				body: { value: '"Instrument Sans Variable", system-ui, sans-serif' },
 				mono: { value: '"IBM Plex Mono", monospace' },
 			},
 			fontSizes: {

@@ -68,7 +68,6 @@ What does not exist, and must not be fabricated:
 - No screenshots of a built rewrite; the mockups are not product screenshots.
 - No pricing, hosted offering or support commitment.
 - No approved Plex brand mark. Surfaces use a labelled generic icon, never a redrawn logo (DESIGN.md).
-- No bundled font files yet; they arrive with the first surface, as an owner-approved dependency.
 
 ## Product Principles
 
