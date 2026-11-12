@@ -90,7 +90,7 @@ after the slides. Three equal steps are the honest test of the story; the verdic
 the WAI-ARIA Authoring Practices' carousel pattern: a region named by that heading with
 `aria-roledescription` "carousel"; each step a group with `aria-roledescription` "slide", named
 "1 of 3", "2 of 3", "3 of 3", with its own `h2`. Screen readers speak `aria-roledescription` verbatim,
-so both words are messages ("karrusel", "dias" in Danish); the steps' container
+so both words are messages ("karrusel", "dias" in Danish). The steps' container is
 `aria-live="polite"`, since nothing moves on its own. Progress is three segments, past, current and
 remaining, drawn with tokens and hidden from assistive technology.
 
@@ -301,8 +301,8 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
   - at 360 px nothing scrolls sideways;
   - no console errors.
 
-  Moves in the e2e are spaced past the `story` duration (waiting for the leaving step to detach),
-  so the throttle never drops a key the test meant.
+  Moves in the e2e are spaced past the `story` duration, under reduced motion too, so the throttle
+  never drops a key the test meant.
 
   `smoke.test.ts` also checks that the three bundled families load: for each of Panda's three
   `fonts` values, `document.fonts.load("16px <family>")` returns at least one face. A wrong family
@@ -365,12 +365,12 @@ Ark. The verdict PR then:
 - **`AGENTS.md`:** the status and the structure tree, with the spike's files marked temporary.
 - **`PRODUCT.md`:** "No bundled font files yet" goes.
 
-**The verdict PR:** D19, choice 5 and row 3 as above. In SPEC.md, the spike's entries in the
-testing section, the `smoke` row and "Where modules live", and the `recap-spike` line of "Open
-decisions", go; in AGENTS.md, the spike's files in the tree and the boundary that waits for the
-spike. The fonts and icons stay. If the verdict keeps a new token, DESIGN.md is refreshed from
-Panda's config. This spec is reduced to what code can't say, as cleanup procedure 2 asks, since the
-code it describes is deleted.
+**The verdict PR:** D19, choice 5 and row 3 as above. In SPEC.md, the status line and the spike's
+entries in the testing section, the `smoke` row and "Where modules live", and the `recap-spike` line
+of "Open decisions", go; in AGENTS.md, the status, the spike's files in the tree and the boundary
+that waits for the spike. The fonts and icons stay. If the verdict keeps a new token, DESIGN.md is
+refreshed from Panda's config. This spec is reduced to what code can't say, as cleanup procedure 2
+asks, since the code it describes is deleted.
 
 ## Success criteria
 
