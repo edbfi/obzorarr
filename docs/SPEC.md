@@ -3,8 +3,8 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built, module 3, `recap-spike`, is specified in [SPEC-recap-spike.md](SPEC-recap-spike.md), and
-module 4, `setup`, in [SPEC-setup.md](SPEC-setup.md).
+built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), is being built, and
+module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
 
 ## Objective
 
@@ -780,6 +780,7 @@ newest stable release (D27). Every package is a dev dependency, so adapter-bun b
 | Build | `vite` / `@sveltejs/vite-plugin-svelte` |
 | Adapter | `@sveltejs/adapter-bun` |
 | Styling | `@pandacss/dev`, `@pandacss/vite` (its Vite plugin), `@pandacss/preset-base` |
+| Fonts | `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans`, `@fontsource/ibm-plex-mono`, imported in the root layout |
 | Primitives | `@ark-ui/svelte` |
 | Translation | `@inlang/paraglide-js` (compiles the messages), `@inlang/plugin-i18next` (reads their i18next JSON v4 files) |
 | Type check | `svelte-check` |
@@ -871,8 +872,9 @@ export const GET: RequestHandler = () => healthResponse();
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
     for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
-    background token and display text style and logs no console errors, and that `/healthz`
-    returns `ok`.
+    background token and display text style and logs no console errors; that each of Panda's three
+    `fonts` values loads a bundled face (`document.fonts.load()`, which returns none for a family
+    name nothing registers); and that `/healthz` returns `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
@@ -912,8 +914,9 @@ Choices 1–3 are carried over from the first rewrite app's skeleton, since obzo
 call for anything different; choices 4 and 5 are obzorarr's own.
 
 1. **Fonts.** DESIGN.md wants Space Grotesk, Instrument Sans and IBM Plex Mono bundled locally. The
-   skeleton defines the font tokens with system fallbacks; the first surface adds the font files (a
-   dependency the owner approves then).
+   skeleton defined the font tokens with system fallbacks; `recap-spike` bundled the files from
+   fontsource (approved by the owner on 2026-10-29), and the tokens name the families they
+   register.
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.

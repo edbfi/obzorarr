@@ -275,7 +275,9 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores
 a secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
-formatters, and a check of the message files.
+formatters, and a check of the message files. Module 3, `recap-spike`
+([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), is being built from `tasks/`; DESIGN.md's
+fonts are bundled.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -311,8 +313,8 @@ src/
                                  `handle`: each request's language, through Paraglide's middleware
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
-    +layout.svelte               loads app.css and the favicon; marks <html data-hydrated> once
-                                 mounted
+    +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
+                                 <html data-hydrated> once mounted
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status

@@ -22,6 +22,9 @@
 	"devDependencies": {
 		"@ark-ui/svelte": "5.25.1",
 		"@biomejs/biome": "2.6.6",
+		"@fontsource-variable/instrument-sans": "5.3.0",
+		"@fontsource-variable/space-grotesk": "5.3.0",
+		"@fontsource/ibm-plex-mono": "5.3.0",
 		"@inlang/paraglide-js": "3.2.1",
 		"@inlang/plugin-i18next": "6.5.3",
 		"@pandacss/dev": "2.5.0",

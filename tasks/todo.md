@@ -14,15 +14,15 @@ them in the root layout, and point Panda's font tokens at the families the packa
 Every page, `/` included, uses them from here on.
 
 **Acceptance criteria:**
-- [ ] `smoke.test.ts` first fails, then passes: for each of Panda's three `fonts` values,
+- [x] `smoke.test.ts` first fails, then passes: for each of Panda's three `fonts` values,
   `document.fonts.load("16px <family>")` returns at least one face.
-- [ ] `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans` and
+- [x] `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans` and
   `@fontsource/ibm-plex-mono` are exact-pinned dev dependencies at their newest stable release
   (5.3.0 when the spec was approved, D27); if that has moved, the spec's version moves with it.
-- [ ] The root layout imports each variable package's default CSS and `ibm-plex-mono/400.css` and
+- [x] The root layout imports each variable package's default CSS and `ibm-plex-mono/400.css` and
   `/500.css`; the built server serves the font files itself (the network panel in `preview` shows
   no request to another host).
-- [ ] Panda's `fonts` tokens name `Space Grotesk Variable`, `Instrument Sans Variable` and
+- [x] Panda's `fonts` tokens name `Space Grotesk Variable`, `Instrument Sans Variable` and
   `IBM Plex Mono`, each with its system fallback, and the comment about system fallbacks goes.
 
 **Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek. Manual check: `/` in `preview`

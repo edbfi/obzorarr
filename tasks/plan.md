@@ -31,7 +31,7 @@ each, each test first, then the verdict PR once the owner has reviewed the spike
 
 ### Phase 1: the groundwork
 
-- [ ] Task 1: the bundled fonts
+- [x] Task 1: the bundled fonts
 
 ### Phase 2: the story
 
