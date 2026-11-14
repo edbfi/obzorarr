@@ -46,21 +46,21 @@ the carousel semantics, "Tap to continue" on the first step and the page title. 
 steps shows only its `h2` for now. No motion yet: moves are instant.
 
 **Acceptance criteria:**
-- [ ] `lib/components/recap/story-input.test.ts` first fails, then passes, covering the spec's
+- [x] `lib/components/recap/story-input.test.ts` first fails, then passes, covering the spec's
   unit list for keys, pointers and the throttle; `story-input.ts` is pure and has no DOM imports.
-- [ ] `tests/e2e/recap-spike.test.ts` first fails, then passes, covering the spec's e2e items for
+- [x] `tests/e2e/recap-spike.test.ts` first fails, then passes, covering the spec's e2e items for
   answering in both languages, keys, buttons, `aria-disabled`, taps and drags, focus at the summary
   and after ←, Close and Escape, no sideways scroll at 360 px on any step and no console errors,
   with moves spaced past the `story` duration.
-- [ ] `Story.svelte` converts `token("durations.story")` to a number once, and the throttle uses
+- [x] `Story.svelte` converts `token("durations.story")` to a number once, and the throttle uses
   it; no duration is written as a literal.
-- [ ] `+page.server.ts` imports the fixture statically and returns only the seven member figures.
-- [ ] `@lucide/svelte` is an exact-pinned dev dependency at its newest stable release (1.72.0 when
+- [x] `+page.server.ts` imports the fixture statically and returns only the seven member figures.
+- [x] `@lucide/svelte` is an exact-pinned dev dependency at its newest stable release (1.72.0 when
   the spec was approved; if that has moved, the spec's version moves with it), imported one icon
   per path, 20 px, decorative.
-- [ ] Every string is a `recap_spike_…` message in both languages, the role descriptions included,
+- [x] Every string is a `recap_spike_…` message in both languages, the role descriptions included,
   with D23's wording and the Danish title without a genitive; the message check passes.
-- [ ] Built through `/impeccable` from the brief, checked at 360, 390, 768 and 1440 px, 200% zoom
+- [x] Built through `/impeccable` from the brief, checked at 360, 390, 768 and 1440 px, 200% zoom
   and with the keyboard, with screenshots in the PR body.
 
 **Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek. Manual checks, with their

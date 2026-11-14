@@ -781,6 +781,7 @@ newest stable release (D27). Every package is a dev dependency, so adapter-bun b
 | Adapter | `@sveltejs/adapter-bun` |
 | Styling | `@pandacss/dev`, `@pandacss/vite` (its Vite plugin), `@pandacss/preset-base` |
 | Fonts | `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans`, `@fontsource/ibm-plex-mono`, imported in the root layout |
+| Icons | `@lucide/svelte`, imported one icon per path |
 | Primitives | `@ark-ui/svelte` |
 | Translation | `@inlang/paraglide-js` (compiles the messages), `@inlang/plugin-i18next` (reads their i18next JSON v4 files) |
 | Type check | `svelte-check` |
@@ -817,7 +818,7 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the recap spike's tests and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
@@ -867,7 +868,10 @@ export const GET: RequestHandler = () => healthResponse();
   - `messages.test.ts`, the message check, finds every problem in `messages/*.json`, and breaks
     each of its rules once in small files held in memory, to show that each is reported.
 
-  Component tests use happy-dom when components exist; never jsdom.
+  The recap spike's `story-input.test.ts` (`src/lib/components/recap/`) maps each key and pointer
+  gesture to its move and checks the throttle (SPEC-recap-spike.md, "Testing strategy").
+
+  Component tests, from the first one, use happy-dom; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
@@ -883,6 +887,9 @@ export const GET: RequestHandler = () => healthResponse();
     `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
     hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
     smoke test runs in English, Playwright's default.
+  - `recap-spike.test.ts` checks the spike's story on `/spike/recap` in both languages: its
+    carousel semantics, moves by keys, buttons, clicks and drags, focus, Close and Escape, and no
+    sideways scroll at 360 px (SPEC-recap-spike.md, "Testing strategy").
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling

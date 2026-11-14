@@ -1,5 +1,18 @@
 {
 	"landing_title": "Dit år i historier.",
 	"landing_sign_in_status": "Login med Plex bliver bygget om. Dit tilbageblik kan kun ses af serverens medlemmer.",
-	"language_switcher_label": "Sprog"
+	"language_switcher_label": "Sprog",
+	"recap_spike_page_title": "Din {{year}}-historie · Obzorarr",
+	"recap_spike_story_label": "Din {{year}}-historie",
+	"recap_spike_carousel_role": "karrusel",
+	"recap_spike_slide_role": "dias",
+	"recap_spike_slide_position": "{{current, number}} af {{total, number}}",
+	"recap_spike_close": "Luk",
+	"recap_spike_previous": "Forrige dias",
+	"recap_spike_next": "Næste dias",
+	"recap_spike_tap_to_continue": "Tryk for at fortsætte",
+	"recap_spike_total_time_one": "{{count, number}} time af alt, hvad du har afspillet i {{year}}",
+	"recap_spike_total_time_other": "{{count, number}} timer af alt, hvad du har afspillet i {{year}}",
+	"recap_spike_monthly_title": "Timer af alt, hvad du har afspillet i {{year}}, måned for måned",
+	"recap_spike_summary_title": "{{name}} i {{year}}"
 }
