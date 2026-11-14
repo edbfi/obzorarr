@@ -66,7 +66,7 @@ const press = (x: number, y: number, rest: Partial<PointerPress> = {}): PointerP
 	pointerId: 1,
 	isPrimary: true,
 	button: 0,
-	onControl: false,
+	elsewhere: false,
 	x,
 	y,
 	...rest,
@@ -117,7 +117,17 @@ describe("createPointerGestures", () => {
 		expect(gesture([300, 300], [300, 300], { button: 2 })).toBeUndefined();
 		expect(gesture([300, 300], [300, 300], { button: 1 })).toBeUndefined();
 		expect(gesture([300, 300], [300, 300], { isPrimary: false })).toBeUndefined();
-		expect(gesture([300, 300], [300, 300], { onControl: true })).toBeUndefined();
+		expect(gesture([300, 300], [300, 300], { elsewhere: true })).toBeUndefined();
+	});
+
+	it("drops a press whose release went missing when the primary pointer presses again", () => {
+		// The release of the first press never arrived (the window lost focus mid-drag, say).
+		for (const next of [{ elsewhere: true }, { button: 2 }]) {
+			const gestures = createPointerGestures();
+			gestures.press(press(400, 300));
+			gestures.press(press(100, 300, next));
+			expect(gestures.release({ pointerId: 1, x: 100, y: 300 }, area)).toBeUndefined();
+		}
 	});
 
 	it("ignores another pointer's release, and keeps the first pointer's gesture", () => {

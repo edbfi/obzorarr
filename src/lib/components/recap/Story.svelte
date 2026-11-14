@@ -101,23 +101,26 @@ function onkeydown(event: KeyboardEvent) {
 }
 
 // Gestures start on the steps' area, outside a control; the keys and the buttons do the same
-// moves, so the area itself needs no role.
+// moves, so the area itself needs no role. Every press is passed on, so one elsewhere ends a
+// gesture whose release went missing.
 function onpointerdown(event: PointerEvent) {
-	if (!(event.target instanceof Node) || !area?.contains(event.target)) return;
+	const inArea = event.target instanceof Node && (area?.contains(event.target) ?? false);
 	gestures.press({
 		pointerId: event.pointerId,
 		isPrimary: event.isPrimary,
 		button: event.button,
-		onControl: focusKind(event.target) !== "other",
+		elsewhere: !inArea || focusKind(event.target) !== "other",
 		x: event.clientX,
 		y: event.clientY,
 	});
 }
 
-// A release counts anywhere on the page, so a drag that ends over a bar still moves.
+// A release counts anywhere on the page, so a drag that ends over a bar still moves. The back zone
+// is the step's left 15%, measured on the step, inside the area's gutters.
 function onpointerup(event: PointerEvent) {
-	if (!area) return;
-	const { left, width } = area.getBoundingClientRect();
+	const step = area?.querySelector<HTMLElement>("[role=group]");
+	if (!step) return;
+	const { left, width } = step.getBoundingClientRect();
 	const move = gestures.release(
 		{ pointerId: event.pointerId, x: event.clientX, y: event.clientY },
 		{ left, width },
@@ -281,11 +284,14 @@ const roundButton = css({
 		>
 			<ChevronLeft size={20} strokeWidth={2} aria-hidden="true" />
 		</button>
-		<p class={css({ textAlign: "center", textStyle: "caption", color: "muted" })}>
+		<!-- The middle cell stays, so Next keeps its column; the hint shows on the first step only. -->
+		<div>
 			{#if current === 0}
-				{m.recap_spike_tap_to_continue()}
+				<p class={css({ textAlign: "center", textStyle: "caption", color: "muted" })}>
+					{m.recap_spike_tap_to_continue()}
+				</p>
 			{/if}
-		</p>
+		</div>
 		<button
 			type="button"
 			aria-label={m.recap_spike_next()}

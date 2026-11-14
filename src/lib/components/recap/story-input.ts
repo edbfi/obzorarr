@@ -50,11 +50,14 @@ export interface PointerPress extends PointerPoint {
 	isPrimary: boolean;
 	/** The button pressed: 0 is the primary one (a left click, a touch, a pen's tip). */
 	button: number;
-	/** Whether the press is on a control (a link or a button), which owns it. */
-	onControl: boolean;
+	/**
+	 * Whether the press is on a control (a link or a button), which owns it, or outside the step's
+	 * area: either way it isn't the story's.
+	 */
+	elsewhere: boolean;
 }
 
-/** The step's area, horizontally: taps in its left 15% go back. */
+/** The step's box, horizontally: taps in its left 15% go back. */
 export interface StepArea {
 	left: number;
 	width: number;
@@ -68,16 +71,18 @@ const SWIPE_DISTANCE = 50;
 const BACK_ZONE = 0.15;
 
 /**
- * Tracks one gesture at a time: the primary pointer's primary button, pressed outside a control.
- * `release` returns the move the gesture made, if any.
+ * Tracks one gesture at a time: the primary pointer's primary button, pressed in the step's area
+ * outside a control. `release` returns the move the gesture made, if any. Any press of the primary
+ * pointer replaces the last one, so a press whose release never arrived can't turn a later click
+ * into a move.
  */
 export function createPointerGestures() {
 	let pressed: PointerPress | undefined;
 
 	return {
 		press(event: PointerPress): void {
-			if (!event.isPrimary || event.button !== 0 || event.onControl) return;
-			pressed = event;
+			if (!event.isPrimary) return;
+			pressed = event.button === 0 && !event.elsewhere ? event : undefined;
 		},
 
 		/** A cancelled gesture (the browser took it to scroll or zoom) moves nothing. */

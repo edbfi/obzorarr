@@ -121,6 +121,8 @@ test("→, Space, Enter, ←, Home and End move the story one step at a time", a
 	const errors = consoleErrors(page);
 	await open(page);
 
+	// The throttle: a second move within the `story` duration is ignored.
+	await page.keyboard.press("ArrowRight");
 	await pressKey(page, "ArrowRight");
 	await expectStep(page, "2 of 3");
 	await expect(stepHeading(page, "2 of 3")).toHaveText(
@@ -246,6 +248,22 @@ test("a click in the left 15% goes back, elsewhere forward, and a drag moves", a
 
 	expect(errors).toEqual([]);
 });
+
+for (const width of [1280, 1920]) {
+	test(`at ${width} px, the back zone is the step's left 15%, not the page's`, async ({ page }) => {
+		await page.setViewportSize({ width, height: 800 });
+		await open(page);
+		await pressKey(page, "ArrowRight");
+		const area = await box(step(page, "2 of 3"));
+		const y = area.y + area.height / 2;
+		await page.mouse.click(area.x + area.width * 0.14, y);
+		await settle(page);
+		await expectStep(page, "1 of 3");
+		await page.mouse.click(area.x + area.width * 0.16, y);
+		await settle(page);
+		await expectStep(page, "2 of 3");
+	});
+}
 
 test("focus lands on the summary's heading, and ← takes it into step 2", async ({ page }) => {
 	await open(page);
