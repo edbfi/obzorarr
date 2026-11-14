@@ -1,5 +1,18 @@
 {
 	"landing_title": "Your year in stories.",
 	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Your recap is visible to server members only.",
-	"language_switcher_label": "Language"
+	"language_switcher_label": "Language",
+	"recap_spike_page_title": "Your {{year}} story · Obzorarr",
+	"recap_spike_story_label": "Your {{year}} story",
+	"recap_spike_carousel_role": "carousel",
+	"recap_spike_slide_role": "slide",
+	"recap_spike_slide_position": "{{current, number}} of {{total, number}}",
+	"recap_spike_close": "Close",
+	"recap_spike_previous": "Previous slide",
+	"recap_spike_next": "Next slide",
+	"recap_spike_tap_to_continue": "Tap to continue",
+	"recap_spike_total_time_one": "{{count, number}} hour of everything you played in {{year}}",
+	"recap_spike_total_time_other": "{{count, number}} hours of everything you played in {{year}}",
+	"recap_spike_monthly_title": "Hours of everything you played in {{year}}, month by month",
+	"recap_spike_summary_title": "{{name}}’s {{year}}"
 }

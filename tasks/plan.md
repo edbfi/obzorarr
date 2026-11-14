@@ -35,7 +35,7 @@ each, each test first, then the verdict PR once the owner has reviewed the spike
 
 ### Phase 2: the story
 
-- [ ] Task 2: the story shell on `/spike/recap`
+- [x] Task 2: the story shell on `/spike/recap`
 - [ ] Task 3: the three steps' content
 
 ### Checkpoint: after task 3
