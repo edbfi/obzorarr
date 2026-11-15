@@ -119,21 +119,30 @@ All figures come from the fixture; nothing is computed from the raster. Every st
 dominant idea and wraps long and translated text without hiding Close, Previous or Next. No imagery
 sits behind text or figures (DESIGN.md).
 
+**Every step plays on a cinema screen** (`CinemaScreen.svelte`): a screen lit by the projector,
+the light it throws back onto the room, and two rows of seats in silhouette along its foot, below
+the content.
+The owner chose this direction ("Projection") on 2026-11-15 from four mockups built on the design
+boards; the boards guide the feel, not the layout.
+
 1. **Total time.** The `h2` is the sentence "842 hours of everything you played in 2025" (D23: never
    "watched"), its number in the `display` text style at poster size (below, "Imagery and
-   tokens"); then "Movie Buff" as fixed message text, not a computed badge. Beside the text, the
-   cyan projector beam over an abstract cinema silhouette.
+   tokens") in the projector's white light; then "Movie Buff" in `primary` as fixed message text,
+   not a computed badge.
 2. **Monthly hours.** The `h2` "Hours of everything you played in 2025, month by month", and a chart
    of the twelve months: a list labelled by that heading (`aria-labelledby`), one row per month,
    each with the month's short name, a bar and its hours as text ("42 hours", a plural message, so
    a screen reader never reads "Jan 42" as a date). Bars are proportional to the
    busiest month and drawn with tokens; the list is the chart's text, so a screen reader reads every
-   month and its hours, and it fits at 360 px and at 200% zoom without a chart library.
-3. **The summary end card.** "Your recap" above the `h2` "Alex’s 2025", then 127 movies, 38 series
-   and "Longest streak" 21 days, each with a decorative icon and its number in the display size, and
-   the "Members only" badge (icon and text, a tinted `secondary` background with readable text,
-   never colour alone). "Share recap" is a native `disabled` button that stays visibly labelled.
-   "Back to overview" is a link to `/`.
+   month and its hours, and it fits at 360 px and at 200% zoom without a chart library. On a phone
+   each month is a row; from a tablet up the same list is projected as twelve columns, each showing
+   its count while the rest of its hours message stays in the page for screen readers. The busiest
+   month's bar ends in `primary`.
+3. **The summary end card.** On the screen, "Your recap" above the `h2` "Alex’s 2025", then 127
+   movies, 38 series and "Longest streak" 21 days, each with a decorative icon and its number in the
+   display size, and the "Members only" badge (icon and text, a tinted `secondary` background with
+   readable text, never colour alone). Below the screen, in the aisle, "Share recap" is a native
+   `disabled` button that stays visibly labelled, and "Back to overview" is a link to `/`.
 
 **Large numbers keep their whole sentence.** Each figure shown large ("842 hours of everything…",
 "127 movies", "38 series", "21 days") is one plural message with `{{count, number}}`, as
@@ -226,21 +235,23 @@ icons.
 
 ## Imagery and tokens
 
-The projector beam is a CSS gradient and the silhouette an inline SVG in the total-time slide, both
-decorative (`aria-hidden`), coloured only through tokens, sharp at every width and with no asset
-pipeline. The verdict records whether `recap` needs drawn or raster art instead.
+The screen's light is CSS gradients and the seats an inline SVG, in `CinemaScreen.svelte` on every
+step, all decorative (`aria-hidden`), coloured only through tokens, sharp at every width and with no
+asset pipeline. The verdict records whether `recap` needs drawn or raster art instead.
 
 **Two new tokens,** approved by the owner with this spec, since DESIGN.md has neither:
 - **`fontSizes.poster`:** the total's number, a fluid `clamp()` that fits 360 px and reaches about
   three times `display` at 1440 px, as on the screen. The summary's figures use `display`.
-- **`gradients.beam`:** the beam, from `primary` fading to transparent, so it shows no edge over the
-  silhouette. A semantic token, because it refers to semantic colours.
+- **`gradients.beam`:** the projector's light on the screen, from `primary` fading to transparent
+  downwards from where it lands, so it shows no edge. A semantic token, because it refers to
+  semantic colours.
 
 Both go with the verdict PR unless the verdict keeps them. The story's height is `preset-base`'s
-`dvh` keyword. Dimensions only the spike uses (a progress segment's thickness, the beam's and the
-silhouette's size) use Panda's `[…]` escape hatch, which `strictTokens` allows, and leave with the
-spike. Nothing else departs from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in
-it is a dialog, menu or form control.
+`dvh` keyword. Values only the spike uses (a progress segment's thickness, the screen's width, the
+seats' and the bars' size, the strength of the screen's light, an action's flex basis) use Panda's
+`[…]` escape hatch, which `strictTokens` allows, and leave with the spike. Nothing else departs
+from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in it is a dialog, menu or
+form control.
 
 ## Project structure
 
@@ -252,7 +263,9 @@ src/lib/components/recap/Story.svelte          the story shell: the bars, progre
 src/lib/components/recap/story-input.ts        a key or pointer gesture to a move, and the
                                                throttle (+ test)
 src/lib/components/recap/count-emphasis.ts     a message split around its count (+ test)
-src/lib/components/recap/TotalTimeSlide.svelte the total, Movie Buff, the beam and silhouette
+src/lib/components/recap/CinemaScreen.svelte   the screen every step plays on: its light, the room,
+                                               the seats
+src/lib/components/recap/TotalTimeSlide.svelte the total and Movie Buff
 src/lib/components/recap/MonthlyHoursSlide.svelte
 src/lib/components/recap/SummaryCard.svelte
 tests/e2e/recap-spike.test.ts                  the spike against the built server

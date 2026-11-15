@@ -79,41 +79,44 @@ vertical scroll doesn't; with JavaScript off, the first step shows.
 
 ## Task 3: the three steps' content
 
-**Description:** Fill the three steps in their final state: the total with Movie Buff and the beam
-and silhouette, the twelve monthly rows, and the summary card with its badge and actions. Add the
-two approved tokens.
+**Description:** Fill the three steps in their final state, each on the cinema screen
+(`CinemaScreen.svelte`, the owner's "Projection" direction): the total with Movie Buff, the twelve
+months (rows on a phone, columns from a tablet up), and the summary card with its badge and actions.
+Add the two approved tokens.
 
 **Acceptance criteria:**
-- [ ] `lib/components/recap/count-emphasis.test.ts` first fails, then passes, covering the spec's
+- [x] `lib/components/recap/count-emphasis.test.ts` first fails, then passes, covering the spec's
   cases, the count inside the year included.
-- [ ] `recap-spike.test.ts` gains the month names in each language ("May", "maj"), Share recap
+- [x] `recap-spike.test.ts` gains the month names in each language ("May", "maj"), Share recap
   disabled, Back to overview going to `/`, a move from the monthly step scrolled to its bottom
   leaving the page at the top (at a short viewport), and the reduced-motion case (the next
   step's final state at once, with the month bars at their final widths and no running
   animation), which guards task 4.
-- [ ] The three slide components take their figures as props and never import the fixture.
-- [ ] The steps match the spec's "The three slides", "Text" and "Icons" (the summary's six
+- [x] The three slide components take their figures as props and never import the fixture.
+- [x] The steps match the spec's "The three slides", "Text" and "Icons" (the summary's six
   decorative icons, share and back included): D23's wording, the month list
   labelled by its heading, each row's hours as a plural message, the Danish title without a
   genitive, the badge as icon and text, and Share recap a native `disabled` button; the message
   check passes.
-- [ ] `fontSizes.poster` and `gradients.beam` (a semantic token fading `primary` to transparent)
+- [x] `fontSizes.poster` and `gradients.beam` (a semantic token fading `primary` to transparent)
   are in `panda.config.ts`; spike-only sizes use the `[…]` escape hatch; nothing else departs from
   DESIGN.md's tokens.
-- [ ] No imagery sits behind text or figures, and long and Danish text wraps without hiding Close,
+- [x] No imagery sits behind text or figures, and long and Danish text wraps without hiding Close,
   Previous or Next at 360 px.
-- [ ] Built through `/impeccable`, checked at the four widths and 200% zoom, with screenshots in
+- [x] Built through `/impeccable`, checked at the four widths and 200% zoom, with screenshots in
   the PR body.
 
 **Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek.
 
 **Dependencies:** task 2.
 
-**Files:** `lib/components/recap/TotalTimeSlide.svelte`,
+**Files:** `lib/components/recap/CinemaScreen.svelte` (added with the owner's "Projection"
+direction), `lib/components/recap/TotalTimeSlide.svelte`,
 `lib/components/recap/MonthlyHoursSlide.svelte`, `lib/components/recap/SummaryCard.svelte`,
 `lib/components/recap/count-emphasis.ts` (+ test), `src/routes/spike/recap/+page.svelte`,
 `panda.config.ts`, `messages/en.json`, `messages/da.json`, `tests/e2e/recap-spike.test.ts`,
-`docs/SPEC.md` (the testing section), `AGENTS.md`.
+`docs/SPEC.md` (the testing section), `AGENTS.md`, and `docs/SPEC-recap-spike.md` for the
+direction.
 
 **Size:** M.
 

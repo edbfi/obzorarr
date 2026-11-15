@@ -277,8 +277,8 @@ a secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](do
 is built: pages are served in English or Danish, with a language switcher, number and date
 formatters, and a check of the message files. Module 3, `recap-spike`
 ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), is being built from `tasks/`: DESIGN.md's
-fonts are bundled, and `/spike/recap` serves the story shell, its steps showing only their
-headings so far.
+fonts are bundled, and `/spike/recap` serves the story with its three steps' content, without
+motion so far.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -344,7 +344,11 @@ src/
       recap/                     temporary (`recap-spike`): Story.svelte, the story shell (bars,
                                  progress, moves, focus, the carousel semantics);
                                  story-input.ts, a key or pointer gesture to a move, and the
-                                 throttle
+                                 throttle; CinemaScreen.svelte, the screen every step plays
+                                 on; the steps TotalTimeSlide.svelte, MonthlyHoursSlide.svelte
+                                 and SummaryCard.svelte, which take their figures as props;
+                                 count-emphasis.ts, a message split around its count so the
+                                 count can be styled large
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone

@@ -52,6 +52,9 @@ export default defineConfig({
 				caption: { value: "12px" },
 				number: { value: "32px" },
 				code: { value: "13px" },
+				// The recap's poster-sized figure (SPEC-recap-spike.md, "Imagery and tokens"): it fits
+				// 360px and reaches three times `display` at 1440px.
+				poster: { value: "clamp(96px, 48px + 8.4vw, 168px)" },
 			},
 			fontWeights: {
 				regular: { value: "400" },
@@ -136,6 +139,11 @@ export default defineConfig({
 				success: { value: { _dark: "#9CDDBD" } },
 				warning: { value: { _dark: "#F0C680" } },
 				danger: { value: { _dark: "#FFACB5" } },
+			},
+			gradients: {
+				// The recap's projector light on the cinema screen: `primary` fading to transparent
+				// downwards from where it lands, so it shows no edge.
+				beam: { value: "linear-gradient(to bottom, {colors.primary}, transparent)" },
 			},
 		},
 

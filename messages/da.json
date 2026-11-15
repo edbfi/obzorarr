@@ -13,6 +13,20 @@
 	"recap_spike_tap_to_continue": "Tryk for at fortsætte",
 	"recap_spike_total_time_one": "{{count, number}} time af alt, hvad du har afspillet i {{year}}",
 	"recap_spike_total_time_other": "{{count, number}} timer af alt, hvad du har afspillet i {{year}}",
+	"recap_spike_total_badge": "Filmelsker",
 	"recap_spike_monthly_title": "Timer af alt, hvad du har afspillet i {{year}}, måned for måned",
-	"recap_spike_summary_title": "{{name}} i {{year}}"
+	"recap_spike_monthly_hours_one": "{{count, number}} time",
+	"recap_spike_monthly_hours_other": "{{count, number}} timer",
+	"recap_spike_summary_eyebrow": "Dit tilbageblik",
+	"recap_spike_summary_title": "{{name}} i {{year}}",
+	"recap_spike_summary_movies_one": "{{count, number}} film",
+	"recap_spike_summary_movies_other": "{{count, number}} film",
+	"recap_spike_summary_series_one": "{{count, number}} serie",
+	"recap_spike_summary_series_other": "{{count, number}} serier",
+	"recap_spike_summary_streak_label": "Længste stime",
+	"recap_spike_summary_streak_days_one": "{{count, number}} dag",
+	"recap_spike_summary_streak_days_other": "{{count, number}} dage",
+	"recap_spike_members_only": "Kun for medlemmer",
+	"recap_spike_share": "Del tilbageblik",
+	"recap_spike_back": "Tilbage til oversigten"
 }

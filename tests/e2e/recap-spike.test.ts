@@ -1,9 +1,11 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import fixtures from "../fixtures/demo-fixtures.json" with { type: "json" };
 
 // The recap spike's story against the built server (SPEC-recap-spike.md, "Story mode" and
 // "Testing strategy"). The spike is temporary: the verdict PR deletes this file with it.
 
 const PATH = "/spike/recap";
+const { monthlyHours } = fixtures.obzorarr;
 
 /** Collects the page's console errors and uncaught exceptions. */
 function consoleErrors(page: Page): string[] {
@@ -83,10 +85,100 @@ test("answers in English as a carousel of three named slides, the first one show
 	await expect(stepHeading(page, "1 of 3")).toHaveText(
 		"842 hours of everything you played in 2025",
 	);
+	await expect(step(page, "1 of 3").getByText("Movie Buff", { exact: true })).toBeVisible();
 	await expect(page.getByText("Tap to continue")).toBeVisible();
 	await expect(page.getByRole("link", { name: "Close" })).toHaveAttribute("href", "/");
 
 	expect(errors).toEqual([]);
+});
+
+/** The monthly step's list, named by the step's heading. */
+const monthList = (page: Page, name: string) =>
+	step(page, name).getByRole("list", {
+		name: "Hours of everything you played in 2025, month by month",
+	});
+
+test("the monthly step lists the twelve months, each with its hours", async ({ page }) => {
+	await open(page);
+	await pressKey(page, "ArrowRight");
+	const months = monthList(page, "2 of 3").getByRole("listitem");
+	await expect(months).toHaveCount(12);
+	await expect(months.nth(0)).toHaveText(/^Jan\s*42 hours$/);
+	await expect(months.nth(4)).toHaveText(/^May\s*75 hours$/);
+	await expect(months.nth(7)).toHaveText(/^Aug\s*96 hours$/);
+});
+
+test("the summary shows the figures, the badge, a disabled Share recap and Back to overview", async ({
+	page,
+}) => {
+	const errors = consoleErrors(page);
+	await page.setViewportSize({ width: 390, height: 844 });
+	await open(page);
+	await pressKey(page, "End");
+	const summary = step(page, "3 of 3");
+	for (const text of [
+		"Your recap",
+		"127 movies",
+		"38 series",
+		"Longest streak",
+		"21 days",
+		"Members only",
+	]) {
+		await expect(summary.getByText(text, { exact: true })).toBeVisible();
+	}
+
+	const share = summary.getByRole("button", { name: "Share recap" });
+	await expect(share).toBeDisabled();
+	// A press on Share recap, inside the step's left 15% at this width, is the button's: it never
+	// goes back.
+	await share.click({ force: true, position: { x: 4, y: 4 } });
+	await settle(page);
+	await expectStep(page, "3 of 3");
+
+	await summary.getByRole("link", { name: "Back to overview" }).click();
+	await expect(page).toHaveURL("/");
+	expect(errors).toEqual([]);
+});
+
+test("a move from a step scrolled to its bottom leaves the page at the top", async ({ page }) => {
+	await page.setViewportSize({ width: 390, height: 420 });
+	await open(page);
+	await pressKey(page, "ArrowRight");
+	await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+	expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+	await pressKey(page, "ArrowRight");
+	await expectStep(page, "3 of 3");
+	expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test.describe("with reduced motion", () => {
+	test.use({ contextOptions: { reducedMotion: "reduce" } });
+
+	for (const width of [390, 1280]) {
+		test(`at ${width} px, the next step shows its final state at once`, async ({ page }) => {
+			await page.setViewportSize({ width, height: 800 });
+			await open(page);
+			await page.keyboard.press("ArrowRight");
+			await expectStep(page, "2 of 3");
+			// Read at once, without waiting out any motion: the bars at their final lengths, measured
+			// along each bar's own axis (rows on a phone, columns from a tablet up), and nothing running.
+			const { animations, shares } = await page.evaluate(() => ({
+				animations: document.getAnimations().length,
+				shares: Array.from(document.querySelectorAll<HTMLElement>("[data-bar]"), (bar) => {
+					const track = bar.parentElement?.getBoundingClientRect();
+					const own = bar.getBoundingClientRect();
+					if (!track || track.width === 0 || track.height === 0) return 0;
+					return track.width >= track.height ? own.width / track.width : own.height / track.height;
+				}),
+			}));
+			expect(animations).toBe(0);
+			const busiest = Math.max(...monthlyHours);
+			expect(shares).toHaveLength(12);
+			shares.forEach((share, month) => {
+				expect(share, `month ${month + 1}`).toBeCloseTo((monthlyHours[month] ?? 0) / busiest, 2);
+			});
+		});
+	}
 });
 
 test.describe("a Danish browser", () => {
@@ -105,15 +197,40 @@ test.describe("a Danish browser", () => {
 		await expect(stepHeading(page, "1 af 3")).toHaveText(
 			"842 timer af alt, hvad du har afspillet i 2025",
 		);
+		await expect(step(page, "1 af 3").getByText("Filmelsker", { exact: true })).toBeVisible();
 		await expect(page.getByText("Tryk for at fortsætte")).toBeVisible();
 		await expect(page.getByRole("link", { name: "Luk" })).toBeVisible();
 		await expect(page.getByRole("button", { name: "Næste dias" })).toBeVisible();
 
+		await pressKey(page, "ArrowRight");
+		const months = step(page, "2 af 3")
+			.getByRole("list", { name: "Timer af alt, hvad du har afspillet i 2025, måned for måned" })
+			.getByRole("listitem");
+		await expect(months).toHaveCount(12);
+		await expect(months.nth(4)).toHaveText(/^maj\s*75 timer$/);
+
 		await pressKey(page, "End");
 		await expect(stepHeading(page, "3 af 3")).toHaveText("Alex i 2025");
 		await expect(page.getByText("Tryk for at fortsætte")).toHaveCount(0);
+		const summary = step(page, "3 af 3");
+		for (const text of ["127 film", "38 serier", "21 dage", "Kun for medlemmer"]) {
+			await expect(summary.getByText(text, { exact: true })).toBeVisible();
+		}
+		await expect(summary.getByRole("button", { name: "Del tilbageblik" })).toBeDisabled();
+		await expect(summary.getByRole("link", { name: "Tilbage til oversigten" })).toHaveAttribute(
+			"href",
+			"/",
+		);
 
 		expect(errors).toEqual([]);
+	});
+
+	test("wraps at 360 px without sideways scroll or hiding a control", async ({ page }) => {
+		await expectFitsAt360(page, ["1 af 3", "2 af 3", "3 af 3"], {
+			close: "Luk",
+			previous: "Forrige dias",
+			next: "Næste dias",
+		});
 	});
 });
 
@@ -294,17 +411,46 @@ test("Escape goes to /", async ({ page }) => {
 	await expect(page).toHaveURL("/");
 });
 
-test("nothing scrolls sideways at 360 px on any step", async ({ page }) => {
+/**
+ * At 360 px, each step wraps without scrolling sideways, and Close, Previous and Next stay in
+ * view: at the top of the step and scrolled to its bottom.
+ */
+async function expectFitsAt360(
+	page: Page,
+	steps: string[],
+	names: { close: string; previous: string; next: string },
+) {
 	const errors = consoleErrors(page);
 	await page.setViewportSize({ width: 360, height: 740 });
 	await open(page);
-	for (const name of ["1 of 3", "2 of 3", "3 of 3"]) {
+	for (const name of steps) {
 		await expectStep(page, name);
 		const overflow = await page.evaluate(
 			() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
 		);
 		expect(overflow, `${name} scrolls sideways`).toBe(0);
+		for (const end of ["top", "bottom"]) {
+			await page.evaluate(
+				(top) => window.scrollTo(0, top ? 0 : document.documentElement.scrollHeight),
+				end === "top",
+			);
+			for (const control of [
+				page.getByRole("link", { name: names.close }),
+				page.getByRole("button", { name: names.previous }),
+				page.getByRole("button", { name: names.next }),
+			]) {
+				await expect(control, `${control} at the ${end} of ${name}`).toBeInViewport();
+			}
+		}
 		await pressKey(page, "ArrowRight");
 	}
 	expect(errors).toEqual([]);
+}
+
+test("nothing scrolls sideways or hides a control at 360 px on any step", async ({ page }) => {
+	await expectFitsAt360(page, ["1 of 3", "2 of 3", "3 of 3"], {
+		close: "Close",
+		previous: "Previous slide",
+		next: "Next slide",
+	});
 });
