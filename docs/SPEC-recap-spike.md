@@ -141,8 +141,8 @@ boards; the boards guide the feel, not the layout.
 3. **The summary end card.** On the screen, "Your recap" above the `h2` "Alex’s 2025", then 127
    movies, 38 series and "Longest streak" 21 days, each with a decorative icon and its number in the
    display size, and the "Members only" badge (icon and text, a tinted `secondary` background with
-   readable text, never colour alone). Below the screen, in the aisle, "Share recap" is a native `disabled` button
-   that stays visibly labelled, and "Back to overview" is a link to `/`.
+   readable text, never colour alone). Below the screen, in the aisle, "Share recap" is a native
+   `disabled` button that stays visibly labelled, and "Back to overview" is a link to `/`.
 
 **Large numbers keep their whole sentence.** Each figure shown large ("842 hours of everything…",
 "127 movies", "38 series", "21 days") is one plural message with `{{count, number}}`, as
@@ -249,8 +249,9 @@ asset pipeline. The verdict records whether `recap` needs drawn or raster art in
 Both go with the verdict PR unless the verdict keeps them. The story's height is `preset-base`'s
 `dvh` keyword. Values only the spike uses (a progress segment's thickness, the screen's width, the
 seats' and the bars' size, the strength of the screen's light, an action's flex basis) use Panda's
-`[…]` escape hatch, which `strictTokens` allows, and leave with the spike. Nothing else departs from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in
-it is a dialog, menu or form control.
+`[…]` escape hatch, which `strictTokens` allows, and leave with the spike. Nothing else departs
+from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in it is a dialog, menu or
+form control.
 
 ## Project structure
 
