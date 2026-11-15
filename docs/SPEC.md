@@ -868,8 +868,10 @@ export const GET: RequestHandler = () => healthResponse();
   - `messages.test.ts`, the message check, finds every problem in `messages/*.json`, and breaks
     each of its rules once in small files held in memory, to show that each is reported.
 
-  The recap spike's `story-input.test.ts` (`src/lib/components/recap/`) maps each key and pointer
-  gesture to its move and checks the throttle (SPEC-recap-spike.md, "Testing strategy").
+  The recap spike's tests in `src/lib/components/recap/`: `story-input.test.ts` maps each key and
+  pointer gesture to its move and checks the throttle, and `count-emphasis.test.ts` splits English
+  and Danish messages around their count, never matching it inside the year or a larger number
+  (SPEC-recap-spike.md, "Testing strategy").
 
   Component tests, from the first one, use happy-dom; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
@@ -888,8 +890,11 @@ export const GET: RequestHandler = () => healthResponse();
     hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
     smoke test runs in English, Playwright's default.
   - `recap-spike.test.ts` checks the spike's story on `/spike/recap` in both languages: its
-    carousel semantics, moves by keys, buttons, clicks and drags, focus, Close and Escape, and no
-    sideways scroll at 360 px (SPEC-recap-spike.md, "Testing strategy").
+    carousel semantics, moves by keys, buttons, clicks and drags, focus, Close and Escape; the
+    steps' content (the month names in each language, the summary's figures, a disabled Share
+    recap and Back to overview); a move from a scrolled step returning to the top; the next step's
+    final state at once under reduced motion; and, at 360 px in both languages, no sideways scroll
+    and Close, Previous and Next in view (SPEC-recap-spike.md, "Testing strategy").
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling

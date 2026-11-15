@@ -36,13 +36,13 @@ each, each test first, then the verdict PR once the owner has reviewed the spike
 ### Phase 2: the story
 
 - [x] Task 2: the story shell on `/spike/recap`
-- [ ] Task 3: the three steps' content
+- [x] Task 3: the three steps' content
 
 ### Checkpoint: after task 3
 
-- [ ] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
+- [x] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
   pass.
-- [ ] The built server serves `/spike/recap` in English and Danish, and it moves by tap, swipe,
+- [x] The built server serves `/spike/recap` in English and Danish, and it moves by tap, swipe,
   keys and buttons, with every step's final content.
 
 ### Phase 3: motion and the review

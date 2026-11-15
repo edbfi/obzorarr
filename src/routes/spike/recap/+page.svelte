@@ -1,19 +1,14 @@
 <script lang="ts">
 // The recap spike (SPEC-recap-spike.md): the story with its three steps, on the fixture's figures.
 // Temporary: the PR that records D19's verdict deletes it.
+import MonthlyHoursSlide from "#lib/components/recap/MonthlyHoursSlide.svelte";
 import Story from "#lib/components/recap/Story.svelte";
+import SummaryCard from "#lib/components/recap/SummaryCard.svelte";
+import TotalTimeSlide from "#lib/components/recap/TotalTimeSlide.svelte";
 import { m } from "#lib/paraglide/messages.js";
-import { css } from "#styled-system/css";
 import type { PageProps } from "./$types";
 
 let { data }: PageProps = $props();
-
-const heading = css({
-	textStyle: "h1",
-	textWrap: "balance",
-	maxWidth: "readingMax",
-	alignSelf: "flex-start",
-});
 </script>
 
 <svelte:head>
@@ -21,19 +16,21 @@ const heading = css({
 </svelte:head>
 
 {#snippet totalTime()}
-	<h2 tabindex="-1" class={heading}>
-		{m.recap_spike_total_time({ count: data.hours, year: data.year })}
-	</h2>
+	<TotalTimeSlide hours={data.hours} year={data.year} />
 {/snippet}
 
 {#snippet monthlyHours()}
-	<h2 tabindex="-1" class={heading}>{m.recap_spike_monthly_title({ year: data.year })}</h2>
+	<MonthlyHoursSlide monthlyHours={data.monthlyHours} year={data.year} />
 {/snippet}
 
 {#snippet summary()}
-	<h2 tabindex="-1" class={heading}>
-		{m.recap_spike_summary_title({ name: data.member, year: data.year })}
-	</h2>
+	<SummaryCard
+		member={data.member}
+		year={data.year}
+		movies={data.movies}
+		series={data.series}
+		longestStreakDays={data.longestStreakDays}
+	/>
 {/snippet}
 
 <main>
