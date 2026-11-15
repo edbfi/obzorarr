@@ -20,7 +20,7 @@ const codePoints = (text: string) => [...text].length;
 
 /**
  * The owner's username as it is stored: trimmed and normalised to NFC, case kept, 1–64 code
- * points, with no control characters; why the case is kept: SPEC-setup.md, "Owner credentials".
+ * points, with no control characters; how the case is compared: SPEC-setup.md, "Owner credentials".
  */
 export function checkUsername(
 	raw: string,
