@@ -138,6 +138,33 @@ who claimed the instance (D20).
 Why: a maintained library covers most operations, and one provider boundary keeps the access rules
 (a server share, proven ownership) explicit and testable.
 
+### D19. The animated recap
+
+The animated recap was the surface most likely to need custom work beyond Panda CSS and Ark UI, so
+three slides were built as a spike (`recap-spike`) before its design was committed. The owner
+reviewed the spike in a browser and gave the verdict on 2026-11-15; `recap` adopts what it keeps.
+- **Keeps:** the story shell, which is the app's own code rather than Ark UI's Carousel; the
+  "Projection" look, where every slide plays on a cinema screen drawn in CSS and SVG, not raster
+  art, with calm colours (cyan marks only the badge, the busiest month and progress); the
+  `fontSizes.poster` and `gradients.beam` tokens; and the spike's motion, the reel change between
+  slides and the total coming into focus included, with no count-up.
+- **Changes:** the summary stays a page after the slides, as `recap`'s Module notes say, rather
+  than the story's last step. Its three figures come in five layouts the owner chooses between,
+  and motion comes in three levels the owner sets (Module notes: `recap`, `slides-admin`,
+  `appearance`).
+- **Custom work beyond Panda and Ark:** none that needs a library. The story's taps, swipes, keys
+  and focus are the app's own code; Ark's Carousel scrolls with the browser's smooth scroll, whose
+  duration the app can't set, and has no tap zones, throttle or Space, Enter and Escape. Motion
+  starts from CSS, the Web Animations API and Svelte's own motion; an animation library is a
+  dependency to ask for when a concrete effect needs one, not a rule against one.
+
+Why: the owner judged the real thing in English and Danish, at every width, by keyboard and touch,
+rather than a raster. Choosing a layout and how much motion plays is presentation the owner
+controls, so the recap is built around interchangeable layouts and motion levels, not one fixed
+look. Two independent advice rounds by three models each agreed on keeping the spike out of
+production, one registry of layouts, and motion kept apart from layout; the owner settled where
+they split.
+
 ### D20. Shared opening modules and owner sign-in, in the same shape in every app
 
 Every edbfi rewrite app builds five modules before any feature module, in this order: `secrets`,
@@ -204,8 +231,8 @@ in with Plex and keep access only while the server is shared with them. The owne
 that of the Plex account behind the server token (the server's local account 1), so it needs no Plex
 link, as otpravkarr's self-subscription does. The server owner's Plex account signing in through the
 member flow while unlinked gets a member session, never the owner's. The three-slide recap spike
-(D19) runs right after `i18n`: it is a design spike on demo fixtures, with no database or sign-in,
-not a feature module.
+(D19) ran right after `i18n`: a design spike on demo fixtures, with no database or sign-in, not a
+feature module.
 
 Why: the owner wants the five apps to look and work alike, and everything else depends on these
 modules: every app stores upstream secrets, shows text that must be translatable, needs a safe first
@@ -418,9 +445,3 @@ response parsing, including history pagination, the local-account mapping, and w
 reports a watched duration or view offset for each play and what it means (D23). Sign-in and the
 membership checks must be verified against Plex before they replace a working flow. Closes with the
 Plex provider.
-
-### D19. The animated recap
-
-The animated recap is the surface most likely to need custom work beyond Panda CSS and Ark UI. Three
-slides are built as a spike before its design is committed. Closes with that spike, which runs right
-after `i18n` (D20).

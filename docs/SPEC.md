@@ -3,8 +3,8 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), is built and awaits
-the owner's verdict (D19), and module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
+built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), ran and closed D19
+with the owner's verdict, and module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
 
 ## Objective
 
@@ -40,7 +40,7 @@ components or services, and dates and numbers formatted for the viewer's languag
 |---|---|---|---|---|
 | 1 | `secrets` | **Built.** Encrypts stored secrets (the Plex server token, members' Plex tokens in their sessions, the AI key, the artwork signing key, two-factor secrets, the OIDC client secret) before they reach the database (D20, D26), and the secret wrapper that shows only a redaction marker and opens at one named call | — | — |
 | 2 | `i18n` | **Built.** The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
-| 3 | `recap-spike` | The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it is committed. No database or sign-in, and its code becomes product code only through `recap`'s spec | `i18n` | `/spike/recap`, linked from nowhere (ground-floor choice 5) |
+| 3 | `recap-spike` | **Built.** The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it was committed. It closed D19 with the owner's verdict, and the verdict PR deleted its code, which becomes product code only through `recap`'s spec | `i18n` | none: `/spike/recap` went with the verdict |
 | 4 | `setup` | Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
 | 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
 | 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
@@ -51,13 +51,13 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 11 | `plex-sign-in` | Sign in with Plex. For members: PIN sign-in in a popup or by redirect, safe return paths, the membership check against a fresh mapping, revalidation with its grace window, member sessions and sign-out. For the owner: linking their Plex account in the account settings, after which Plex signs them in as the owner, through two-factor when it is on. Unlinked, the server owner's Plex account gets a member session (D20) | `two-factor`, `identity` | the sign-in flow and its popup page; the Plex section of the owner's account settings |
 | 12 | `stats` | The statistics engine: every calculator with its tie-breaks and determinism, runtime totals (D23), years and buckets in the instance time zone (D24), top movies and top shows grouped by key rather than title, series completion marked unknown when the lookup fails, and the per account-year cache with its invalidation | `sync` | — |
 | 13 | `sharing` | Share modes and the privacy floor, user control, slugs and per-year private-link tokens, identifier resolution with the uniform not-found, the names mode with hybrid comparing the same identity, and the member's sharing page | `plex-sign-in` | `/sharing` |
-| 14 | `recap` | The Wrapped experience, built on the spike's outcome: the slide catalogue with its empty states, story and scroll modes sharing one position and both ending with the summary, year navigation, the voice rules, the logo mode, the artwork proxy with signed URLs, and the server recap with top viewers | `recap-spike`, `stats`, `sharing` | `/wrapped/[year]/[id]` (brief: `/wrapped/2025/me`); the server recap (no brief yet) |
+| 14 | `recap` | The Wrapped experience, built on the spike's outcome: the slide catalogue with its empty states, story and scroll modes sharing one position and both ending with the summary, the summary's five layouts and the three motion levels (D19), year navigation, the voice rules, the logo mode, the artwork proxy with signed URLs, and the server recap with top viewers | `recap-spike`, `stats`, `sharing` | `/wrapped/[year]/[id]` (brief: `/wrapped/2025/me`); the server recap (no brief yet) |
 | 15 | `member-dashboard` | The member overview: the personal and server recap cards, the year picker and the monthly chart | `recap` | `/dashboard` |
 | 16 | `landing` | The landing page with Plex sign-in, and the optional public username lookup (off by default) with its rate limit and uniform not-found | `recap` | `/` |
 | 17 | `privacy-settings` | The privacy presets, the saved and after-saving exposure previews in the same wording onboarding uses, the individual settings and applying defaults to existing users. Adds its panel to first-run configuration | `sharing` | `/admin/settings/privacy` |
-| 18 | `slides-admin` | Ordering and enabling built-in slides with keyboard controls, and custom slides with checked markup and an optional year. Adds its panel to first-run configuration | `recap` | `/admin/slides` |
+| 18 | `slides-admin` | Ordering and enabling built-in slides with keyboard controls, custom slides with checked markup and an optional year, and the summary's layout. Adds its panel to first-run configuration | `recap` | `/admin/slides` |
 | 19 | `fun-facts` | Template fun facts as translated, plural-aware messages, and the optional AI text provider (key, https base URL, model, persona, connection test), asked in the viewer's language with templates as the fallback; placement and frequency. Adds its panel to first-run configuration | `recap` | the fun-fact control on `/admin/slides`; the AI form on `/admin/settings/connections` |
-| 20 | `appearance` | The interface and Wrapped theme settings and the logo mode. It decides whether more presets than After Hours return (ground-floor choice 4). Adds its panel to first-run configuration | `recap` | the appearance rail on `/admin/settings/connections` |
+| 20 | `appearance` | The interface and Wrapped theme settings, the logo mode and the recap's motion level. It decides whether more presets than After Hours return (ground-floor choice 4). Adds its panel to first-run configuration | `recap` | the appearance rail on `/admin/settings/connections` |
 | 21 | `users-admin` | The per-year users table: watch time, effective share mode, the per-user control toggle and each recap's link. No delete, ban or roles | `sharing`, `stats` | `/admin/users` (no brief yet) |
 | 22 | `logs` | Stored log entries, the logs page with filters that match on the server, the live view, export, the retention job and the log settings | `sign-in` | `/admin/logs` (no brief yet); the log settings in the System tab |
 | 23 | `data-admin` | Clearing cached statistics and play history per year or wholesale, offering to reset the watermark, and the instance reset, which returns to the claim with a new token | `sync`, `stats` | the Data tab of `/admin/settings` (no brief yet) |
@@ -88,7 +88,6 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 |---|---|
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
-| `recap-spike` | `lib/components/recap/` (the story shell and the three slides); `routes/spike/recap/` |
 | `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`, `security/cross-origin.ts`, `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the cross-origin check, the setup gate and the headers in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token hashing, the in-memory rate limiter, scanner filter); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
@@ -99,7 +98,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `plex-sign-in` | `services/plex-sign-in/`, `db/` member-session and sign-in-attempt schema; the sign-in routes under `routes/(public)/` |
 | `stats` | `services/stats/`, `db/` statistics-cache schema |
 | `sharing` | `services/sharing/`, `db/` share-settings schema; `routes/(app)/sharing/` |
-| `recap` | `services/recap/`, `services/artwork/`, `lib/components/recap/`; the recap routes and the artwork route |
+| `recap` | `services/recap/`, `services/artwork/`, `lib/shared/recap/` (the layout names, the motion levels and their checks), `lib/components/recap/` (the story shell, `slides/`, and `summary/` with the summary's layouts in `summary/layouts/`); the recap routes and the artwork route |
 | `member-dashboard` | `routes/(app)/dashboard/` (uses `recap` and `stats`) |
 | `landing` | `services/lookup/`; `routes/(public)/` |
 | `privacy-settings` | `routes/(admin)/admin/settings/privacy/` (uses `sharing`) |
@@ -114,7 +113,6 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Open decisions each module closes
 
-- `recap-spike`: D19.
 - `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
@@ -550,7 +548,7 @@ numbers in these blocks are obzorarr's; each app cites its own.
   weekday patterns, content type, decade, series completion, rewatch, marathon, streak, year
   comparison, percentile, binge, first and last. The summary is a page after the slides, not a
   slide.
-- **The slides,** with their empty states; the spike settles their look (D19), and their text is
+- **The slides,** with their empty states; their look is the spike's (D19), and their text is
   messages (D21).
   - Total time: the hours played (minutes under an hour), with a days or weeks comparison.
   - Top movies and top shows: the top 6 with artwork and play or episode counts; empty: "No
@@ -603,10 +601,30 @@ numbers in these blocks are obzorarr's; each app cites its own.
   (`appearance`); when members choose, the member whose recap it is has a toggle that saves at once
   and starts as shown.
 - **The summary page** ends both modes. Its cards, actions and labels follow the recap's brief
-  (`/wrapped/2025/me`; the server recap's own brief once it exists) as the spike settles them (D19).
+  (`/wrapped/2025/me`; the server recap's own brief once it exists) as the spike settled them (D19).
   Sharing opens the share dialog, the way home depends on who is viewing (the admin panel, the
   dashboard or the landing page), and focus lands on the heading, so a stray Enter doesn't press a
   button.
+- **The summary's figures** (the movies, the series and the longest streak) come in five layouts
+  (D19), drawn in [design/recap/](design/recap/): Credits axis, the default (numbers end on a
+  centre line and their words start from it); Title card (one sentence); Centred pairs; Edge print
+  (each word set vertically beside its number); and Ticket stubs. The owner picks one
+  (`slides-admin`); the server renders it, so it never flashes, and a stored layout that no longer
+  exists falls back to Credits axis with a warning in the logs. Each layout is a component in a
+  typed registry keyed by a stable name (`credits-axis`, never a letter), so adding one is a
+  component, its registry entry and its admin label, and the type check refuses a name without a
+  component or a component without a name. Every layout shows each figure's number and word as
+  text in reading order, from plural messages; Title card builds its sentence from the three plural
+  phrases. Layouts don't animate on their own: the summary's entrance is shared.
+- **Motion levels** (D19): reduced, standard and cinematic. The owner sets the level
+  (`appearance`), a member may only lower it, and the system's reduced-motion setting always wins,
+  in CSS before hydration as in script. Reduced shows each slide's final state at once. Standard is
+  the spike's motion, animating only transform and opacity; cinematic adds what costs more to draw
+  (the total's blur, clipped growth, the projector's light, shared-element transitions), each only
+  where the browser supports it. Cinematic steps down to standard for the rest of a recap when its
+  first slide drops frames, and only between slides. Every level has the same layout and content,
+  so a change of level never moves or hides anything. `recap`'s spec sets the motion's budgets and
+  confirms the step-down on real phones.
 - **Voice:** a personal recap says "you" and "your". The server recap speaks as "{server name}
   Community", or "we" and "our" when the server has no name, and always takes plural verbs.
 - **Artwork** goes through the app, so browsers never see the server token, and follows the same
@@ -673,6 +691,9 @@ numbers in these blocks are obzorarr's; each app cites its own.
   class and inline style (an author's class could otherwise pick up the app's own full-screen layout
   classes); links open in a new tab without a referrer and only with web and mail schemes; and
   inline images are raster formats only, never vector or markup images.
+- **The summary layout** (`recap`): a picker below the slide order, whose preview shows the summary
+  in each layout with the demo fixture's figures, drawn by the recap's own layout components. It
+  saves with the slides' settings version.
 
 #### fun-facts
 
@@ -718,6 +739,8 @@ numbers in these blocks are obzorarr's; each app cites its own.
 
 - First run's panel sets the interface theme and the Wrapped theme.
 - **The logo mode:** always show (the default), always hide, or the member's choice.
+- **The recap's motion level** (`recap`): reduced, standard or cinematic, for every recap. Which is
+  the default is `recap`'s spec's call, once the motion is measured on real phones.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
   readable by scripts by design.
 
@@ -818,7 +841,7 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the recap spike's tests and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
@@ -868,11 +891,6 @@ export const GET: RequestHandler = () => healthResponse();
   - `messages.test.ts`, the message check, finds every problem in `messages/*.json`, and breaks
     each of its rules once in small files held in memory, to show that each is reported.
 
-  The recap spike's tests in `src/lib/components/recap/`: `story-input.test.ts` maps each key and
-  pointer gesture to its move and checks the throttle, and `count-emphasis.test.ts` splits English
-  and Danish messages around their count, never matching it inside the year or a larger number
-  (SPEC-recap-spike.md, "Testing strategy").
-
   Component tests, from the first one, use happy-dom; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret.
@@ -889,15 +907,6 @@ export const GET: RequestHandler = () => healthResponse();
     `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
     hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
     smoke test runs in English, Playwright's default.
-  - `recap-spike.test.ts` checks the spike's story on `/spike/recap` in both languages: its
-    carousel semantics, moves by keys, buttons, clicks and drags, focus, Close and Escape; the
-    steps' content (the month names in each language, the summary's figures, a disabled Share
-    recap and Back to overview); a move from a scrolled step returning to the top; the two motion
-    checks: under reduced motion, the next step's final state one frame after the move, with the
-    leaving step gone and nothing running, and without it, a move animating the entering step, with
-    the animations paused mid-move to check that the leaving step is `inert`, focus stays where the
-    story puts it and nothing scrolls sideways at 360 px; and, at 360 px in both languages, no
-    sideways scroll and Close, Previous and Next in view (SPEC-recap-spike.md, "Testing strategy").
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling
@@ -943,5 +952,5 @@ call for anything different; choices 4 and 5 are obzorarr's own.
    After Hours. The skeleton defines After Hours as the only theme, its colours as semantic tokens
    behind the dark colour-mode condition, and the module that brings back the two theme settings
    decides whether more presets return and how Panda switches them.
-5. **CSP and the recap spike.** Whether the recap spike carries the security headers and CSP (choice
-   3) is decided by the spike's own spec, since only it knows whether the spike is served to users.
+5. **CSP and the recap spike.** Closed: no headers needed. The spike served fictional figures,
+   stored nothing and was deleted before `setup`, so it never met choice 3's headers.

@@ -276,17 +276,14 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 a secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
 formatters, and a check of the message files. Module 3, `recap-spike`
-([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), is built and awaits the owner's verdict:
-DESIGN.md's fonts are bundled, and `/spike/recap` serves the story with its three steps, their
-motion and reduced motion.
+([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19 with the owner's
+verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts what the
+verdict keeps through its own spec.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
 
 **Boundaries.**
-- The animated recap starts with a three-slide spike ([D19](docs/decisions.md#d19-the-animated-recap)).
-  Its design isn't committed, and no other recap slide is built, before the spike's spec is approved
-  and the spike has run.
 - Never bring code over from `legacy-old/v1`; rebuild from the spec. Published releases up to 0.1.11
   and their tags stay as they are.
 
@@ -319,9 +316,6 @@ src/
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status
-    spike/recap/                 temporary (`recap-spike`): `/spike/recap`, linked from nowhere;
-                                 +page.server.ts returns the fixture's member figures,
-                                 +page.svelte renders the story and sets the page title
     (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -341,17 +335,6 @@ src/
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
-      recap/                     temporary (`recap-spike`): Story.svelte, the story shell (bars,
-                                 progress, moves and their transitions, focus, the carousel
-                                 semantics);
-                                 story-input.ts, a key or pointer gesture to a move, and the
-                                 throttle; CinemaScreen.svelte, the screen every step plays
-                                 on; the steps TotalTimeSlide.svelte, MonthlyHoursSlide.svelte
-                                 and SummaryCard.svelte, which take their figures as props;
-                                 count-emphasis.ts, a message split around its count so the
-                                 count can be styled large; reel-change.ts, the share of a
-                                 move the screen goes dark, which the transitions and the
-                                 entrance keyframes share
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -361,7 +344,6 @@ tests/
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
-  e2e/recap-spike.test.ts        temporary: the spike's story against the built server
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate
@@ -371,9 +353,7 @@ project.inlang/                  settings.json: the locales and the i18next plug
                                  Vite plugin both read
 drizzle/                         later: reviewed migrations
 panda.config.ts                  every design token; components use them through
-                                 `#styled-system/<module>` (generated, gitignored); temporary
-                                 (`recap-spike`): the steps' entrance keyframes and their
-                                 animation styles
+                                 `#styled-system/<module>` (generated, gitignored)
 vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```

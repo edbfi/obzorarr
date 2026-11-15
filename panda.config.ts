@@ -1,28 +1,4 @@
 import { defineConfig } from "@pandacss/dev";
-import { reelChange } from "./src/lib/components/recap/reel-change.ts";
-
-// The recap spike's step entrances (SPEC-recap-spike.md, "Motion"), each run over `story` and only
-// under `_motionSafe`, so reduced motion shows the final state at once. Each holds its start
-// through the move's reel change, so it plays once its step shows, and ends at the element's own
-// style.
-const hold = `0%, ${reelChange * 100}%`;
-const recapKeyframes = {
-	// The total and its caption.
-	recapRise: { [hold]: { opacity: "0", transform: "translateY(var(--spacing-lg))" } },
-	// The total's number comes into focus, as a projector's image does.
-	recapFocus: { [hold]: { filter: "blur(6px)" } },
-	// The month bars fill from zero: along the row on a phone, up the column from a tablet.
-	recapGrowRow: {
-		[hold]: { clipPath: "inset(0 100% 0 0 round var(--radii-full))" },
-		to: { clipPath: "inset(0 0 0 0 round var(--radii-full))" },
-	},
-	recapGrowColumn: {
-		[hold]: { clipPath: "inset(100% 0 0 0 round var(--radii-sm) var(--radii-sm) 0 0)" },
-		to: { clipPath: "inset(0 0 0 0 round var(--radii-sm) var(--radii-sm) 0 0)" },
-	},
-	// The summary's figures.
-	recapFade: { [hold]: { opacity: "0" } },
-};
 
 // The obzorarr design system ("After Hours"). This file is the token source: DESIGN.md describes
 // how the tokens are used, and components use them only through Panda (`strictTokens`).
@@ -76,8 +52,8 @@ export default defineConfig({
 				caption: { value: "12px" },
 				number: { value: "32px" },
 				code: { value: "13px" },
-				// The recap's poster-sized figure (SPEC-recap-spike.md, "Imagery and tokens"): it fits
-				// 360px and reaches three times `display` at 1440px.
+				// The recap's poster-sized figure (D19): it fits 360px and reaches three times `display`
+				// at 1440px.
 				poster: { value: "clamp(96px, 48px + 8.4vw, 168px)" },
 			},
 			fontWeights: {
@@ -170,22 +146,6 @@ export default defineConfig({
 				beam: { value: "linear-gradient(to bottom, {colors.primary}, transparent)" },
 			},
 		},
-
-		keyframes: recapKeyframes,
-		// Each entrance over `story`, decelerating as Svelte's `quintOut` does for the moves between
-		// steps (Story.svelte). Components use them only under `_motionSafe`.
-		animationStyles: Object.fromEntries(
-			Object.keys(recapKeyframes).map((name) => [
-				name,
-				{
-					value: {
-						animationName: name,
-						animationDuration: "story",
-						animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-					},
-				},
-			]),
-		),
 
 		textStyles: {
 			display: {
