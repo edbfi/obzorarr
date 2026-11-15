@@ -1,4 +1,5 @@
 import { open } from "node:fs/promises";
+import { errorCode } from "./error-code.ts";
 
 /** The two variables a master key can come from (SPEC-secrets.md, "The master key"). */
 export type SecretKeyEnv = {
@@ -80,17 +81,11 @@ async function readAtMost(path: string): Promise<Uint8Array> {
 	} catch (error) {
 		throw new SecretKeyError(
 			"unreadable",
-			`OBZORARR_SECRET_KEY_FILE names a file that can't be read (${codeOf(error)})`,
+			`OBZORARR_SECRET_KEY_FILE names a file that can't be read (${errorCode(error)})`,
 		);
 	}
 	if (length > MAX_BYTES) {
 		throw new SecretKeyError("too-large", "OBZORARR_SECRET_KEY_FILE names a file over 4 KiB");
 	}
 	return buffer.subarray(0, length);
-}
-
-/** A system error's code, such as `ENOENT`; its message can hold the path, so it's never used. */
-function codeOf(error: unknown): string {
-	const code = error instanceof Error && "code" in error ? error.code : undefined;
-	return typeof code === "string" && /^E[A-Z0-9]+$/.test(code) ? code : "unknown error";
 }

@@ -57,7 +57,7 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 
 ### Phase 1: the foundations
 
-- [ ] Task 1: the database (D15)
+- [x] Task 1: the database (D15)
 - [ ] Task 2: logging with redaction
 - [ ] Task 3: shutdown
 

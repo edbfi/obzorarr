@@ -1,8 +1,9 @@
 import { defineEnvVars, type EnvVarConfig } from "@sveltejs/kit/env";
+import type { DatabasePathEnv } from "#lib/server/config/database-path.ts";
 import type { SecretKeyVariable } from "#lib/server/config/secret-key.ts";
 
 // Optional and never throwing: SvelteKit's own validation would otherwise print its own message
-// before `secrets` checks the key (SPEC-secrets.md, "Declaring the variables").
+// before startup checks each variable (SPEC-secrets.md, "Declaring the variables").
 const optional = (value: string | undefined) => value;
 
 /** Private and read when the app starts, never inlined into the build. */
@@ -15,4 +16,8 @@ export const variables = defineEnvVars({
 		schema: optional,
 		description: "The path of a file holding the master key, such as a Docker secret.",
 	},
-} satisfies Record<SecretKeyVariable, EnvVarConfig<string | undefined>>);
+	OBZORARR_DATABASE_PATH: {
+		schema: optional,
+		description: "The database file's path; data/obzorarr.db in the working directory if unset.",
+	},
+} satisfies Record<SecretKeyVariable | keyof DatabasePathEnv, EnvVarConfig<string | undefined>>);

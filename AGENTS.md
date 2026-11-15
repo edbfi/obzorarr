@@ -273,12 +273,14 @@ unit tests, one e2e smoke and the Bun web CI ([`docs/SPEC.md`](docs/SPEC.md)). P
 come next, in the order of the approved capability map in `docs/SPEC.md`, each through an
 owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 ([`docs/SPEC-secrets.md`](docs/SPEC-secrets.md)), is built and ready for consumers. Nothing stores
-a secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
+a secret yet. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
 formatters, and a check of the message files. Module 3, `recap-spike`
 ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19 with the owner's
 verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts what the
-verdict keeps through its own spec.
+verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)),
+is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
+migrations.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -305,9 +307,8 @@ src/
                                  and `handle` writes the request's language into `<html lang>`
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
   app.d.ts                       SvelteKit ambient types
-  env.ts                         declares `OBZORARR_SECRET_KEY` and `OBZORARR_SECRET_KEY_FILE`:
-                                 private, read at runtime, optional
-  hooks.server.ts                the `init` hook: loads the keyring, except while building;
+  env.ts                         declares the app's variables: private, read at runtime, optional
+  hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`: each request's language, through Paraglide's middleware
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
@@ -321,11 +322,20 @@ src/
                                  `#lib/server/services/health.ts`
     assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon
     paraglide/                   the compiled messages (generated, gitignored)
-    server/                      server-only: services/health.ts; later db/ (schema per aggregate),
-                                 providers/plex/ (and the optional AI text provider),
-                                 services/<domain>/, jobs/, http/ (SSRF-safe fetch), logging/
+    server/                      server-only: services/health.ts; later providers/plex/ (and the
+                                 optional AI text provider), services/<domain>/, jobs/, http/
+                                 (SSRF-safe fetch), logging/
+      config/                    each variable read and checked once, at startup; a failure is a
+                                 `ConfigError` (config-error.ts) that names the variable, never
+                                 its value; error-code.ts: a system error's code, without its path
       config/secret-key.ts       the master key's text from `OBZORARR_SECRET_KEY` or the file
                                  `OBZORARR_SECRET_KEY_FILE` names; no key logic
+      config/database-path.ts    the database file's path, its folder created and writable
+      db/                        client.ts: opens the database; migrate.ts: applies the bundled
+                                 migrations; one file per aggregate with its tables (settings.ts,
+                                 owner.ts) and, from their first caller, its named operations
+      services/setup/startup.ts  startup's steps in order: the key, the configuration, the
+                                 database
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -344,6 +354,7 @@ tests/
   e2e/secret-key.test.ts         the built server refuses to start without a valid key
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
+  e2e/setup.test.ts              startup and first run on fresh built servers
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate
@@ -351,7 +362,9 @@ messages/en.json  messages/da.json
 project.inlang/                  settings.json: the locales and the i18next plugin;
                                  paraglide.config.ts: Paraglide's options, which the CLI and the
                                  Vite plugin both read
-drizzle/                         later: reviewed migrations
+drizzle/                         the reviewed migrations Drizzle Kit generated (`db:generate`),
+                                 one folder each; Vite bundles their SQL into the build
+drizzle.config.ts                Drizzle Kit's options: the schema files it reads
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
 vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest

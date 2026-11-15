@@ -1,0 +1,107 @@
+{
+	"version": "7",
+	"dialect": "sqlite",
+	"id": "70069193-47ed-408f-a109-72048bc7b5d0",
+	"prevIds": ["00000000-0000-0000-0000-000000000000"],
+	"ddl": [
+		{
+			"name": "settings",
+			"entityType": "tables"
+		},
+		{
+			"name": "owner",
+			"entityType": "tables"
+		},
+		{
+			"table": "settings",
+			"name": "key",
+			"type": "text",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "settings",
+			"name": "value",
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "settings",
+			"name": "updated_at",
+			"type": "integer",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "owner",
+			"name": "id",
+			"type": "integer",
+			"notNull": false,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "owner",
+			"name": "username",
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "owner",
+			"name": "password_hash",
+			"type": "text",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "owner",
+			"name": "created_at",
+			"type": "integer",
+			"notNull": true,
+			"autoincrement": false,
+			"default": null,
+			"generated": null,
+			"entityType": "columns"
+		},
+		{
+			"table": "settings",
+			"name": "settings_pk",
+			"columns": ["key"],
+			"nameExplicit": false,
+			"entityType": "pks"
+		},
+		{
+			"table": "owner",
+			"name": "owner_pk",
+			"columns": ["id"],
+			"nameExplicit": false,
+			"entityType": "pks"
+		},
+		{
+			"table": "owner",
+			"name": "owner_one_row",
+			"value": "\"id\" = 1",
+			"entityType": "checks"
+		}
+	],
+	"renames": []
+}
