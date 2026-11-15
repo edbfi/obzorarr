@@ -64,6 +64,10 @@ describe("crossOriginAllowed", () => {
 			"https://obzorarr.example/",
 			"https://u:p@obzorarr.example",
 			"ftp://obzorarr.example",
+			// The URL parser repairs these, so the raw text decides.
+			"https:obzorarr.example",
+			"https://obzorarr.example\\x",
+			"https://obzorarr.example:",
 		];
 
 		it.each(malformed)("refuses Origin %j even with Sec-Fetch-Site same-origin", (value) => {

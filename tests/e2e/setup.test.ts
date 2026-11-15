@@ -413,11 +413,12 @@ test.describe("the cross-origin check", () => {
 				form.submit();
 			});
 			const ownResponse = await own;
-			expect(ownResponse.request().headers()["sec-fetch-site"]).toBeUndefined();
+			// `headerValue` reads what Chromium sent; `headers()` leaves out the Sec-Fetch headers.
+			expect(await ownResponse.request().headerValue("sec-fetch-site")).toBeNull();
 			expect(ownResponse.status()).toBe(405);
 
 			const other = await postFromAnotherSite(page, `${appUrl}/`);
-			expect(other.request().headers()["sec-fetch-site"]).toBeUndefined();
+			expect(await other.request().headerValue("sec-fetch-site")).toBeNull();
 			expect(other.status()).toBe(403);
 		} finally {
 			await browser.close();

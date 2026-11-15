@@ -280,7 +280,7 @@ formatters, and a check of the message files. Module 3, `recap-spike`
 verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts what the
 verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)),
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
-migrations, the app writes redacted JSON logs, it shuts down cleanly, and every page carries the
+migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets
 "Access denied".
 

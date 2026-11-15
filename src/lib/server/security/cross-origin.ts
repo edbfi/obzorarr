@@ -45,21 +45,23 @@ export function crossOriginAllowed(
 }
 
 /**
+ * One bare origin as browsers send it: `http://` or `https://`, a host (a bracketed IPv6 address
+ * or a name with no separators), and an optional port. The URL parser repairs `https:host`,
+ * backslashes and a bare trailing colon, so the raw text is checked first.
+ */
+const BARE_ORIGIN = /^https?:\/\/(\[[0-9a-f:.]+\]|[^/\\?#@,:\s[\]]+)(:\d+)?$/i;
+
+/**
  * An `Origin` header as a URL, or null when it isn't one bare http or https origin: `null`, a
  * malformed value, several values (joined with commas), credentials, or anything after the host.
  */
 function parseOrigin(value: string): URL | null {
-	let url: URL;
+	if (!BARE_ORIGIN.test(value)) return null;
 	try {
-		url = new URL(value);
+		return new URL(value);
 	} catch {
 		return null;
 	}
-	if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-	if (url.username !== "" || url.password !== "") return null;
-	const rest = value.slice(value.indexOf("//") + 2);
-	if (/[/?#@,\s]/.test(rest)) return null;
-	return url;
 }
 
 /** Whether `Host` names `origin`'s host and port, read with `origin`'s default port. */
