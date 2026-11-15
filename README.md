@@ -112,15 +112,15 @@ binding for your platform, as `bun ci` installs it:
 
 ## The address browsers use
 
-Obzorarr asks each browser where a request came from, so it needs no address of its own.
-`ORIGIN` is optional and sets the address explicitly, as a bare origin with no path:
+`ORIGIN` is optional. It tells Obzorarr the address browsers use, as a bare origin with no path:
 
 | Variable | Holds | Default |
 | --- | --- | --- |
 | `ORIGIN` | the address browsers use, such as `https://obzorarr.example` or `http://192.168.1.20:3000` | unset |
 
 Obzorarr won't start if `ORIGIN` is empty or holds a path, a query, a fragment or credentials;
-leave it out instead. When `ORIGIN` is `https`, every response asks browsers to keep using HTTPS.
+leave it out instead. Over HTTPS, when `ORIGIN` is `https` or the browser shows it, pages ask
+browsers to keep using HTTPS.
 
 ## Logs
 

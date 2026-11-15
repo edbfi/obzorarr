@@ -258,9 +258,26 @@ test.describe("security headers and the CSP", () => {
 			const html = await response.text();
 			const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
 			expect(nonce).toBeDefined();
-			expect(policy).toContain("default-src 'self'");
-			expect(policy).toContain("frame-ancestors 'none'");
-			expect(policy).toMatch(/style-src 'self' 'unsafe-inline'(;|$)/);
+			// The spec's policy, directive for directive, with the nonce only on scripts.
+			const directives = Object.fromEntries(
+				policy.split(";").map((directive) => {
+					const [name = "", ...sources] = directive.trim().split(/\s+/);
+					return [name, sources.sort()];
+				}),
+			);
+			expect(directives).toEqual({
+				"default-src": ["'self'"],
+				"script-src": [`'nonce-${nonce}'`, "'self'"].sort(),
+				"style-src": ["'self'", "'unsafe-inline'"],
+				"img-src": ["'self'", "data:"],
+				"font-src": ["'self'"],
+				"connect-src": ["'self'"],
+				"frame-ancestors": ["'none'"],
+				"frame-src": ["'none'"],
+				"object-src": ["'none'"],
+				"base-uri": ["'self'"],
+				"form-action": ["'self'"],
+			});
 			const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map((match) => match[0]);
 			expect(scripts.length).toBeGreaterThan(0);
 			for (const script of scripts) expect(script).toContain(`nonce="${nonce}"`);
@@ -274,15 +291,21 @@ test.describe("security headers and the CSP", () => {
 					console.error(`Content Security Policy violation: ${event.violatedDirective}`);
 				});
 			});
-			await page.goto(`${server.url}/`);
+			const visit = await page.goto(`${server.url}/`);
 			await expect(page.locator("html[data-hydrated]")).toBeAttached();
 			expect(violations).toEqual([]);
+			// Chromium sends Sec-Fetch-Site to this loopback address over plain HTTP, so this checks
+			// the loopback exemption: no HSTS.
+			expect(visit?.headers()["strict-transport-security"]).toBeUndefined();
 		} finally {
 			await server.stop();
 		}
 	});
 
-	for (const value of ["https://u:p@obzorarr.example", "https://obzorarr.example/app"]) {
+	for (const [value, message] of [
+		["https://u:p@obzorarr.example", "ORIGIN must not hold credentials"],
+		["https://obzorarr.example/app", "ORIGIN must not have a path"],
+	] as const) {
 		test(`the built server refuses ORIGIN=${value}, without echoing it`, async () => {
 			const { exitCode, output } = await runToExit(root, { ORIGIN: value });
 			expect(output.includes(value), "output holds the value").toBe(false);
@@ -290,8 +313,7 @@ test.describe("security headers and the CSP", () => {
 			expect(exitCode).toBe(1);
 			expect(output).not.toContain("Listening on");
 			const lines = output.split("\n").filter((line) => line.startsWith("ConfigError: "));
-			expect(lines).toHaveLength(1);
-			expect(lines[0]).toMatch(/^ConfigError: ORIGIN must not (hold credentials|have a path)$/);
+			expect(lines).toEqual([`ConfigError: ${message}`]);
 		});
 	}
 });

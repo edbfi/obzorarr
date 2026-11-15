@@ -38,6 +38,10 @@ describe("readOrigin", () => {
 		["https://@obzorarr.example", "ORIGIN must not hold credentials"],
 		["https://obzorarr.example/app", "ORIGIN must not have a path"],
 		["https://obzorarr.example//", "ORIGIN must not have a path"],
+		// The parser removes dot segments, so the raw path is checked before it.
+		["https://obzorarr.example/app/..", "ORIGIN must not have a path"],
+		["https://obzorarr.example/%2e", "ORIGIN must not have a path"],
+		["https://obzorarr.example/.", "ORIGIN must not have a path"],
 		["https://obzorarr.example/?x=1", "ORIGIN must not have a query"],
 		["https://obzorarr.example?", "ORIGIN must not have a query"],
 		["https://obzorarr.example/#top", "ORIGIN must not have a fragment"],
