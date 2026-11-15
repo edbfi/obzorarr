@@ -171,3 +171,26 @@ test.describe("the database", () => {
 		]);
 	});
 });
+
+test.describe("logging", () => {
+	test("a failed startup is one JSON log entry, and the bad value is never echoed", async () => {
+		const value = "verbose-please";
+		const { exitCode, output } = await runToExit(root, { OBZORARR_LOG_DEBUG: value });
+
+		expect(output.includes(value), "output holds the value").toBe(false);
+		expect(exitCode).toBe(1);
+		const entries = output
+			.split("\n")
+			.filter((line) => line.startsWith("{"))
+			.map((line) => JSON.parse(line));
+		expect(entries).toHaveLength(1);
+		expect(entries[0]).toMatchObject({
+			level: "error",
+			source: "startup",
+			message: "startup failed",
+			metadata: {
+				error: { name: "ConfigError", message: "OBZORARR_LOG_DEBUG must be true or false" },
+			},
+		});
+	});
+});

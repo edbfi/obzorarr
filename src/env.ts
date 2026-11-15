@@ -1,5 +1,6 @@
 import { defineEnvVars, type EnvVarConfig } from "@sveltejs/kit/env";
 import type { DatabasePathEnv } from "#lib/server/config/database-path.ts";
+import type { LogDebugEnv } from "#lib/server/config/log-debug.ts";
 import type { SecretKeyVariable } from "#lib/server/config/secret-key.ts";
 
 // Optional and never throwing: SvelteKit's own validation would otherwise print its own message
@@ -20,4 +21,11 @@ export const variables = defineEnvVars({
 		schema: optional,
 		description: "The database file's path; data/obzorarr.db in the working directory if unset.",
 	},
-} satisfies Record<SecretKeyVariable | keyof DatabasePathEnv, EnvVarConfig<string | undefined>>);
+	OBZORARR_LOG_DEBUG: {
+		schema: optional,
+		description: "Whether debug log entries are written: true or false; off if unset.",
+	},
+} satisfies Record<
+	SecretKeyVariable | keyof DatabasePathEnv | keyof LogDebugEnv,
+	EnvVarConfig<string | undefined>
+>);

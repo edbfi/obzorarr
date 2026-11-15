@@ -113,9 +113,15 @@ Why: one token source and one primitive library keep the design system (DESIGN.m
 
 ### D11. Structured logs to standard output
 
-Logs are structured, one entry per line, written to standard output. The library is open (D14).
+Logs are structured, one JSON entry per line, written to standard output: the time to the
+millisecond, the level (debug, info, warn or error), the source, the message and its metadata.
+The app writes them with its own small logger in `logging/`, with no library, and redacts each
+entry before it is written (SPEC-setup.md, "Logging"). This closes D14's logging half.
 
 Why: the container runtime collects stdout; structured lines can be filtered without parsing prose.
+The redaction rules replace any key that looks like a credential at any depth, which path-based
+redaction in logging libraries doesn't do, and the entry's shape is fixed by the spec, so a
+library would add a dependency while doing neither.
 
 ### D12. Plex through `@ctrl/plex` behind a provider
 
@@ -433,10 +439,10 @@ How the OpenAPI document is generated from SvelteKit endpoints isn't chosen. The
 validated with the pinned TypeScript 6 and Bun versions. Closes when the first JSON endpoint needs a
 generated client.
 
-### D14. Logging library and job lifecycle
+### D14. Job lifecycle
 
-The logging library (D11) and the concrete job lifecycle implementation (D7) aren't chosen. Close
-before the first background job lands.
+The concrete job lifecycle implementation (D7) isn't chosen. Close before the first background job
+lands. (Its logging half closed in D11.)
 
 ### D16. Runtime validation gaps
 
