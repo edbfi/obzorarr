@@ -17,7 +17,7 @@ tables go into the first migration; no operations yet.
 - [ ] `server/config/database-path.test.ts` first fails, then passes: the default against the
   working directory, an empty variable counting as unset, a folder that is created, and a folder
   that can't be created or written refused with one line naming the variable and never echoing the
-  path ("can't be created" uses a parent that is a regular file, so the test holds as root).
+  path. Both cases use a parent that is a regular file, never `chmod`, so they hold as root.
 - [ ] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
   migrations apply to a new database, both tables exist, and a second run applies nothing. It
   compares the rows with what Drizzle Kit's file migrator writes for the same migrations.
@@ -31,9 +31,10 @@ tables go into the first migration; no operations yet.
   creation time; one row at most) match the spec.
 - [ ] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary
   file, starts, serves `/healthz`, and starts again on the same file; it refuses to start with an
-  unwritable database folder, without echoing the path. `playwright.config.ts` gives each run a
-  temporary database, created and removed only in the runner process (the config loads again in
-  each worker, where `TEST_WORKER_INDEX` is set), after the server exits.
+  unwritable database folder (a regular file as its parent), without echoing the path.
+  `playwright.config.ts` gives each run a temporary database, created and removed only in the
+  runner process (the config loads again in each worker, where `TEST_WORKER_INDEX` is set), after
+  the server exits.
 - [ ] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
   through the native binding on Linux arm64 (this machine) and x64 (CI's `smoke`), rollback
   isolation, and all of it with failing `node`, `npm` and `npx` on `PATH`.
@@ -93,7 +94,8 @@ open), `docs/SPEC.md` (the testing section), `AGENTS.md`.
 **Description:** On `SIGTERM`, `SIGINT` and `SIGHUP` (passed on to adapter-bun as `SIGTERM`), stop
 the jobs and timers (none yet) while the adapter drains; on `sveltekit:shutdown`, close the
 database, flush the logs and exit 0, or exit non-zero after a 5-second deadline. The handlers are
-installed only in the built server (`dev` from `$app/env` is false): Vite's dev server never emits
+installed only in the built server: `hooks.server.ts` passes `dev` from `$app/env` into startup,
+as it passes `env` to the keyring, so the tests set either value; Vite's dev server never emits
 `sveltekit:shutdown`, and a `SIGINT` listener would stop Ctrl+C from ending it.
 
 **Acceptance criteria:**
@@ -204,7 +206,8 @@ needed), `docs/SPEC.md` (the testing section), `AGENTS.md`.
   without dashes, in any case, trimmed; compared in constant time; expired after 15 minutes.
 - [ ] `server/services/setup/first-run.test.ts`, against a temporary file: an unclaimed instance
   prints a token and a new one at expiry; the timer waits while a claim is in progress; shutdown
-  stops it; a claimed instance prints none.
+  stops it; the line holds the full address when `ORIGIN` is set and only `/setup` otherwise; a
+  claimed instance prints none.
 - [ ] `owner.ts` gains the operation that says whether an owner exists.
 - [ ] `setup.test.ts`: the built server prints the token line; it appears in no log entry.
 
