@@ -271,16 +271,16 @@ except `/setup` and `/healthz` gets a 303 to `/setup`. Playwright's global setup
 through the form, so the smoke and language tests run on a claimed instance.
 
 **Acceptance criteria:**
-- [ ] `first-run.test.ts` gains the gate's decision for each path, before and after the claim.
-- [ ] `setup.test.ts`: every page sends a fresh instance to `/setup` and `/healthz` answers `ok`;
+- [x] `first-run.test.ts` gains the gate's decision for each path, before and after the claim.
+- [x] `setup.test.ts`: every page sends a fresh instance to `/setup` and `/healthz` answers `ok`;
   the gate's redirect carries the headers; after a restart on a claimed file, `/` is served without
   a redirect. The earlier tests that expect a 404 or a same-origin POST's 405 claim their own
   servers first; a same-origin POST on an unclaimed one passes the cross-origin check and gets the
   gate's 303.
-- [ ] `playwright.config.ts`: the web server's `wait.stdout` pattern runs from the token line
+- [x] `playwright.config.ts`: the web server's `wait.stdout` pattern runs from the token line
   through "Listening on" and replaces the `url` check; `tests/e2e/global-setup.ts` claims through
   the form in a browser; `smoke.test.ts` and `i18n.test.ts` pass unchanged.
-- [ ] The README's first run: the token in the console, `/setup`, and who can claim.
+- [x] The README's first run: the token in the console, `/setup`, and who can claim.
 
 **Verification:** the gates; success criterion 2 by hand: a fresh built server prints a token,
 sends every page to `/setup`, is claimed once over plain HTTP, and then serves `/` with the

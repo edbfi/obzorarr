@@ -82,7 +82,7 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 
 - [x] Task 6: the bootstrap token
 - [x] Task 7: the claim at `/setup`
-- [ ] Task 8: the setup gate
+- [x] Task 8: the setup gate
 
 ### Checkpoint: complete
 

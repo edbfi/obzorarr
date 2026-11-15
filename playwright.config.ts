@@ -22,13 +22,21 @@ const baseURL = `http://127.0.0.1:${port}`;
 // The smoke test runs against the built adapter-bun server: `bun run --bun build` first.
 export default defineConfig({
 	testDir: "tests/e2e",
+	// Claims the web server's fresh instance, so the other tests run on a claimed one.
+	globalSetup: "./tests/e2e/global-setup.ts",
 	forbidOnly: Boolean(process.env.CI),
 	reporter: process.env.CI ? "github" : "list",
 	use: { baseURL },
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	webServer: {
 		command: "bun --no-env-file ./build",
-		url: `${baseURL}/healthz`,
+		// From the token line through adapter-bun's "Listening on", in place of a `url` check:
+		// Playwright races the two, and the URL could win before the token is captured. The named
+		// group puts the token in `OBZORARR_E2E_SETUP_TOKEN` for the global setup.
+		wait: {
+			stdout:
+				/Setup token: (?<obzorarr_e2e_setup_token>[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}) [\s\S]*Listening on/,
+		},
 		env: {
 			HOST: "127.0.0.1",
 			PORT: String(port),

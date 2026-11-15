@@ -9,8 +9,10 @@ import { writeSetting } from "#lib/server/db/settings.ts";
 import {
 	FIRST_RUN_COMPLETE,
 	FIRST_RUN_STEP_KEY,
+	firstRunRedirect,
 	isClaimed,
 	isFirstRunComplete,
+	markClaimed,
 	startFirstRun,
 	stopFirstRun,
 	withClaimInProgress,
@@ -124,6 +126,25 @@ describe("first run's bootstrap token", () => {
 	});
 });
 
+describe("the setup gate", () => {
+	const PATHS = ["/", "/no-such-page", "/setup", "/setup/more", "/healthz", "/healthz/more"];
+
+	it("sends every path but /setup and /healthz to /setup until the claim, then none", async () => {
+		await startFirstRun({ db: await newDatabase(), origin: undefined, print: () => {} });
+		expect(Object.fromEntries(PATHS.map((path) => [path, firstRunRedirect(path)]))).toEqual({
+			"/": "/setup",
+			"/no-such-page": "/setup",
+			"/setup": undefined,
+			"/setup/more": "/setup",
+			"/healthz": undefined,
+			"/healthz/more": "/setup",
+		});
+
+		markClaimed();
+		for (const path of PATHS) expect(firstRunRedirect(path), path).toBeUndefined();
+	});
+});
+
 describe("first run after a restart", () => {
 	it("starts complete on a database an earlier process claimed, and prints nothing", async () => {
 		// First a fresh instance, so the flags start false and must be read back from the database.
@@ -140,6 +161,7 @@ describe("first run after a restart", () => {
 		await startFirstRun({ db, origin: undefined, print: (line) => printed.push(line) });
 		expect(isClaimed()).toBe(true);
 		expect(isFirstRunComplete()).toBe(true);
+		expect(firstRunRedirect("/")).toBeUndefined();
 		expect(printed).toEqual([]);
 	});
 });
