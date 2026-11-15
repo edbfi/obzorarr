@@ -466,3 +466,71 @@ test.describe("the bootstrap token", () => {
 		}
 	});
 });
+
+test.describe("the claim", () => {
+	const PASSWORD = "violet harbour lanterns";
+
+	test("a wrong token is refused, the right one claims, and /setup is then gone, also after a restart", async ({
+		page,
+	}) => {
+		const database = join(root, "data", "obzorarr.db");
+		const first = await startServer(root, { OBZORARR_DATABASE_PATH: database });
+		const bodies: string[] = [];
+		page.on("response", async (response) => {
+			bodies.push(await response.text().catch(() => ""));
+		});
+		let token = "";
+		try {
+			token = /Setup token: ([a-z0-9-]{14}) /.exec(first.output())?.[1] ?? "";
+			await page.goto(`${first.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#username").fill("Owner");
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.locator("#token-error")).toHaveText(
+				"That setup token isn't valid. Use the newest one printed in the server console.",
+			);
+			await expect(page.locator("#token")).toHaveAttribute("aria-invalid", "true");
+			await expect(page.locator("#username")).toHaveValue("Owner");
+			await expect(page.locator("#token")).toHaveValue("");
+			await expect(page.locator("#password")).toHaveValue("");
+
+			await page.locator("#token").fill(token.toUpperCase().replaceAll("-", ""));
+			await page.locator("#password").fill(PASSWORD);
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await page.waitForURL(`${first.url}/`);
+			expect((await fetch(`${first.url}/setup`)).status).toBe(404);
+			const own = await fetch(`${first.url}/setup`, {
+				method: "POST",
+				headers: { origin: first.url, "content-type": "application/x-www-form-urlencoded" },
+				body: new URLSearchParams({ token, username: "second", password: PASSWORD }),
+			});
+			expect(own.status).toBe(404);
+		} finally {
+			await first.stop();
+		}
+
+		const output = first.output();
+		const entries = output.split("\n").filter((line) => line.startsWith("{"));
+		for (const secret of [token, token.replaceAll("-", ""), PASSWORD]) {
+			expect(
+				entries.some((entry) => entry.includes(secret)),
+				"a log entry holds it",
+			).toBe(false);
+			expect(
+				bodies.some((body) => body.includes(secret)),
+				"a response holds it",
+			).toBe(false);
+		}
+
+		const second = await startServer(root, { OBZORARR_DATABASE_PATH: database });
+		try {
+			expect(second.output()).not.toContain("Setup token:");
+			expect((await fetch(`${second.url}/setup`)).status).toBe(404);
+		} finally {
+			await second.stop();
+		}
+	});
+});

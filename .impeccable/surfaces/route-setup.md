@@ -9,11 +9,11 @@ related_targets: []
 
 ## Status
 
-Proposed brief for review, with no mockup yet. Mode: **operate**. Audience: **the person installing Obzorarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)).
+Built in `setup`'s task 7 (2026-11-15), code-led, with no mockup. Mode: **operate**. Audience: **the person installing Obzorarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)).
 
 ## Purpose and composition
 
-One quiet, centred form within the 672px form width: the first screen a fresh install shows, before anyone is signed in. No sidebar or member navigation; the header has only the Obzorarr wordmark and the language switcher (`LanguageSwitcher.svelte`). Operational, not expressive: no projector-light imagery.
+One quiet, centred form within the 672px form width: the first screen a fresh install shows, before anyone is signed in. No sidebar or member navigation; the header has only the Obzorarr logo and wordmark (Decisions) and the language switcher (`LanguageSwitcher.svelte`). Operational, not expressive: no projector-light imagery.
 
 ## Visual reference
 
@@ -35,3 +35,21 @@ Heading 'Claim this Obzorarr'. One line: 'Enter the setup token printed in the s
 ## Handoff prompt
 
 > Implement only this surface in Obzorarr's existing application. Read PRODUCT.md, DESIGN.md, docs/SPEC-setup.md and this brief first. Reuse existing Panda CSS tokens; build native accessible form controls. Keep it quiet: this is an operational screen.
+
+## Decisions
+
+The owner chose, on 2026-11-15: the header shows the logo (`obzorarr-icon.svg`) beside the wordmark; the token field inserts the dashes as the person types (it still takes the token in any form without JavaScript); and a Show/Hide button with an eye icon sits at the end of the password field.
+
+## Direction contract
+
+THESIS: a console-to-browser handoff. The token from the server console is the one unusual input, so it reads like the console line it came from; everything else is the familiar sign-up form, refusing the card-grid onboarding wizard.
+
+OWN-WORLD: After Hours at its quietest: `background` page, one flat `surface` panel with a 1px `border` and `panel` radius, `text-field` controls on `control-border`, one solid `primary` button, `danger` text for errors, the `secondary` focus ring. No beam, no imagery.
+
+STORY: the person installing Obzorarr sees what to do in one line, copies the token from the console, chooses a username and password, and claims the instance in one submission; a wrong token says where to find the right one.
+
+FIRST VIEWPORT: header with logo, wordmark and language switcher across the form width; below it the panel, centred within 672px: `h1`, the one line, then token, username and password fields with helpers, then the full-width primary button. At 360px the button is above the fold.
+
+FORM: seed: none (pinned) "One quiet, centred form within the 672px form width".
+
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

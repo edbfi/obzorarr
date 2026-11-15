@@ -1,11 +1,21 @@
 import type { Database } from "#lib/server/db/client.ts";
 import { ownerExists } from "#lib/server/db/owner.ts";
+import { readSetting } from "#lib/server/db/settings.ts";
 import {
 	type BootstrapToken,
 	formatToken,
 	issueToken,
+	isTokenValid,
 	TOKEN_LIFETIME_MS,
+	tokenMatches,
 } from "#lib/server/security/bootstrap-token.ts";
+
+/**
+ * The settings key of first run's step pointer. The claim is the only step until `two-factor`
+ * adds the next, so the claim moves it straight to `complete` (SPEC-setup.md, "Before sign-in").
+ */
+export const FIRST_RUN_STEP_KEY = "setup.first-run.step";
+export const FIRST_RUN_COMPLETE = "complete";
 
 export type FirstRunOptions = {
 	readonly db: Database;
@@ -18,6 +28,7 @@ export type FirstRunOptions = {
 
 /** First run's state, in memory (one process, D17): startup loads it, the claim updates it. */
 let claimed = false;
+let complete = false;
 let token: BootstrapToken | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let claimsInProgress = 0;
@@ -28,9 +39,10 @@ let settings: Required<Omit<FirstRunOptions, "db">> | undefined;
 const toStandardOutput = (line: string) => process.stdout.write(`${line}\n`);
 
 /**
- * Loads first run's state at startup. While no owner exists, a bootstrap token is printed with
- * the address to claim the instance at, and a new one every time it expires; once the instance
- * is claimed, none is printed again (SPEC-setup.md, "The bootstrap token").
+ * Loads first run's state at startup: whether an owner exists, and the step pointer from
+ * `settings`. While no owner exists, a bootstrap token is printed with the address to claim the
+ * instance at, and a new one every time it expires; once the instance is claimed, none is printed
+ * again (SPEC-setup.md, "The bootstrap token").
  */
 export async function startFirstRun(options: FirstRunOptions): Promise<void> {
 	stopFirstRun();
@@ -40,6 +52,7 @@ export async function startFirstRun(options: FirstRunOptions): Promise<void> {
 		lifetimeMs: options.lifetimeMs ?? TOKEN_LIFETIME_MS,
 	};
 	claimed = await ownerExists(options.db);
+	complete = (await readSetting(options.db, FIRST_RUN_STEP_KEY)) === FIRST_RUN_COMPLETE;
 	token = undefined;
 	if (!claimed) renewToken();
 }
@@ -56,9 +69,33 @@ export function isClaimed(): boolean {
 	return claimed;
 }
 
+/** Whether first run is complete, after which its steps answer "not found". */
+export function isFirstRunComplete(): boolean {
+	return complete;
+}
+
+/**
+ * Checks what someone typed against the current token and, if it matches and is still valid,
+ * uses it up, with nothing awaited in between, so two claims can't both use one token.
+ */
+export function useToken(entry: string): boolean {
+	if (token === undefined || !isTokenValid(token, Date.now())) return false;
+	if (!tokenMatches(token.value, entry)) return false;
+	token = undefined;
+	return true;
+}
+
+/** Records a claim its transaction committed: the instance is claimed and first run complete. */
+export function markClaimed(): void {
+	claimed = true;
+	complete = true;
+	stopFirstRun();
+}
+
 /**
  * Runs a claim's work while holding back the token's renewal, so the token can't change under
- * it; a renewal that came due meanwhile happens once the last claim in progress has finished.
+ * it. Once the last claim in progress has finished, a new token is printed if one came due
+ * meanwhile, or if a claim used the token up and the instance is still unclaimed.
  */
 export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T> {
 	claimsInProgress++;
@@ -66,7 +103,7 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 		return await work();
 	} finally {
 		claimsInProgress--;
-		if (claimsInProgress === 0 && renewalWaiting) {
+		if (claimsInProgress === 0 && (renewalWaiting || token === undefined)) {
 			renewalWaiting = false;
 			renewToken();
 		}
@@ -77,7 +114,7 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 function renewToken(): void {
 	if (settings === undefined || claimed) return;
 	clearTimeout(timer);
-	token = issueToken(Date.now());
+	token = issueToken(Date.now(), settings.lifetimeMs);
 	const address = `${settings.origin ?? ""}/setup`;
 	settings.print(
 		`Setup token: ${formatToken(token.value)} (valid for ${TOKEN_LIFETIME_MS / 60_000} minutes). Open ${address} to claim this Obzorarr.`,

@@ -9,8 +9,12 @@ const UNBIASED_LIMIT = 256 - (256 % ALPHABET.length);
 /** How long a bootstrap token can claim the instance, from when it was printed. */
 export const TOKEN_LIFETIME_MS = 15 * 60 * 1000;
 
-/** A token and when it was issued. Held only in memory (SPEC-setup.md, "The bootstrap token"). */
-export type BootstrapToken = { readonly value: string; readonly issuedAt: number };
+/** A token, when it was issued and how long it lasts. Held only in memory (SPEC-setup.md). */
+export type BootstrapToken = {
+	readonly value: string;
+	readonly issuedAt: number;
+	readonly lifetimeMs: number;
+};
 
 /**
  * Draws 12 lowercase letters and digits from WebCrypto, without bias: a byte the alphabet
@@ -26,14 +30,14 @@ export function drawToken(): string {
 	return token;
 }
 
-/** A new token issued at `now`. */
-export function issueToken(now: number): BootstrapToken {
-	return { value: drawToken(), issuedAt: now };
+/** A new token issued at `now`, lasting 15 minutes unless `lifetimeMs` says otherwise. */
+export function issueToken(now: number, lifetimeMs = TOKEN_LIFETIME_MS): BootstrapToken {
+	return { value: drawToken(), issuedAt: now, lifetimeMs };
 }
 
 /** Whether `token` can still claim the instance at `now`. */
 export function isTokenValid(token: BootstrapToken, now: number): boolean {
-	return now - token.issuedAt < TOKEN_LIFETIME_MS;
+	return now - token.issuedAt < token.lifetimeMs;
 }
 
 /** The token as it is shown: `xxxx-xxxx-xxxx`. */

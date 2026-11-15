@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Database } from "./client.ts";
+import type { Executor } from "./client.ts";
 
 /** The instance's one owner (D20): the fixed id and its check allow one row at most. */
 export const owner = sqliteTable(
@@ -15,7 +15,18 @@ export const owner = sqliteTable(
 );
 
 /** Whether the instance has been claimed: an owner row exists. */
-export async function ownerExists(db: Database): Promise<boolean> {
+export async function ownerExists(db: Executor): Promise<boolean> {
 	const rows = await db.select({ id: owner.id }).from(owner).limit(1);
 	return rows.length > 0;
+}
+
+/**
+ * Creates the owner under the fixed id, so it fails when an owner exists already; the claim runs
+ * it inside its transaction.
+ */
+export async function insertOwner(
+	db: Executor,
+	values: { username: string; passwordHash: string; createdAt: Date },
+): Promise<void> {
+	await db.insert(owner).values({ id: 1, ...values });
 }

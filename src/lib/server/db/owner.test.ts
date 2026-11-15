@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
-import { owner, ownerExists } from "./owner.ts";
+import { insertOwner, owner, ownerExists } from "./owner.ts";
 
 let root: string;
 let db: Database;
@@ -29,11 +29,36 @@ describe("ownerExists", () => {
 		expect(await ownerExists(db)).toBe(true);
 	});
 
+	it("insertOwner refuses a second owner", async () => {
+		await expect(
+			insertOwner(db, { username: "second", passwordHash: "h", createdAt: new Date() }),
+		).rejects.toThrow();
+	});
+
 	it("allows one owner row at most", async () => {
 		await expect(
 			db
 				.insert(owner)
 				.values({ id: 2, username: "other", passwordHash: "h", createdAt: new Date() }),
 		).rejects.toThrow();
+	});
+});
+
+describe("insertOwner", () => {
+	it("creates the owner, as the claim's transaction does", async () => {
+		const other = await openDatabase(join(root, "insert.db"));
+		try {
+			await migrateDatabase(other);
+			await insertOwner(other, {
+				username: "Owner",
+				passwordHash: "$argon2id$hash",
+				createdAt: new Date(5000),
+			});
+			expect(await other.select().from(owner)).toEqual([
+				{ id: 1, username: "Owner", passwordHash: "$argon2id$hash", createdAt: new Date(5000) },
+			]);
+		} finally {
+			await other.$client.close();
+		}
 	});
 });
