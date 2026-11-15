@@ -47,11 +47,21 @@ describe("openDatabase", () => {
 				(error: Error) => error.message,
 			);
 		await insertedInside;
-		const outside = db.insert(settings).values({ key: "outside", value: "1", updatedAt });
+		// Drizzle's queries are lazy, so `execute()` starts the write now, while the transaction is
+		// open; the pause lets it reach the connection before the transaction rolls back.
+		const outside = db
+			.insert(settings)
+			.values({ key: "outside", value: "1", updatedAt })
+			.execute()
+			.then(
+				() => "written",
+				(error: Error) => error.message,
+			);
+		await new Promise((resolve) => setTimeout(resolve, 50));
 		release();
 
 		expect(await transaction).toBe("roll back");
-		await outside;
+		expect(await outside).toBe("written");
 		expect(await keys()).toEqual(["outside"]);
 	});
 });

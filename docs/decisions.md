@@ -156,7 +156,7 @@ validation in `setup`, on Linux arm64 and x64 with no `node`, `npm` or `npx` on 
   any `node_modules`, Bun would quietly download the package when the server starts, so the README
   starts the built server with `--no-install`.
 - **Rollback isolation:** a transaction that rolls back leaves a concurrent write on the same
-  connection in place (`db/client.test.ts`).
+  connection in place (`db/client.test.ts`, which fails on `1.0.0-rc.4`).
 
 Why: the plain release candidate carries the Turso transaction fix D5 needs, and every check D5
 named passed with it. Shipping one platform package is the fallback SPEC-setup.md set for a binding

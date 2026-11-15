@@ -113,7 +113,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Open decisions each module closes
 
-- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
+- `setup`: the logging library half of D14 (it closed D15).
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
   where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
@@ -885,7 +885,8 @@ export const GET: RequestHandler = () => healthResponse();
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
   `security/secrets/`, under `src/lib/server/`), `setup`'s (under `src/lib/server/`:
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
-  file against Drizzle Kit's file migrator; `db/client.test.ts`, D5's rollback isolation), and in
+  file against Drizzle Kit's file migrator; `db/client.test.ts`, D5's rollback isolation, which
+  fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
@@ -903,8 +904,8 @@ export const GET: RequestHandler = () => healthResponse();
     name nothing registers); and that `/healthz` returns `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
   - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
-    nothing on a second start on it, one uses the default path, and one refuses a database folder
-    it can't create without echoing the path.
+    nothing on a second start on it, one uses the default path, and two refuse a database folder
+    they can't create or a path they can't open, without echoing the path.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
