@@ -42,15 +42,10 @@ async function newDatabase(): Promise<Database> {
 }
 
 /** A fresh, unclaimed instance: its database, and the token lines it printed so far. */
-async function freshInstance(lifetimeMs?: number) {
+async function freshInstance() {
 	const db = await newDatabase();
 	const printed: string[] = [];
-	await startFirstRun({
-		db,
-		origin: undefined,
-		print: (line) => printed.push(line),
-		...(lifetimeMs === undefined ? {} : { lifetimeMs }),
-	});
+	await startFirstRun({ db, origin: undefined, print: (line) => printed.push(line) });
 	const token = (index = printed.length - 1) =>
 		/Setup token: ([a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}) /.exec(printed[index] ?? "")?.[1] ?? "";
 	return { db, printed, token };

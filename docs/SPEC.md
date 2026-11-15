@@ -898,10 +898,10 @@ export const GET: RequestHandler = () => healthResponse();
   alphabet, unbiased draw, expiry and comparison; `security/password.test.ts`, the credential
   rules at their limits, NFC and case included, the bundled list and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
-  printed, renewed, held back during a claim, stopped, and never printed once claimed;
-  `services/setup/claim.test.ts`, the claim's success, its field errors, wrong and expired tokens
-  that never reach the hash, a second claim, two at once, a failed transaction printing a new
-  token, and a restart after the claim), `src/routes/setup/token-format.test.ts` (the token
+  printed, renewed, held back during a claim, stopped, never printed once claimed, and a restart
+  after the claim; `services/setup/claim.test.ts`, the claim's success, its field errors, wrong
+  and expired tokens that never reach the hash, a second claim, two at once, and a failed
+  transaction printing a new token), `src/routes/setup/token-format.test.ts` (the token
   field's dashes), `vite.config.test.ts` (SvelteKit's own form check and
   remote functions are off), and in
   `src/lib/shared/i18n/`:
