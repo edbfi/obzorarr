@@ -148,7 +148,9 @@ test.describe("the database", () => {
 		await mkdir(join(root, "data", "obzorarr.db"), { recursive: true });
 		const { exitCode, output } = await runToExit(root, {});
 
+		expect(output.includes(root), "output holds the path").toBe(false);
 		expect(exitCode).toBe(1);
+		expect(output).not.toContain("Listening on");
 		const lines = output.split("\n").filter((line) => line.startsWith("ConfigError: "));
 		expect(lines).toEqual([
 			"ConfigError: OBZORARR_DATABASE_PATH is unset, and the default data/obzorarr.db names a file that can't be opened as a database (I/O error (open): is a directory)",

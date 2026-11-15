@@ -98,7 +98,8 @@ missing, and won't start if it can't create or write to it. Put the folder on a 
 
 **Backups:** stop Obzorarr, then copy the whole folder. Recent writes live in files beside the
 database (`obzorarr.db-wal`), so a copy of the database file alone can miss them, and a copy taken
-while Obzorarr runs can be incomplete. Keep the master key with your backups, apart from them.
+while Obzorarr runs can be incomplete. Back up the master key separately
+([Master key](#master-key)), and keep its file outside this folder.
 
 | Variable | Holds | Default |
 | --- | --- | --- |
