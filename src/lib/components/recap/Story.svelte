@@ -13,6 +13,7 @@ import type { TransitionConfig } from "svelte/transition";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 import { token } from "#styled-system/tokens";
+import { reelChange } from "./reel-change.ts";
 import {
 	createPointerGestures,
 	createThrottle,
@@ -41,6 +42,8 @@ const headingId = $props.id();
 let current = $state(0);
 /** 1 when the last move went forward, -1 when it went back: the side a step enters from. */
 let direction = $state(1);
+/** The leaving step's height before the move, in px: it keeps it while it goes. */
+let leavingHeight = 0;
 const last = $derived(steps.length - 1);
 
 let story: HTMLElement | undefined = $state();
@@ -65,21 +68,31 @@ function moveDuration() {
 	return prefersReducedMotion.current ? 0 : storyMs;
 }
 
-// A move dips like a projector changing reels: the leaving step fades out over the move's first
-// 30%, and the entering one slides in from the side it comes from over the whole move, fading in
-// from there, so the two steps never show at once.
-function enter(_step: Element): TransitionConfig {
+// A move dips like a projector changing reels (reel-change.ts): the leaving step fades out over
+// the move's first part, and the entering one slides in from the side it comes from over the whole
+// move, fading in from there, so the two steps never show at once.
+function enter(step: HTMLElement): TransitionConfig {
+	// A step that comes back before it has gone drops its pin (below).
+	for (const property of ["align-self", "height", "margin-bottom"]) {
+		step.style.removeProperty(property);
+	}
 	const x = direction * shift;
 	return {
 		duration: moveDuration(),
 		css: (t) =>
-			`transform: translateX(${(1 - quintOut(t)) * x}px); opacity: ${quintOut(between(t, 0.3, 1))}`,
+			`transform: translateX(${(1 - quintOut(t)) * x}px); opacity: ${quintOut(between(t, reelChange, 1))}`,
 	};
 }
 
-function leave(_step: Element): TransitionConfig {
+function leave(step: HTMLElement): TransitionConfig {
+	// The steps share one grid cell. Pinned at the top at its own height, with a margin that takes
+	// that height back, the leaving step stays where it was and leaves the cell's height to the
+	// entering one, so neither moves up or down.
+	step.style.alignSelf = "start";
+	step.style.height = `${leavingHeight}px`;
+	step.style.marginBottom = `-${leavingHeight}px`;
 	// As a step leaves, `t` runs from 1 to 0.
-	return { duration: moveDuration(), css: (t) => `opacity: ${between(t, 0.7, 1)}` };
+	return { duration: moveDuration(), css: (t) => `opacity: ${between(t, 1 - reelChange, 1)}` };
 }
 
 /** The step a move goes to; the same step when it can't move. */
@@ -111,6 +124,7 @@ async function go(move: Move) {
 		window.scrollTo({ top, behavior: "instant" });
 	}
 	direction = to > current ? 1 : -1;
+	leavingHeight = currentStep()?.offsetHeight ?? 0;
 	current = to;
 	await tick();
 
@@ -295,9 +309,9 @@ const roundButton = css({
 			// Every step in one cell, so the leaving and the entering step overlap during a move.
 			display: "grid",
 			gridTemplateColumns: "minmax(0, 1fr)",
-			// A step entering from the side never scrolls the page sideways; `clip` makes no scroll
-			// container, so the bars stay sticky.
-			overflowX: "clip",
+			// A step entering from the side never scrolls the page sideways, and a taller step leaving
+			// never lengthens it; `clip` makes no scroll container, so the bars stay sticky.
+			overflow: "clip",
 			paddingInline: gutters,
 			paddingBlock: "xl",
 			// The browser keeps vertical scrolling and zoom; horizontal drags are the story's.

@@ -165,8 +165,8 @@ owner's review and the verdict" and "Docs this module changes" list.
   it needs custom work beyond Panda and Ark. `recap`'s spec names the commit it adopts code
   from (the spec's rule), so D19 doesn't.
 - [ ] The route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages and
-  the entrance keyframes are deleted; the two new tokens too, unless the verdict keeps them, in
-  which case DESIGN.md is refreshed from Panda's config.
+  the entrance keyframes with their animation styles are deleted; the two new tokens too, unless
+  the verdict keeps them, in which case DESIGN.md is refreshed from Panda's config.
 - [ ] Ground-floor choice 5 closes as "no headers needed"; row 3 is marked built.
 - [ ] SPEC.md, AGENTS.md and the spec are cleaned up as the spec lists; `tasks/` is deleted, with
   the preservation map in the PR body (cleanup procedures 2 and 4).

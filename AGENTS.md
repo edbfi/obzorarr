@@ -349,7 +349,9 @@ src/
                                  on; the steps TotalTimeSlide.svelte, MonthlyHoursSlide.svelte
                                  and SummaryCard.svelte, which take their figures as props;
                                  count-emphasis.ts, a message split around its count so the
-                                 count can be styled large
+                                 count can be styled large; reel-change.ts, the share of a
+                                 move the screen goes dark, which the transitions and the
+                                 entrance keyframes share
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -370,7 +372,8 @@ project.inlang/                  settings.json: the locales and the i18next plug
 drizzle/                         later: reviewed migrations
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored); temporary
-                                 (`recap-spike`): the steps' entrance keyframes
+                                 (`recap-spike`): the steps' entrance keyframes and their
+                                 animation styles
 vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```

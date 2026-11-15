@@ -117,7 +117,8 @@ const columnHidden = css({ srOnly: { tablet: true } });
 							gradientTo: "secondary",
 							"[data-busiest] &": { gradientTo: "primary" },
 							_motionSafe: {
-								animationStyle: { base: "recapGrowRow", tablet: "recapGrowColumn" },
+								// Disjoint widths: Panda emits the `tablet` rule before the base one.
+								animationStyle: { tabletDown: "recapGrowRow", tablet: "recapGrowColumn" },
 							},
 						})}
 					></span>

@@ -161,13 +161,15 @@ duration from Panda's motion tokens, never a literal. No animation library.
   once, and the transitions and the throttle use that number. CSS uses the token names.
 - **Between steps:** the new step slides in from the side it comes from and fades, over `story`
   (320 ms), through Svelte's transitions, with no duration under reduced motion. The move dips like
-  a projector changing reels: the leaving step fades out over its first 30%, and the new one fades
-  in from there, so the two never show at once.
+  a projector changing reels: the leaving step fades out over its first 30% (`reel-change.ts`), and
+  the new one fades in from there, so the two never show at once. The leaving step keeps its place
+  and height while it goes, so the new step alone sizes the story and nothing moves up or down.
 - **Each step's entrance** is a CSS keyframe animation in `panda.config.ts`, run only under
   `_motionSafe`: the total and its caption fade and rise, and the total's number comes into focus
   (a short blur clearing); the month bars grow from zero together; the summary's figures fade in.
   All over `story`, decelerating as Svelte's `quintOut` does (an `animationStyles` entry per
-  keyframe, so the easing is written once). CSS, because Svelte doesn't play `in:`
+  keyframe, so the easing is written once), each holding its start through the reel change, so it
+  plays once its step shows. CSS, because Svelte doesn't play `in:`
   transitions when a server-rendered page hydrates, and so the first step animates on load and is
   never hidden waiting for JavaScript.
 - **Progress:** a segment fills over `feedback` (160 ms).
@@ -267,6 +269,8 @@ src/lib/components/recap/Story.svelte          the story shell: the bars, progre
 src/lib/components/recap/story-input.ts        a key or pointer gesture to a move, and the
                                                throttle (+ test)
 src/lib/components/recap/count-emphasis.ts     a message split around its count (+ test)
+src/lib/components/recap/reel-change.ts        the share of a move the screen goes dark, read by
+                                               the transitions and the entrance keyframes
 src/lib/components/recap/CinemaScreen.svelte   the screen every step plays on: its light, the room,
                                                the seats
 src/lib/components/recap/TotalTimeSlide.svelte the total and Movie Buff
@@ -281,7 +285,8 @@ rather than beside the one route that uses them, so `recap` can adopt them from 
 The build also changes:
 - `package.json` and `bun.lock`: the font packages and `@lucide/svelte`;
 - `src/routes/+layout.svelte`: the font imports;
-- `panda.config.ts`: the font tokens, the two new tokens and the entrance keyframes;
+- `panda.config.ts`: the font tokens, the two new tokens and the entrance keyframes with their
+  animation styles;
 - `messages/en.json` and `messages/da.json`;
 - `tests/e2e/smoke.test.ts`: the font check.
 
@@ -313,8 +318,13 @@ judge it apart from them. Progress stays inside it: nothing else uses it.
   - arriving at the summary focuses its `h2`; then ← moves to "2 of 3" with focus inside that step;
     Share recap is disabled;
   - Close, Escape and Back to overview all go to `/`;
-  - with reduced motion (`emulateMedia`), the next step's final state shows at once: the month bars
-    at their final widths and no running animation;
+  - with reduced motion (the context's `reducedMotion`), the next step's final state shows one
+    frame after the move: the leaving step gone, the month bars at their final widths and no
+    running animation;
+  - without it, a move animates the entering step: with the animations paused mid-move, the
+    leaving step is `inert`, focus stays where "Focus" puts it, one progress segment fills, nothing
+    scrolls sideways at 360 px and no step's content moves up or down; the month bars grow along
+    a row on a phone and up a column from a tablet;
   - at a short viewport, a move from a step scrolled to its bottom leaves the page at the top;
   - at 360 px nothing scrolls sideways;
   - no console errors.
@@ -355,8 +365,8 @@ it, the imagery, the poster size), what changes, and whether it needs custom wor
 Ark. The verdict PR then:
 - moves D19 to Decided with that verdict;
 - deletes the route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages
-  and the entrance keyframes in `panda.config.ts`, always: `recap`'s spec adopts what the verdict
-  keeps from git history, by naming the commit before the verdict PR;
+  and the entrance keyframes and their animation styles in `panda.config.ts`, always: `recap`'s
+  spec adopts what the verdict keeps from git history, by naming the commit before the verdict PR;
 - deletes the two new tokens, unless the verdict keeps them;
 - closes ground-floor choice 5 as "no headers needed";
 - marks row 3 built, removes the spike's entries from SPEC.md and AGENTS.md, and reduces this spec

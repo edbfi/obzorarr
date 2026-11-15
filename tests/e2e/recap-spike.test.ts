@@ -252,7 +252,8 @@ test.describe("without reduced motion", () => {
 			{ name: "1 of 3", inert: true },
 			{ name: "2 of 3", inert: false },
 		]);
-		// The progress fills as the step enters.
+		// The progress fills as the step enters: only the second segment changes, from remaining to
+		// current.
 		const fills = await page.evaluate(
 			() =>
 				document
@@ -264,7 +265,7 @@ test.describe("without reduced motion", () => {
 							animation.effect.target.matches("[data-fill]"),
 					).length,
 		);
-		expect(fills).toBeGreaterThan(0);
+		expect(fills).toBe(1);
 		// The step coming in from the side never scrolls the page sideways.
 		const overflow = await page.evaluate(
 			() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -276,6 +277,62 @@ test.describe("without reduced motion", () => {
 
 		expect(errors).toEqual([]);
 	});
+
+	for (const [width, keyframe] of [
+		[390, "recapGrowRow"],
+		[1280, "recapGrowColumn"],
+	] as const) {
+		test(`at ${width} px, the month bars grow along their own axis`, async ({ page }) => {
+			await page.setViewportSize({ width, height: 800 });
+			await open(page);
+			await page.keyboard.press("ArrowRight");
+			await pauseMidMove(page);
+			const names = await page.evaluate(() =>
+				Array.from(
+					document.querySelectorAll("[role=group]:not([inert]) [data-bar]"),
+					(bar) => getComputedStyle(bar).animationName,
+				),
+			);
+			expect(names).toEqual(Array(12).fill(keyframe));
+			await resume(page);
+		});
+	}
+
+	// Each step sizes the story alone: a step that leaves never stretches or shrinks the one that
+	// enters, so neither step's content moves up or down during the move or when it ends. The
+	// content is measured by the box holding the heading, which the entrances never move.
+	for (const { from, key, to, height } of [
+		{ from: "1 of 3", key: "ArrowRight", to: "2 of 3", height: 740 },
+		{ from: "3 of 3", key: "Home", to: "1 of 3", height: 560 },
+	]) {
+		test(`at 360 × ${height} px, ${key} from ${from} moves no content up or down`, async ({
+			page,
+		}) => {
+			await page.setViewportSize({ width: 360, height });
+			await open(page);
+			await settle(page);
+			if (from === "3 of 3") await pressKey(page, "End");
+			const top = (step: string) =>
+				page.evaluate(
+					(found) =>
+						document.querySelector(`${found} h2`)?.parentElement?.getBoundingClientRect().top ??
+						Number.NaN,
+					step,
+				);
+			const before = await top("[role=group]");
+
+			await page.keyboard.press(key);
+			await pauseMidMove(page);
+			const leaving = await top("[role=group][inert]");
+			const entering = await top("[role=group]:not([inert])");
+			await resume(page);
+			await expectStep(page, to);
+			const after = await top("[role=group]");
+
+			expect(leaving).toBeCloseTo(before, 0);
+			expect(entering).toBeCloseTo(after, 0);
+		});
+	}
 
 	test("focus stays where the story puts it while a step enters", async ({ page }) => {
 		await open(page);
