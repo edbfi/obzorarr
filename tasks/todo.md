@@ -64,18 +64,18 @@ redacted before it is written, with debug behind `OBZORARR_LOG_DEBUG`. A failed 
 logged, then thrown.
 
 **Acceptance criteria:**
-- [ ] `server/logging/redact.test.ts` first fails, then passes: one case for each of the spec's
+- [x] `server/logging/redact.test.ts` first fails, then passes: one case for each of the spec's
   rules (URL credentials, token-like query parameters, token, authorisation and cookie fields in
   payloads and headers, the key patterns at any depth, a `Secret`), and each nested.
-- [ ] `server/logging/logger.test.ts`: the entry's shape (level, message, source, metadata,
+- [x] `server/logging/logger.test.ts`: the entry's shape (level, message, source, metadata,
   millisecond timestamp), one line per entry, and debug dropped unless enabled.
-- [ ] `server/config/log-debug.test.ts`: `true`, `false`, empty as unset, and anything else
+- [x] `server/config/log-debug.test.ts`: `true`, `false`, empty as unset, and anything else
   refused with one line that doesn't echo the value. It is checked in step 2, before the database
   is opened.
-- [ ] A startup failure is one log entry and the thrown error; the built server still exits
+- [x] A startup failure is one log entry and the thrown error; the built server still exits
   non-zero before it listens (`setup.test.ts` and `secret-key.test.ts` pass, the latter matching
   the error inside its log entry if the format changes).
-- [ ] No logging library (the spec's "Ask first").
+- [x] No logging library (the spec's "Ask first").
 
 **Verification:** the gates; the built server's startup with a bad `OBZORARR_LOG_DEBUG` prints one
 JSON line.
