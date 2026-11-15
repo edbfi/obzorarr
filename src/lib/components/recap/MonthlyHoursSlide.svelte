@@ -36,7 +36,7 @@ const months = $derived.by(() => {
 });
 
 /** The words around a column's count: read by a screen reader, hidden on a column. */
-const columnHidden = css({ srOnly: { base: false, tablet: true } });
+const columnHidden = css({ srOnly: { tablet: true } });
 </script>
 
 <CinemaScreen>
@@ -97,7 +97,8 @@ const columnHidden = css({ srOnly: { base: false, tablet: true } });
 						alignSelf: { tablet: "stretch" },
 						width: "[100%]",
 						height: { base: "[12px]", tablet: "auto" },
-						borderRadius: { base: "full", tablet: "[3px 3px 0 0]" },
+						borderRadius: { base: "full", tablet: "[0]" },
+						borderTopRadius: { tablet: "sm" },
 						bg: { base: "background/70", tablet: "transparent" },
 						overflow: "hidden",
 					})}
@@ -109,11 +110,12 @@ const columnHidden = css({ srOnly: { base: false, tablet: true } });
 							display: "block",
 							width: { base: "[calc(var(--share) * 100%)]", tablet: "[100%]" },
 							height: { base: "[100%]", tablet: "[calc(var(--share) * 100%)]" },
-							borderRadius: { base: "full", tablet: "[3px 3px 0 0]" },
+							borderRadius: { base: "full", tablet: "[0]" },
+							borderTopRadius: { tablet: "sm" },
 							bgGradient: { base: "to-r", tablet: "to-t" },
 							gradientFrom: "secondary/50",
 							gradientTo: "secondary",
-							"[data-busiest] &": { gradientTo: "primary/85" },
+							"[data-busiest] &": { gradientTo: "primary" },
 						})}
 					></span>
 				</span>

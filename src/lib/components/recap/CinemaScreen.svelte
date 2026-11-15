@@ -1,6 +1,6 @@
 <script lang="ts">
 // The cinema every step plays in (SPEC-recap-spike.md, "The three slides"): a screen lit by the
-// projector, the room's glow around it and the seats along its foot. A step renders its content on
+// projector, the light it throws back onto the room, and the seats along its foot. A step renders its content on
 // the screen; nothing sits behind that content but the screen's light.
 import type { Snippet } from "svelte";
 import { css } from "#styled-system/css";
@@ -44,18 +44,6 @@ function seats(row: (typeof rows)[number]) {
 		marginInline: "auto",
 	})}
 >
-	<!-- The room's glow, where the projector's light spills past the screen. -->
-	<div
-		aria-hidden="true"
-		class={css({
-			position: "absolute",
-			inset: "[0]",
-			bgRadial: "[ellipse 70% 50% at 50% 0%]",
-			gradientFrom: "secondary/12",
-			gradientTo: "secondary/0",
-			pointerEvents: "none",
-		})}
-	></div>
 	<div
 		class={css({
 			position: "relative",

@@ -112,6 +112,9 @@ const action = css({
 						display: "grid",
 						justifyItems: "center",
 						rowGap: "xs",
+						// From a tablet up, the columns share their rows (icon, label, figure), so the three
+						// figures sit on one line whether or not they have a label.
+						gridTemplateRows: { tablet: "auto 1fr auto" },
 						paddingInline: { tablet: "lg" },
 						"&:not(:first-child)": {
 							borderInlineStartWidth: { tablet: "1px" },
@@ -119,13 +122,27 @@ const action = css({
 						},
 					})}
 				>
-					<span class={css({ color: "secondary", display: "flex" })}>
+					<span class={css({ gridRow: { tablet: "1" }, color: "secondary", display: "flex" })}>
 						<figure.icon size={20} strokeWidth={2} aria-hidden="true" />
 					</span>
 					{#if figure.label}
-						<span class={css({ textStyle: "label", color: "muted" })}>{figure.label}</span>
+						<span
+							class={css({
+								gridRow: { tablet: "2" },
+								alignSelf: { tablet: "end" },
+								textStyle: "label",
+								color: "muted",
+							})}
+							>{figure.label}</span
+						>
 					{/if}
-					<span class={css({ textStyle: "h3", color: "muted", overflowWrap: "anywhere" })}
+					<span
+						class={css({
+							gridRow: { tablet: "3" },
+							textStyle: "h3",
+							color: "muted",
+							overflowWrap: "anywhere",
+						})}
 						>{#if split}
 							{split.before}<span
 								class={css({
