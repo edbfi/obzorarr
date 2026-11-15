@@ -120,7 +120,8 @@ dominant idea and wraps long and translated text without hiding Close, Previous 
 sits behind text or figures (DESIGN.md).
 
 **Every step plays on a cinema screen** (`CinemaScreen.svelte`): a screen lit by the projector,
-the room's glow around it and two rows of seats in silhouette along its foot, below the content.
+the light it throws back onto the room, and two rows of seats in silhouette along its foot, below
+the content.
 The owner chose this direction ("Projection") on 2026-11-15 from four mockups built on the design
 boards; the boards guide the feel, not the layout.
 
@@ -137,10 +138,10 @@ boards; the boards guide the feel, not the layout.
    each month is a row; from a tablet up the same list is projected as twelve columns, each showing
    its count while the rest of its hours message stays in the page for screen readers. The busiest
    month's bar ends in `primary`.
-3. **The summary end card.** On the screen, "Your recap" above the `h2` "Alex’s 2025", then 127 movies, 38 series
-   and "Longest streak" 21 days, each with a decorative icon and its number in the display size, and
-   the "Members only" badge (icon and text, a tinted `secondary` background with readable text,
-   never colour alone). Below the screen, in the aisle, "Share recap" is a native `disabled` button
+3. **The summary end card.** On the screen, "Your recap" above the `h2` "Alex’s 2025", then 127
+   movies, 38 series and "Longest streak" 21 days, each with a decorative icon and its number in the
+   display size, and the "Members only" badge (icon and text, a tinted `secondary` background with
+   readable text, never colour alone). Below the screen, in the aisle, "Share recap" is a native `disabled` button
    that stays visibly labelled, and "Back to overview" is a link to `/`.
 
 **Large numbers keep their whole sentence.** Each figure shown large ("842 hours of everything…",
@@ -246,9 +247,9 @@ asset pipeline. The verdict records whether `recap` needs drawn or raster art in
   semantic colours.
 
 Both go with the verdict PR unless the verdict keeps them. The story's height is `preset-base`'s
-`dvh` keyword. Dimensions only the spike uses (a progress segment's thickness, the screen's width,
-the seats' and the bars' size) use Panda's `[…]` escape hatch, which `strictTokens` allows, and leave with the
-spike. Nothing else departs from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in
+`dvh` keyword. Values only the spike uses (a progress segment's thickness, the screen's width, the
+seats' and the bars' size, the strength of the screen's light, an action's flex basis) use Panda's
+`[…]` escape hatch, which `strictTokens` allows, and leave with the spike. Nothing else departs from DESIGN.md's tokens, and the spike uses no Ark primitive: nothing in
 it is a dialog, menu or form control.
 
 ## Project structure

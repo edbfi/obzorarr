@@ -79,9 +79,10 @@ vertical scroll doesn't; with JavaScript off, the first step shows.
 
 ## Task 3: the three steps' content
 
-**Description:** Fill the three steps in their final state: the total with Movie Buff and the beam
-and silhouette, the twelve monthly rows, and the summary card with its badge and actions. Add the
-two approved tokens.
+**Description:** Fill the three steps in their final state, each on the cinema screen
+(`CinemaScreen.svelte`, the owner's "Projection" direction): the total with Movie Buff, the twelve
+months (rows on a phone, columns from a tablet up), and the summary card with its badge and actions.
+Add the two approved tokens.
 
 **Acceptance criteria:**
 - [x] `lib/components/recap/count-emphasis.test.ts` first fails, then passes, covering the spec's
