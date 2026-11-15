@@ -16,10 +16,11 @@ comradarr, zondarr, otpravkarr and zimuarr port.
   bundled migrations and Turso's native binding inside `bun ./build`. If the binding or the
   migrator can't be bundled, the spec's fallbacks (the platform package or `drizzle/` beside
   `build/`) are known before anything is built on them.
-- **The startup service grows one step per task.** Task 1 creates `services/setup/startup.ts`
-  with the key, the configuration and the database; logging (task 2), shutdown (task 3), the
-  `ORIGIN` check (task 4) and the token (task 6) each add their step. `hooks.server.ts` only calls
-  it, because hooks never touch `db/` (Code structure).
+- **The startup service grows task by task.** Task 1 creates `services/setup/startup.ts` with
+  the spec's steps 1–3: the key, the configuration and the database. `OBZORARR_LOG_DEBUG` (task 2)
+  and `ORIGIN` (task 4) join step 2, so they are checked before the database is opened; shutdown
+  (task 3) and first run's state and token (tasks 6 and 7, step 4) follow. `hooks.server.ts` only
+  calls it, because hooks never touch `db/` (Code structure).
 - **Startup failures are thrown first and logged later.** Until task 2 brings the logger, a failed
   step throws from `init` exactly as the key error does now; task 2 adds "logged, then thrown".
 - **The request checks come before any form.** SvelteKit's own form check compares `Origin` with
@@ -39,11 +40,18 @@ comradarr, zondarr, otpravkarr and zimuarr port.
   does, but writes an empty `hash` where the file migrator writes a sha256; Drizzle reads the hash
   only when upgrading a v0 migrations table, which no obzorarr database has. Task 1 compares both
   migrators' rows on the same migrations and records the result in its PR body and in D15.
-- **The handle-built refusal page uses tokens too.** Its fixed policy allows inline styles only, so
-  its styles come from Panda's `token()` values, never raw values (D10).
+- **The handle-built refusal page is unstyled.** Its fixed policy allows no stylesheet or font,
+  and Panda's colours are semantic tokens with no value outside its stylesheet, so the page sets
+  only `color-scheme: dark` and holds no raw values (D10). The spec asks only for the title and
+  its one-line description until `sign-in` builds the styled error pages.
+- **Signal handlers only in the built server.** `init` runs in `dev` too, and a `SIGINT` listener
+  there would stop Ctrl+C from ending it, so task 3 installs them only when `dev` is false.
+- **Generated migrations are formatted.** Biome checks every JSON file, and Drizzle Kit writes
+  `snapshot.json` with spaces, so `db:generate` runs `biome format --write drizzle` after it;
+  the shared `biome.json` stays unchanged.
 - **Facts change in the task that changes them.** Each task updates the README's variables, SPEC.md
   (the status line, the tech stack, Commands, the testing section), decisions.md and AGENTS.md's
-  structure, and ticks off its items here. Task 9 reduces the spec and deletes `tasks/`.
+  status and structure, and ticks off its items here. Task 9 reduces the spec and deletes `tasks/`.
 
 ## Task list
 
@@ -95,6 +103,7 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 | SvelteKit adds a nonce to `style-src`, which turns off `'unsafe-inline'` | Medium | Task 4's e2e listens for CSP violations on a page with style attributes |
 | The token or a password reaches a log entry or a response | High | Task 6 and 7's e2e search the server's output and every response; redaction tests (task 2) |
 | Playwright's URL check wins the race against the token line | Medium | Task 8's `wait.stdout` pattern spans the token line through "Listening on" and replaces `url` (the spec) |
+| Startup forgets a completed first run after a restart, so the gate sends every page to a `/setup` that answers 404 | High | Task 7 loads the step pointer at startup and restarts the built server on a claimed file |
 | A shutdown cleanup hangs and the container is killed mid-write | Medium | Task 3's deadline test with a cleanup that never finishes; the README's `stop_grace_period` |
 | A field error or a wrong token costs a hash, so guessing is cheap to try and costly to serve | Medium | Task 7's unit tests prove field errors leave the token unused and wrong tokens never reach the hash |
 | No `node` sneaks into the validation | Low | Task 1 runs the gates with failing `node`, `npm` and `npx` shims on `PATH`, as CI does |
