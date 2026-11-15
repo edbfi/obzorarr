@@ -37,8 +37,9 @@ the variable and what is wrong, never echoing the value.
 are read and checked by the adapter, with its own defaults and messages, which may echo a malformed
 value; the app adds no code for them, and the README lists them. The container's stop timeout must
 exceed `SHUTDOWN_TIMEOUT` plus the app's 5-second cleanup, so the image's Compose templates set
-`stop_grace_period` (Docker's default is 10 seconds). (obzorarr: `BODY_SIZE_LIMIT` stays at its
-default, since the app takes no uploads.)
+`stop_grace_period` (Docker's default is 10 seconds). The adapter already exempts event streams from
+`CONNECTION_IDLE_TIMEOUT`. (obzorarr: the app takes no uploads, so `BODY_SIZE_LIMIT` needs no
+change.)
 
 **`ORIGIN`** is optional and never required. It is plain `ORIGIN`, not an app-prefixed name: an app
 prefix would mean setting adapter-bun's `envPrefix`, which would then reject the master key's
@@ -67,12 +68,15 @@ dev server stays up with every request failing.
 signal, and emits `sveltekit:shutdown` without waiting for its listeners. So the app stops the jobs
 and timers and closes open streams on the signal, so browsers reconnect, while the adapter drains;
 on `sveltekit:shutdown` it waits for those jobs, closes the database, flushes the logs and exits 0;
-and it exits non-zero anyway 5 seconds later, even with an upstream call still outstanding.
+and it exits non-zero anyway 5 seconds after `sveltekit:shutdown`, even with an upstream call still
+outstanding.
 `SIGHUP` counts as a stop.
 
 ## The database
 
-D5, D6 and D15 hold the engine, the access rules and the validated versions. The tables:
+D5, D6 and D15 hold the engine, the access rules and the validated versions.
+
+**Tables:**
 - **`settings`:** one value per key. `setup` stores first run's step pointer here; later modules
   add their own keys.
 - **`owner`:** one row at most, enforced by the schema. `two-factor` and `oidc-sign-in`
@@ -82,7 +86,7 @@ D5, D6 and D15 hold the engine, the access rules and the validated versions. The
 
 D11 holds the decision and why the app has its own logger. Four levels, debug dropped unless
 `OBZORARR_LOG_DEBUG` is on. Each entry is one JSON line on standard output with a level, a message,
-a source, structured metadata and a millisecond timestamp; `logs` stores entries in that shape when
+a source, structured metadata and a millisecond timestamp. `logs` adds a way to store entries when
 it comes.
 
 **Redaction** runs before an entry is written:
@@ -106,8 +110,9 @@ headers.
 SvelteKit's own form check compares the browser's `Origin` with `event.url`, which adapter-bun
 builds as `https` unless `ORIGIN` or a protocol header says otherwise, so it would refuse the claim
 over plain HTTP. So that check is off, remote functions stay off (they would need `ORIGIN` too), and
-the app's own check replaces it. It asks the browser (`Sec-Fetch-Site`, else `Origin` against
-`ORIGIN` or `Host`), so the app needs no address of its own and stores none.
+the app's own check replaces it. It asks the browser, through `Sec-Fetch-Site` and `Origin` (the
+rules and their order are in `cross-origin.ts` and its test matrix), so the app needs no address of
+its own and stores none.
 
 What later modules must keep:
 - **Requests from no browser,** with neither `Origin` nor `Sec-Fetch-Site`, pass only on an explicit
@@ -137,11 +142,11 @@ through SvelteKit's `csp` option in nonce mode. No page is prerendered (`i18n` a
 so every page gets its own nonce. The choices the code can't explain:
 - **`Referrer-Policy: same-origin`,** never `no-referrer`, which makes browsers send `Origin: null`
   on the app's own form posts.
-- **Strict transport** only over HTTPS, known from an `https` `ORIGIN`, or from `Sec-Fetch-Site`
-  sent to a host that isn't `localhost`, `*.localhost` or loopback, since browsers send it only to
-  HTTPS and those hosts. Never `includeSubDomains`: other apps may share the domain. An accepted
-  risk: HSTS covers every port of the host name, so another app on the same host over plain HTTP
-  becomes unreachable from that browser until it moves to HTTPS.
+- **Strict transport** only over HTTPS, known when `ORIGIN` is `https`, or, when `ORIGIN` is unset,
+  from `Sec-Fetch-Site` sent to a host that isn't `localhost`, `*.localhost` or loopback, since
+  browsers send it only to HTTPS and those hosts. Never `includeSubDomains`: other apps may share
+  the domain. An accepted risk: HSTS covers every port of the host name, so another app on the same
+  host over plain HTTP becomes unreachable from that browser until it moves to HTTPS.
 - **`style-src 'unsafe-inline'`:** `src/app.html` and server-rendered pages carry style
   attributes, which a nonce can't cover, and styles can't run code.
 - (obzorarr) `plex-connection` adds Plex's hosts to `img-src`, including the image proxy Plex uses
@@ -176,8 +181,8 @@ address. A new one is printed every 15 minutes until the claim, and none after i
 two, then hashes the password, then creates the owner and moves the step pointer in one
 transaction. The cheap checks come first so a wrong guess never costs a hash, and a field error
 leaves the token unused. The claim stores no address, and nothing but the owner row and the
-pointer. Once the instance is claimed, the claim no longer exists: `/setup` answers "not found"
-(D20).
+pointer. After it, the claim no longer exists: `/setup` answers "not found" once first run is
+complete (D20), and the claim action answers it whenever the instance is claimed.
 
 **Owner credentials,** in `security/password.ts`, which `sign-in`'s password change and recovery
 reuse:
@@ -199,8 +204,8 @@ reuse:
 
 `setup` is built before `sign-in`, which brings the rest of the protections. Until then:
 - **Rate limits:** none. The token has 62 bits and lasts 15 minutes, and a wrong token costs no
-  hash, so guessing it isn't practical; `sign-in` adds the claim's limit (obzorarr: 5 per 5
-  minutes).
+  hash, so guessing it isn't practical; `sign-in` adds the claim's limit (SPEC.md's `sign-in`
+  notes, "Rate limits").
 - **The browser's address and cookies:** the claim sets no cookie yet, so it needs neither. Once
   `sign-in` starts the owner's session at the claim, the claim needs the browser's address, and the
   session follows `sign-in`'s cookies.
@@ -215,8 +220,6 @@ No release is cut between `setup` and `sign-in`.
 - **Always:** startup finishes before the first request; reviewed migrations; named database
   operations and short transactions (D6); redaction before writing; the token only in memory and on
   the console; the cheap checks before the hash; refusals in `handle` returned, never thrown.
-- **Ask first:** any dependency beyond the three packages it added (Turso, Drizzle ORM and Drizzle
-  Kit); another database engine; a logging
-  library; a second owner or any role (D20).
+- **Ask first:** another database engine; a logging library; a second owner or any role (D20).
 - **Never:** a token or password in a log entry, response or the database (only the hash); a stored
   address; a way to skip a first-run step; a claim after first run; `includeSubDomains`.
