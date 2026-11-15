@@ -889,7 +889,8 @@ export const GET: RequestHandler = () => healthResponse();
   before it is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's exit codes and
   its 5-second deadline, and no handlers in `dev`; `logging/redact.test.ts`, each redaction rule and
   nested; `logging/logger.test.ts`, with `flushLogs` against a slow shell pipe;
-  `config/log-debug.test.ts`), and in
+  `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
+  for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
@@ -910,7 +911,10 @@ export const GET: RequestHandler = () => healthResponse();
     nothing on a second start on it, one uses the default path, and three refuse a database folder
     they can't create or a path they can't open, without echoing the path and naming the default
     when the variable is unset; a bad `OBZORARR_LOG_DEBUG` is one JSON log entry, and its value is
-    never echoed; and `SIGTERM` and `SIGHUP` each stop the server with exit code 0.
+    never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`
+    and a 404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
+    policy's nonce and the browser reports no violation; and an `ORIGIN` with credentials or a
+    path stops the server without being echoed.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
@@ -955,9 +959,10 @@ call for anything different; choices 4 and 5 are obzorarr's own.
 2. **Ark UI before its first use.** The skeleton installs `@ark-ui/svelte`, so the Panda and Ark
    pairing and `check-peers` are settled early; the first `ui/` wrapper comes with the first surface
    that needs one.
-3. **Security headers and CSP.** The nonce-based CSP and the security headers on every response
-   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)) belong to the first module that
-   serves real pages (`setup`, whose claim page comes before `sign-in`), not the skeleton.
+3. **Security headers and CSP.** Closed: `setup` added the nonce-based CSP and the security
+   headers on every response that passes through `handle`
+   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)), as the first module that serves
+   real pages.
 4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently (the
    connections brief); the legacy app offered five presets, and the design seeds both to
    After Hours. The skeleton defines After Hours as the only theme, its colours as semantic tokens

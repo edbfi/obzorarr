@@ -128,18 +128,18 @@ headers stage after the language; SvelteKit's `csp` option sets the nonce policy
 Ground-floor choice 3 closes.
 
 **Acceptance criteria:**
-- [ ] `server/config/origin.test.ts` first fails, then passes: unset, and a bare origin with and
+- [x] `server/config/origin.test.ts` first fails, then passes: unset, and a bare origin with and
   without a trailing `/`, accepted; an empty value (adapter-bun refuses it first; `ORIGIN` is
   exempt from the empty-as-unset rule), a path, query, fragment or credentials refused without
   echoing the value. It is checked in step 2, so a bad `ORIGIN` stops startup before the database
   file is created (`startup.test.ts`).
-- [ ] `server/security/headers.test.ts`: the spec's headers for HTTPS through `ORIGIN`, HTTPS
+- [x] `server/security/headers.test.ts`: the spec's headers for HTTPS through `ORIGIN`, HTTPS
   through `Sec-Fetch-Site`, plain HTTP, `localhost`, `*.localhost` and loopback hosts (no HSTS),
   and never `includeSubDomains`.
-- [ ] `setup.test.ts`: the headers on a page, `/healthz` and a 404, and no HSTS over plain HTTP;
+- [x] `setup.test.ts`: the headers on a page, `/healthz` and a 404, and no HSTS over plain HTTP;
   the page's scripts carry the nonce and the browser reports no CSP violation; the server refuses
   `ORIGIN=https://u:p@host` and `https://host/app` without echoing either.
-- [ ] The policy is the spec's, directive for directive, and `style-src` keeps `'unsafe-inline'`
+- [x] The policy is the spec's, directive for directive, and `style-src` keeps `'unsafe-inline'`
   without a nonce.
 
 **Verification:** the gates; `preview`'s response headers checked by hand at `/` in both

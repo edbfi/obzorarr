@@ -100,6 +100,17 @@ describe("startUp", () => {
 		await expect(stat(join(root, "never-created"))).rejects.toThrow();
 	});
 
+	it("refuses a bad ORIGIN before the database opens", async () => {
+		const path = join(root, "origin-never-created", "app.db");
+		const error = await startUp(
+			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path, ORIGIN: "https://host/app" },
+			{ dev: true },
+		).catch((caught: unknown) => caught);
+		expect(error).toBeInstanceOf(ConfigError);
+		expect((error as ConfigError).variable).toBe("ORIGIN");
+		await expect(stat(join(root, "origin-never-created"))).rejects.toThrow();
+	});
+
 	it("refuses a file that isn't a database, without echoing the path", async () => {
 		const path = join(root, "text.db");
 		await writeFile(path, "not a database, only text that is long enough to have a header\n");
