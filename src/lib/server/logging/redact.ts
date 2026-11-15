@@ -16,6 +16,7 @@ const SENSITIVE_PARTS = [
 	"authorisation",
 	"apikey",
 	"passphrase",
+	"oauth",
 ];
 
 /**
@@ -46,7 +47,10 @@ function sensitive(name: string): boolean {
  */
 const URL_CREDENTIALS = /:\/\/[^\s/?#]*@/g;
 
-/** The start of a query, fragment or path parameter: its separator and its name. */
+/**
+ * The start of a query, fragment or path parameter: its separator and its name. This and
+ * VALUE_END are shared `/g` patterns whose `lastIndex` the synchronous scan below resets.
+ */
 const PARAMETER = /([?&#;])([^=&#;?\s"'<>]+)=/g;
 
 /**
@@ -64,10 +68,10 @@ function cleanText(text: string): string {
  * `?a=1;token=x` hides a second parameter behind the semicolon; one pass, without recursion.
  */
 function cleanParameters(text: string): string {
-	const parameters = new RegExp(PARAMETER.source, "g");
 	let out = "";
 	let kept = 0;
-	for (let match = parameters.exec(text); match !== null; match = parameters.exec(text)) {
+	PARAMETER.lastIndex = 0;
+	for (let match = PARAMETER.exec(text); match !== null; match = PARAMETER.exec(text)) {
 		const [whole, , name = ""] = match;
 		const valueStart = match.index + whole.length;
 		if (!sensitive(decodeName(name))) continue; // `;token=` may hide in its value
@@ -75,7 +79,7 @@ function cleanParameters(text: string): string {
 		const valueEnd = VALUE_END.exec(text)?.index ?? text.length;
 		out += `${text.slice(kept, valueStart)}${REDACTED}`;
 		kept = valueEnd;
-		parameters.lastIndex = valueEnd;
+		PARAMETER.lastIndex = valueEnd;
 	}
 	return out + text.slice(kept);
 }

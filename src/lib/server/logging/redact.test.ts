@@ -126,6 +126,7 @@ describe("redact", () => {
 					authError: "i",
 					pass: "j",
 					passphrase: "k",
+					oauth: "l",
 					author: "kept",
 					passage: "kept",
 				}),
@@ -141,6 +142,7 @@ describe("redact", () => {
 				authError: R,
 				pass: R,
 				passphrase: R,
+				oauth: R,
 				author: "kept",
 				passage: "kept",
 			});
