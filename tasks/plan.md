@@ -59,13 +59,13 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 
 - [x] Task 1: the database (D15)
 - [x] Task 2: logging with redaction
-- [ ] Task 3: shutdown
+- [x] Task 3: shutdown
 
 ### Checkpoint: after task 3
 
-- [ ] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
+- [x] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
   pass.
-- [ ] The built server migrates a new database, logs JSON lines, refuses a bad configuration with
+- [x] The built server migrates a new database, logs JSON lines, refuses a bad configuration with
   one line, and exits 0 on `SIGTERM` and `SIGHUP`.
 
 ### Phase 2: the request checks
