@@ -282,8 +282,8 @@ verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](do
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets
-"Access denied". An unclaimed instance prints its bootstrap token to the console, and is claimed
-at `/setup`.
+"Access denied". Until it is claimed, an instance sends every page to `/setup` and prints its
+bootstrap token to the console; it is claimed there.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -313,7 +313,8 @@ src/
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
-                                 middleware, the security headers, then the cross-origin check
+                                 middleware, the security headers, the cross-origin check, then
+                                 the setup gate
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
@@ -358,7 +359,8 @@ src/
                                  first run's state in memory (claimed, and the step pointer from
                                  `settings`), and the bootstrap token while the instance is
                                  unclaimed: printed to standard output, renewed every 15 minutes,
-                                 held back while a claim is in progress, used up by a claim
+                                 held back while a claim is in progress, used up by a claim;
+                                 and the gate's decision for a path
       services/setup/claim.ts    the claim: the fields, then the token, then the hash, then one
                                  transaction for the owner and the step pointer
       security/bootstrap-token.ts
@@ -392,6 +394,7 @@ tests/
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   e2e/setup.test.ts              startup and first run on fresh built servers
+  e2e/global-setup.ts            claims the shared web server's instance before the other tests
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
                                  the messages, flat i18next JSON v4, at the root where Weblate

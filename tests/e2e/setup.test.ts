@@ -81,6 +81,30 @@ async function runToExit(cwd: string, env: Record<string, string>) {
 	}
 }
 
+/**
+ * Claims a fresh server through its form action, with the token it printed, as a browser's native
+ * form post: asking for HTML, since SvelteKit answers an action in JSON to `Accept: *\/*`.
+ */
+async function claim(server: Server) {
+	const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
+	const response = await fetch(`${server.url}/setup`, {
+		method: "POST",
+		headers: {
+			origin: server.url,
+			accept: "text/html",
+			"content-type": "application/x-www-form-urlencoded",
+		},
+		body: new URLSearchParams({ token, username: "owner", password: "violet harbour lanterns" }),
+		redirect: "manual",
+	});
+	expect(response.status, "the claim").toBe(303);
+	expect(response.headers.get("location")).toBe("/");
+}
+
+/** A GET, or a request with `init`, that doesn't follow a redirect. */
+const request = (url: string, init: RequestInit = {}) =>
+	fetch(url, { ...init, redirect: "manual" });
+
 let root: string;
 
 test.beforeEach(async () => {
@@ -228,19 +252,30 @@ test.describe("security headers and the CSP", () => {
 		"permissions-policy": "camera=(), microphone=(), geolocation=()",
 	};
 
-	test("every response that passes through handle carries them, and no HSTS over plain HTTP", async () => {
+	test("every response that passes through handle carries them, the gate's redirect too, and no HSTS over plain HTTP", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
 		});
-		try {
-			for (const path of ["/", "/healthz", "/no-such-page"]) {
-				const response = await fetch(`${server.url}${path}`);
-				for (const [name, value] of Object.entries(ALWAYS)) {
-					expect(response.headers.get(name), `${name} on ${path}`).toBe(value);
-				}
-				expect(response.headers.get("strict-transport-security"), path).toBeNull();
-				if (path === "/no-such-page") expect(response.status).toBe(404);
+		const check = (response: Response, what: string) => {
+			for (const [name, value] of Object.entries(ALWAYS)) {
+				expect(response.headers.get(name), `${name} on ${what}`).toBe(value);
 			}
+			expect(response.headers.get("strict-transport-security"), what).toBeNull();
+		};
+		try {
+			const statuses: Record<string, number> = {};
+			for (const path of ["/setup", "/healthz", "/"]) {
+				const response = await request(`${server.url}${path}`);
+				check(response, path);
+				statuses[path] = response.status;
+			}
+			// Unclaimed, `/` is the gate's redirect.
+			expect(statuses).toEqual({ "/setup": 200, "/healthz": 200, "/": 303 });
+
+			await claim(server);
+			const missing = await request(`${server.url}/no-such-page`);
+			check(missing, "a 404");
+			expect(missing.status).toBe(404);
 		} finally {
 			await server.stop();
 		}
@@ -253,7 +288,8 @@ test.describe("security headers and the CSP", () => {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
 		});
 		try {
-			const response = await fetch(`${server.url}/`);
+			// `/setup`: the page an unclaimed instance serves.
+			const response = await fetch(`${server.url}/setup`);
 			const policy = response.headers.get("content-security-policy") ?? "";
 			const html = await response.text();
 			const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
@@ -291,7 +327,7 @@ test.describe("security headers and the CSP", () => {
 					console.error(`Content Security Policy violation: ${event.violatedDirective}`);
 				});
 			});
-			const visit = await page.goto(`${server.url}/`);
+			const visit = await page.goto(`${server.url}/setup`);
 			await expect(page.locator("html[data-hydrated]")).toBeAttached();
 			expect(violations).toEqual([]);
 			// Chromium sends Sec-Fetch-Site to this loopback address over plain HTTP, so this checks
@@ -366,13 +402,19 @@ test.describe("the cross-origin check", () => {
 		});
 		try {
 			const url = server.url.replace("127.0.0.1", "localhost");
-			const own = await fetch(`${url}/`, {
-				method: "POST",
-				headers: { origin: url, "content-type": "application/x-www-form-urlencoded" },
-				body: "a=1",
-			});
-			// Past the check, SvelteKit answers that `/` has no form actions.
-			expect(own.status).toBe(405);
+			const post = () =>
+				request(`${url}/`, {
+					method: "POST",
+					headers: { origin: url, "content-type": "application/x-www-form-urlencoded" },
+					body: "a=1",
+				});
+			// Past the check, an unclaimed instance's gate sends it to `/setup`.
+			const unclaimed = await post();
+			expect(unclaimed.status).toBe(303);
+			expect(unclaimed.headers.get("location")).toBe("/setup");
+			await claim(server);
+			// Once claimed, SvelteKit answers that `/` has no form actions.
+			expect((await post()).status).toBe(405);
 
 			const other = await fetch(`${url}/`, {
 				method: "POST",
@@ -393,6 +435,7 @@ test.describe("the cross-origin check", () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
 		});
+		await claim(server);
 		// Chromium sends no Sec-Fetch headers to app.test over plain HTTP, so the check compares
 		// Origin with Host there.
 		const browser = await chromium.launch({
@@ -427,17 +470,50 @@ test.describe("the cross-origin check", () => {
 	});
 });
 
+test.describe("the setup gate", () => {
+	test("every page sends a fresh instance to /setup, and /healthz answers ok", async ({ page }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const own = { origin: server.url, "content-type": "application/x-www-form-urlencoded" };
+			for (const [what, init] of [
+				["/", {}],
+				["/no-such-page", {}],
+				["/healthz/more", {}],
+				["/", { method: "POST", headers: own, body: "a=1" }],
+			] as const) {
+				const response = await request(`${server.url}${what}`, init);
+				const label = `${init.method ?? "GET"} ${what}`;
+				expect(response.status, label).toBe(303);
+				expect(response.headers.get("location"), label).toBe("/setup");
+			}
+			expect((await request(`${server.url}/setup`)).status).toBe(200);
+			const health = await request(`${server.url}/healthz`);
+			expect(health.status).toBe(200);
+			expect(await health.text()).toBe("ok");
+
+			// A browser asking for `/` lands on the claim.
+			await page.goto(`${server.url}/`);
+			expect(new URL(page.url()).pathname).toBe("/setup");
+			await expect(page.getByRole("button", { name: "Claim and create owner" })).toBeVisible();
+		} finally {
+			await server.stop();
+		}
+	});
+});
+
 test.describe("the bootstrap token", () => {
 	test("a fresh built server prints it before it listens, in no log entry or response", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
 		});
 		try {
-			const pages = await Promise.all(
-				["/", "/healthz", "/no-such-page"].map(async (path) =>
-					(await fetch(`${server.url}${path}`)).text(),
-				),
-			);
+			const read = async (path: string) => (await fetch(`${server.url}${path}`)).text();
+			const pages = await Promise.all(["/setup", "/healthz"].map(read));
+			// A 404 page too, which only a claimed instance serves.
+			await claim(server);
+			pages.push(await read("/no-such-page"));
 			const output = server.output();
 			const line = output.split("\n").find((text) => text.startsWith("Setup token: ")) ?? "";
 			const token = /Setup token: ([a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}) /.exec(line)?.[1];
@@ -535,6 +611,8 @@ test.describe("the claim", () => {
 		try {
 			expect(second.output()).not.toContain("Setup token:");
 			expect((await fetch(`${second.url}/setup`)).status).toBe(404);
+			// The gate stays open: `/` is served, not sent to `/setup`.
+			expect((await request(`${second.url}/`)).status).toBe(200);
 		} finally {
 			await second.stop();
 		}

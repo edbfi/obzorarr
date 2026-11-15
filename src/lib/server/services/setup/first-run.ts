@@ -78,6 +78,22 @@ export function isFirstRunComplete(): boolean {
 	return complete;
 }
 
+/** The claim, first run's only step until `two-factor` adds the next. */
+const CURRENT_STEP = "/setup";
+
+/** Paths the gate lets through before first run is complete, besides the current step. */
+const ALWAYS_OPEN = new Set(["/healthz"]);
+
+/**
+ * The setup gate's decision for a request's path: until first run is complete, every path but the
+ * current step and `/healthz` is sent to that step; once it is complete, none is
+ * (SPEC-setup.md, "First run").
+ */
+export function firstRunRedirect(path: string): string | undefined {
+	if (complete || path === CURRENT_STEP || ALWAYS_OPEN.has(path)) return undefined;
+	return CURRENT_STEP;
+}
+
 /**
  * Checks what someone typed against the current token and, if it matches and is still valid,
  * uses it up, with nothing awaited in between, so two claims can't both use one token.

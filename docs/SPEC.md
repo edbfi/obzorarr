@@ -898,13 +898,12 @@ export const GET: RequestHandler = () => healthResponse();
   alphabet, unbiased draw, expiry and comparison; `security/password.test.ts`, the credential
   rules at their limits, NFC and case included, the bundled list and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
-  printed, renewed, held back during a claim, stopped, never printed once claimed, and a restart
-  after the claim; `services/setup/claim.test.ts`, the claim's success, its field errors, wrong
-  and expired tokens that never reach the hash, a second claim, two at once, and a failed
-  transaction printing a new token), `src/routes/setup/token-format.test.ts` (the token
-  field's dashes), `vite.config.test.ts` (SvelteKit's own form check and
-  remote functions are off), and in
-  `src/lib/shared/i18n/`:
+  printed, renewed, held back during a claim, stopped, never printed once claimed, the gate's
+  decision for each path before and after the claim, and a restart after the claim;
+  `services/setup/claim.test.ts`, the claim's success, its field errors, wrong and expired tokens
+  that never reach the hash, a second claim, two at once, and a failed transaction printing a new
+  token), `src/routes/setup/token-format.test.ts` (the token field's dashes), `vite.config.test.ts`
+  (SvelteKit's own form check and remote functions are off), and in `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
@@ -913,7 +912,10 @@ export const GET: RequestHandler = () => healthResponse();
 
   Component tests, from the first one, use happy-dom; never jsdom.
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
-  Playwright generates for each run, so CI needs no stored secret.
+  Playwright generates for each run, so CI needs no stored secret, and a temporary database. The web
+  server counts as started once its output runs from the token line through "Listening on", which
+  captures the token; `global-setup.ts` then claims the instance through the form in a browser, so
+  the smoke and language tests run on a claimed instance.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
     for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
     background token and display text style and logs no console errors; that each of Panda's three
@@ -924,17 +926,18 @@ export const GET: RequestHandler = () => healthResponse();
     nothing on a second start on it, one uses the default path, and three refuse a database folder
     they can't create or a path they can't open, without echoing the path and naming the default
     when the variable is unset; a bad `OBZORARR_LOG_DEBUG` is one JSON log entry, and its value is
-    never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`
-    and a 404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
-    policy's nonce and the browser reports no violation; an `ORIGIN` with credentials or a path
-    stops the server without being echoed; a cross-site form POST gets the "Access denied" page
-    with the headers, its own policy and the viewer's language; and a same-origin POST with no
-    `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host name that isn't loopback
-    (Chromium's `--host-resolver-rules`); a fresh server prints its bootstrap token before it
-    listens, in no log entry or response; and the claim refuses a wrong token, keeping the
-    username and clearing the token and password, claims with the right one, and answers 404 at
-    `/setup` afterwards, also after a restart, with neither the token nor the password in any log
-    entry or response.
+    never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`,
+    the gate's redirect and a 404 carry the security headers, with no HSTS over plain HTTP; a page's
+    scripts carry its policy's nonce and the browser reports no violation; an `ORIGIN` with
+    credentials or a path stops the server without being echoed; a cross-site form POST gets the
+    "Access denied" page with the headers, its own policy and the viewer's language; and a
+    same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host
+    name that isn't loopback (Chromium's `--host-resolver-rules`), getting the gate's 303 while
+    unclaimed; every page sends a fresh server to `/setup` while `/healthz` answers `ok`; a fresh
+    server prints its bootstrap token before it listens, in no log entry or response; and the claim
+    refuses a wrong token, keeping the username and clearing the token and password, claims with the
+    right one, and answers 404 at `/setup` afterwards, also after a restart, which serves `/`
+    without a redirect, with neither the token nor the password in any log entry or response.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
