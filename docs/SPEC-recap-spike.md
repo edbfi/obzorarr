@@ -160,10 +160,14 @@ duration from Panda's motion tokens, never a literal. No animation library.
 - **Durations in script:** `Story.svelte` converts `token("durations.story")` ("320ms") to a number
   once, and the transitions and the throttle use that number. CSS uses the token names.
 - **Between steps:** the new step slides in from the side it comes from and fades, over `story`
-  (320 ms), through Svelte's transitions, with no duration under reduced motion.
+  (320 ms), through Svelte's transitions, with no duration under reduced motion. The move dips like
+  a projector changing reels: the leaving step fades out over its first 30%, and the new one fades
+  in from there, so the two never show at once.
 - **Each step's entrance** is a CSS keyframe animation in `panda.config.ts`, run only under
-  `_motionSafe`: the total and its caption fade and rise; the month bars grow from zero together;
-  the summary's figures fade in. All over `story`. CSS, because Svelte doesn't play `in:`
+  `_motionSafe`: the total and its caption fade and rise, and the total's number comes into focus
+  (a short blur clearing); the month bars grow from zero together; the summary's figures fade in.
+  All over `story`, decelerating as Svelte's `quintOut` does (an `animationStyles` entry per
+  keyframe, so the easing is written once). CSS, because Svelte doesn't play `in:`
   transitions when a server-rendered page hydrates, and so the first step animates on load and is
   never hidden waiting for JavaScript.
 - **Progress:** a segment fills over `feedback` (160 ms).

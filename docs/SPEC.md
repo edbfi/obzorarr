@@ -3,8 +3,8 @@
 **Status:** the ground floor (skeleton) is specified here, approved by the orchestrator
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
-built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), is being built, and
-module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
+built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), is built and awaits
+the owner's verdict (D19), and module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
 
 ## Objective
 
@@ -892,9 +892,12 @@ export const GET: RequestHandler = () => healthResponse();
   - `recap-spike.test.ts` checks the spike's story on `/spike/recap` in both languages: its
     carousel semantics, moves by keys, buttons, clicks and drags, focus, Close and Escape; the
     steps' content (the month names in each language, the summary's figures, a disabled Share
-    recap and Back to overview); a move from a scrolled step returning to the top; the next step's
-    final state at once under reduced motion; and, at 360 px in both languages, no sideways scroll
-    and Close, Previous and Next in view (SPEC-recap-spike.md, "Testing strategy").
+    recap and Back to overview); a move from a scrolled step returning to the top; the two motion
+    checks: under reduced motion, the next step's final state one frame after the move, with the
+    leaving step gone and nothing running, and without it, a move animating the entering step, with
+    the animations paused mid-move to check that the leaving step is `inert`, focus stays where the
+    story puts it and nothing scrolls sideways at 360 px; and, at 360 px in both languages, no
+    sideways scroll and Close, Previous and Next in view (SPEC-recap-spike.md, "Testing strategy").
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling

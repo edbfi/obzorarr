@@ -159,18 +159,27 @@ test.describe("with reduced motion", () => {
 			await page.setViewportSize({ width, height: 800 });
 			await open(page);
 			await page.keyboard.press("ArrowRight");
-			await expectStep(page, "2 of 3");
-			// Read at once, without waiting out any motion: the bars at their final lengths, measured
-			// along each bar's own axis (rows on a phone, columns from a tablet up), and nothing running.
-			const { animations, shares } = await page.evaluate(() => ({
-				animations: document.getAnimations().length,
-				shares: Array.from(document.querySelectorAll<HTMLElement>("[data-bar]"), (bar) => {
-					const track = bar.parentElement?.getBoundingClientRect();
-					const own = bar.getBoundingClientRect();
-					if (!track || track.width === 0 || track.height === 0) return 0;
-					return track.width >= track.height ? own.width / track.width : own.height / track.height;
-				}),
-			}));
+			// Read one frame after the move, without waiting out any motion: the leaving step already
+			// gone, nothing running, and the bars at their final lengths, measured along each bar's own
+			// axis (rows on a phone, columns from a tablet up).
+			const { steps, animations, shares } = await page.evaluate(async () => {
+				await new Promise(requestAnimationFrame);
+				return {
+					steps: Array.from(document.querySelectorAll("[role=group]"), (group) =>
+						group.getAttribute("aria-label"),
+					),
+					animations: document.getAnimations().length,
+					shares: Array.from(document.querySelectorAll<HTMLElement>("[data-bar]"), (bar) => {
+						const track = bar.parentElement?.getBoundingClientRect();
+						const own = bar.getBoundingClientRect();
+						if (!track || track.width === 0 || track.height === 0) return 0;
+						return track.width >= track.height
+							? own.width / track.width
+							: own.height / track.height;
+					}),
+				};
+			});
+			expect(steps).toEqual(["2 of 3"]);
 			expect(animations).toBe(0);
 			const busiest = Math.max(...monthlyHours);
 			expect(shares).toHaveLength(12);
@@ -179,6 +188,120 @@ test.describe("with reduced motion", () => {
 			});
 		});
 	}
+});
+
+/**
+ * Waits until an animation runs on the entering step or its content, then pauses every animation
+ * on the page, so the checks after it see the middle of the move whatever the timing. `resume`
+ * plays them on.
+ */
+async function pauseMidMove(page: Page) {
+	await page.waitForFunction(
+		() => {
+			const entering = document.querySelector("[role=group]:not([inert])");
+			const running = document.getAnimations().some((animation) => {
+				const { effect } = animation;
+				return (
+					animation.playState === "running" &&
+					effect instanceof KeyframeEffect &&
+					effect.target !== null &&
+					(entering?.contains(effect.target) ?? false) &&
+					Number(effect.getComputedTiming().duration) > 0
+				);
+			});
+			if (!running) return false;
+			for (const animation of document.getAnimations()) animation.pause();
+			return true;
+		},
+		undefined,
+		{ polling: "raf", timeout: 2_000 },
+	);
+}
+
+async function resume(page: Page) {
+	await page.evaluate(() => {
+		for (const animation of document.getAnimations()) {
+			if (animation.playState === "paused") animation.play();
+		}
+	});
+}
+
+/** The steps in the page, the leaving one included, by name, with whether each is inert. */
+function stepsInPage(page: Page) {
+	return page.evaluate(() =>
+		Array.from(document.querySelectorAll<HTMLElement>("[role=group]"), (group) => ({
+			name: group.getAttribute("aria-label"),
+			inert: group.inert,
+		})),
+	);
+}
+
+test.describe("without reduced motion", () => {
+	test.use({ contextOptions: { reducedMotion: "no-preference" } });
+
+	test("a move animates the entering step, and the leaving one is inert until it has gone", async ({
+		page,
+	}) => {
+		const errors = consoleErrors(page);
+		await page.setViewportSize({ width: 360, height: 740 });
+		await open(page);
+
+		await page.keyboard.press("ArrowRight");
+		await pauseMidMove(page);
+		expect(await stepsInPage(page)).toEqual([
+			{ name: "1 of 3", inert: true },
+			{ name: "2 of 3", inert: false },
+		]);
+		// The progress fills as the step enters.
+		const fills = await page.evaluate(
+			() =>
+				document
+					.getAnimations()
+					.filter(
+						(animation) =>
+							animation.effect instanceof KeyframeEffect &&
+							animation.effect.target instanceof Element &&
+							animation.effect.target.matches("[data-fill]"),
+					).length,
+		);
+		expect(fills).toBeGreaterThan(0);
+		// The step coming in from the side never scrolls the page sideways.
+		const overflow = await page.evaluate(
+			() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+		);
+		expect(overflow).toBe(0);
+		await resume(page);
+		await expectStep(page, "2 of 3");
+		expect(await stepsInPage(page)).toEqual([{ name: "2 of 3", inert: false }]);
+
+		expect(errors).toEqual([]);
+	});
+
+	test("focus stays where the story puts it while a step enters", async ({ page }) => {
+		await open(page);
+
+		// A control in the bars keeps its focus.
+		await next(page).click();
+		await pauseMidMove(page);
+		await expect(next(page)).toBeFocused();
+		await resume(page);
+		await settle(page);
+
+		// The summary takes focus as it enters.
+		await page.keyboard.press("End");
+		await pauseMidMove(page);
+		await expect(stepHeading(page, "3 of 3")).toBeFocused();
+		await resume(page);
+		await settle(page);
+
+		// Focus inside the leaving step moves to the entering step's heading.
+		await page.keyboard.press("ArrowLeft");
+		await pauseMidMove(page);
+		await expect(page.locator("[role=group]:not([inert]) h2")).toBeFocused();
+		await resume(page);
+		await expectStep(page, "2 of 3");
+		await expect(stepHeading(page, "2 of 3")).toBeFocused();
+	});
 });
 
 test.describe("a Danish browser", () => {

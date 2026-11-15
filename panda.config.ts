@@ -147,6 +147,42 @@ export default defineConfig({
 			},
 		},
 
+		// The recap spike's step entrances (SPEC-recap-spike.md, "Motion"), each run over `story` and
+		// only under `_motionSafe`, so reduced motion shows the final state at once. Each starts from
+		// its `from` and ends at the element's own style.
+		keyframes: {
+			// The total and its caption.
+			recapRise: { from: { opacity: "0", transform: "translateY(var(--spacing-lg))" } },
+			// The total's number comes into focus, as a projector's image does.
+			recapFocus: { from: { filter: "blur(6px)" } },
+			// The month bars fill from zero: along the row on a phone, up the column from a tablet.
+			recapGrowRow: {
+				from: { clipPath: "inset(0 100% 0 0 round var(--radii-full))" },
+				to: { clipPath: "inset(0 0 0 0 round var(--radii-full))" },
+			},
+			recapGrowColumn: {
+				from: { clipPath: "inset(100% 0 0 0 round var(--radii-sm) var(--radii-sm) 0 0)" },
+				to: { clipPath: "inset(0 0 0 0 round var(--radii-sm) var(--radii-sm) 0 0)" },
+			},
+			// The summary's figures.
+			recapFade: { from: { opacity: "0" } },
+		},
+
+		// Each entrance over `story`, decelerating as Svelte's `quintOut` does for the moves between
+		// steps (Story.svelte). Components use them only under `_motionSafe`.
+		animationStyles: Object.fromEntries(
+			["recapRise", "recapFocus", "recapGrowRow", "recapGrowColumn", "recapFade"].map((name) => [
+				name,
+				{
+					value: {
+						animationName: name,
+						animationDuration: "story",
+						animationTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+					},
+				},
+			]),
+		),
+
 		textStyles: {
 			display: {
 				value: {

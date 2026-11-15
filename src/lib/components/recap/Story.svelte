@@ -1,11 +1,15 @@
 <script lang="ts">
 // The story shell (SPEC-recap-spike.md, "Story mode"): one step at a time between a top bar
 // (heading, progress, Close) and a bottom bar (Previous, Next), moved by taps, swipes, keys and the
-// buttons, throttled. It knows nothing of the steps' content; the last step is the summary.
+// buttons, throttled. It knows nothing of the steps' content; the last step is the summary. A move
+// slides the new step in from the side it comes from, instantly under reduced motion.
 import ChevronLeft from "@lucide/svelte/icons/chevron-left";
 import ChevronRight from "@lucide/svelte/icons/chevron-right";
 import X from "@lucide/svelte/icons/x";
 import { type Snippet, tick } from "svelte";
+import { quintOut } from "svelte/easing";
+import { prefersReducedMotion } from "svelte/motion";
+import type { TransitionConfig } from "svelte/transition";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 import { token } from "#styled-system/tokens";
@@ -26,18 +30,57 @@ interface Props {
 
 let { title, steps }: Props = $props();
 
-/** The `story` duration ("320ms") as a number, converted once: the throttle's window. */
+/** The `story` duration ("320ms") as a number, converted once: the throttle's window and a move's. */
 const storyMs = Number.parseFloat(token("durations.story"));
+/** How far a step travels as it moves, in px. */
+const shift = Number.parseFloat(token("spacing.section"));
 const allowMove = createThrottle(storyMs);
 const gestures = createPointerGestures();
 const headingId = $props.id();
 
 let current = $state(0);
+/** 1 when the last move went forward, -1 when it went back: the side a step enters from. */
+let direction = $state(1);
 const last = $derived(steps.length - 1);
 
 let story: HTMLElement | undefined = $state();
 let area: HTMLElement | undefined = $state();
 let close: HTMLAnchorElement | undefined = $state();
+
+/**
+ * The step in the page. While a move runs the leaving step stays too, `inert` (Svelte sets it as the
+ * step's outro starts) until it has gone.
+ */
+function currentStep() {
+	return area?.querySelector<HTMLElement>("[role=group]:not([inert])") ?? undefined;
+}
+
+/** How far `t` is between `from` and `to`, from 0 to 1. */
+function between(t: number, from: number, to: number) {
+	return Math.min(1, Math.max(0, (t - from) / (to - from)));
+}
+
+/** A move takes the `story` duration, and no time under reduced motion, so it is instant. */
+function moveDuration() {
+	return prefersReducedMotion.current ? 0 : storyMs;
+}
+
+// A move dips like a projector changing reels: the leaving step fades out over the move's first
+// 30%, and the entering one slides in from the side it comes from over the whole move, fading in
+// from there, so the two steps never show at once.
+function enter(_step: Element): TransitionConfig {
+	const x = direction * shift;
+	return {
+		duration: moveDuration(),
+		css: (t) =>
+			`transform: translateX(${(1 - quintOut(t)) * x}px); opacity: ${quintOut(between(t, 0.3, 1))}`,
+	};
+}
+
+function leave(_step: Element): TransitionConfig {
+	// As a step leaves, `t` runs from 1 to 0.
+	return { duration: moveDuration(), css: (t) => `opacity: ${between(t, 0.7, 1)}` };
+}
 
 /** The step a move goes to; the same step when it can't move. */
 function target(move: Exclude<Move, "close">): number {
@@ -67,13 +110,14 @@ async function go(move: Move) {
 		const top = story.getBoundingClientRect().top + window.scrollY;
 		window.scrollTo({ top, behavior: "instant" });
 	}
+	direction = to > current ? 1 : -1;
 	current = to;
 	await tick();
 
 	// The summary always takes focus, so a stray Enter doesn't press its buttons; otherwise focus
 	// on a control in the bars stays there.
 	if (to === last || focusInStep) {
-		area?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
+		currentStep()?.querySelector<HTMLElement>("h2")?.focus({ preventScroll: true });
 	}
 }
 
@@ -118,7 +162,7 @@ function onpointerdown(event: PointerEvent) {
 // A release counts anywhere on the page, so a drag that ends over a bar still moves. The back zone
 // is the step's left 15%, measured on the step, inside the area's gutters.
 function onpointerup(event: PointerEvent) {
-	const step = area?.querySelector<HTMLElement>("[role=group]");
+	const step = currentStep();
 	if (!step) return;
 	const { left, width } = step.getBoundingClientRect();
 	const move = gestures.release(
@@ -136,7 +180,7 @@ const gutters = { base: "mobileGutter", tablet: "tabletGutter", desktop: "deskto
 
 const bar = css({
 	position: "sticky",
-	// Above the steps, whose transitions (task 4) make them stacking contexts.
+	// Above the steps, whose transitions make them stacking contexts.
 	zIndex: "[1]",
 	bg: "background",
 	paddingInline: gutters,
@@ -192,15 +236,32 @@ const roundButton = css({
 		<div aria-hidden="true" class={css({ gridArea: "progress", display: "flex", gap: "xs" })}>
 			{#each steps as _, index (index)}
 				<span
-					data-state={index < current ? "past" : index === current ? "current" : "remaining"}
 					class={css({
 						flex: "1",
+						display: "flex",
 						height: "[4px]",
 						borderRadius: "full",
 						bg: "border",
-						"&[data-state=past], &[data-state=current]": { bg: "primary" },
+						overflow: "hidden",
 					})}
-				></span>
+				>
+					<span
+						data-fill
+						data-state={index < current ? "past" : index === current ? "current" : "remaining"}
+						class={css({
+							flex: "1",
+							bg: "primary",
+							transformOrigin: "left",
+							transform: "scaleX(0)",
+							"&[data-state=past], &[data-state=current]": { transform: "scaleX(1)" },
+							_motionSafe: {
+								transitionProperty: "transform",
+								transitionDuration: "feedback",
+								transitionTimingFunction: "ease-out",
+							},
+						})}
+					></span>
+				</span>
 			{/each}
 		</div>
 		<a
@@ -231,8 +292,12 @@ const roundButton = css({
 		aria-live="polite"
 		class={css({
 			flex: "1",
-			display: "flex",
-			flexDirection: "column",
+			// Every step in one cell, so the leaving and the entering step overlap during a move.
+			display: "grid",
+			gridTemplateColumns: "minmax(0, 1fr)",
+			// A step entering from the side never scrolls the page sideways; `clip` makes no scroll
+			// container, so the bars stay sticky.
+			overflowX: "clip",
 			paddingInline: gutters,
 			paddingBlock: "xl",
 			// The browser keeps vertical scrolling and zoom; horizontal drags are the story's.
@@ -247,8 +312,10 @@ const roundButton = css({
 					role="group"
 					aria-roledescription={m.recap_spike_slide_role()}
 					aria-label={m.recap_spike_slide_position({ current: index + 1, total: steps.length })}
+					in:enter
+					out:leave
 					class={css({
-						flex: "1",
+						gridArea: "1 / 1",
 						display: "flex",
 						flexDirection: "column",
 						justifyContent: "center",
