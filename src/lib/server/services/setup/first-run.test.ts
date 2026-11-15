@@ -4,8 +4,17 @@ import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
-import { owner } from "#lib/server/db/owner.ts";
-import { isClaimed, startFirstRun, stopFirstRun, withClaimInProgress } from "./first-run.ts";
+import { insertOwner, owner } from "#lib/server/db/owner.ts";
+import { writeSetting } from "#lib/server/db/settings.ts";
+import {
+	FIRST_RUN_COMPLETE,
+	FIRST_RUN_STEP_KEY,
+	isClaimed,
+	isFirstRunComplete,
+	startFirstRun,
+	stopFirstRun,
+	withClaimInProgress,
+} from "./first-run.ts";
 
 let root: string;
 let files = 0;
@@ -111,6 +120,26 @@ describe("first run's bootstrap token", () => {
 		});
 		await settle(100);
 		expect(isClaimed()).toBe(true);
+		expect(printed).toEqual([]);
+	});
+});
+
+describe("first run after a restart", () => {
+	it("starts complete on a database an earlier process claimed, and prints nothing", async () => {
+		// First a fresh instance, so the flags start false and must be read back from the database.
+		await startFirstRun({ db: await newDatabase(), origin: undefined, print: () => {} });
+		expect(isFirstRunComplete()).toBe(false);
+		stopFirstRun();
+
+		const db = await newDatabase();
+		await db.transaction(async (tx) => {
+			await insertOwner(tx, { username: "owner", passwordHash: "h", createdAt: new Date() });
+			await writeSetting(tx, FIRST_RUN_STEP_KEY, FIRST_RUN_COMPLETE, new Date());
+		});
+		const printed: string[] = [];
+		await startFirstRun({ db, origin: undefined, print: (line) => printed.push(line) });
+		expect(isClaimed()).toBe(true);
+		expect(isFirstRunComplete()).toBe(true);
 		expect(printed).toEqual([]);
 	});
 });

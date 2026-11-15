@@ -62,6 +62,8 @@ describe("checkPassword", () => {
 		});
 		// A 3-character username is too short to rule out.
 		expect(checkPassword("correct-bob-horse-battery", "bob").ok).toBe(true);
+		// Counted as written: "İab" is 3 characters, though lower-casing makes "İ" two.
+		expect(checkPassword("terrace-\u0130ab-evenings", "\u0130ab").ok).toBe(true);
 	});
 
 	it("refuses an entry of the bundled list, after NFC and lower-casing", () => {

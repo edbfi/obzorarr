@@ -475,9 +475,10 @@ test.describe("the claim", () => {
 	}) => {
 		const database = join(root, "data", "obzorarr.db");
 		const first = await startServer(root, { OBZORARR_DATABASE_PATH: database });
-		const bodies: string[] = [];
-		page.on("response", async (response) => {
-			bodies.push(await response.text().catch(() => ""));
+		// Every response's body, read in full before the check below.
+		const reads: Promise<string>[] = [];
+		page.on("response", (response) => {
+			reads.push(response.text().catch(() => ""));
 		});
 		let token = "";
 		try {
@@ -512,6 +513,11 @@ test.describe("the claim", () => {
 			await first.stop();
 		}
 
+		const bodies = await Promise.all(reads);
+		expect(
+			bodies.some((body) => body.includes("That setup token isn")),
+			"the refusal was read",
+		).toBe(true);
 		const output = first.output();
 		const entries = output.split("\n").filter((line) => line.startsWith("{"));
 		for (const secret of [token, token.replaceAll("-", ""), PASSWORD]) {

@@ -106,7 +106,8 @@ const submit: SubmitFunction = () => {
 		if (tokenInput) tokenInput.value = "";
 		if (passwordInput) passwordInput.value = "";
 		await tick();
-		document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus();
+		// The first field to fix; after a server failure, the token, which the message asks for.
+		(document.querySelector<HTMLElement>("[aria-invalid='true']") ?? tokenInput)?.focus();
 	};
 };
 

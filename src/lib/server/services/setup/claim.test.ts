@@ -57,7 +57,6 @@ async function freshInstance(lifetimeMs?: number) {
 }
 
 const PASSWORD = "violet harbour lanterns";
-const settle = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("claimInstance", () => {
 	it("creates the owner with a hashed password and completes first run", async () => {
@@ -113,9 +112,11 @@ describe("claimInstance", () => {
 	});
 
 	it("refuses an expired token without ever reaching the hash", async () => {
-		const { db, token } = await freshInstance(40);
-		const expired = token(0);
-		await settle(80);
+		const { db, token } = await freshInstance();
+		const expired = token();
+		// The token is still the current one: only the clock has moved past its 15 minutes.
+		const now = Date.now();
+		vi.spyOn(Date, "now").mockReturnValue(now + 15 * 60 * 1000 + 1);
 		const hash = vi.spyOn(Bun.password, "hash");
 		expect(
 			await claimInstance(db, { token: expired, username: "owner", password: PASSWORD }),
@@ -147,6 +148,22 @@ describe("claimInstance", () => {
 		expect(await db.select().from(owner)).toHaveLength(1);
 	});
 
+	it("prints no new token once shutdown has stopped first run", async () => {
+		const { db, printed, token } = await freshInstance();
+		await insertOwner(db, { username: "elsewhere", passwordHash: "h", createdAt: new Date() });
+		vi.spyOn(process.stdout, "write").mockImplementation((_chunk, ...rest: unknown[]) => {
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			done?.();
+			return true;
+		});
+		const used = token();
+		stopFirstRun();
+		expect(await claimInstance(db, { token: used, username: "owner", password: PASSWORD })).toEqual(
+			{ status: "failed" },
+		);
+		expect(printed).toHaveLength(1);
+	});
+
 	it("prints a new token when the claim fails after the token was used up", async () => {
 		const { db, printed, token } = await freshInstance();
 		// An owner written behind first run's back makes the claim's insert fail.
@@ -166,18 +183,5 @@ describe("claimInstance", () => {
 		expect(printed).toHaveLength(2);
 		expect(token()).not.toBe(used);
 		expect(await readSetting(db, FIRST_RUN_STEP_KEY)).toBeUndefined();
-	});
-});
-
-describe("first run after a restart", () => {
-	it("starts complete on a database an earlier process claimed, and prints nothing", async () => {
-		const { db, token } = await freshInstance();
-		await claimInstance(db, { token: token(), username: "owner", password: PASSWORD });
-		stopFirstRun();
-		const printed: string[] = [];
-		await startFirstRun({ db, origin: undefined, print: (line) => printed.push(line) });
-		expect(isClaimed()).toBe(true);
-		expect(isFirstRunComplete()).toBe(true);
-		expect(printed).toEqual([]);
 	});
 });

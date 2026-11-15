@@ -33,6 +33,8 @@ let token: BootstrapToken | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let claimsInProgress = 0;
 let renewalWaiting = false;
+/** Set by shutdown: no token is printed after it, even by a claim that fails meanwhile. */
+let stopped = false;
 let settings: Required<Omit<FirstRunOptions, "db">> | undefined;
 
 /** Console output for whoever runs the server; it still reaches the container's output. */
@@ -46,6 +48,7 @@ const toStandardOutput = (line: string) => process.stdout.write(`${line}\n`);
  */
 export async function startFirstRun(options: FirstRunOptions): Promise<void> {
 	stopFirstRun();
+	stopped = false;
 	settings = {
 		origin: options.origin,
 		print: options.print ?? toStandardOutput,
@@ -59,6 +62,7 @@ export async function startFirstRun(options: FirstRunOptions): Promise<void> {
 
 /** Stops the token's timer, as shutdown does on its signal. */
 export function stopFirstRun(): void {
+	stopped = true;
 	clearTimeout(timer);
 	timer = undefined;
 	renewalWaiting = false;
@@ -112,12 +116,13 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 
 /** Issues and prints a new token, and schedules the next; never once the instance is claimed. */
 function renewToken(): void {
-	if (settings === undefined || claimed) return;
+	if (settings === undefined || claimed || stopped) return;
 	clearTimeout(timer);
 	token = issueToken(Date.now(), settings.lifetimeMs);
 	const address = `${settings.origin ?? ""}/setup`;
+	const minutes = Math.round(settings.lifetimeMs / 60_000);
 	settings.print(
-		`Setup token: ${formatToken(token.value)} (valid for ${TOKEN_LIFETIME_MS / 60_000} minutes). Open ${address} to claim this Obzorarr.`,
+		`Setup token: ${formatToken(token.value)} (valid for ${minutes} minutes). Open ${address} to claim this Obzorarr.`,
 	);
 	timer = setTimeout(() => {
 		if (claimsInProgress > 0) renewalWaiting = true;

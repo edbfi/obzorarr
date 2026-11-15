@@ -48,8 +48,11 @@ export function checkPassword(
 	if (length > 128) return { ok: false, error: "too-long" };
 	const lower = password.toLowerCase();
 	if (lower.includes(APP_NAME)) return { ok: false, error: "app-name" };
-	const name = username.normalize("NFC").toLowerCase();
-	if (codePoints(name) >= 4 && lower.includes(name)) return { ok: false, error: "username" };
+	// The username's length is counted as written: lower-casing can lengthen it ("İ" becomes two).
+	const name = username.normalize("NFC");
+	if (codePoints(name) >= 4 && lower.includes(name.toLowerCase())) {
+		return { ok: false, error: "username" };
+	}
 	if (COMMON_PASSWORDS.has(lower)) return { ok: false, error: "common" };
 	return { ok: true, password };
 }

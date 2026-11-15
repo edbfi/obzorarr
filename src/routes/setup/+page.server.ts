@@ -36,7 +36,7 @@ export const actions: Actions = {
 		});
 		// A failed claim sends back only the typed username: never the token or the password.
 		const failure = (status: number, problem: Omit<ClaimFailure, "username">) =>
-			fail(status, { username, ...problem } satisfies ClaimFailure as ClaimFailure);
+			fail<ClaimFailure>(status, { username, ...problem });
 		switch (result.status) {
 			case "claimed":
 				return redirect(303, "/");
