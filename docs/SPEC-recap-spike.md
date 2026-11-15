@@ -81,12 +81,12 @@ The standard level's starting point (D19); durations come from motion tokens, ne
   in, so the two never show at once. The leaving slide keeps its place and height, so nothing moves
   up or down. The story clips the slide-in with `overflow-x: clip`, never `overflow: hidden`, which
   would break the sticky bars.
-- **Entrances,** one per slide: the total and its caption rise and the total's number comes into
-  focus (a short blur clearing); the month bars grow from zero, along the row on a phone and up the
-  column from a tablet; the summary's figures fade in; and a progress segment fills over
-  `feedback`. They are CSS keyframes under `_motionSafe`, each holding its start through the reel
-  change. CSS, because Svelte doesn't play `in:` transitions when a server-rendered page hydrates,
+- **Entrances,** one per slide: the total and its caption fade and rise and the total's number
+  comes into focus (a short blur clearing); the month bars grow from zero, along the row on a phone
+  and up the column from a tablet; the summary's figures fade in. They are CSS keyframes under
+  `_motionSafe`, each holding its start through the reel change. CSS, because Svelte doesn't play `in:` transitions when a server-rendered page hydrates,
   so the first slide animates on load and is never hidden waiting for JavaScript.
+- **Progress:** a segment fills over `feedback`, as a CSS transition under `_motionSafe`.
 - **No count-up:** numbers are their final text from the first frame, so a screen reader or a
   translated layout never meets an intermediate value. Nothing loops or moves on its own.
 - **Reduced motion** shows each slide's final state at once; the throttle still applies.
