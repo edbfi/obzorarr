@@ -888,7 +888,8 @@ export const GET: RequestHandler = () => healthResponse();
   fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged
   before it is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's exit codes and
   its 5-second deadline, and no handlers in `dev`; `logging/redact.test.ts`, each redaction rule and
-  nested; `logging/logger.test.ts`; `config/log-debug.test.ts`), and in
+  nested; `logging/logger.test.ts`, with `flushLogs` against a slow shell pipe;
+  `config/log-debug.test.ts`), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone

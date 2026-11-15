@@ -28,6 +28,9 @@ const log = createLogger("startup");
 /** How long shutdown's cleanup may take after adapter-bun has drained the requests. */
 const CLEANUP_DEADLINE_MS = 5000;
 
+/** How long the deadline waits for its own log entry to leave, in case stdout is what's stuck. */
+const DEADLINE_FLUSH_MS = 250;
+
 let database: Database | undefined;
 
 /**
@@ -43,7 +46,10 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 		log.error("startup failed", { error });
 		throw error;
 	}
-	if (!options.dev) handleShutdown(process, closeServices);
+	// adapter-bun registers its own `SIGTERM` and `SIGINT` handlers synchronously once `init`
+	// resolves. The app's come on the next turn of the event loop, so a signal never reaches only
+	// the app's handlers, which would swallow it; until then, Bun's default ends the process.
+	if (!options.dev) setImmediate(() => handleShutdown(process, closeServices));
 }
 
 /**
@@ -52,7 +58,7 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
  * - `SIGHUP` counts as a stop and is passed on to the adapter as `SIGTERM`;
  * - on the signal, work stops while the adapter drains (no jobs, timers or streams yet);
  * - on `sveltekit:shutdown`, `cleanup` runs and the process exits 0, or exits 1 if the cleanup
- *   fails or hasn't finished by the deadline.
+ *   throws or hasn't finished by the deadline, after a flush bounded so the deadline still holds.
  */
 export function handleShutdown(
 	target: ShutdownTarget,
@@ -68,7 +74,8 @@ export function handleShutdown(
 		const deadline = new Promise<number>((resolve) => {
 			timer = setTimeout(() => {
 				log.error("shutdown didn't finish in time", { deadlineMs });
-				resolve(1);
+				const bounded = new Promise((done) => setTimeout(done, DEADLINE_FLUSH_MS));
+				void Promise.race([flushLogs(), bounded]).then(() => resolve(1));
 			}, deadlineMs);
 		});
 		const finished = cleanup().then(
@@ -88,16 +95,18 @@ export function handleShutdown(
 
 /**
  * Closes what startup opened, then flushes the logs, so an error written while closing reaches
- * the output. Calling it again does nothing more.
+ * the output. A failed close is logged rather than thrown: the stop still exits 0
+ * (SPEC-setup.md, "Startup and shutdown"). Calling it again does nothing more.
  */
 export async function closeServices(): Promise<void> {
 	const db = database;
 	database = undefined;
 	try {
 		await db?.$client.close();
-	} finally {
-		await flushLogs();
+	} catch (error) {
+		log.error("closing the database failed", { error });
 	}
+	await flushLogs();
 }
 
 async function runSteps(env: StartupEnv): Promise<void> {

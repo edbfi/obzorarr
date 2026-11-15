@@ -68,11 +68,11 @@ describe("createLogger", () => {
 		expect(lines[0]).not.toContain("secret-value");
 	});
 
-	it("flushLogs waits for standard output to take what was written, and adds nothing", async () => {
+	it("flushLogs resolves at once when nothing is waiting, and writes nothing itself", async () => {
 		createLogger("startup").info("before the flush");
 		await flushLogs();
 		expect(entries().map((entry) => entry.message)).toEqual(["before the flush"]);
-		expect(process.stdout.write).toHaveBeenLastCalledWith("", expect.any(Function));
+		expect(process.stdout.write).toHaveBeenCalledTimes(1);
 	});
 
 	it("keeps a newline inside a message on one line", () => {
@@ -80,4 +80,25 @@ describe("createLogger", () => {
 		expect(lines).toHaveLength(1);
 		expect(lines[0]?.slice(0, -1)).not.toContain("\n");
 	});
+});
+
+describe("flushLogs against a slow reader", () => {
+	// A real child process writing into a real shell pipe whose reader waits a second: Bun's own
+	// spawn pipes are read eagerly, and the stdout mock above can't show a queued write either.
+	it("waits until every entry has reached the pipe, so exiting right after loses none", async () => {
+		const code = `const { createLogger, flushLogs } = await import(${JSON.stringify(
+			new URL("./logger.ts", import.meta.url).pathname,
+		)});
+			const log = createLogger("flush");
+			for (let i = 0; i < 2000; i++) log.info("entry " + i, { padding: "x".repeat(200) });
+			await flushLogs();
+			process.exit(0);`;
+		const shell = Bun.spawn(["sh", "-c", '"$BUN" -e "$CODE" | (sleep 1; grep -c "^{")'], {
+			env: { ...process.env, BUN: process.execPath, CODE: code },
+			stdout: "pipe",
+		});
+		const count = (await new Response(shell.stdout).text()).trim();
+		await shell.exited;
+		expect(count).toBe("2000");
+	}, 15_000);
 });

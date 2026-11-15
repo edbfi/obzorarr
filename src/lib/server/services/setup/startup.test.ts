@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { Database } from "@tursodatabase/database";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigError } from "#lib/server/config/config-error.ts";
+import { createLogger } from "#lib/server/logging/logger.ts";
 import { closeServices, handleShutdown, type ShutdownTarget, startUp } from "./startup.ts";
 
 let root: string;
@@ -108,8 +109,8 @@ describe("startUp", () => {
 	});
 });
 
-/** A stand-in for the process: it records the signals sent and the exit code. */
-function fakeProcess() {
+/** A stand-in for the process: it records the signals sent, and the exit code in `steps`. */
+function fakeProcess(steps: string[] = []) {
 	const events = new EventEmitter();
 	const sent: string[] = [];
 	let exitCode: number | undefined;
@@ -123,6 +124,7 @@ function fakeProcess() {
 		},
 		exit: (code) => {
 			exitCode = code;
+			steps.push(`exit ${code}`);
 		},
 	};
 	return { target, events, sent, exitCode: () => exitCode };
@@ -138,28 +140,37 @@ describe("handleShutdown", () => {
 		expect(fake.sent).toEqual(["4242 SIGTERM"]);
 	});
 
-	it("runs the cleanup on sveltekit:shutdown, then exits 0", async () => {
-		const fake = fakeProcess();
-		const done: string[] = [];
-		handleShutdown(fake.target, async () => {
-			await settle(5);
-			done.push("cleaned up");
-		});
+	it("exits 0 only after the cleanup on sveltekit:shutdown has finished", async () => {
+		const steps: string[] = [];
+		const fake = fakeProcess(steps);
+		let finish!: () => void;
+		handleShutdown(
+			fake.target,
+			() =>
+				new Promise<void>((resolve) => {
+					finish = () => {
+						steps.push("cleaned up");
+						resolve();
+					};
+				}),
+		);
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
-		expect(fake.exitCode()).toBeUndefined();
-		await settle(30);
-		expect(done).toEqual(["cleaned up"]);
-		expect(fake.exitCode()).toBe(0);
+		await settle(20);
+		expect(steps).toEqual([]);
+		finish();
+		await settle(20);
+		expect(steps).toEqual(["cleaned up", "exit 0"]);
 	});
 
 	it("exits non-zero when the cleanup never finishes by the deadline", async () => {
 		const fake = fakeProcess();
-		handleShutdown(fake.target, () => new Promise(() => {}), 20);
+		handleShutdown(fake.target, () => new Promise(() => {}), 100);
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
-		await settle(10);
+		await settle(50);
 		expect(fake.exitCode()).toBeUndefined();
-		await settle(40);
+		await settle(500);
 		expect(fake.exitCode()).toBe(1);
+		expect(lines.some((line) => line.includes("shutdown didn't finish in time"))).toBe(true);
 	});
 
 	it("exits non-zero when the cleanup fails", async () => {
@@ -168,7 +179,7 @@ describe("handleShutdown", () => {
 			throw new Error("close failed");
 		});
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
-		await settle(10);
+		await settle(100);
 		expect(fake.exitCode()).toBe(1);
 	});
 });
@@ -187,13 +198,17 @@ describe("startUp's shutdown", () => {
 		await closeServices();
 	});
 
-	it("installs the handlers in the built server", async () => {
+	it("installs the handlers in the built server, after adapter-bun's own", async () => {
 		const before = watched.map((event) => process.listeners(event));
 		await startUp(
 			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, "built", "app.db") },
 			{ dev: false },
 		);
 		try {
+			// adapter-bun registers its handlers synchronously once `init` resolves; the app's come
+			// on the next turn of the event loop, so a signal never reaches only the app's.
+			expect(counts()).toEqual(before.map((listeners) => listeners.length));
+			await new Promise((resolve) => setImmediate(resolve));
 			expect(counts()).toEqual(before.map((listeners) => listeners.length + 1));
 		} finally {
 			watched.forEach((event, index) => {
@@ -203,6 +218,51 @@ describe("startUp's shutdown", () => {
 			});
 			await closeServices();
 		}
+	});
+
+	it("closeServices logs a failed close, flushes, and finishes, so the stop still exits 0", async () => {
+		vi.spyOn(Database.prototype, "close").mockRejectedValueOnce(new Error("disk went away"));
+		const path = join(root, "close-fails", "app.db");
+		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
+		await expect(closeServices()).resolves.toBeUndefined();
+		const entry = JSON.parse(lines.find((line) => line.includes("closing the database")) ?? "{}");
+		expect(entry).toMatchObject({
+			level: "error",
+			metadata: { error: { message: "disk went away" } },
+		});
+	});
+
+	it("closeServices finishes the close before it flushes, and the flush before it returns", async () => {
+		const path = join(root, "order", "app.db");
+		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
+		let closed!: () => void;
+		vi.spyOn(Database.prototype, "close").mockImplementationOnce(
+			() =>
+				new Promise<void>((resolve) => {
+					closed = resolve;
+				}),
+		);
+		// From here, each entry's write waits until `release` runs, like a slow reader.
+		const held: (() => void)[] = [];
+		vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
+			lines.push(String(chunk));
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			if (done) held.push(done);
+			return true;
+		});
+		let finished = false;
+		const closing = closeServices().then(() => {
+			finished = true;
+		});
+		await settle(20);
+		expect(finished).toBe(false);
+		createLogger("test").info("written while closing");
+		closed();
+		await settle(20);
+		expect(finished).toBe(false);
+		for (const release of held.splice(0)) release();
+		await closing;
+		expect(finished).toBe(true);
 	});
 
 	it("closeServices closes the database startup opened, once", async () => {

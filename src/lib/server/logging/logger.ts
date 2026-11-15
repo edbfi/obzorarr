@@ -11,12 +11,28 @@ export function configureLogging(options: { debug: boolean }): void {
 	debug = options.debug;
 }
 
+/** Entries handed to standard output whose write hasn't finished yet. */
+let writing = 0;
+const whenWritten: (() => void)[] = [];
+
+function write(line: string): void {
+	writing++;
+	// The callback runs once the entry has left the process, or with an error; either way it no
+	// longer waits.
+	process.stdout.write(line, () => {
+		writing--;
+		if (writing === 0) for (const resolve of whenWritten.splice(0)) resolve();
+	});
+}
+
 /**
- * Resolves once standard output has taken everything written so far, so an entry written just
- * before the process exits isn't lost.
+ * Resolves once every entry written so far has left the process, so an entry written just before
+ * the process exits isn't lost. An empty write's callback isn't enough: on Bun it can run while
+ * earlier entries still wait for a slow reader.
  */
 export function flushLogs(): Promise<void> {
-	return new Promise((resolve) => process.stdout.write("", () => resolve()));
+	if (writing === 0) return Promise.resolve();
+	return new Promise((resolve) => whenWritten.push(resolve));
 }
 
 /**
@@ -35,7 +51,7 @@ export function createLogger(source: string): Logger {
 				message: redact(message),
 				metadata: redact(metadata),
 			});
-			process.stdout.write(`${line}\n`);
+			write(`${line}\n`);
 		};
 	return { debug: entry("debug"), info: entry("info"), warn: entry("warn"), error: entry("error") };
 }
