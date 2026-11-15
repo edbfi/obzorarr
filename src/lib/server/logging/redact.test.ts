@@ -46,6 +46,27 @@ describe("redact", () => {
 			);
 		});
 
+		it("redacts a sensitive value whole, through semicolons and quotes", () => {
+			expect(redact("https://a.test/?token=prefix;secret-suffix&type=1")).toBe(
+				`https://a.test/?token=${R}&type=1`,
+			);
+			expect(redact({ url: `/x?token=it's"secret` })).toEqual({ url: `/x?token=${R}` });
+		});
+
+		it("still finds a sensitive parameter after an ordinary one's semicolon", () => {
+			expect(redact("/path?a=1;token=x&b=2")).toBe(`/path?a=1;token=${R}&b=2`);
+			expect(redact("/app;jsessionid=abc123")).toBe(`/app;jsessionid=${R}`);
+		});
+
+		it("removes credentials after a scheme joined to a word, in linear time", () => {
+			expect(redact("dsn x_postgres://u:hunter2@h/db")).toBe(`dsn x_postgres://${R}@h/db`);
+			const started = performance.now();
+			redact("a.".repeat(50_000));
+			redact(`/x?${"a=1;".repeat(25_000)}token=t`);
+			expect(performance.now() - started).toBeLessThan(200);
+			expect(redact(`/x?${"a=1;".repeat(25_000)}token=t`)).toMatch(/;token=\[redacted\]$/);
+		});
+
 		it("leaves a text without URLs as it is", () => {
 			expect(redact("the owner signed in")).toBe("the owner signed in");
 		});
@@ -91,7 +112,7 @@ describe("redact", () => {
 			});
 		});
 
-		it("catches acronyms and names run together, and only auth as a whole word", () => {
+		it("catches acronyms and names run together, and short words only as whole words", () => {
 			expect(
 				redact({
 					APIToken: "a",
@@ -100,8 +121,13 @@ describe("redact", () => {
 					plextoken: "d",
 					auth: "e",
 					basicAuth: "f",
+					authHeader: "g",
+					authCode: "h",
+					authError: "i",
+					pass: "j",
+					passphrase: "k",
 					author: "kept",
-					authError: "kept",
+					passage: "kept",
 				}),
 			).toEqual({
 				APIToken: R,
@@ -110,8 +136,13 @@ describe("redact", () => {
 				plextoken: R,
 				auth: R,
 				basicAuth: R,
+				authHeader: R,
+				authCode: R,
+				authError: R,
+				pass: R,
+				passphrase: R,
 				author: "kept",
-				authError: "kept",
+				passage: "kept",
 			});
 		});
 

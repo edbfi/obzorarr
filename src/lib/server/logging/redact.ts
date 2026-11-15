@@ -15,10 +15,14 @@ const SENSITIVE_PARTS = [
 	"authorization",
 	"authorisation",
 	"apikey",
+	"passphrase",
 ];
 
-/** Short words that only count as whole words, so `monkey`, `keyboard` and `author` don't match. */
-const SENSITIVE_WORDS = new Set(["key", "keys", "pwd", "jwt"]);
+/**
+ * Short words that only count as whole words, so `monkey`, `keyboard`, `author` and `passage`
+ * don't match, while `authHeader`, `basicAuth` and `{ user, pass }` do.
+ */
+const SENSITIVE_WORDS = new Set(["key", "keys", "pwd", "jwt", "auth", "pass"]);
 
 /** Whether a key or parameter name looks like it holds a credential. */
 function sensitive(name: string): boolean {
@@ -31,27 +35,49 @@ function sensitive(name: string): boolean {
 	const joined = words.join("");
 	return (
 		SENSITIVE_PARTS.some((part) => joined.includes(part)) ||
-		words.some((word) => SENSITIVE_WORDS.has(word)) ||
-		// `auth` and `basicAuth` hold credentials; `authError` and `authMethod` don't.
-		words.at(-1) === "auth"
+		words.some((word) => SENSITIVE_WORDS.has(word))
 	);
 }
 
 /**
- * A URL's credentials, through the last `@` before its path, query, fragment or a space, as URL
- * parsers read them, so a raw `@` or a quote in the password doesn't end the match.
+ * A URL's credentials, from `://` through the last `@` before its path, query, fragment or a
+ * space, as URL parsers read them, so a raw `@` or a quote in the password doesn't end the match.
+ * Anchoring on `://` rather than the scheme keeps the match linear and catches `x_db://`.
  */
-const URL_CREDENTIALS = /\b([a-z][a-z0-9+.-]*:\/\/)[^\s/?#]*@/gi;
+const URL_CREDENTIALS = /:\/\/[^\s/?#]*@/g;
 
-/** A query or fragment parameter, in an absolute URL, a relative path or any other text. */
-const PARAMETER = /([?&#;])([^=&#;?\s"'<>]+)=([^&#;\s"'<>]*)/g;
+/** The start of a query, fragment or path parameter: its separator and its name. */
+const PARAMETER = /([?&#;])([^=&#;?\s"'<>]+)=/g;
+
+/**
+ * What ends a parameter's value: the next `&`, `#` or space, as URL parsers read it, so a
+ * semicolon or a quote can't end a sensitive value early.
+ */
+const VALUE_END = /[&#\s]/g;
 
 function cleanText(text: string): string {
-	return text
-		.replace(URL_CREDENTIALS, `$1${REDACTED}@`)
-		.replace(PARAMETER, (match, separator: string, name: string) =>
-			sensitive(decodeName(name)) ? `${separator}${name}=${REDACTED}` : match,
-		);
+	return cleanParameters(text.replace(URL_CREDENTIALS, `://${REDACTED}@`));
+}
+
+/**
+ * Redacts each sensitive parameter's whole value. An ordinary value is searched too, because
+ * `?a=1;token=x` hides a second parameter behind the semicolon; one pass, without recursion.
+ */
+function cleanParameters(text: string): string {
+	const parameters = new RegExp(PARAMETER.source, "g");
+	let out = "";
+	let kept = 0;
+	for (let match = parameters.exec(text); match !== null; match = parameters.exec(text)) {
+		const [whole, , name = ""] = match;
+		const valueStart = match.index + whole.length;
+		if (!sensitive(decodeName(name))) continue; // `;token=` may hide in its value
+		VALUE_END.lastIndex = valueStart;
+		const valueEnd = VALUE_END.exec(text)?.index ?? text.length;
+		out += `${text.slice(kept, valueStart)}${REDACTED}`;
+		kept = valueEnd;
+		parameters.lastIndex = valueEnd;
+	}
+	return out + text.slice(kept);
 }
 
 function decodeName(name: string): string {
@@ -66,7 +92,8 @@ function decodeName(name: string): string {
  * Returns a copy of `value` that is safe to log (SPEC-setup.md, "Logging"): URLs lose their
  * credentials and token-like query parameters, any key that looks like a credential is replaced
  * at any depth, headers included, and a value with `toJSON` (a `Secret`, a date) is logged as its
- * JSON form. Errors keep their name, message and stack; a circular reference becomes a marker.
+ * JSON form. Errors keep their name, message, stack, own fields, cause and errors, each redacted;
+ * a circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
 	return walk(value, new Set());

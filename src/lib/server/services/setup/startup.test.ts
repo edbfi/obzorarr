@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigError } from "#lib/server/config/config-error.ts";
 import { startUp } from "./startup.ts";
 
@@ -15,17 +15,23 @@ afterAll(async () => {
 	await rm(root, { recursive: true, force: true });
 });
 
-afterEach(() => {
-	vi.restoreAllMocks();
-});
+/** What startup wrote to standard output during the current test. */
+let lines: string[];
 
-/** Captures what startup writes to standard output while `run` runs. */
-async function stdoutOf(run: () => Promise<unknown>): Promise<string[]> {
-	const lines: string[] = [];
+beforeEach(() => {
+	lines = [];
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
 		lines.push(String(chunk));
 		return true;
 	});
+});
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
+
+/** Runs `run`, ignoring its failure, and returns what it wrote to standard output. */
+async function stdoutOf(run: () => Promise<unknown>): Promise<string[]> {
 	await run().catch(() => {});
 	return lines;
 }
