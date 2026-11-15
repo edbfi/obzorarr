@@ -230,23 +230,23 @@ the owner and moves the step pointer. It completes first run and sends the brows
 `/setup` and its action answer "not found". No gate yet: every other page is still served.
 
 **Acceptance criteria:**
-- [ ] `server/security/password.test.ts` first fails, then passes: the username and password rules
+- [x] `server/security/password.test.ts` first fails, then passes: the username and password rules
   at their limits, NFC and case included, the app's name and the username inside the password,
   the bundled list, and hashing with argon2id and verifying the NFC form (a round trip; `sign-in`
   reuses `verifyPassword`).
-- [ ] `security/common-passwords.txt` holds the entries of 15 or more characters from one SecLists
+- [x] `security/common-passwords.txt` holds the entries of 15 or more characters from one SecLists
   `Passwords/Common-Credentials/` file, whose path and commit `password.ts` and the PR body name,
   under prek's 500 KB limit.
-- [ ] `server/services/setup/claim.test.ts`, against a temporary file: success; a field error
+- [x] `server/services/setup/claim.test.ts`, against a temporary file: success; a field error
   leaving the token unused; a wrong and an expired token never reaching the hash; a second claim;
   two at once leaving one owner; a failed transaction printing a new token.
-- [ ] Startup loads the step pointer from `settings` into first run's state: `first-run.test.ts`
+- [x] Startup loads the step pointer from `settings` into first run's state: `first-run.test.ts`
   starts complete on a database an earlier process claimed.
-- [ ] `setup.test.ts`: on a fresh built server, a wrong token is refused with the spec's message,
+- [x] `setup.test.ts`: on a fresh built server, a wrong token is refused with the spec's message,
   the username kept and the token and password cleared; the right one claims and lands on `/`;
   `/setup` then answers 404, also after the server restarts on the same file; neither the token
   nor the password appears in a response or a log entry.
-- [ ] The page follows `route-setup.md` through `/impeccable`, with the language switcher; every
+- [x] The page follows `route-setup.md` through `/impeccable`, with the language switcher; every
   string is a `setup_…` message in both languages. Checked at 360, 390, 768 and 1440 px, 200%
   zoom, the keyboard and reduced motion, in every state the brief names (initial, field errors,
   token refused, submitting), in English and Danish, with screenshots in the PR body.

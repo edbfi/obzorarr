@@ -355,6 +355,7 @@ src/lib/server/services/setup/first-run.ts  the steps, the pointer and the gate'
 src/lib/server/services/setup/claim.ts      the claim
 src/routes/setup/+page.svelte               the claim form
 src/routes/setup/+page.server.ts            its load and the claim action
+src/routes/setup/token-format.ts            the token field's dashes as it is typed
 drizzle/                                    the reviewed migrations
 drizzle.config.ts
 tests/e2e/setup.test.ts                     first run and the request checks on the built server

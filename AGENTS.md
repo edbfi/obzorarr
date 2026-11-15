@@ -282,7 +282,8 @@ verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](do
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets
-"Access denied". An unclaimed instance prints its bootstrap token to the console.
+"Access denied". An unclaimed instance prints its bootstrap token to the console, and is claimed
+at `/setup`.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -320,6 +321,10 @@ src/
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
     healthz/+server.ts           `/healthz`: public one-word status
+    setup/                       `/setup`: the claim. +page.svelte: the form (surface brief
+                                 `route-setup.md`); +page.server.ts: its load and the claim
+                                 action, "not found" once claimed; token-format.ts: the token
+                                 field's dashes as it is typed
     (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -338,8 +343,9 @@ src/
       config/origin.ts           `ORIGIN`, parsed and checked: a bare http or https origin
       db/                        client.ts: opens the database; migrate.ts: applies the bundled
                                  migrations; one file per aggregate with its tables (settings.ts,
-                                 owner.ts) and, from their first caller, its named operations
-                                 (owner.ts: whether an owner exists)
+                                 owner.ts) and, from their first caller, its named operations:
+                                 reading and writing a setting, whether an owner exists, creating
+                                 the owner; client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written
@@ -349,12 +355,19 @@ src/
                                  stopping the timers, then closing and exiting, with a 5-second
                                  deadline
       services/setup/first-run.ts
-                                 first run's state in memory, and the bootstrap token while the
-                                 instance is unclaimed: printed to standard output, renewed every
-                                 15 minutes, held back while a claim is in progress
+                                 first run's state in memory (claimed, and the step pointer from
+                                 `settings`), and the bootstrap token while the instance is
+                                 unclaimed: printed to standard output, renewed every 15 minutes,
+                                 held back while a claim is in progress, used up by a claim
+      services/setup/claim.ts    the claim: the fields, then the token, then the hash, then one
+                                 transaction for the owner and the step pointer
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
+      security/password.ts       the owner's username and password rules, hashing and verifying
+      security/common-passwords.txt
+                                 the bundled list the password rule checks; its source and how it
+                                 was built are in password.ts
       security/headers.ts        the security headers for a request, strict transport only over
                                  HTTPS
       security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
