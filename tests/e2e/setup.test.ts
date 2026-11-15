@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { chromium, expect, type Page, test } from "@playwright/test";
 import { connect } from "@tursodatabase/database";
 
-// First run and the request checks on the built server (SPEC-setup.md, "Testing strategy"). Each
+// First run and the request checks on the built server (docs/SPEC.md, "Testing strategy"). Each
 // test starts its own server, with a generated key and a database in its own temporary folder.
 const BUILD = fileURLToPath(new URL("../../build", import.meta.url));
 const MIGRATIONS = fileURLToPath(new URL("../../drizzle", import.meta.url));
