@@ -143,27 +143,25 @@ Why: a maintained library covers most operations, and one provider boundary keep
 The animated recap was the surface most likely to need custom work beyond Panda CSS and Ark UI, so
 three slides were built as a spike (`recap-spike`) before its design was committed. The owner
 reviewed the spike in a browser and gave the verdict on 2026-11-15; `recap` adopts what it keeps.
-- **Keeps:** the story shell, which is the app's own code rather than Ark UI's Carousel; the
-  "Projection" look, where every slide plays on a cinema screen drawn in CSS and SVG, not raster
-  art, with calm colours (cyan marks only the badge, the busiest month and progress); the
-  `fontSizes.poster` and `gradients.beam` tokens; and the spike's motion, the reel change between
-  slides and the total coming into focus included, with no count-up.
+- **Keeps:** the story shell; the "Projection" look, where every slide plays on a cinema screen
+  drawn in CSS and SVG, not raster art, in calm colours; the `fontSizes.poster` and
+  `gradients.beam` tokens; and the spike's motion, the reel change between slides and the total
+  coming into focus included, with no count-up. [SPEC-recap-spike.md](SPEC-recap-spike.md) keeps
+  the details.
 - **Changes:** the summary stays a page after the slides, as `recap`'s Module notes say, rather
   than the story's last step. Its three figures come in five layouts the owner chooses between,
   and motion comes in three levels the owner sets (Module notes: `recap`, `slides-admin`,
   `appearance`).
 - **Custom work beyond Panda and Ark:** none that needs a library. The story's taps, swipes, keys
-  and focus are the app's own code; Ark's Carousel scrolls with the browser's smooth scroll, whose
-  duration the app can't set, and has no tap zones, throttle or Space, Enter and Escape. Motion
-  starts from CSS, the Web Animations API and Svelte's own motion; an animation library is a
-  dependency to ask for when a concrete effect needs one, not a rule against one.
+  and focus are the app's own code, because Ark UI's Carousel doesn't fit the story (the spike's
+  spec says why). Motion starts from CSS, the Web Animations API and Svelte's own motion; an
+  animation library is a dependency to ask for when a concrete effect needs one, not a rule
+  against one.
 
 Why: the owner judged the real thing in English and Danish, at every width, by keyboard and touch,
 rather than a raster. Choosing a layout and how much motion plays is presentation the owner
 controls, so the recap is built around interchangeable layouts and motion levels, not one fixed
-look. Two independent advice rounds by three models each agreed on keeping the spike out of
-production, one registry of layouts, and motion kept apart from layout; the owner settled where
-they split.
+look.
 
 ### D20. Shared opening modules and owner sign-in, in the same shape in every app
 

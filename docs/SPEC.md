@@ -615,16 +615,13 @@ numbers in these blocks are obzorarr's; each app cites its own.
   component, its registry entry and its admin label, and the type check refuses a name without a
   component or a component without a name. Every layout shows each figure's number and word as
   text in reading order, from plural messages; Title card builds its sentence from the three plural
-  phrases. Layouts don't animate on their own: the summary's entrance is shared.
+  phrases.
 - **Motion levels** (D19): reduced, standard and cinematic. The owner sets the level
-  (`appearance`), a member may only lower it, and the system's reduced-motion setting always wins,
-  in CSS before hydration as in script. Reduced shows each slide's final state at once. Standard is
-  the spike's motion, animating only transform and opacity; cinematic adds what costs more to draw
-  (the total's blur, clipped growth, the projector's light, shared-element transitions), each only
-  where the browser supports it. Cinematic steps down to standard for the rest of a recap when its
-  first slide drops frames, and only between slides. Every level has the same layout and content,
-  so a change of level never moves or hides anything. `recap`'s spec sets the motion's budgets and
-  confirms the step-down on real phones.
+  (`appearance`), a member may only lower it, and the system's reduced-motion setting always wins.
+  Reduced shows each slide's final state at once; standard is the spike's motion; cinematic adds
+  more on top, which `recap`'s spec chooses. Cinematic steps down to standard for the rest of a
+  recap when its first slide drops frames, and only between slides, so nothing jumps and no
+  content goes missing.
 - **Voice:** a personal recap says "you" and "your". The server recap speaks as "{server name}
   Community", or "we" and "our" when the server has no name, and always takes plural verbs.
 - **Artwork** goes through the app, so browsers never see the server token, and follows the same
@@ -692,8 +689,7 @@ numbers in these blocks are obzorarr's; each app cites its own.
   classes); links open in a new tab without a referrer and only with web and mail schemes; and
   inline images are raster formats only, never vector or markup images.
 - **The summary layout** (`recap`): a picker below the slide order, whose preview shows the summary
-  in each layout with the demo fixture's figures, drawn by the recap's own layout components. It
-  saves with the slides' settings version.
+  in the chosen layout before it is saved.
 
 #### fun-facts
 
@@ -739,8 +735,7 @@ numbers in these blocks are obzorarr's; each app cites its own.
 
 - First run's panel sets the interface theme and the Wrapped theme.
 - **The logo mode:** always show (the default), always hide, or the member's choice.
-- **The recap's motion level** (`recap`): reduced, standard or cinematic, for every recap. Which is
-  the default is `recap`'s spec's call, once the motion is measured on real phones.
+- **The recap's motion level** (`recap`): reduced, standard or cinematic, for every recap.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
   readable by scripts by design.
 

@@ -22,6 +22,8 @@ Story mode is `recap`'s (Module notes); the spike settled these details of it.
   button or link activates it; otherwise both move the story. ↑ and ↓ are left to the browser.
 - **Throttled:** a move within the `story` duration of the last one is ignored, so a held key or a
   double tap can't skip a slide.
+- **Long and translated text wraps** without hiding Close, Previous or Next, at 360 px and in
+  Danish.
 - **Previous and Next** show at every width as labelled 44 px buttons. At either end, the one that
   can't move is `aria-disabled` and does nothing, not `disabled` or removed, so a keyboard user's
   focus never falls to the page.
@@ -36,7 +38,7 @@ Story mode is `recap`'s (Module notes); the spike settled these details of it.
   ends. Focus on a control in the bars stays there; focus inside the leaving slide moves to the new
   slide's `h2`. A heading that takes focus this way draws no focus ring, since it isn't a control;
   controls keep theirs.
-- **Not Ark UI's Carousel** (D19): it is a scroll-snap track whose transition is the browser's
+- **Not Ark UI's Carousel** (D19), because it is a scroll-snap track whose transition is the browser's
   smooth scroll, whose duration the app can't set; it doesn't read the reduced-motion preference,
   handles keys only while it holds focus and never Space, Enter or Escape, has no tap zones or
   throttle, and a tall slide in its horizontal track would scroll on both axes.
@@ -79,7 +81,10 @@ The standard level's starting point (D19); durations come from motion tokens, ne
   in, so the two never show at once. The leaving slide keeps its place and height, so nothing moves
   up or down. The story clips the slide-in with `overflow-x: clip`, never `overflow: hidden`, which
   would break the sticky bars.
-- **Entrances** are CSS keyframes under `_motionSafe`, each holding its start through the reel
+- **Entrances,** one per slide: the total and its caption rise and the total's number comes into
+  focus (a short blur clearing); the month bars grow from zero, along the row on a phone and up the
+  column from a tablet; the summary's figures fade in; and a progress segment fills over
+  `feedback`. They are CSS keyframes under `_motionSafe`, each holding its start through the reel
   change. CSS, because Svelte doesn't play `in:` transitions when a server-rendered page hydrates,
   so the first slide animates on load and is never hidden waiting for JavaScript.
 - **No count-up:** numbers are their final text from the first frame, so a screen reader or a
@@ -105,3 +110,14 @@ The standard level's starting point (D19); durations come from motion tokens, ne
   stick after a tap.
 - **The reduced-motion e2e** passed trivially until animations existed; with real motion levels it
   must prove each level's final state, not only that nothing runs.
+- **Proposals from the advice rounds,** for `recap`'s spec to accept or drop:
+  - **Motion:** standard could swap the total's blur and the bars' clipped growth for cheaper
+    transform and opacity equivalents that look the same on low-end phones. Cinematic's effects
+    (the projector's light, a shared-element move into the summary, a swipe that scrubs the reel
+    change) would each run only where the browser supports them. Reduced motion would be honoured
+    in CSS before hydration as well as in script. `recap`'s spec would set budgets (frame time,
+    script size) and the default level, after measuring on real phones.
+  - **Layouts:** the admin preview drawn by the recap's own layout components with the demo
+    fixture's figures, so a preview can't drift from the recap; layouts with no motion of their
+    own, so motion is tested once on the shared entrance; all five layouts checked at 360 and
+    1440 px in both languages and at 200% zoom, with the full story tests on Credits axis only.
