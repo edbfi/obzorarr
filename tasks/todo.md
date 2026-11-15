@@ -163,20 +163,20 @@ for JSON callers, built by `security/access-denied.ts`, so `cross-origin.ts` sta
 the sibling apps copy and the hooks stay thin.
 
 **Acceptance criteria:**
-- [ ] `server/security/cross-origin.test.ts` first fails, then passes: the spec's matrix of
+- [x] `server/security/cross-origin.test.ts` first fails, then passes: the spec's matrix of
   methods, content types and `Origin`, `Sec-Fetch-Site`, `Host` and `ORIGIN` values, with
   `null`, malformed and repeated `Origin`, default ports, subrequests, and requests with neither
   header (refused: obzorarr has no machine routes).
-- [ ] A config test (`vite.config.test.ts`, added to Vitest's `include`) asserts that the options
+- [x] A config test (`vite.config.test.ts`, added to Vitest's `include`) asserts that the options
   object `vite.config.ts` exports and passes to `sveltekit()` trusts every origin and leaves remote
   functions off.
-- [ ] `server/security/access-denied.test.ts`: the page in each language with its policy, and the
+- [x] `server/security/access-denied.test.ts`: the page in each language with its policy, and the
   `{ message }` JSON error for a caller that accepts JSON.
-- [ ] `setup.test.ts`: a cross-site form POST to `/` gets a 403 "Access denied" page with the
+- [x] `setup.test.ts`: a cross-site form POST to `/` gets a 403 "Access denied" page with the
   headers, its own policy and the viewer's language; a same-origin POST with no `Sec-Fetch-*`
   headers passes the check (SvelteKit's 405), both on `localhost` and on `app.test` through
   Chromium's `--host-resolver-rules`.
-- [ ] The page's text is `error_access_denied_…` messages in both languages. It sets only
+- [x] The page's text is `error_access_denied_…` messages in both languages. It sets only
   `color-scheme: dark` and holds no raw values (plan.md, "The handle-built refusal page is
   unstyled").
 
@@ -193,7 +193,7 @@ needed), `docs/SPEC.md` (the testing section), `AGENTS.md`.
 
 ## Checkpoint: after task 5
 
-- [ ] As in [plan.md](plan.md#checkpoint-after-task-5).
+- [x] As in [plan.md](plan.md#checkpoint-after-task-5).
 
 ## Task 6: the bootstrap token
 

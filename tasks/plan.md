@@ -71,12 +71,12 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 ### Phase 2: the request checks
 
 - [x] Task 4: `ORIGIN`, the security headers and the CSP
-- [ ] Task 5: the cross-origin check
+- [x] Task 5: the cross-origin check
 
 ### Checkpoint: after task 5
 
-- [ ] Every page and `/healthz` carry the headers; pages carry the nonce CSP with no violation.
-- [ ] A cross-site POST gets the "Access denied" page, in the viewer's language.
+- [x] Every page and `/healthz` carry the headers; pages carry the nonce CSP with no violation.
+- [x] A cross-site POST gets the "Access denied" page, in the viewer's language.
 
 ### Phase 3: first run
 
