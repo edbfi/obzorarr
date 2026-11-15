@@ -132,8 +132,8 @@ Bun server it runs on:
 | `CONNECTION_IDLE_TIMEOUT` | seconds before an idle connection closes, at most 255 | `10` |
 | `BODY_SIZE_LIMIT` | the largest request body accepted | `512K` |
 
-After the requests finish, Obzorarr takes up to 5 more seconds to close. Give the container longer
-than `SHUTDOWN_TIMEOUT` plus 5 seconds to stop, or it's killed mid-write. Docker's default is
+After the requests finish, Obzorarr takes about 5 more seconds at most to close. Give the container
+longer than `SHUTDOWN_TIMEOUT` plus 5 seconds to stop, or it's killed mid-write. Docker's default is
 10 seconds, so with the default `SHUTDOWN_TIMEOUT`, set Compose's `stop_grace_period` to `40s`.
 
 ## Working on it

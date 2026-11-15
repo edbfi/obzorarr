@@ -71,8 +71,11 @@ export function handleShutdown(
 	}
 	target.once("sveltekit:shutdown", () => {
 		let timer: ReturnType<typeof setTimeout> | undefined;
+		// Once the deadline has fired, the exit is 1, even if the cleanup ends during its flush.
+		let late = false;
 		const deadline = new Promise<number>((resolve) => {
 			timer = setTimeout(() => {
+				late = true;
 				log.error("shutdown didn't finish in time", { deadlineMs });
 				const bounded = new Promise((done) => setTimeout(done, DEADLINE_FLUSH_MS));
 				void Promise.race([flushLogs(), bounded]).then(() => resolve(1));
@@ -88,7 +91,7 @@ export function handleShutdown(
 		);
 		void Promise.race([finished, deadline]).then((code) => {
 			clearTimeout(timer);
-			target.exit(code);
+			target.exit(late ? 1 : code);
 		});
 	});
 }

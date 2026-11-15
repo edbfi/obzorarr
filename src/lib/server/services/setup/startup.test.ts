@@ -173,6 +173,34 @@ describe("handleShutdown", () => {
 		expect(lines.some((line) => line.includes("shutdown didn't finish in time"))).toBe(true);
 	});
 
+	it("exits non-zero once the deadline has fired, even if the cleanup finishes during its flush", async () => {
+		// Hold every log write, so the deadline's bounded flush is still waiting when the cleanup ends.
+		const held: (() => void)[] = [];
+		vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
+			lines.push(String(chunk));
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			if (done) held.push(done);
+			return true;
+		});
+		const fake = fakeProcess();
+		let finish!: () => void;
+		handleShutdown(
+			fake.target,
+			() =>
+				new Promise<void>((resolve) => {
+					finish = resolve;
+				}),
+			50,
+		);
+		fake.events.emit("sveltekit:shutdown", "SIGTERM");
+		await settle(100);
+		expect(lines.some((line) => line.includes("shutdown didn't finish in time"))).toBe(true);
+		finish();
+		for (const release of held.splice(0)) release();
+		await settle(50);
+		expect(fake.exitCode()).toBe(1);
+	});
+
 	it("exits non-zero when the cleanup fails", async () => {
 		const fake = fakeProcess();
 		handleShutdown(fake.target, async () => {
