@@ -348,8 +348,6 @@ src/
                                  Shutdown, in the built server only: `SIGHUP` as `SIGTERM`,
                                  stopping the timers, then closing and exiting, with a 5-second
                                  deadline
-      security/headers.ts        the security headers for a request, strict transport only over
-                                 HTTPS
       services/setup/first-run.ts
                                  first run's state in memory, and the bootstrap token while the
                                  instance is unclaimed: printed to standard output, renewed every
@@ -357,6 +355,8 @@ src/
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
+      security/headers.ts        the security headers for a request, strict transport only over
+                                 HTTPS
       security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
       security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
                                  or a JSON error

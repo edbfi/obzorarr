@@ -68,20 +68,19 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 		claimsInProgress--;
 		if (claimsInProgress === 0 && renewalWaiting) {
 			renewalWaiting = false;
-			if (!claimed) renewToken();
+			renewToken();
 		}
 	}
 }
 
-/** Issues and prints a new token, and schedules the next. */
+/** Issues and prints a new token, and schedules the next; never once the instance is claimed. */
 function renewToken(): void {
-	if (settings === undefined) return;
+	if (settings === undefined || claimed) return;
 	clearTimeout(timer);
 	token = issueToken(Date.now());
 	const address = `${settings.origin ?? ""}/setup`;
-	const minutes = Math.round(settings.lifetimeMs / 60_000);
 	settings.print(
-		`Setup token: ${formatToken(token.value)} (valid for ${minutes} minutes). Open ${address} to claim this Obzorarr.`,
+		`Setup token: ${formatToken(token.value)} (valid for ${TOKEN_LIFETIME_MS / 60_000} minutes). Open ${address} to claim this Obzorarr.`,
 	);
 	timer = setTimeout(() => {
 		if (claimsInProgress > 0) renewalWaiting = true;

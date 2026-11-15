@@ -13,7 +13,9 @@ describe("drawToken", () => {
 		for (let i = 0; i < 200; i++) expect(drawToken()).toMatch(/^[a-z0-9]{12}$/);
 	});
 
-	it("draws every character of the alphabet, and each about equally often", () => {
+	// Coverage only: a naive `byte % 36` would still pass this band, so the mocked byte stream
+	// below is what guards against bias.
+	it("draws every character of the alphabet, none far more or less often than the rest", () => {
 		const counts = new Map<string, number>();
 		const draws = 3000;
 		for (let i = 0; i < draws; i++) {
