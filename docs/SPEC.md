@@ -4,7 +4,7 @@
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
 built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), ran and closed D19
-with the owner's verdict, and module 4, `setup`, is specified in [SPEC-setup.md](SPEC-setup.md).
+with the owner's verdict, and module 4, `setup` ([SPEC-setup.md](SPEC-setup.md)), is being built.
 
 ## Objective
 
@@ -113,7 +113,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Open decisions each module closes
 
-- `setup`: D15 (Drizzle and Turso pair) and the logging library half of D14.
+- `setup`: the logging library half of D14 (it closed D15).
 - `sign-in`: how long an owner session lasts.
 - `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
   where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
@@ -787,8 +787,10 @@ numbers in these blocks are obzorarr's; each app cites its own.
 
 The stack decisions are in [decisions.md](decisions.md) (D1–D12, D27). Versions are exact pins in
 `package.json` (Bun from its `packageManager` field) and `bun.lock`; Dependabot moves them to the
-newest stable release (D27). Every package is a dev dependency, so adapter-bun bundles it and
-`bun ./build` needs no `node_modules`.
+newest stable release (D27). Every package is a dev dependency, so adapter-bun bundles it, and
+`bun ./build` needs no `node_modules` but one package: Turso's native binding for the platform
+(`@tursodatabase/database-linux-x64-gnu` or `-linux-arm64-gnu`), which can't be bundled and ships
+beside `build/` (D15).
 
 | Part | Package |
 |---|---|
@@ -801,6 +803,7 @@ newest stable release (D27). Every package is a dev dependency, so adapter-bun b
 | Fonts | `@fontsource-variable/space-grotesk`, `@fontsource-variable/instrument-sans`, `@fontsource/ibm-plex-mono`, imported in the root layout |
 | Icons | `@lucide/svelte`, imported one icon per path |
 | Primitives | `@ark-ui/svelte` |
+| Database | `@tursodatabase/database` (embedded Turso), `drizzle-orm` and `drizzle-kit` (the `rc` dist-tag, D27) |
 | Translation | `@inlang/paraglide-js` (compiles the messages), `@inlang/plugin-i18next` (reads their i18next JSON v4 files) |
 | Type check | `svelte-check` |
 | Unit tests | `vitest` (`node` environment); `happy-dom` joins with the first component test |
@@ -836,8 +839,9 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests, once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests and the startup tests, with a key it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests and the setup tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
+| `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
 
 ## Project structure
@@ -879,7 +883,11 @@ export const GET: RequestHandler = () => healthResponse();
 - **Unit (Vitest, `node` environment):** the `/healthz` handler (status 200, body `ok`,
   `cache-control: no-store`), the `secrets` module (`config/secret-key.test.ts`, and
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
-  `security/secrets/`, under `src/lib/server/`), and in `src/lib/shared/i18n/`:
+  `security/secrets/`, under `src/lib/server/`), `setup`'s (under `src/lib/server/`:
+  `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
+  file against Drizzle Kit's file migrator; `db/client.test.ts`, D5's rollback isolation, which
+  fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`), and in
+  `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
@@ -895,6 +903,10 @@ export const GET: RequestHandler = () => healthResponse();
     `fonts` values loads a bundled face (`document.fonts.load()`, which returns none for a family
     name nothing registers); and that `/healthz` returns `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
+  - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
+    nothing on a second start on it, one uses the default path, and three refuse a database folder
+    they can't create or a path they can't open, without echoing the path and naming the default
+    when the variable is unset.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

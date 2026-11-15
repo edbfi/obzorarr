@@ -20,6 +20,9 @@
         "@sveltejs/adapter-bun": "1.0.1",
         "@sveltejs/kit": "3.2.0",
         "@sveltejs/vite-plugin-svelte": "7.3.1",
+        "@tursodatabase/database": "0.8.3",
+        "drizzle-kit": "1.0.0-rc.5",
+        "drizzle-orm": "1.0.0-rc.5",
         "svelte": "5.57.3",
         "svelte-check": "4.7.8",
         "typescript": "6.0.3",
@@ -295,6 +298,18 @@
 
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
 
+    "@tursodatabase/database": ["@tursodatabase/database@0.8.3", "", { "dependencies": { "@tursodatabase/database-common": "^0.8.3" }, "optionalDependencies": { "@tursodatabase/database-darwin-arm64": "0.8.3", "@tursodatabase/database-linux-arm64-gnu": "0.8.3", "@tursodatabase/database-linux-x64-gnu": "0.8.3", "@tursodatabase/database-win32-x64-msvc": "0.8.3" } }, "sha512-pYkADI524URbtreTz+JX7lKtNnfIZU5Pm0n8d6ENnLka3/l1sIexdDmPDWQea4M7CMURv7FxL44oJFYoMQLmOQ=="],
+
+    "@tursodatabase/database-common": ["@tursodatabase/database-common@0.8.3", "", {}, "sha512-T8sMfSnRjgGzKMDVkSg0lh1Jh6dDtTWzjYFK0ZJHtKzr+zs69a7Igo4Z+sxfh+rk9gEqn2njLgRYfpMEghMVMw=="],
+
+    "@tursodatabase/database-darwin-arm64": ["@tursodatabase/database-darwin-arm64@0.8.3", "", { "os": "darwin", "cpu": "arm64" }, "sha512-ZqXF8BUqED5mmSIRM5V13xiowc3CAekfpB26Opb4kbix5/9Q6AKgoxyZ1TkgMgjpih1FXAxD5UKdJ6b8D3IElw=="],
+
+    "@tursodatabase/database-linux-arm64-gnu": ["@tursodatabase/database-linux-arm64-gnu@0.8.3", "", { "os": "linux", "cpu": "arm64", "libc": "glibc" }, "sha512-4m9EqKDhL0gwqg6r4KHqX1+2PjMx0xS8CQ61hpoGmWPaCYygePo6O0Zv7EADcf8JJwSBhe7MHyt76gcaEuZDTA=="],
+
+    "@tursodatabase/database-linux-x64-gnu": ["@tursodatabase/database-linux-x64-gnu@0.8.3", "", { "os": "linux", "cpu": "x64", "libc": "glibc" }, "sha512-CrwYN45/zCSS+qPOqdOw7wI+MKE6ZHWehxwqJJwatW8CAI/tcEWxz3t+gc1v+p8jgGuNGqTJL3QUu2AnQYVC0Q=="],
+
+    "@tursodatabase/database-win32-x64-msvc": ["@tursodatabase/database-win32-x64-msvc@0.8.3", "", { "os": "win32", "cpu": "x64" }, "sha512-N19zq+nM9RSeYn4t0FOkfHPMkeWpgHLI2IM3L6dT8KH+bhvdAAAzp2E+cKjl8NQm6RaBSP8f5yqZqV3tp3ET0A=="],
+
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.4", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A=="],
 
     "@types/chai": ["@types/chai@5.2.3", "", { "dependencies": { "@types/deep-eql": "*", "assertion-error": "^2.0.1" } }, "sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA=="],
@@ -502,6 +517,10 @@
     "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
     "devalue": ["devalue@5.9.4", "", {}, "sha512-sPAT4pztbu6586/hrhOnMKS17IJrvg12mXiSPSS3W5qDeN2RGgvZ0diZCm31dBbnevfVmujNO3IM2wrS4Y2Rhg=="],
+
+    "drizzle-kit": ["drizzle-kit@1.0.0-rc.5", "", { "peerDependencies": { "drizzle-orm": ">=1.0.0-rc.5" }, "optionalPeers": ["drizzle-orm"], "bin": { "drizzle-kit": "bin.cjs" } }, "sha512-8glQN7iFK3e1aOIoRit1NtslcsqE/rnlqNw/1jUC5Ph4RFVh/E5Jricxd6Nu2ugj2HlFZlZ6O4006AwqJ9e24g=="],
+
+    "drizzle-orm": ["drizzle-orm@1.0.0-rc.5", "", { "peerDependencies": { "@aws-sdk/client-rds-data": ">=3", "@aws/aurora-dsql-node-postgres-connector": ">=0.1.9", "@aws/aurora-dsql-postgresjs-connector": ">=0.3.0", "@cloudflare/workers-types": ">=4", "@drizzle-team/minipg": ">=0.4.2", "@effect/sql-d1": ">=4.0.0", "@effect/sql-libsql": ">=4.0.0", "@effect/sql-mysql2": ">=4.0.0", "@effect/sql-pg": ">=4.0.0", "@effect/sql-pglite": ">=4.0.0", "@effect/sql-sqlite-bun": ">=4.0.0", "@effect/sql-sqlite-do": ">=4.0.0", "@effect/sql-sqlite-node": ">=4.0.0", "@effect/sql-sqlite-wasm": ">=4.0.0", "@electric-sql/pglite": ">=0.2.0", "@libsql/client": ">=0.10.0", "@libsql/client-wasm": ">=0.10.0", "@neondatabase/serverless": ">=0.10.0", "@op-engineering/op-sqlite": ">=17", "@opentelemetry/api": "^1.4.1", "@planetscale/database": ">=1.13", "@sinclair/typebox": ">=0.34.8", "@sqlitecloud/drivers": ">=1.0.653", "@tidbcloud/serverless": "*", "@tursodatabase/database": ">=0.7.1", "@tursodatabase/database-common": ">=0.7.1", "@tursodatabase/database-wasm": ">=0.7.1", "@tursodatabase/serverless": ">=1.4.0", "@tursodatabase/sync": ">=0.7.1", "@types/better-sqlite3": "*", "@types/mssql": "^9.1.4", "@types/pg": "*", "@types/sql.js": "*", "@upstash/redis": ">=1.34.7", "@vercel/postgres": ">=0.8.0", "@xata.io/client": "*", "arktype": ">=2.0.0", "better-sqlite3": ">=9.3.0", "bun-types": "*", "effect": ">=4.0.0", "expo-sqlite": ">=14.0.0", "mssql": "^11.0.1", "mysql2": ">=2", "pg": ">=8", "postgres": ">=3", "sql.js": ">=1", "sqlite3": ">=5", "typebox": ">=1.2.0", "valibot": ">=1.0.0-beta.7", "zod": "^3.25.0 || ^4.0.0" }, "optionalPeers": ["@aws-sdk/client-rds-data", "@aws/aurora-dsql-node-postgres-connector", "@aws/aurora-dsql-postgresjs-connector", "@cloudflare/workers-types", "@drizzle-team/minipg", "@effect/sql-d1", "@effect/sql-libsql", "@effect/sql-mysql2", "@effect/sql-pg", "@effect/sql-pglite", "@effect/sql-sqlite-bun", "@effect/sql-sqlite-do", "@effect/sql-sqlite-node", "@effect/sql-sqlite-wasm", "@electric-sql/pglite", "@libsql/client", "@libsql/client-wasm", "@neondatabase/serverless", "@op-engineering/op-sqlite", "@opentelemetry/api", "@planetscale/database", "@sinclair/typebox", "@sqlitecloud/drivers", "@tidbcloud/serverless", "@tursodatabase/database", "@tursodatabase/database-common", "@tursodatabase/database-wasm", "@tursodatabase/serverless", "@tursodatabase/sync", "@types/better-sqlite3", "@types/mssql", "@types/pg", "@types/sql.js", "@upstash/redis", "@vercel/postgres", "@xata.io/client", "arktype", "better-sqlite3", "bun-types", "effect", "expo-sqlite", "mssql", "mysql2", "pg", "postgres", "sql.js", "sqlite3", "typebox", "valibot", "zod"] }, "sha512-7BMYTsAZbQ9DcQCtLG4G202Hq6nc/e8o1EBKN6nBweRI8EGPFe/VdyvWQCsU9fuZSiRjNpELolUSi//JFBq+lw=="],
 
     "emoji-regex": ["emoji-regex@10.6.0", "", {}, "sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A=="],
 

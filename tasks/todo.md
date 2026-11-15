@@ -14,28 +14,29 @@ configuration (`OBZORARR_DATABASE_PATH` for now), then the database, opened and 
 tables go into the first migration; no operations yet.
 
 **Acceptance criteria:**
-- [ ] `server/config/database-path.test.ts` first fails, then passes: the default against the
+- [x] `server/config/database-path.test.ts` first fails, then passes: the default against the
   working directory, an empty variable counting as unset, a folder that is created, and a folder
   that can't be created or written refused with one line naming the variable and never echoing the
-  path. Both cases use a parent that is a regular file, never `chmod`, so they hold as root.
-- [ ] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
+  path. "Can't be created" uses a parent that is a regular file, which holds as root; "can't be
+  written" needs `chmod`, so it skips as root.
+- [x] `server/db/migrate.test.ts` first fails, then passes, against a temporary file: the bundled
   migrations apply to a new database, both tables exist, and a second run applies nothing. It
   compares the rows with what Drizzle Kit's file migrator writes for the same migrations.
-- [ ] `server/db/client.test.ts` holds D5's rollback-isolation check: a transaction that rolls
+- [x] `server/db/client.test.ts` holds D5's rollback-isolation check: a transaction that rolls
   back leaves a concurrent, unrelated write on the same connection in place.
-- [ ] `@tursodatabase/database` 0.8.3, `drizzle-orm` and `drizzle-kit` 1.0.0-rc.5 are exact-pinned
+- [x] `@tursodatabase/database` 0.8.3, `drizzle-orm` and `drizzle-kit` 1.0.0-rc.5 are exact-pinned
   dev dependencies (D27; if a newer stable Turso or `rc` Drizzle exists, the spec's versions move
   with it); `db:generate` runs Drizzle Kit, then `bun --bun biome format --write drizzle`, so its
   JSON passes `lint`; the first migration in `drizzle/` is generated, reviewed and committed.
-- [ ] `settings` (key, value, update time) and `owner` (a fixed id, username, password hash,
+- [x] `settings` (key, value, update time) and `owner` (a fixed id, username, password hash,
   creation time; one row at most) match the spec.
-- [ ] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary
+- [x] `tests/e2e/setup.test.ts` first fails, then passes: the built server, on a new temporary
   file, starts, serves `/healthz`, and starts again on the same file; it refuses to start with an
   unwritable database folder (a regular file as its parent), without echoing the path.
   `playwright.config.ts` gives each run a temporary database, created and removed only in the
   runner process (the config loads again in each worker, where `TEST_WORKER_INDEX` is set), after
   the server exits.
-- [ ] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
+- [x] D15's validation passes with its evidence in the PR body: migrations, `check`, `bun ./build`
   through the native binding on Linux arm64 (this machine) and x64 (CI's `smoke`), rollback
   isolation, and all of it with failing `node`, `npm` and `npx` on `PATH`.
 

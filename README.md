@@ -90,6 +90,26 @@ the old key back, which still reads everything.
 **Backups:** keep a copy of the key with your backups, apart from the database, and restore the
 same key alongside them. Without it, stored secrets can't be read.
 
+## Database
+
+Obzorarr keeps everything it stores in one database file: `data/obzorarr.db` in its working
+directory, or the path `OBZORARR_DATABASE_PATH` names. Obzorarr creates the file's folder if it is
+missing, and won't start if it can't create or write to it. Put the folder on a persistent volume.
+
+**Backups:** stop Obzorarr, then copy the whole folder. Recent writes live in files beside the
+database (`obzorarr.db-wal`), so a copy of the database file alone can miss them, and a copy taken
+while Obzorarr runs can be incomplete. Back up the master key separately
+([Master key](#master-key)), and keep its file outside this folder.
+
+| Variable | Holds | Default |
+| --- | --- | --- |
+| `OBZORARR_DATABASE_PATH` | the database file's path, absolute or against the working directory | `data/obzorarr.db` |
+
+**Running the build yourself:** `bun ./build` needs one package beside `build/`, Turso's native
+binding for your platform, as `bun ci` installs it:
+`node_modules/@tursodatabase/database-linux-x64-gnu` (or `-linux-arm64-gnu`). Start the server with
+`bun --no-install ./build`, so a missing package stops it instead of being downloaded.
+
 ## Working on it
 
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
