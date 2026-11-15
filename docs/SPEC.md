@@ -893,7 +893,10 @@ export const GET: RequestHandler = () => healthResponse();
   for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/access-denied.test.ts`, the refusal page
-  and its JSON form in both languages), `vite.config.test.ts` (SvelteKit's own form check and
+  and its JSON form in both languages; `security/bootstrap-token.test.ts`, the token's format,
+  alphabet, unbiased draw, expiry and comparison; `db/owner.test.ts`;
+  `services/setup/first-run.test.ts`, the token printed, renewed, held back during a claim,
+  stopped, and never printed once claimed), `vite.config.test.ts` (SvelteKit's own form check and
   remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
@@ -921,7 +924,8 @@ export const GET: RequestHandler = () => healthResponse();
     stops the server without being echoed; a cross-site form POST gets the "Access denied" page
     with the headers, its own policy and the viewer's language; and a same-origin POST with no
     `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host name that isn't loopback
-    (Chromium's `--host-resolver-rules`).
+    (Chromium's `--host-resolver-rules`); and a fresh server prints its bootstrap token before it
+    listens, in no log entry or response.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

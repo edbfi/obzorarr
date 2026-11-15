@@ -426,3 +426,43 @@ test.describe("the cross-origin check", () => {
 		}
 	});
 });
+
+test.describe("the bootstrap token", () => {
+	test("a fresh built server prints it before it listens, in no log entry or response", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const pages = await Promise.all(
+				["/", "/healthz", "/no-such-page"].map(async (path) =>
+					(await fetch(`${server.url}${path}`)).text(),
+				),
+			);
+			const output = server.output();
+			const line = output.split("\n").find((text) => text.startsWith("Setup token: ")) ?? "";
+			const token = /Setup token: ([a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}) /.exec(line)?.[1];
+			expect(token).toBeDefined();
+			expect(line).toContain(" /setup ");
+			expect(output.indexOf("Setup token: ")).toBeLessThan(output.indexOf("Listening on"));
+
+			// Neither form of the token, with or without its dashes, appears anywhere else.
+			const forms = [token ?? "", (token ?? "").replaceAll("-", "")];
+			const entries = output.split("\n").filter((text) => text.startsWith("{"));
+			for (const form of forms) {
+				expect(
+					entries.some((entry) => entry.includes(form)),
+					"a log entry holds it",
+				).toBe(false);
+				expect(
+					pages.some((page) => page.includes(form)),
+					"a response holds it",
+				).toBe(false);
+				expect(output.split(form).length - 1, "printed more than once").toBe(
+					form === forms[0] ? 1 : 0,
+				);
+			}
+		} finally {
+			await server.stop();
+		}
+	});
+});
