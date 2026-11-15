@@ -899,12 +899,11 @@ export const GET: RequestHandler = () => healthResponse();
   rules at their limits, NFC and case included, the bundled list and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
   printed, renewed, held back during a claim, stopped, never printed once claimed, the gate's
-  decision for each path before and after the claim, and a restart after the claim; `services/setup/claim.test.ts`, the claim's success, its field errors, wrong
-  and expired tokens that never reach the hash, a second claim, two at once, and a failed
-  transaction printing a new token), `src/routes/setup/token-format.test.ts` (the token
-  field's dashes), `vite.config.test.ts` (SvelteKit's own form check and
-  remote functions are off), and in
-  `src/lib/shared/i18n/`:
+  decision for each path before and after the claim, and a restart after the claim;
+  `services/setup/claim.test.ts`, the claim's success, its field errors, wrong and expired tokens
+  that never reach the hash, a second claim, two at once, and a failed transaction printing a new
+  token), `src/routes/setup/token-format.test.ts` (the token field's dashes), `vite.config.test.ts`
+  (SvelteKit's own form check and remote functions are off), and in `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;

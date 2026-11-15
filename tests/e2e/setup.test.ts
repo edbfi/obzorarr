@@ -509,11 +509,11 @@ test.describe("the bootstrap token", () => {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
 		});
 		try {
-			const pages = await Promise.all(
-				["/setup", "/healthz", "/"].map(async (path) =>
-					(await fetch(`${server.url}${path}`)).text(),
-				),
-			);
+			const read = async (path: string) => (await fetch(`${server.url}${path}`)).text();
+			const pages = await Promise.all(["/setup", "/healthz"].map(read));
+			// A 404 page too, which only a claimed instance serves.
+			await claim(server);
+			pages.push(await read("/no-such-page"));
 			const output = server.output();
 			const line = output.split("\n").find((text) => text.startsWith("Setup token: ")) ?? "";
 			const token = /Setup token: ([a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}) /.exec(line)?.[1];
