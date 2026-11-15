@@ -3,7 +3,7 @@ import { chromium, type FullConfig } from "@playwright/test";
 /**
  * Claims the web server's fresh instance through the form in a browser, with the token its
  * `wait.stdout` pattern captured, so the smoke and language tests run on a claimed instance
- * (SPEC-setup.md, "Testing strategy").
+ * (docs/SPEC.md, "Testing strategy").
  */
 export default async function globalSetup(config: FullConfig) {
 	const baseURL = config.projects[0]?.use.baseURL;
