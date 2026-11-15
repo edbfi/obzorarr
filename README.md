@@ -94,8 +94,11 @@ same key alongside them. Without it, stored secrets can't be read.
 
 Obzorarr keeps everything it stores in one database file: `data/obzorarr.db` in its working
 directory, or the path `OBZORARR_DATABASE_PATH` names. Obzorarr creates the file's folder if it is
-missing, and won't start if it can't create or write to it. Put the folder on a persistent volume,
-and back the file up together with the master key.
+missing, and won't start if it can't create or write to it. Put the folder on a persistent volume.
+
+**Backups:** stop Obzorarr, then copy the whole folder. Recent writes live in files beside the
+database (`obzorarr.db-wal`), so a copy of the database file alone can miss them, and a copy taken
+while Obzorarr runs can be incomplete. Keep the master key with your backups, apart from them.
 
 | Variable | Holds | Default |
 | --- | --- | --- |

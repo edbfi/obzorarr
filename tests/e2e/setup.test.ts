@@ -144,6 +144,17 @@ test.describe("the database", () => {
 		]);
 	});
 
+	test("names the default path, not the variable, when the default can't be opened", async () => {
+		await mkdir(join(root, "data", "obzorarr.db"), { recursive: true });
+		const { exitCode, output } = await runToExit(root, {});
+
+		expect(exitCode).toBe(1);
+		const lines = output.split("\n").filter((line) => line.startsWith("ConfigError: "));
+		expect(lines).toEqual([
+			"ConfigError: OBZORARR_DATABASE_PATH is unset, and the default data/obzorarr.db names a file that can't be opened as a database (I/O error (open): is a directory)",
+		]);
+	});
+
 	test("the built server refuses a path it can't open as a database, without echoing it", async () => {
 		const path = join(root, "a-directory");
 		await mkdir(path);

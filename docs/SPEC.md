@@ -904,8 +904,9 @@ export const GET: RequestHandler = () => healthResponse();
     name nothing registers); and that `/healthz` returns `ok`.
   - `secret-key.test.ts` checks that the built server refuses to start without a valid key.
   - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
-    nothing on a second start on it, one uses the default path, and two refuse a database folder
-    they can't create or a path they can't open, without echoing the path.
+    nothing on a second start on it, one uses the default path, and three refuse a database folder
+    they can't create or a path they can't open, without echoing the path and naming the default
+    when the variable is unset.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

@@ -10,14 +10,20 @@ const VARIABLE = "OBZORARR_DATABASE_PATH";
 const DEFAULT = "data/obzorarr.db";
 
 /**
+ * How a message names the database's path: the variable, or the default when the variable is
+ * unset, so a message never blames a variable the owner didn't set.
+ */
+export function databasePathSubject(env: DatabasePathEnv): string {
+	return env.OBZORARR_DATABASE_PATH ? VARIABLE : `${VARIABLE} is unset, and the default ${DEFAULT}`;
+}
+
+/**
  * Returns the database file's absolute path, resolved against `cwd`. An empty variable counts as
  * unset. The file's folder is created if it is missing, and must be writable.
  */
 export async function readDatabasePath(env: DatabasePathEnv, cwd = process.cwd()): Promise<string> {
-	const given = env.OBZORARR_DATABASE_PATH || undefined;
-	const path = resolve(cwd, given ?? DEFAULT);
-	const subject =
-		given === undefined ? `${VARIABLE} is unset, and the default ${DEFAULT}` : VARIABLE;
+	const path = resolve(cwd, env.OBZORARR_DATABASE_PATH || DEFAULT);
+	const subject = databasePathSubject(env);
 	const folder = dirname(path);
 	try {
 		await mkdir(folder, { recursive: true });

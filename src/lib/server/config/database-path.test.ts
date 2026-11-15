@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConfigError } from "./config-error.ts";
-import { readDatabasePath } from "./database-path.ts";
+import { databasePathSubject, readDatabasePath } from "./database-path.ts";
 
 let root: string;
 
@@ -25,6 +25,17 @@ async function failure(env: { OBZORARR_DATABASE_PATH?: string }, cwd = root): Pr
 	}
 	throw new Error("the path was accepted");
 }
+
+describe("databasePathSubject", () => {
+	it("names the variable when it is set, and the default when it is unset or empty", () => {
+		expect(databasePathSubject({ OBZORARR_DATABASE_PATH: "/srv/app.db" })).toBe(
+			"OBZORARR_DATABASE_PATH",
+		);
+		const unset = "OBZORARR_DATABASE_PATH is unset, and the default data/obzorarr.db";
+		expect(databasePathSubject({})).toBe(unset);
+		expect(databasePathSubject({ OBZORARR_DATABASE_PATH: "" })).toBe(unset);
+	});
+});
 
 describe("readDatabasePath", () => {
 	it("defaults to data/obzorarr.db in the working directory, creating the folder", async () => {
