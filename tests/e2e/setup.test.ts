@@ -219,3 +219,101 @@ test.describe("shutdown", () => {
 		});
 	}
 });
+
+test.describe("security headers and the CSP", () => {
+	const ALWAYS = {
+		"x-frame-options": "DENY",
+		"x-content-type-options": "nosniff",
+		"referrer-policy": "same-origin",
+		"permissions-policy": "camera=(), microphone=(), geolocation=()",
+	};
+
+	test("every response that passes through handle carries them, and no HSTS over plain HTTP", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			for (const path of ["/", "/healthz", "/no-such-page"]) {
+				const response = await fetch(`${server.url}${path}`);
+				for (const [name, value] of Object.entries(ALWAYS)) {
+					expect(response.headers.get(name), `${name} on ${path}`).toBe(value);
+				}
+				expect(response.headers.get("strict-transport-security"), path).toBeNull();
+				if (path === "/no-such-page") expect(response.status).toBe(404);
+			}
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("a page's scripts carry its policy's nonce, and the browser reports no violation", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const response = await fetch(`${server.url}/`);
+			const policy = response.headers.get("content-security-policy") ?? "";
+			const html = await response.text();
+			const nonce = /'nonce-([^']+)'/.exec(policy)?.[1];
+			expect(nonce).toBeDefined();
+			// The spec's policy, directive for directive, with the nonce only on scripts.
+			const directives = Object.fromEntries(
+				policy.split(";").map((directive) => {
+					const [name = "", ...sources] = directive.trim().split(/\s+/);
+					return [name, sources.sort()];
+				}),
+			);
+			expect(directives).toEqual({
+				"default-src": ["'self'"],
+				"script-src": [`'nonce-${nonce}'`, "'self'"].sort(),
+				"style-src": ["'self'", "'unsafe-inline'"],
+				"img-src": ["'self'", "data:"],
+				"font-src": ["'self'"],
+				"connect-src": ["'self'"],
+				"frame-ancestors": ["'none'"],
+				"frame-src": ["'none'"],
+				"object-src": ["'none'"],
+				"base-uri": ["'self'"],
+				"form-action": ["'self'"],
+			});
+			const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map((match) => match[0]);
+			expect(scripts.length).toBeGreaterThan(0);
+			for (const script of scripts) expect(script).toContain(`nonce="${nonce}"`);
+
+			const violations: string[] = [];
+			page.on("console", (message) => {
+				if (/Content Security Policy/i.test(message.text())) violations.push(message.text());
+			});
+			await page.addInitScript(() => {
+				document.addEventListener("securitypolicyviolation", (event) => {
+					console.error(`Content Security Policy violation: ${event.violatedDirective}`);
+				});
+			});
+			const visit = await page.goto(`${server.url}/`);
+			await expect(page.locator("html[data-hydrated]")).toBeAttached();
+			expect(violations).toEqual([]);
+			// Chromium sends Sec-Fetch-Site to this loopback address over plain HTTP, so this checks
+			// the loopback exemption: no HSTS.
+			expect(visit?.headers()["strict-transport-security"]).toBeUndefined();
+		} finally {
+			await server.stop();
+		}
+	});
+
+	for (const [value, message] of [
+		["https://u:p@obzorarr.example", "ORIGIN must not hold credentials"],
+		["https://obzorarr.example/app", "ORIGIN must not have a path"],
+	] as const) {
+		test(`the built server refuses ORIGIN=${value}, without echoing it`, async () => {
+			const { exitCode, output } = await runToExit(root, { ORIGIN: value });
+			expect(output.includes(value), "output holds the value").toBe(false);
+			expect(output.includes("u:p@"), "output holds the credentials").toBe(false);
+			expect(exitCode).toBe(1);
+			expect(output).not.toContain("Listening on");
+			const lines = output.split("\n").filter((line) => line.startsWith("ConfigError: "));
+			expect(lines).toEqual([`ConfigError: ${message}`]);
+		});
+	}
+});

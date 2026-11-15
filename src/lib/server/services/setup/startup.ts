@@ -5,6 +5,7 @@ import {
 	readDatabasePath,
 } from "#lib/server/config/database-path.ts";
 import { type LogDebugEnv, readLogDebug } from "#lib/server/config/log-debug.ts";
+import { type OriginEnv, readOrigin } from "#lib/server/config/origin.ts";
 import type { SecretKeyEnv } from "#lib/server/config/secret-key.ts";
 import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
@@ -12,7 +13,7 @@ import { configureLogging, createLogger, flushLogs } from "#lib/server/logging/l
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
 
 /** Every variable startup reads. */
-export type StartupEnv = SecretKeyEnv & DatabasePathEnv & LogDebugEnv;
+export type StartupEnv = SecretKeyEnv & DatabasePathEnv & LogDebugEnv & OriginEnv;
 
 /** The parts of the process that shutdown uses, so tests can pass a stand-in. */
 export type ShutdownTarget = {
@@ -32,6 +33,7 @@ const CLEANUP_DEADLINE_MS = 5000;
 const DEADLINE_FLUSH_MS = 250;
 
 let database: Database | undefined;
+let origin: string | undefined;
 
 /**
  * Runs startup's steps in order, before any request is served (SPEC-setup.md, "Startup and
@@ -50,6 +52,11 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 	// resolves. The app's come on the next turn of the event loop, so a signal never reaches only
 	// the app's handlers, which would swallow it; until then, Bun's default ends the process.
 	if (!options.dev) setImmediate(() => handleShutdown(process, closeServices));
+}
+
+/** The browser's address from `ORIGIN`, which startup checked, or undefined when it is unset. */
+export function currentOrigin(): string | undefined {
+	return origin;
 }
 
 /**
@@ -117,6 +124,7 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	await loadKeyring(env);
 	// 2. The configuration.
 	configureLogging({ debug: readLogDebug(env) });
+	origin = readOrigin(env);
 	const path = await readDatabasePath(env);
 	// 3. The database, opened and migrated: the app is its one migration owner (D5).
 	const db = await openDatabase(path).catch((error: unknown) => {

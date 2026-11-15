@@ -280,7 +280,8 @@ formatters, and a check of the message files. Module 3, `recap-spike`
 verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts what the
 verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)),
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
-migrations, the app writes redacted JSON logs, and it shuts down cleanly.
+migrations, the app writes redacted JSON logs, it shuts down cleanly, and every page carries the
+security headers and a nonce-based CSP.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -309,7 +310,8 @@ src/
   app.d.ts                       SvelteKit ambient types
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
-                                 `handle`: each request's language, through Paraglide's middleware
+                                 `handle`, in order: each request's language, through Paraglide's
+                                 middleware, then the security headers
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
@@ -332,6 +334,7 @@ src/
                                  `OBZORARR_SECRET_KEY_FILE` names; no key logic
       config/database-path.ts    the database file's path, its folder created and writable
       config/log-debug.ts        `OBZORARR_LOG_DEBUG`: whether debug entries are written
+      config/origin.ts           `ORIGIN`, parsed and checked: a bare http or https origin
       db/                        client.ts: opens the database; migrate.ts: applies the bundled
                                  migrations; one file per aggregate with its tables (settings.ts,
                                  owner.ts) and, from their first caller, its named operations
@@ -342,6 +345,8 @@ src/
                                  database; a failed step is logged, then thrown. Shutdown, in the
                                  built server only: `SIGHUP` as `SIGTERM`, then closing and
                                  exiting, with a 5-second deadline
+      security/headers.ts        the security headers for a request, strict transport only over
+                                 HTTPS
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -373,7 +378,8 @@ drizzle/                         the reviewed migrations Drizzle Kit generated (
 drizzle.config.ts                Drizzle Kit's options: the schema files it reads
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
-vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
+vite.config.ts                   SvelteKit (all its configuration, the CSP included), Panda,
+                                 Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 

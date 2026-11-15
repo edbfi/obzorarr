@@ -1,6 +1,7 @@
 import { defineEnvVars, type EnvVarConfig } from "@sveltejs/kit/env";
 import type { DatabasePathEnv } from "#lib/server/config/database-path.ts";
 import type { LogDebugEnv } from "#lib/server/config/log-debug.ts";
+import type { OriginEnv } from "#lib/server/config/origin.ts";
 import type { SecretKeyVariable } from "#lib/server/config/secret-key.ts";
 
 // Optional and never throwing: SvelteKit's own validation would otherwise print its own message
@@ -25,7 +26,11 @@ export const variables = defineEnvVars({
 		schema: optional,
 		description: "Whether debug log entries are written: true or false; off if unset.",
 	},
+	ORIGIN: {
+		schema: optional,
+		description: "The address browsers use, such as https://obzorarr.example; optional.",
+	},
 } satisfies Record<
-	SecretKeyVariable | keyof DatabasePathEnv | keyof LogDebugEnv,
+	SecretKeyVariable | keyof DatabasePathEnv | keyof LogDebugEnv | keyof OriginEnv,
 	EnvVarConfig<string | undefined>
 >);

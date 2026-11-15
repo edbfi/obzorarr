@@ -70,7 +70,7 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 
 ### Phase 2: the request checks
 
-- [ ] Task 4: `ORIGIN`, the security headers and the CSP
+- [x] Task 4: `ORIGIN`, the security headers and the CSP
 - [ ] Task 5: the cross-origin check
 
 ### Checkpoint: after task 5

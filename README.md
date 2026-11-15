@@ -110,6 +110,18 @@ binding for your platform, as `bun ci` installs it:
 `node_modules/@tursodatabase/database-linux-x64-gnu` (or `-linux-arm64-gnu`). Start the server with
 `bun --no-install ./build`, so a missing package stops it instead of being downloaded.
 
+## The address browsers use
+
+`ORIGIN` is optional. It tells Obzorarr the address browsers use, as a bare origin with no path:
+
+| Variable | Holds | Default |
+| --- | --- | --- |
+| `ORIGIN` | the address browsers use, such as `https://obzorarr.example` or `http://192.168.1.20:3000` | unset |
+
+Obzorarr won't start if `ORIGIN` is empty or holds a path, a query, a fragment or credentials;
+leave it out instead. Over HTTPS, when `ORIGIN` is `https` or the browser shows it, pages ask
+browsers to keep using HTTPS.
+
 ## Logs
 
 Obzorarr writes its log to standard output, one JSON entry per line, where your container runtime

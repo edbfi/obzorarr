@@ -13,6 +13,25 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
 			},
 			adapter: adapter(),
+			// A nonce on the app's own scripts, on every page; no page is prerendered, so each
+			// gets its own (SPEC-setup.md, "Security headers and CSP"). `style-src` keeps
+			// 'unsafe-inline' for style attributes, which SvelteKit then leaves without a nonce.
+			csp: {
+				mode: "nonce",
+				directives: {
+					"default-src": ["self"],
+					"script-src": ["self"],
+					"style-src": ["self", "unsafe-inline"],
+					"img-src": ["self", "data:"],
+					"font-src": ["self"],
+					"connect-src": ["self"],
+					"frame-ancestors": ["none"],
+					"frame-src": ["none"],
+					"object-src": ["none"],
+					"base-uri": ["self"],
+					"form-action": ["self"],
+				},
+			},
 		}),
 		// Static css() calls become class strings at build time, so no styling runtime ships.
 		pandacss({ transform: true }),
