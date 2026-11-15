@@ -281,7 +281,8 @@ verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `re
 verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)),
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, and every page carries the
-security headers and a nonce-based CSP.
+security headers and a nonce-based CSP, and a state-changing request from another site gets
+"Access denied".
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -311,7 +312,7 @@ src/
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
-                                 middleware, then the security headers
+                                 middleware, the security headers, then the cross-origin check
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
@@ -347,6 +348,9 @@ src/
                                  exiting, with a 5-second deadline
       security/headers.ts        the security headers for a request, strict transport only over
                                  HTTPS
+      security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
+      security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
+                                 or a JSON error
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -378,9 +382,10 @@ drizzle/                         the reviewed migrations Drizzle Kit generated (
 drizzle.config.ts                Drizzle Kit's options: the schema files it reads
 panda.config.ts                  every design token; components use them through
                                  `#styled-system/<module>` (generated, gitignored)
-vite.config.ts                   SvelteKit (all its configuration, the CSP included), Panda,
-                                 Paraglide and Vitest
+vite.config.ts                   SvelteKit (all its configuration, exported as `kit`: the CSP,
+                                 and SvelteKit's own form check off), Panda, Paraglide and Vitest
+vite.config.test.ts              SvelteKit's form check and remote functions stay off
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 
-Vitest runs `src/**/*.test.ts`; Playwright runs `tests/e2e/`.
+Vitest runs `src/**/*.test.ts` and `vite.config.test.ts`; Playwright runs `tests/e2e/`.

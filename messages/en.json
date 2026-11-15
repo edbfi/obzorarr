@@ -1,5 +1,7 @@
 {
 	"landing_title": "Your year in stories.",
 	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Your recap is visible to server members only.",
-	"language_switcher_label": "Language"
+	"language_switcher_label": "Language",
+	"error_access_denied_title": "Access denied",
+	"error_access_denied_description": "The request was refused because it didn't come from this site."
 }

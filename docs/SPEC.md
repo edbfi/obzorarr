@@ -837,7 +837,7 @@ Setup facts for this stack:
 | `bun run --bun build` | production build through adapter-bun into `build/`; needs no key and never embeds one |
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
-| `bun run --bun test` | Vitest unit tests, once (no watch) |
+| `bun run --bun test` | Vitest unit tests (`src/**/*.test.ts` and `vite.config.test.ts`), once (no watch) |
 | `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests and the setup tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
@@ -890,7 +890,11 @@ export const GET: RequestHandler = () => healthResponse();
   its 5-second deadline, and no handlers in `dev`; `logging/redact.test.ts`, each redaction rule and
   nested; `logging/logger.test.ts`, with `flushLogs` against a slow shell pipe;
   `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
-  for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback), and in
+  for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
+  `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
+  `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/access-denied.test.ts`, the refusal page
+  and its JSON form in both languages), `vite.config.test.ts` (SvelteKit's own form check and
+  remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
@@ -913,8 +917,11 @@ export const GET: RequestHandler = () => healthResponse();
     when the variable is unset; a bad `OBZORARR_LOG_DEBUG` is one JSON log entry, and its value is
     never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`
     and a 404 carry the security headers, with no HSTS over plain HTTP; a page's scripts carry its
-    policy's nonce and the browser reports no violation; and an `ORIGIN` with credentials or a
-    path stops the server without being echoed.
+    policy's nonce and the browser reports no violation; an `ORIGIN` with credentials or a path
+    stops the server without being echoed; a cross-site form POST gets the "Access denied" page
+    with the headers, its own policy and the viewer's language; and a same-origin POST with no
+    `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host name that isn't loopback
+    (Chromium's `--host-resolver-rules`).
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
