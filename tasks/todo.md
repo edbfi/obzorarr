@@ -202,15 +202,15 @@ needed), `docs/SPEC.md` (the testing section), `AGENTS.md`.
 15 minutes. Shutdown stops the timer. First run's state is loaded into memory at startup.
 
 **Acceptance criteria:**
-- [ ] `server/security/bootstrap-token.test.ts` first fails, then passes: 12 characters from the
+- [x] `server/security/bootstrap-token.test.ts` first fails, then passes: 12 characters from the
   lowercase letters and digits, drawn without bias, shown as `xxxx-xxxx-xxxx`; accepted with or
   without dashes, in any case, trimmed; compared in constant time; expired after 15 minutes.
-- [ ] `server/services/setup/first-run.test.ts`, against a temporary file: an unclaimed instance
+- [x] `server/services/setup/first-run.test.ts`, against a temporary file: an unclaimed instance
   prints a token and a new one at expiry; the timer waits while a claim is in progress; shutdown
   stops it; the line holds the full address when `ORIGIN` is set and only `/setup` otherwise; a
   claimed instance prints none.
-- [ ] `owner.ts` gains the operation that says whether an owner exists.
-- [ ] `setup.test.ts`: the built server prints the token line; it appears in no log entry.
+- [x] `owner.ts` gains the operation that says whether an owner exists.
+- [x] `setup.test.ts`: the built server prints the token line; it appears in no log entry.
 
 **Verification:** the gates.
 

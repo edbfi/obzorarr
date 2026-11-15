@@ -282,7 +282,7 @@ verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](do
 is being built from [`tasks/`](tasks/plan.md): startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets
-"Access denied".
+"Access denied". An unclaimed instance prints its bootstrap token to the console.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -339,13 +339,22 @@ src/
       db/                        client.ts: opens the database; migrate.ts: applies the bundled
                                  migrations; one file per aggregate with its tables (settings.ts,
                                  owner.ts) and, from their first caller, its named operations
+                                 (owner.ts: whether an owner exists)
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database; a failed step is logged, then thrown. Shutdown, in the
-                                 built server only: `SIGHUP` as `SIGTERM`, then closing and
-                                 exiting, with a 5-second deadline
+                                 database, then first run; a failed step is logged, then thrown.
+                                 Shutdown, in the built server only: `SIGHUP` as `SIGTERM`,
+                                 stopping the timers, then closing and exiting, with a 5-second
+                                 deadline
+      services/setup/first-run.ts
+                                 first run's state in memory, and the bootstrap token while the
+                                 instance is unclaimed: printed to standard output, renewed every
+                                 15 minutes, held back while a claim is in progress
+      security/bootstrap-token.ts
+                                 the token: drawn without bias, formatted, compared in constant
+                                 time, valid for 15 minutes
       security/headers.ts        the security headers for a request, strict transport only over
                                  HTTPS
       security/cross-origin.ts   the cross-origin check: one pure module the other apps copy

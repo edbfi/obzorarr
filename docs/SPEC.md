@@ -886,14 +886,18 @@ export const GET: RequestHandler = () => healthResponse();
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
   file against Drizzle Kit's file migrator; `db/client.test.ts`, D5's rollback isolation, which
   fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged
-  before it is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's exit codes and
-  its 5-second deadline, and no handlers in `dev`; `logging/redact.test.ts`, each redaction rule and
-  nested; `logging/logger.test.ts`, with `flushLogs` against a slow shell pipe;
+  before it is thrown, and shutdown: the work stopped on the signal, `SIGHUP` passed on as
+  `SIGTERM`, the cleanup's exit codes and its 5-second deadline, and no handlers in `dev`;
+  `logging/redact.test.ts`, each redaction rule and nested; `logging/logger.test.ts`, with
+  `flushLogs` against a slow shell pipe;
   `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
   for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/access-denied.test.ts`, the refusal page
-  and its JSON form in both languages), `vite.config.test.ts` (SvelteKit's own form check and
+  and its JSON form in both languages; `security/bootstrap-token.test.ts`, the token's format,
+  alphabet, unbiased draw, expiry and comparison; `db/owner.test.ts`;
+  `services/setup/first-run.test.ts`, the token printed, renewed, held back during a claim,
+  stopped, and never printed once claimed), `vite.config.test.ts` (SvelteKit's own form check and
   remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
@@ -921,7 +925,8 @@ export const GET: RequestHandler = () => healthResponse();
     stops the server without being echoed; a cross-site form POST gets the "Access denied" page
     with the headers, its own policy and the viewer's language; and a same-origin POST with no
     `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host name that isn't loopback
-    (Chromium's `--host-resolver-rules`).
+    (Chromium's `--host-resolver-rules`); and a fresh server prints its bootstrap token before it
+    listens, in no log entry or response.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps

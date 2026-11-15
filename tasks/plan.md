@@ -80,7 +80,7 @@ comradarr, zondarr, otpravkarr and zimuarr port.
 
 ### Phase 3: first run
 
-- [ ] Task 6: the bootstrap token
+- [x] Task 6: the bootstrap token
 - [ ] Task 7: the claim at `/setup`
 - [ ] Task 8: the setup gate
 

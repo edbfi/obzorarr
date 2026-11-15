@@ -144,6 +144,15 @@ function fakeProcess(steps: string[] = []) {
 const settle = (ms = 0) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("handleShutdown", () => {
+	it("stops the work on SIGTERM and SIGINT, while adapter-bun drains", () => {
+		const fake = fakeProcess();
+		const stopped: string[] = [];
+		handleShutdown(fake.target, async () => {}, { stopWork: () => stopped.push("stopped") });
+		fake.events.emit("SIGTERM");
+		fake.events.emit("SIGINT");
+		expect(stopped).toEqual(["stopped", "stopped"]);
+	});
+
 	it("passes SIGHUP on as SIGTERM, which adapter-bun drains on", () => {
 		const fake = fakeProcess();
 		handleShutdown(fake.target, async () => {});
@@ -175,7 +184,7 @@ describe("handleShutdown", () => {
 
 	it("exits non-zero when the cleanup never finishes by the deadline", async () => {
 		const fake = fakeProcess();
-		handleShutdown(fake.target, () => new Promise(() => {}), 100);
+		handleShutdown(fake.target, () => new Promise(() => {}), { deadlineMs: 100 });
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
 		await settle(50);
 		expect(fake.exitCode()).toBeUndefined();
@@ -201,7 +210,7 @@ describe("handleShutdown", () => {
 				new Promise<void>((resolve) => {
 					finish = resolve;
 				}),
-			50,
+			{ deadlineMs: 50 },
 		);
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
 		await settle(100);
@@ -222,7 +231,7 @@ describe("handleShutdown", () => {
 			return true;
 		});
 		const fake = fakeProcess();
-		handleShutdown(fake.target, () => new Promise(() => {}), 50);
+		handleShutdown(fake.target, () => new Promise(() => {}), { deadlineMs: 50 });
 		fake.events.emit("sveltekit:shutdown", "SIGTERM");
 		try {
 			await settle(150);
