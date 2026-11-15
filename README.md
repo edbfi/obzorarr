@@ -120,6 +120,21 @@ keys, and the credentials in URLs.
 | --- | --- | --- |
 | `OBZORARR_LOG_DEBUG` | `true` to add debug entries, or `false` | `false` |
 
+## Stopping and the server's limits
+
+Obzorarr stops cleanly on `SIGTERM`, `SIGINT` or `SIGHUP`: it finishes the requests in progress,
+closes the database, and exits. These variables belong to the Bun server it runs on:
+
+| Variable | Holds | Default |
+| --- | --- | --- |
+| `SHUTDOWN_TIMEOUT` | seconds to let requests finish when stopping | `30` |
+| `CONNECTION_IDLE_TIMEOUT` | seconds before an idle connection closes, at most 255 | `10` |
+| `BODY_SIZE_LIMIT` | the largest request body accepted | `512K` |
+
+After the requests finish, Obzorarr takes up to 5 more seconds to close. Give the container longer
+than `SHUTDOWN_TIMEOUT` plus 5 seconds to stop, or it's killed mid-write. Docker's default is
+10 seconds, so with the default `SHUTDOWN_TIMEOUT` set Compose's `stop_grace_period: 40s`.
+
 ## Working on it
 
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.

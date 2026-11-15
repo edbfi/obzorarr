@@ -1,12 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { configureLogging, createLogger } from "./logger.ts";
+import { configureLogging, createLogger, flushLogs } from "./logger.ts";
 
 let lines: string[];
 
 beforeEach(() => {
 	lines = [];
-	vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
-		lines.push(String(chunk));
+	vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
+		if (String(chunk) !== "") lines.push(String(chunk));
+		// `flushLogs` waits for the write's callback, which may come second or third.
+		const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+		done?.();
 		return true;
 	});
 });
@@ -63,6 +66,13 @@ describe("createLogger", () => {
 		});
 		expect(lines[0]).not.toContain("u:p@");
 		expect(lines[0]).not.toContain("secret-value");
+	});
+
+	it("flushLogs waits for standard output to take what was written, and adds nothing", async () => {
+		createLogger("startup").info("before the flush");
+		await flushLogs();
+		expect(entries().map((entry) => entry.message)).toEqual(["before the flush"]);
+		expect(process.stdout.write).toHaveBeenLastCalledWith("", expect.any(Function));
 	});
 
 	it("keeps a newline inside a message on one line", () => {

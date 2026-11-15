@@ -100,11 +100,11 @@ as it passes `env` to the keyring, so the tests set either value; Vite's dev ser
 `sveltekit:shutdown`, and a `SIGINT` listener would stop Ctrl+C from ending it.
 
 **Acceptance criteria:**
-- [ ] `server/services/setup/startup.test.ts` first fails, then passes: the cleanup's order, and
+- [x] `server/services/setup/startup.test.ts` first fails, then passes: the cleanup's order, and
   the deadline with a cleanup that never finishes exits non-zero, and no handler is installed in
   `dev`.
-- [ ] `setup.test.ts`: `SIGHUP` and `SIGTERM` each shut the built server down with exit code 0.
-- [ ] The README lists adapter-bun's `SHUTDOWN_TIMEOUT`, `CONNECTION_IDLE_TIMEOUT` and
+- [x] `setup.test.ts`: `SIGHUP` and `SIGTERM` each shut the built server down with exit code 0.
+- [x] The README lists adapter-bun's `SHUTDOWN_TIMEOUT`, `CONNECTION_IDLE_TIMEOUT` and
   `BODY_SIZE_LIMIT`, and says the container's stop timeout must exceed `SHUTDOWN_TIMEOUT` plus
   5 seconds.
 
@@ -119,7 +119,7 @@ as it passes `env` to the keyring, so the tests set either value; Vite's dev ser
 
 ## Checkpoint: after task 3
 
-- [ ] As in [plan.md](plan.md#checkpoint-after-task-3).
+- [x] As in [plan.md](plan.md#checkpoint-after-task-3).
 
 ## Task 4: `ORIGIN`, the security headers and the CSP
 

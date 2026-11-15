@@ -13,7 +13,11 @@ const MIGRATIONS = fileURLToPath(new URL("../../drizzle", import.meta.url));
 const randomKey = () => crypto.getRandomValues(new Uint8Array(32)).toBase64();
 
 /** A built server that started: its address, everything it printed so far, and how to stop it. */
-type Server = { url: string; output: () => string; stop: () => Promise<number | null> };
+type Server = {
+	url: string;
+	output: () => string;
+	stop: (signal?: "SIGTERM" | "SIGHUP") => Promise<number | null>;
+};
 
 /**
  * Spawns the built server in `cwd` with a generated key, a free port and `env`, and nothing else
@@ -46,8 +50,8 @@ async function startServer(cwd: string, env: Record<string, string>): Promise<Se
 			return {
 				url,
 				output: () => output,
-				stop: async () => {
-					server.kill("SIGTERM");
+				stop: async (signal = "SIGTERM") => {
+					server.kill(signal);
 					await collected;
 					return server.exited;
 				},
@@ -193,4 +197,25 @@ test.describe("logging", () => {
 			},
 		});
 	});
+});
+
+test.describe("shutdown", () => {
+	for (const signal of ["SIGTERM", "SIGHUP"] as const) {
+		test(`${signal} shuts the built server down with exit code 0`, async () => {
+			const server = await startServer(root, {
+				OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+			});
+			expect(await (await fetch(`${server.url}/healthz`)).text()).toBe("ok");
+
+			expect(await server.stop(signal)).toBe(0);
+			const stopping = server
+				.output()
+				.split("\n")
+				.filter((line) => line.startsWith("{"))
+				.map((line) => JSON.parse(line))
+				.filter((entry) => entry.message === "stopping");
+			// SIGHUP arrives as itself, then the app passes it on as SIGTERM.
+			expect(stopping.map((entry) => entry.metadata.signal)).toEqual(["SIGTERM"]);
+		});
+	}
 });

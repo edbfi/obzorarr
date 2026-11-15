@@ -886,8 +886,9 @@ export const GET: RequestHandler = () => healthResponse();
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
   file against Drizzle Kit's file migrator; `db/client.test.ts`, D5's rollback isolation, which
   fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged
-  before it is thrown; `logging/redact.test.ts`, each redaction rule and nested;
-  `logging/logger.test.ts`; `config/log-debug.test.ts`), and in
+  before it is thrown, and shutdown: `SIGHUP` passed on as `SIGTERM`, the cleanup's exit codes and
+  its 5-second deadline, and no handlers in `dev`; `logging/redact.test.ts`, each redaction rule and
+  nested; `logging/logger.test.ts`; `config/log-debug.test.ts`), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
@@ -908,7 +909,7 @@ export const GET: RequestHandler = () => healthResponse();
     nothing on a second start on it, one uses the default path, and three refuse a database folder
     they can't create or a path they can't open, without echoing the path and naming the default
     when the variable is unset; a bad `OBZORARR_LOG_DEBUG` is one JSON log entry, and its value is
-    never echoed.
+    never echoed; and `SIGTERM` and `SIGHUP` each stop the server with exit code 0.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
