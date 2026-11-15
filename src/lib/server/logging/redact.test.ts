@@ -24,6 +24,28 @@ describe("redact", () => {
 			);
 		});
 
+		it("removes credentials through the last @, whatever punctuation the password holds", () => {
+			expect(redact("http://u:p@ss@plex.local/x")).toBe(`http://${R}@plex.local/x`);
+			expect(redact("http://owner@example.com:hunter2@plex.local/")).toBe(
+				`http://${R}@plex.local/`,
+			);
+			expect(redact("open https://owner:pass'word@plex.local/ now")).toBe(
+				`open https://${R}@plex.local/ now`,
+			);
+		});
+
+		it("removes token-like parameters from relative URLs and fragments too", () => {
+			expect(redact("GET /library/sections?X-Plex-Token=abc123&type=1 failed")).toBe(
+				`GET /library/sections?X-Plex-Token=${R}&type=1 failed`,
+			);
+			expect(redact({ path: "/library?X-Plex-Token=abc123" })).toEqual({
+				path: `/library?X-Plex-Token=${R}`,
+			});
+			expect(redact("https://app.test/callback#access_token=t9&state=s")).toBe(
+				`https://app.test/callback#access_token=${R}&state=s`,
+			);
+		});
+
 		it("leaves a text without URLs as it is", () => {
 			expect(redact("the owner signed in")).toBe("the owner signed in");
 		});
@@ -69,6 +91,30 @@ describe("redact", () => {
 			});
 		});
 
+		it("catches acronyms and names run together, and only auth as a whole word", () => {
+			expect(
+				redact({
+					APIToken: "a",
+					DBPassword: "b",
+					refreshtoken: "c",
+					plextoken: "d",
+					auth: "e",
+					basicAuth: "f",
+					author: "kept",
+					authError: "kept",
+				}),
+			).toEqual({
+				APIToken: R,
+				DBPassword: R,
+				refreshtoken: R,
+				plextoken: R,
+				auth: R,
+				basicAuth: R,
+				author: "kept",
+				authError: "kept",
+			});
+		});
+
 		it("redacts matching keys at any depth, in objects and arrays", () => {
 			expect(
 				redact({
@@ -101,6 +147,31 @@ describe("redact", () => {
 			expect(result.error.name).toBe("TypeError");
 			expect(result.error.message).toBe(`fetch http://${R}@plex.local/ failed`);
 			expect(result.error.stack).not.toContain("u:p@");
+		});
+
+		it("keeps an error's own fields and its cause, redacted like any other value", () => {
+			const cause = Object.assign(new Error("connect http://u:p@plex.local/"), {
+				code: "ECONNREFUSED",
+			});
+			const error = Object.assign(new Error("fetch failed", { cause }), {
+				code: "E_PLEX",
+				token: "t",
+			});
+			const result = redact({ error }) as {
+				error: Record<string, unknown> & { cause: Record<string, unknown> };
+			};
+			expect(result.error).toMatchObject({ name: "Error", code: "E_PLEX", token: R });
+			expect(result.error.cause).toMatchObject({
+				message: `connect http://${R}@plex.local/`,
+				code: "ECONNREFUSED",
+			});
+		});
+
+		it("keeps the errors an AggregateError holds", () => {
+			const result = redact(new AggregateError([new Error("one")], "both failed")) as {
+				errors: { message: string }[];
+			};
+			expect(result.errors.map((error) => error.message)).toEqual(["one"]);
 		});
 
 		it("marks a circular reference instead of looping", () => {

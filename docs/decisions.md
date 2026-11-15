@@ -113,10 +113,10 @@ Why: one token source and one primitive library keep the design system (DESIGN.m
 
 ### D11. Structured logs to standard output
 
-Logs are structured, one JSON entry per line, written to standard output: the time to the
-millisecond, the level (debug, info, warn or error), the source, the message and its metadata.
-The app writes them with its own small logger in `logging/`, with no library, and redacts each
-entry before it is written (SPEC-setup.md, "Logging"). This closes D14's logging half.
+Logs are structured, one JSON entry per line, written to standard output. The app writes them
+with its own small logger in `logging/`, with no library, and redacts each entry before it is
+written; the entry's shape and the redaction rules are in SPEC-setup.md, "Logging". This closes
+D14's logging half.
 
 Why: the container runtime collects stdout; structured lines can be filtered without parsing prose.
 The redaction rules replace any key that looks like a credential at any depth, which path-based

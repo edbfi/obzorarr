@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -85,7 +85,8 @@ describe("startUp", () => {
 		}).catch((caught: unknown) => caught);
 		expect(error).toBeInstanceOf(ConfigError);
 		expect((error as ConfigError).variable).toBe("OBZORARR_LOG_DEBUG");
-		expect(await Bun.file(join(root, "never-created")).exists()).toBe(false);
+		// `Bun.file().exists()` is false for any folder, so the folder is checked with `stat`.
+		await expect(stat(join(root, "never-created"))).rejects.toThrow();
 	});
 
 	it("refuses a file that isn't a database, without echoing the path", async () => {
