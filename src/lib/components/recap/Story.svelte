@@ -42,8 +42,6 @@ const headingId = $props.id();
 let current = $state(0);
 /** 1 when the last move went forward, -1 when it went back: the side a step enters from. */
 let direction = $state(1);
-/** The leaving step's height before the move, in px: it keeps it while it goes. */
-let leavingHeight = 0;
 const last = $derived(steps.length - 1);
 
 let story: HTMLElement | undefined = $state();
@@ -72,7 +70,7 @@ function moveDuration() {
 // the move's first part, and the entering one slides in from the side it comes from over the whole
 // move, fading in from there, so the two steps never show at once.
 function enter(step: HTMLElement): TransitionConfig {
-	// A step that comes back before it has gone drops its pin (below).
+	// A step that comes back before it has gone drops its pin (`go`).
 	for (const property of ["align-self", "height", "margin-bottom"]) {
 		step.style.removeProperty(property);
 	}
@@ -84,13 +82,7 @@ function enter(step: HTMLElement): TransitionConfig {
 	};
 }
 
-function leave(step: HTMLElement): TransitionConfig {
-	// The steps share one grid cell. Pinned at the top at its own height, with a margin that takes
-	// that height back, the leaving step stays where it was and leaves the cell's height to the
-	// entering one, so neither moves up or down.
-	step.style.alignSelf = "start";
-	step.style.height = `${leavingHeight}px`;
-	step.style.marginBottom = `-${leavingHeight}px`;
+function leave(_step: Element): TransitionConfig {
 	// As a step leaves, `t` runs from 1 to 0.
 	return { duration: moveDuration(), css: (t) => `opacity: ${between(t, 1 - reelChange, 1)}` };
 }
@@ -123,8 +115,18 @@ async function go(move: Move) {
 		const top = story.getBoundingClientRect().top + window.scrollY;
 		window.scrollTo({ top, behavior: "instant" });
 	}
+	// The steps share one grid cell. Pinned at the top at its own height, with a margin that takes
+	// that height back, the leaving step stays where it was and leaves the cell's height to the
+	// entering one, so neither moves up or down. Pinned here rather than in `leave`, which Svelte
+	// doesn't call again for a step that came back before it had gone.
+	const leaving = currentStep();
+	if (leaving) {
+		const height = `${leaving.offsetHeight}px`;
+		leaving.style.alignSelf = "start";
+		leaving.style.height = height;
+		leaving.style.marginBottom = `-${height}`;
+	}
 	direction = to > current ? 1 : -1;
-	leavingHeight = currentStep()?.offsetHeight ?? 0;
 	current = to;
 	await tick();
 

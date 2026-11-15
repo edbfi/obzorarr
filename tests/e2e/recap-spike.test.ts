@@ -334,6 +334,43 @@ test.describe("without reduced motion", () => {
 		});
 	}
 
+	test("a step that came back before it had gone still keeps its place when it leaves again", async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 360, height: 560 });
+		await open(page);
+		await settle(page);
+		await pressKey(page, "End");
+		const top = (step: string) =>
+			page.evaluate(
+				(found) =>
+					document.querySelector(`${found} h2`)?.parentElement?.getBoundingClientRect().top ??
+					Number.NaN,
+				step,
+			);
+		const before = await top("[role=group]");
+
+		// Home, then End again while the summary is still leaving: the paused animations keep it in
+		// the page past the throttle, so End brings the same step back.
+		await page.keyboard.press("Home");
+		await pauseMidMove(page);
+		await settle(page);
+		await page.keyboard.press("End");
+		await resume(page);
+		await settle(page);
+		await expectStep(page, "3 of 3");
+
+		await page.keyboard.press("Home");
+		await pauseMidMove(page);
+		const leaving = await top("[role=group][inert]");
+		const entering = await top("[role=group]:not([inert])");
+		await resume(page);
+		await expectStep(page, "1 of 3");
+		const after = await top("[role=group]");
+		expect(leaving).toBeCloseTo(before, 0);
+		expect(entering).toBeCloseTo(after, 0);
+	});
+
 	test("focus stays where the story puts it while a step enters", async ({ page }) => {
 		await open(page);
 
