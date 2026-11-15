@@ -6,8 +6,8 @@ let lines: string[];
 beforeEach(() => {
 	lines = [];
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
-		if (String(chunk) !== "") lines.push(String(chunk));
-		// `flushLogs` waits for the write's callback, which may come second or third.
+		lines.push(String(chunk));
+		// `flushLogs` waits for each entry's write callback, so the mock calls it.
 		const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
 		done?.();
 		return true;

@@ -24,8 +24,8 @@ let lines: string[];
 beforeEach(() => {
 	lines = [];
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
-		if (String(chunk) !== "") lines.push(String(chunk));
-		// `flushLogs` waits for the write's callback, which may come second or third.
+		lines.push(String(chunk));
+		// `flushLogs` waits for each entry's write callback, so the mock calls it.
 		const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
 		done?.();
 		return true;
@@ -199,6 +199,29 @@ describe("handleShutdown", () => {
 		for (const release of held.splice(0)) release();
 		await settle(50);
 		expect(fake.exitCode()).toBe(1);
+	});
+
+	it("bounds the deadline's own flush, so a stuck stdout can't hold the exit", async () => {
+		// Every write stays held, as if nothing read standard output, until the test ends.
+		const held: (() => void)[] = [];
+		vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
+			lines.push(String(chunk));
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			if (done) held.push(done);
+			return true;
+		});
+		const fake = fakeProcess();
+		handleShutdown(fake.target, () => new Promise(() => {}), 50);
+		fake.events.emit("sveltekit:shutdown", "SIGTERM");
+		try {
+			await settle(150);
+			expect(fake.exitCode()).toBeUndefined();
+			await settle(400);
+			expect(fake.exitCode()).toBe(1);
+		} finally {
+			// The logger counts unfinished writes, so a held one would stall later flushes.
+			for (const release of held.splice(0)) release();
+		}
 	});
 
 	it("exits non-zero when the cleanup fails", async () => {
