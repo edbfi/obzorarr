@@ -129,20 +129,20 @@ Reduced motion shows task 3's final state at once. The PR merges like the others
 hands the spike on `main` to the owner with the spec's review checklist.
 
 **Acceptance criteria:**
-- [ ] `recap-spike.test.ts` first fails, then passes: without reduced motion, a move leaves an
+- [x] `recap-spike.test.ts` first fails, then passes: without reduced motion, a move leaves an
   animation running on the entering step or its content. Task 3's reduced-motion case stays
   green.
-- [ ] During a transition, the leaving step is `inert`, focus stays where the spec puts it, and
+- [x] During a transition, the leaving step is `inert`, focus stays where the spec puts it, and
   nothing scrolls sideways at 360 px. The e2e pauses the animations right after the move
   (`document.getAnimations()`, `pause()`), checks, then resumes them, so it doesn't depend on
   timing.
-- [ ] The transitions use the duration task 2 converted, and the progress fill the `feedback`
+- [x] The transitions use the duration task 2 converted, and the progress fill the `feedback`
   token; no duration is written as a literal anywhere.
-- [ ] With JavaScript off, the first step still shows its final content (a manual check, its
+- [x] With JavaScript off, the first step still shows its final content (a manual check, its
   evidence in the PR body).
-- [ ] Nothing loops or moves on its own, and there is no count-up.
-- [ ] Checked through `/impeccable` at the four widths with and without reduced motion.
-- [ ] The PR body gives the owner the run commands and the review checklist from the spec, and
+- [x] Nothing loops or moves on its own, and there is no count-up.
+- [x] Checked through `/impeccable` at the four widths with and without reduced motion.
+- [x] The PR body gives the owner the run commands and the review checklist from the spec, and
   asks for the verdict.
 
 **Verification:** `test`, `check`, `lint`, `build`, `smoke`, prek.
@@ -165,8 +165,8 @@ owner's review and the verdict" and "Docs this module changes" list.
   it needs custom work beyond Panda and Ark. `recap`'s spec names the commit it adopts code
   from (the spec's rule), so D19 doesn't.
 - [ ] The route, `lib/components/recap/`, `recap-spike.test.ts`, the `recap_spike_…` messages and
-  the entrance keyframes are deleted; the two new tokens too, unless the verdict keeps them, in
-  which case DESIGN.md is refreshed from Panda's config.
+  the entrance keyframes with their animation styles are deleted; the two new tokens too, unless
+  the verdict keeps them, in which case DESIGN.md is refreshed from Panda's config.
 - [ ] Ground-floor choice 5 closes as "no headers needed"; row 3 is marked built.
 - [ ] SPEC.md, AGENTS.md and the spec are cleaned up as the spec lists; `tasks/` is deleted, with
   the preservation map in the PR body (cleanup procedures 2 and 4).

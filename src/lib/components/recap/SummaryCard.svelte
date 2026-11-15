@@ -1,7 +1,7 @@
 <script lang="ts">
 // The summary end card (SPEC-recap-spike.md, "The three slides"): the member's year on the cinema
 // screen, with three figures and their decorative icons and the "Members only" badge; below it, in
-// the aisle, a disabled Share recap and Back to overview.
+// the aisle, a disabled Share recap and Back to overview. As it enters, the figures fade in.
 import ArrowLeft from "@lucide/svelte/icons/arrow-left";
 import Film from "@lucide/svelte/icons/film";
 import Flame from "@lucide/svelte/icons/flame";
@@ -103,6 +103,7 @@ const action = css({
 				width: "[100%]",
 				maxWidth: "[720px]",
 				marginTop: "xl",
+				_motionSafe: { animationStyle: "recapFade" },
 			})}
 		>
 			{#each figures as figure, index (index)}

@@ -2,7 +2,7 @@
 // The monthly-hours step (SPEC-recap-spike.md, "The three slides"): the twelve months on the cinema
 // screen, as a list labelled by the step's heading. On a phone each month is a row (its name, a
 // bar, its hours); from a tablet up the same list is projected as twelve columns. The list is the
-// chart's text, so it needs no chart library.
+// chart's text, so it needs no chart library. As it enters, the bars grow from zero together.
 import { m } from "#lib/paraglide/messages.js";
 import { formatDateTime, formatNumber } from "#lib/shared/i18n/format.ts";
 import { css } from "#styled-system/css";
@@ -116,6 +116,10 @@ const columnHidden = css({ srOnly: { tablet: true } });
 							gradientFrom: "secondary/50",
 							gradientTo: "secondary",
 							"[data-busiest] &": { gradientTo: "primary" },
+							_motionSafe: {
+								// Disjoint widths: Panda emits the `tablet` rule before the base one.
+								animationStyle: { tabletDown: "recapGrowRow", tablet: "recapGrowColumn" },
+							},
 						})}
 					></span>
 				</span>

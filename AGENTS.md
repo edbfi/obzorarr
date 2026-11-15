@@ -276,9 +276,9 @@ owner-approved `docs/SPEC-<id>.md`. Module 1, `secrets`
 a secret yet, and no database exists. Module 2, `i18n` ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)),
 is built: pages are served in English or Danish, with a language switcher, number and date
 formatters, and a check of the message files. Module 3, `recap-spike`
-([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), is being built from `tasks/`: DESIGN.md's
-fonts are bundled, and `/spike/recap` serves the story with its three steps' content, without
-motion so far.
+([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), is built and awaits the owner's verdict:
+DESIGN.md's fonts are bundled, and `/spike/recap` serves the story with its three steps, their
+motion and reduced motion.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -342,13 +342,16 @@ src/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
       recap/                     temporary (`recap-spike`): Story.svelte, the story shell (bars,
-                                 progress, moves, focus, the carousel semantics);
+                                 progress, moves and their transitions, focus, the carousel
+                                 semantics);
                                  story-input.ts, a key or pointer gesture to a move, and the
                                  throttle; CinemaScreen.svelte, the screen every step plays
                                  on; the steps TotalTimeSlide.svelte, MonthlyHoursSlide.svelte
                                  and SummaryCard.svelte, which take their figures as props;
                                  count-emphasis.ts, a message split around its count so the
-                                 count can be styled large
+                                 count can be styled large; reel-change.ts, the share of a
+                                 move the screen goes dark, which the transitions and the
+                                 entrance keyframes share
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -368,7 +371,9 @@ project.inlang/                  settings.json: the locales and the i18next plug
                                  Vite plugin both read
 drizzle/                         later: reviewed migrations
 panda.config.ts                  every design token; components use them through
-                                 `#styled-system/<module>` (generated, gitignored)
+                                 `#styled-system/<module>` (generated, gitignored); temporary
+                                 (`recap-spike`): the steps' entrance keyframes and their
+                                 animation styles
 vite.config.ts                   SvelteKit (all its configuration), Panda, Paraglide and Vitest
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```

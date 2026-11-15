@@ -47,7 +47,7 @@ each, each test first, then the verdict PR once the owner has reviewed the spike
 
 ### Phase 3: motion and the review
 
-- [ ] Task 4: motion and reduced motion, and the owner's review
+- [x] Task 4: motion and reduced motion, and the owner's review
 
 ### Checkpoint: the owner's verdict
 
