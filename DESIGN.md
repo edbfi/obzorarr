@@ -118,7 +118,7 @@ Use this as a proposed implementation target. The chosen direction comes from th
 - **warning:** `#F0C680`.
 - **danger:** `#FFACB5`.
 
-Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables.
+Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. The recap's projector light is the `beam` gradient: primary fading to transparent downwards from where it lands, so it shows no edge. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables.
 
 ## Typography
 
@@ -133,7 +133,7 @@ Primary fills use background-colored text. Secondary color marks information, li
 - **number:** IBM Plex Mono, 32px/1.2, weight 500.
 - **code:** IBM Plex Mono, 13px/1.5, weight 400.
 
-Keep prose below 70 characters per line. Titles use sentence case. Keep capitals for proper names and short codes. Operational numbers use tabular mono glyphs; a poster-sized recap number may use the display face. Font names indicate intended typefaces; image generation approximates glyphs. Use locally bundled font files and fallbacks, rather than remote font requests.
+Keep prose below 70 characters per line. Titles use sentence case. Keep capitals for proper names and short codes. Operational numbers use tabular mono glyphs; a poster-sized recap number may use the display face, at the `poster` size: fluid, from 96px on a 360px screen to 168px at 1440px. Font names indicate intended typefaces; image generation approximates glyphs. Use locally bundled font files and fallbacks, rather than remote font requests.
 
 ## Layout
 
