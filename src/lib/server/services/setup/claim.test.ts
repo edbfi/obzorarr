@@ -185,6 +185,33 @@ describe("claimInstance", () => {
 		expect(await db.select().from(ownerSession)).toEqual([]);
 	});
 
+	it("logs a failed claim without the typed username or the password's hash", async () => {
+		const { db, token } = await freshInstance();
+		await insertOwner(db, { username: "elsewhere", passwordHash: "h", createdAt: new Date() });
+		const written: string[] = [];
+		vi.spyOn(process.stdout, "write").mockImplementation((chunk, ...rest: unknown[]) => {
+			written.push(String(chunk));
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			done?.();
+			return true;
+		});
+		const result = await claimInstance(db, {
+			token: token(),
+			username: "Gunnhild Østergaard",
+			password: PASSWORD,
+		});
+		expect(result).toEqual({ status: "failed" });
+		const entry = written
+			.map((line) => JSON.parse(line))
+			.find((e) => e.message === "the claim failed");
+		expect(entry).toBeDefined();
+		const text = JSON.stringify(entry);
+		expect(text).not.toContain("Gunnhild");
+		expect(text).not.toContain("$argon2");
+		// What the database said is kept, so the failure can still be told apart.
+		expect(text).toMatch(/constraint/i);
+	});
+
 	it("starts the owner's session in its transaction, and gives its token", async () => {
 		const { db, token } = await freshInstance();
 		const before = Date.now();

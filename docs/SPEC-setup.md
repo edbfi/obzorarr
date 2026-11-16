@@ -97,7 +97,12 @@ it comes.
 - at any depth, any metadata key that looks like a token, secret, password, cookie, session or key,
   except the few names `redact.ts` lists as holding no credential, such as Plex's `ratingKey` (the
   owner's allowlist, 2026-11-16), whose values are still cleaned like any other;
-- a `Secret` (`secrets`) is already `[redacted]`.
+- a `Secret` (`secrets`) is already `[redacted]`;
+- anything shaped like an argon2 password hash, wherever it appears;
+- a failed query's bound values, which can be the owner's username and password hash: the database
+  is opened with Drizzle's `paramsInErrors` off, a failed claim logs only the query and the
+  database's own message, and the values (`params`) are hidden in any error that still carries
+  them.
 
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its

@@ -302,4 +302,42 @@ describe("redact", () => {
 			});
 		});
 	});
+
+	describe("database errors and password hashes", () => {
+		const HASH =
+			"$argon2id$v=19$m=65536,t=2,p=1$/seEFvW4OSZIjbIuRmn3B5Qo57VWz2sgfKL0ipDNHQs$NkKmoFBaJSLdYTbzOZHz7diXfC6Zi+WSdO2WpLgqMx4";
+
+		it("hides an argon2 hash wherever it appears in text", () => {
+			expect(redact(`stored ${HASH} for the owner`)).toBe(`stored ${R} for the owner`);
+			expect(redact(`"${HASH}",1700000000000`)).toBe(`"${R}",1700000000000`);
+			expect(redact("$argon2i$v=19$m=4096,t=3,p=1$c2FsdA$aGFzaA")).toBe(R);
+		});
+
+		it("drops a failed query's parameters from its message, stack and fields, keeping the query", () => {
+			const cause = new Error("UNIQUE constraint failed: owner.id");
+			const failed = Object.assign(
+				new Error(
+					`Failed query: insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)\nparams: 1,Gunnhild,${HASH}`,
+				),
+				{
+					name: "DrizzleQueryError",
+					query: 'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)',
+					params: [1, "Gunnhild", HASH],
+					cause,
+				},
+			);
+			const logged = redact(failed) as Record<string, unknown>;
+			const text = JSON.stringify(logged);
+			expect(text).not.toContain("Gunnhild");
+			expect(text).not.toContain("argon2");
+			expect(logged.params).toBe(R);
+			expect(logged.query).toBe(
+				'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)',
+			);
+			expect(logged.message).toBe(
+				`Failed query: insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)\nparams: ${R}`,
+			);
+			expect(text).toContain("UNIQUE constraint failed: owner.id");
+		});
+	});
 });

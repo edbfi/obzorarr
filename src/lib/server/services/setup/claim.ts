@@ -1,4 +1,4 @@
-import type { Database } from "#lib/server/db/client.ts";
+import { type Database, queryFailure } from "#lib/server/db/client.ts";
 import { insertOwner } from "#lib/server/db/owner.ts";
 import { writeSetting } from "#lib/server/db/settings.ts";
 import { createLogger } from "#lib/server/logging/logger.ts";
@@ -124,7 +124,9 @@ export async function claimInstance(db: Database, input: ClaimInput): Promise<Cl
 				return started;
 			});
 		} catch (error) {
-			log.error("the claim failed", { error });
+			// The query and the database's own message only: the insert's values are the username
+			// and the password's hash.
+			log.error("the claim failed", { error: queryFailure(error) });
 			return { status: "failed" };
 		}
 		markClaimed();
