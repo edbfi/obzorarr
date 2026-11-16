@@ -291,7 +291,8 @@ and password hashing to 4 at once; the claim refuses a browser that didn't say w
 on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
 far; and the owner signs in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from
 one address, with a wait after 10 failures in a row. Everything else under `/admin` needs the
-owner's session.
+owner's session, inside the admin shell: a sidebar, a rail or a drawer by width, with the owner,
+Sign out behind its confirmation, the language switcher and the version.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -345,10 +346,15 @@ src/
     (admin)/admin/sign-in/       `/admin/sign-in`: +page.svelte, the form (surface brief
                                  `route-admin-sign-in.md`); +page.server.ts: the sign-in action,
                                  the cookie and the return path
-    (admin)/admin/(shell)/       the owner's admin panel: +page.server.ts sends `/admin` to the
-                                 Security tab until the overview exists, settings/+page.server.ts
-                                 sends `/admin/settings` there too, and settings/security/
-                                 +page.svelte is the Security tab, only its heading so far
+    (admin)/admin/sign-out/      `/admin/sign-out`: the POST ends the session and clears the
+                                 cookie; a GET only redirects to `/admin`
+    (admin)/admin/(shell)/       the owner's admin panel: +layout.svelte (and its server load,
+                                 the owner's username) is the admin shell (surface brief
+                                 `route-admin-settings-security.md`); +page.server.ts sends `/admin`
+                                 to the Security tab until the overview exists;
+                                 settings/+layout.svelte: the heading and the tabs;
+                                 settings/+page.server.ts sends `/admin/settings` to its first
+                                 tab; settings/security/+page.svelte: the Security tab's frame
     (app)/ api/                  later: member area and recaps, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -393,7 +399,8 @@ src/
                                  owner, the step pointer and the owner's first session
       services/sign-in/sessions.ts
                                  owner sessions: 7 days unused or 30 days at most, the last use
-                                 written at most hourly, started only for the current password
+                                 written at most hourly, started only for the current password,
+                                 and ended one by one at sign-out
       services/sign-in/owner-check.ts
                                  which paths need the owner's session, and what a request without
                                  one gets: sign in and back, or "Your session ended"
@@ -421,7 +428,8 @@ src/
                                  doubling to an hour, swept and capped
       security/return-path.ts    where sign-in returns to: a same-origin path, or nothing
       security/session-token.ts  a session's random token and the hash that is stored instead
-      security/session-cookie.ts `obzorarr_session` and its options, `Secure` only over https
+      security/session-cookie.ts `obzorarr_session` and its options and deletions, `Secure` only
+                                 over https
       security/browser-address.ts
                                  `ORIGIN`, or the validated `Origin` of a POST: the address a
                                  cookie's `Secure` flag follows
@@ -441,6 +449,14 @@ src/
                                  one native button per language, named in that language
       layout/PanelPage.svelte    a one-task page outside the admin shell, the claim's and
                                  sign-in's: logo, wordmark and language switcher above one panel
+      layout/AdminSidebar.svelte the shell's sidebar: logo, navigation and the owner's footer,
+                                 collapsing to a rail from 1024px down
+      layout/AdminDrawer.svelte  the shell below 768px: the menu button and the sidebar as a
+                                 drawer
+      layout/OwnerFooter.svelte  the owner's initial and username, Sign out, the language
+                                 switcher and the version
+      layout/SignOutDialog.svelte
+                                 Sign out and its confirmation
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
                                  the claim and sign-in
@@ -456,7 +472,8 @@ tests/
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
-                                 sign-in page, its limit, the hash slots and the owner check
+                                 sign-in page, its limit, the hash slots, the owner check, the
+                                 admin shell and signing out
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the
@@ -477,8 +494,9 @@ panda.config.ts                  every design token; components use them through
                                  pages read the generated token CSS as
                                  `#styled-system/styles/tokens.css?raw`
 vite.config.ts                   SvelteKit (all its configuration, exported as `kit`: the CSP,
-                                 and SvelteKit's own form check off), Panda, Paraglide and Vitest
-vite.config.test.ts              SvelteKit's form check and remote functions stay off
+                                 and SvelteKit's own form check off), Panda, Paraglide and Vitest,
+                                 and the version the shell shows (`appVersion`, at build time)
+vite.config.test.ts              SvelteKit's form check and remote functions stay off; the version
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 

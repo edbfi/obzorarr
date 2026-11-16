@@ -57,5 +57,14 @@
 	"sign_in_forgot_recovery": "Åbn {{path}}, og vælg en ny adgangskode.",
 	"error_session_ended_description": "Din session er udløbet. Log ind igen.",
 	"error_sign_in": "Log ind",
-	"landing_owner_sign_in": "Log ind som ejer"
+	"landing_owner_sign_in": "Log ind som ejer",
+	"admin_nav_label": "Administration",
+	"admin_menu": "Menu",
+	"admin_menu_close": "Luk menuen",
+	"admin_sign_out": "Log ud",
+	"admin_sign_out_title": "Log ud af Obzorarr?",
+	"admin_sign_out_cancel": "Annuller",
+	"admin_version": "Version {{version}}",
+	"admin_settings_tabs": "Indstillingssektioner",
+	"admin_settings_security": "Sikkerhed"
 }

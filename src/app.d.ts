@@ -1,5 +1,8 @@
 // See https://svelte.dev/docs/kit/types#app.d.ts
 declare global {
+	/** The version the shell shows, written in at build time (`appVersion` in vite.config.ts). */
+	const __OBZORARR_VERSION__: string;
+
 	namespace App {
 		// interface Error {}
 		interface Locals {

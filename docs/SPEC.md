@@ -826,8 +826,9 @@ export const GET: RequestHandler = () => healthResponse();
   copied `Request`, the refusal without the configured header and the once-a-process warnings;
   `security/rate-limit.test.ts`, a window at its edges, the sweep, the cap and the headers;
   `security/session-token.test.ts` and `security/session-cookie.test.ts`, the token, its hash
-  and the cookie's options; `db/owner-session.test.ts`; `services/sign-in/sessions.test.ts`, both
-  session limits at their edges, the hourly write, expiry and the current-password check;
+  and the cookie's options and its deletion, `Secure` over https; `db/owner-session.test.ts`;
+  `services/sign-in/sessions.test.ts`, both session limits at their edges, the hourly write,
+  expiry, the current-password check and ending one session;
   `services/sign-in/sign-in.test.ts`, right and wrong credentials with one answer, the username's
   case and spaces, the dummy verification for a wrong username, its dummy hash made inside a hash
   slot and made again after it failed, a busy hash slot, the slot freed however the check ends,
@@ -867,7 +868,11 @@ export const GET: RequestHandler = () => healthResponse();
   `src/routes/(admin)/admin/sign-in/page.server.test.ts` (the cookie, a safe `next` kept to its
   path and an unsafe one dropped, one answer, busy with its headers, the 403 for a browser that
   stripped `Origin` before any check, and `no-store`),
-  `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
+  `src/routes/(admin)/admin/sign-out/page.server.test.ts` (a GET signs nobody out; the POST ends
+  the session and deletes the cookie, `Secure` over https, or only clears the cookie, and refuses
+  a browser that stripped `Origin` first),
+  `vite.config.test.ts` (SvelteKit's own form check and remote functions are off, and the version
+  is `OBZORARR_VERSION` at build time or `dev`), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
@@ -943,7 +948,13 @@ export const GET: RequestHandler = () => healthResponse();
     `/admin/settings` answer their 307 and the Security tab is `no-store`, and the sign-in page
     sends the owner to `/admin`; the check's own answers (its redirect, the data request's JSON
     redirect and its refusal) keep the security headers and clear a stale session cookie, while
-    signing in over one keeps the new session; and `/` links to sign in.
+    signing in over one keeps the new session; and `/` links to sign in. In the admin shell, a GET
+    to `/admin/sign-out` signs nobody out; Sign out asks first, closes on Escape giving focus
+    back, then ends the session and lands on sign-in; a sign-out POST without a session only
+    clears the cookie, and one with `Origin` stripped gets the 403; below 768px the menu's
+    drawer traps focus, makes the page inert and closes on Escape; and the shell shows its
+    heading, the owner, Sign out and the version in English and Danish with no console error or
+    CSP violation.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

@@ -67,6 +67,11 @@ export async function lookUpSession(
 	return { username: session.username };
 }
 
+/** Ends the session `token` names, if there is one: signing out. */
+export async function endSession(db: Executor, token: string): Promise<void> {
+	await deleteSession(db, hashSessionToken(token));
+}
+
 /** Deletes every ended session, as startup does. */
 export async function deleteExpiredSessions(db: Executor, now: Date): Promise<void> {
 	await deleteExpired(db, now, SESSION_IDLE_MS);

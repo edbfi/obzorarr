@@ -1,6 +1,6 @@
 import type { sveltekit } from "@sveltejs/kit/vite";
 import { describe, expect, it } from "vitest";
-import { kit } from "./vite.config.ts";
+import { appVersion, kit } from "./vite.config.ts";
 
 /** The options as SvelteKit reads them, every setting `kit` leaves out included. */
 const options: Parameters<typeof sveltekit>[0] = kit;
@@ -16,5 +16,18 @@ describe("SvelteKit's options", () => {
 
 	it("leave remote functions off", () => {
 		expect(options.experimental?.remoteFunctions ?? false).toBe(false);
+	});
+});
+
+// The shell shows the version, set when the image is built (SPEC-sign-in.md, "Configuration").
+describe("the version", () => {
+	it("is OBZORARR_VERSION at build time", () => {
+		expect(appVersion({ OBZORARR_VERSION: "0.2.0" })).toBe("0.2.0");
+		expect(appVersion({ OBZORARR_VERSION: " nightly-1a2b3c4 " })).toBe("nightly-1a2b3c4");
+	});
+
+	it("is dev when it isn't set", () => {
+		expect(appVersion({})).toBe("dev");
+		expect(appVersion({ OBZORARR_VERSION: "  " })).toBe("dev");
 	});
 });

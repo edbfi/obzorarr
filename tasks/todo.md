@@ -318,14 +318,14 @@ or only clears the cookie without one; GET only redirects); the settings tabs wi
 Security tab gets its frame and heading.
 
 **Acceptance criteria:**
-- [ ] `vite.config.test.ts` gains: the version is `OBZORARR_VERSION` when set at build time and
+- [x] `vite.config.test.ts` gains: the version is `OBZORARR_VERSION` when set at build time and
   `dev` otherwise.
-- [ ] `tests/e2e/sign-in.test.ts` gains: a GET to `/admin/sign-out` signs nobody out; Sign out asks
+- [x] `tests/e2e/sign-in.test.ts` gains: a GET to `/admin/sign-out` signs nobody out; Sign out asks
   first, then ends the session and lands on sign-in; a sign-out POST without a session only clears
   the cookie; one with `Origin` stripped gets the 403 that says so; the drawer below 768px traps
   focus, closes on Escape and makes the page inert; the shell logs no console error or CSP
   violation, in both languages.
-- [ ] The shell follows its brief in every state it names, at each width, zoom, keyboard and
+- [x] The shell follows its brief in every state it names, at each width, zoom, keyboard and
   reduced motion, in English and Danish, with screenshots in the PR body.
 
 **Verification:** the gates; the brief's checks.

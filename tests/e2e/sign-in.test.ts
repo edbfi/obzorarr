@@ -614,3 +614,145 @@ test.describe("the owner check", () => {
 		}
 	});
 });
+
+/** Claims a fresh server in a browser, which the claim signs in and leaves on the Security tab. */
+async function claimInBrowser(page: Page, server: { url: string; output: () => string }) {
+	const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
+	await page.goto(`${server.url}/setup`);
+	await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+	await page.locator("#token").fill(token);
+	await page.locator("#username").fill("owner");
+	await page.locator("#password").fill(PASSWORD);
+	// The claim's one submit button, in whichever language the page is in.
+	await page.locator("form button[type=submit]").click();
+	await page.waitForURL(`${server.url}/admin/settings/security`);
+	await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+}
+
+test.describe("the admin shell and signing out", () => {
+	test("a GET to /admin/sign-out signs nobody out; Sign out asks first, then ends the session", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const problems = await watchForProblems(page);
+			await claimInBrowser(page, server);
+			await page.goto(`${server.url}/admin/sign-out`);
+			await page.waitForURL(`${server.url}/admin/settings/security`);
+
+			const signOut = page.getByRole("button", { name: "Sign out" });
+			await signOut.click();
+			const dialog = page.getByRole("dialog", { name: "Sign out of Obzorarr?" });
+			await expect(dialog).toBeVisible();
+			await page.keyboard.press("Escape");
+			await expect(dialog).toBeHidden();
+			await expect(signOut).toBeFocused();
+			await expect(page).toHaveURL(`${server.url}/admin/settings/security`);
+
+			await signOut.click();
+			await dialog.getByRole("button", { name: "Sign out" }).click();
+			await page.waitForURL(`${server.url}/admin/sign-in`);
+			const cookies = await page.context().cookies();
+			expect(cookies.map((cookie) => cookie.name)).not.toContain("obzorarr_session");
+			await page.goto(`${server.url}/admin/settings/security`);
+			await page.waitForURL(/\/admin\/sign-in\?next=/);
+			expect(problems).toEqual([]);
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("a sign-out POST without a session only clears the cookie; one with Origin stripped gets the 403", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const signOut = (headers: Record<string, string>) =>
+				fetch(`${server.url}/admin/sign-out`, {
+					method: "POST",
+					headers: {
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+						...headers,
+					},
+					body: "",
+					redirect: "manual",
+				});
+			const cleared = await signOut({ origin: server.url, cookie: "obzorarr_session=made-up" });
+			expect(cleared.status).toBe(303);
+			expect(cleared.headers.get("location")).toBe("/admin/sign-in");
+			expect(cleared.headers.get("set-cookie") ?? "").toMatch(/^obzorarr_session=;/);
+			const stripped = await signOut({ "sec-fetch-site": "same-origin" });
+			expect(stripped.status).toBe(403);
+			expect((await stripped.text()).replace(/&#(39|x27);/g, "'")).toContain(
+				"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+			);
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("below 768 px the menu opens a drawer that traps focus, makes the page inert and closes on Escape", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+		try {
+			const page = await context.newPage();
+			await claimInBrowser(page, server);
+			const menu = page.getByRole("button", { name: "Menu" });
+			await menu.click();
+			const drawer = page.getByRole("dialog", { name: "Menu" });
+			await expect(drawer).toBeVisible();
+			await expect(page.locator("#admin-page")).toHaveAttribute("inert", "");
+			// Focus stays inside the drawer however far Tab goes.
+			for (let i = 0; i < 12; i++) {
+				await page.keyboard.press("Tab");
+				expect(await drawer.evaluate((node) => node.contains(document.activeElement))).toBe(true);
+			}
+			await expect(drawer.getByRole("link", { name: "Settings" })).toBeVisible();
+			await page.keyboard.press("Escape");
+			await expect(drawer).toBeHidden();
+			await expect(page.locator("#admin-page")).not.toHaveAttribute("inert", "");
+			await expect(menu).toBeFocused();
+		} finally {
+			await context.close();
+			await server.stop();
+		}
+	});
+
+	for (const [locale, settings, signOut, version] of [
+		["en-GB", "Settings", "Sign out", "Version dev"],
+		["da-DK", "Indstillinger", "Log ud", "Version dev"],
+	] as const) {
+		test(`the shell shows in ${locale} with no console error or CSP violation`, async ({
+			browser,
+		}) => {
+			const server = await startServer(root, {
+				OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+			});
+			const context = await browser.newContext({ locale, viewport: { width: 1440, height: 900 } });
+			try {
+				const page = await context.newPage();
+				const problems = await watchForProblems(page);
+				await claimInBrowser(page, server);
+				await expect(page.getByRole("heading", { level: 1 })).toHaveText(settings);
+				await expect(page.getByRole("link", { name: "owner" })).toHaveAttribute(
+					"href",
+					"/admin/settings/security",
+				);
+				await expect(page.getByRole("button", { name: signOut })).toBeVisible();
+				await expect(page.getByText(version)).toBeVisible();
+				expect(problems).toEqual([]);
+			} finally {
+				await context.close();
+				await server.stop();
+			}
+		});
+	}
+});

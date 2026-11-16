@@ -42,3 +42,8 @@ export const SESSION_COOKIE_DELETION: SessionCookieOptions = {
 	sameSite: "lax",
 	secure: false,
 };
+
+/** Deleting the cookie where the browser's address is known, as at sign-out. */
+export function sessionCookieDeletion(browserAddress: string): SessionCookieOptions {
+	return { ...SESSION_COOKIE_DELETION, secure: browserAddress.startsWith("https:") };
+}

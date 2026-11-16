@@ -179,6 +179,7 @@ common password or, as a whole, a simple pattern such as `abcabcabcabcabc` or `a
 - **Signing in again:** open `/admin/sign-in`, linked from the home page, and use the owner's
   username, in any case, and password. Every admin page sends you there while you're signed out,
   and back to the page afterwards.
+- **Signing out:** Sign out, at the foot of the admin's sidebar, asks first, then ends the session.
 
 ## Logs
 
@@ -207,6 +208,11 @@ longer than `SHUTDOWN_TIMEOUT` plus 5 seconds to stop, or it's killed mid-write.
 10 seconds, so with the default `SHUTDOWN_TIMEOUT`, set Compose's `stop_grace_period` to `40s`.
 
 ## Working on it
+
+The admin's sidebar shows the version Obzorarr was built as: `OBZORARR_VERSION` when it is set
+during the build (the image's build sets a release such as `0.2.0`, or a nightly such as
+`nightly-1a2b3c4`), and `dev` otherwise. It is fixed at build time, so setting it on a running
+container changes nothing.
 
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
 The product and design context is in [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and

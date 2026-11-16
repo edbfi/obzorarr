@@ -39,7 +39,18 @@ export const kit = {
 	csrf: { trustedOrigins: ["*"] },
 } satisfies Parameters<typeof sveltekit>[0];
 
+/**
+ * The version the shell shows: `OBZORARR_VERSION` when the image is built, such as `0.2.0` or
+ * `nightly-1a2b3c4`, and `dev` otherwise. It is fixed at build time and never read at runtime
+ * (SPEC-sign-in.md, "Configuration").
+ */
+export function appVersion(env: Record<string, string | undefined>): string {
+	return env.OBZORARR_VERSION?.trim() || "dev";
+}
+
 export default defineConfig({
+	// The version, as a constant the build writes into the code.
+	define: { __OBZORARR_VERSION__: JSON.stringify(appVersion(process.env)) },
 	plugins: [
 		sveltekit(kit),
 		// Static css() calls become class strings at build time, so no styling runtime ships.
