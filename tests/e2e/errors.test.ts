@@ -34,6 +34,8 @@ test.describe("the error page", () => {
 			try {
 				const page = await context.newPage();
 				const problems = await watchForProblems(page);
+				// Go back shows only with a page to go back to.
+				await page.goto("/");
 				const response = await page.goto("/no-such-page");
 				expect(response?.status()).toBe(404);
 				await expect(page.locator("html")).toHaveAttribute("data-hydrated", "");
@@ -42,7 +44,7 @@ test.describe("the error page", () => {
 				await expect(page.getByText(description)).toBeVisible();
 				await expect(page.locator("main")).not.toContainText("404");
 				await expect(page.locator("body")).toHaveCSS("background-color", "rgb(11, 24, 40)");
-				// Home is a link; Go back needs script, so it is a button once the page has it.
+				// Home is a link; Go back needs script and history, so it is a button once both exist.
 				await expect(page.locator('main a[href="/"]')).toBeVisible();
 				await expect(page.locator("main button")).toBeVisible();
 				expect(problems).toEqual([]);

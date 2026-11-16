@@ -7,35 +7,28 @@ import { css } from "#styled-system/css";
 import { page } from "$app/state";
 
 /**
- * Each status the app answers with, titled and described in the viewer's language; the number
- * itself is never shown (SPEC-sign-in.md, "Errors and error pages").
+ * Each status's title in the viewer's language, never the number itself; the description is the
+ * error's message, which `handleError` sets for every error (SPEC-sign-in.md, "Errors and error
+ * pages").
  */
-const text = $derived.by(() => {
+const title = $derived.by(() => {
 	switch (page.status) {
 		case 404:
-			return { title: m.error_not_found_title(), description: m.error_not_found_description() };
+			return m.error_not_found_title();
 		case 403:
-			return {
-				title: m.error_access_denied_title(),
-				description: m.error_forbidden_description(),
-			};
+			return m.error_access_denied_title();
 		case 429:
-			return {
-				title: m.error_too_many_requests_title(),
-				description: m.error_too_many_requests_description(),
-			};
+			return m.error_too_many_requests_title();
 		default:
-			return {
-				title: m.error_something_went_wrong_title(),
-				description: m.error_something_went_wrong_description(),
-			};
+			return m.error_something_went_wrong_title();
 	}
 });
+const description = $derived(page.error?.message ?? m.error_something_went_wrong_description());
 
-// Go back needs script, so it appears only once the page has it.
-let hydrated = $state(false);
+// Go back needs script, and a page to go back to, so it appears only once the page has both.
+let canGoBack = $state(false);
 onMount(() => {
-	hydrated = true;
+	canGoBack = history.length > 1;
 });
 
 const action = css({
@@ -58,7 +51,7 @@ const action = css({
 </script>
 
 <svelte:head>
-	<title>{text.title}</title>
+	<title>{title}</title>
 </svelte:head>
 
 <div
@@ -106,10 +99,10 @@ const action = css({
 			borderRadius: "panel",
 		})}
 	>
-		<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{text.title}</h1>
-		<p class={css({ marginBlockStart: "sm", color: "muted" })}>{text.description}</p>
+		<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{title}</h1>
+		<p class={css({ marginBlockStart: "sm", color: "muted" })}>{description}</p>
 		<div class={css({ display: "flex", flexWrap: "wrap", gap: "md", marginBlockStart: "xl" })}>
-			{#if hydrated}
+			{#if canGoBack}
 				<button type="button" class={action} onclick={() => history.back()}>
 					{m.error_go_back()}
 				</button>

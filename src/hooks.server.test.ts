@@ -52,7 +52,33 @@ it.each([
 	expect(await handle("unknown", new Error("boom"), language)).toEqual({ message });
 });
 
-it("keeps SvelteKit's own answer for app and framework errors", async () => {
-	expect(await handle("app", { message: "Not found" })).toBeUndefined();
-	expect(await handle("framework", { status: 404, message: "Not Found" })).toBeUndefined();
+it("keeps the message of an error the app raised with one", async () => {
+	const ownMessage = { status: 403, message: "Your session ended. Sign in again." };
+	expect(await handle("app", ownMessage)).toBeUndefined();
+});
+
+it.each([
+	["en", "This page doesn't exist, or it has moved."],
+	["da", "Siden findes ikke, eller den er flyttet."],
+])(
+	"gives an error raised without a message, and the framework's own, the status's description (%s)",
+	async (language, message) => {
+		// `error(404)` without a message gets SvelteKit's "Error: 404".
+		expect(await handle("app", { status: 404, message: "Error: 404" }, language)).toEqual({
+			message,
+		});
+		expect(await handle("framework", { status: 404, message: "Not Found" }, language)).toEqual({
+			message,
+		});
+	},
+);
+
+it("describes each status the error page titles, and anything else as something gone wrong", async () => {
+	const described = async (status: number) =>
+		(await handle("framework", { status, message: "x" })) as { message: string };
+	expect((await described(403)).message).toBe("You don't have access to this page.");
+	expect((await described(429)).message).toBe(
+		"Too many requests came from your address. Wait a minute, then try again.",
+	);
+	expect((await described(405)).message).toBe("Something went wrong. Try again.");
 });

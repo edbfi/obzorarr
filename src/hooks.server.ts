@@ -20,17 +20,36 @@ export const init: ServerInit = async () => {
 };
 
 /**
- * An unexpected error while answering a request becomes one redacted log entry, instead of
- * SvelteKit's default, which writes its stack to the console unredacted, and the viewer gets
- * "Something went wrong. Try again." in their language. Errors the app raises itself, and the
- * framework's, keep SvelteKit's own answer.
+ * Every error's message, which the error page shows under its title (SPEC-sign-in.md, "Errors and
+ * error pages"). An unexpected error is logged as one redacted entry, instead of SvelteKit's
+ * default, which writes its stack to the console unredacted, and gets "Something went wrong. Try
+ * again."; an error the app raised with a message of its own keeps it; one raised without (which
+ * SvelteKit calls "Error: <status>") and the framework's own get their status's description, in
+ * the viewer's language. An error thrown in `handle` outside the language stage is described in
+ * English, since the language is chosen inside it.
  */
 export const handleError: HandleServerError = (input) => {
 	logRequestError(input);
-	return input.kind === "unknown"
-		? { message: m.error_something_went_wrong_description() }
-		: undefined;
+	if (input.kind === "unknown") return { message: m.error_something_went_wrong_description() };
+	if (input.kind === "validation") return undefined;
+	const status = input.error.status ?? 500;
+	if (input.kind === "app" && input.error.message !== `Error: ${status}`) return undefined;
+	return { message: describeStatus(status) };
 };
+
+/** What the error page says under each status's title. */
+function describeStatus(status: number): string {
+	switch (status) {
+		case 403:
+			return m.error_forbidden_description();
+		case 404:
+			return m.error_not_found_description();
+		case 429:
+			return m.error_too_many_requests_description();
+		default:
+			return m.error_something_went_wrong_description();
+	}
+}
 
 /** Each request's language (SPEC-i18n.md); it refuses nothing. */
 const language: Handle = ({ event, resolve }) =>

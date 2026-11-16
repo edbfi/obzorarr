@@ -32,7 +32,8 @@ and why.
 - [x] `server/security/refusal-page.test.ts` first fails, then passes: "Access denied" and "Too
   many requests" in both languages, their JSON forms, their fixed policy, `class="dark"`, the
   inline token declarations and the links; no script and no Go back.
-- [x] `server/logging/request-error.test.ts` gains the returned message, in both languages.
+- [x] `src/hooks.server.test.ts` gains the returned message, in both languages (logging holds no
+  user-facing text, so the message is the hook's).
 - [x] `tests/e2e/errors.test.ts` first fails, then passes: an unknown page shows "Page not found"
   without its number; a cross-site POST's "Access denied" page shows the tokens' computed colours;
   no page logs a console error or a CSP violation.
