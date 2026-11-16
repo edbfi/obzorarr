@@ -74,10 +74,11 @@ export async function signIn(
 	const address = input.clientAddress;
 	if (address !== undefined) {
 		// Every request counts towards the limit, one a wait refuses too (SPEC-sign-in.md, "Rate
-		// limits"); a wait is answered first, since it can outlast the limit's window.
+		// limits"). When both refuse, the answer is the one that ends later, so it never says to
+		// try again before the address may.
 		const decision = signInLimit.hit(address);
 		const wait = failedSignIns.wait(address);
-		if (wait !== undefined) {
+		if (wait !== undefined && (decision.allowed || wait.resetAt >= decision.resetAt)) {
 			return {
 				status: "too-many",
 				reason: "wait",

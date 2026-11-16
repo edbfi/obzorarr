@@ -18,6 +18,8 @@ const verify = vi.hoisted(() => ({
 	hashFailures: 0,
 	/** How many hashes started. */
 	hashCalls: 0,
+	/** Stands in for argon2id where a test makes many checks and only the answer matters. */
+	fast: undefined as ((password: string, hash: string) => boolean) | undefined,
 }));
 
 vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
@@ -34,7 +36,9 @@ vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
 		},
 		verifyPassword: async (password: string, hash: string) => {
 			verify.hashes.push(hash);
-			const answer = await original.verifyPassword(password, hash);
+			const answer = verify.fast
+				? verify.fast(password, hash)
+				: await original.verifyPassword(password, hash);
 			await verify.during?.();
 			return answer;
 		},
@@ -213,7 +217,14 @@ describe("signIn", () => {
 // The limit and the failed sign-ins live in the module and outlast each test, so every test here
 // signs in from an address of its own.
 describe("signIn's limits", () => {
+	// Many checks each, so the owner's password is checked without argon2id; the real check is
+	// covered above.
+	beforeEach(() => {
+		verify.fast = (password, hash) => password === PASSWORD && hash === ownerHash;
+	});
+
 	afterEach(() => {
+		verify.fast = undefined;
 		vi.useRealTimers();
 	});
 
@@ -284,6 +295,26 @@ describe("signIn's limits", () => {
 		});
 	});
 
+	it("answers with the limit when it outlasts the wait, from an address that kept retrying", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		const start = new Date("2026-11-19T12:00:00Z").getTime();
+		vi.setSystemTime(start);
+		const clientAddress = "203.0.113.50";
+		const wrong = () => signIn(db, { username: "Åse", password: "not it at all", clientAddress });
+		for (let i = 0; i < 10; i++) await wrong();
+		vi.setSystemTime(start + 5 * 60_000);
+		// The second wait, from 5 to 15 minutes.
+		for (let i = 0; i < 10; i++) await wrong();
+		// Ten retries at 14 minutes, refused by the wait, fill a window that lasts until 19.
+		vi.setSystemTime(start + 14 * 60_000);
+		for (let i = 0; i < 10; i++) expect(await wrong()).toMatchObject({ reason: "wait" });
+		expect(await wrong()).toMatchObject({
+			status: "too-many",
+			reason: "limit",
+			retryAfterSeconds: 300,
+		});
+	});
+
 	it("counts no failure for a refused request, and a success starts the count again", async () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		const start = new Date("2026-11-18T12:00:00Z").getTime();
@@ -299,8 +330,11 @@ describe("signIn's limits", () => {
 		for (let i = 0; i < 3; i++) expect(await wrong()).toMatchObject({ reason: "wait" });
 		vi.setSystemTime(start + 6 * 60_000);
 		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
-		expect(await wrong()).toMatchObject({ reason: "busy" });
-		for (const release of taken) release?.();
+		try {
+			expect(await wrong()).toMatchObject({ reason: "busy" });
+		} finally {
+			for (const release of taken) release?.();
+		}
 		// Had the refusals counted, these 9 would make the 20th failure and start a wait.
 		vi.setSystemTime(start + 12 * 60_000);
 		for (let i = 0; i < 9; i++) expect(await wrong()).toEqual({ status: "wrong" });
