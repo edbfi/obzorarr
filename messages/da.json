@@ -22,6 +22,7 @@
 	"setup_password_hide_label": "Skjul adgangskode",
 	"setup_password_too_short": "Brug mindst 15 tegn.",
 	"setup_password_too_long": "Brug højst 128 tegn.",
+	"setup_password_pattern": "Adgangskoden er et simpelt mønster. Vælg en anden.",
 	"setup_password_app_name": "Udelad ordet Obzorarr.",
 	"setup_password_username": "Udelad dit brugernavn.",
 	"setup_password_common": "Adgangskoden står på en liste over almindelige adgangskoder. Vælg en anden.",

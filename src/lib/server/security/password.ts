@@ -13,10 +13,33 @@ const COMMON_PASSWORDS = new Set(commonPasswordList.split("\n").filter((entry) =
 const APP_NAME = "obzorarr";
 
 export type UsernameError = "empty" | "too-long" | "control";
-export type PasswordError = "too-short" | "too-long" | "app-name" | "username" | "common";
+export type PasswordError =
+	| "too-short"
+	| "too-long"
+	| "pattern"
+	| "app-name"
+	| "username"
+	| "common";
 
 /** Unicode code points, which is what the length limits count. */
 const codePoints = (text: string) => [...text].length;
+
+/** One step of a straight run: the next code point, with digits running on from 9 to 0. */
+const DIGIT_WRAP: Record<string, string> = { "9": "0" };
+const follows = (a: string, b: string) =>
+	DIGIT_WRAP[a] === b || b.codePointAt(0) === (a.codePointAt(0) ?? 0) + 1;
+
+/**
+ * Whether the whole password, as code points, is one unit of up to 4 repeated (a last repeat may
+ * be cut short) or one straight run up or down: what an online guesser tries first.
+ */
+function isPattern(chars: string[]): boolean {
+	for (let unit = 1; unit <= 4; unit++) {
+		if (chars.every((char, i) => i < unit || char === chars[i - unit])) return true;
+	}
+	const pairs = chars.slice(1).map((char, i) => [chars[i], char] as const);
+	return pairs.every(([a, b]) => follows(a, b)) || pairs.every(([a, b]) => follows(b, a));
+}
 
 /**
  * The owner's username as it is stored: trimmed and normalised to NFC, case kept, 1–64 code
@@ -34,9 +57,9 @@ export function checkUsername(
 
 /**
  * The owner's password, normalised to NFC: 15–128 code points of any characters, with no
- * composition rules. It may not contain, ignoring case, the app's name, or the username when it
- * has 4 or more characters, and it may not be on the bundled list. 15 is NIST SP 800-63B-4's
- * minimum for a password that is the only factor.
+ * composition rules. Ignoring case, it may not be a pattern (`isPattern`), contain the app's name,
+ * or contain the username when it has 4 or more characters, and it may not be on the bundled list.
+ * 15 is NIST SP 800-63B-4's minimum for a password that is the only factor.
  */
 export function checkPassword(
 	raw: string,
@@ -47,6 +70,7 @@ export function checkPassword(
 	if (length < 15) return { ok: false, error: "too-short" };
 	if (length > 128) return { ok: false, error: "too-long" };
 	const lower = password.toLowerCase();
+	if (isPattern([...lower])) return { ok: false, error: "pattern" };
 	if (lower.includes(APP_NAME)) return { ok: false, error: "app-name" };
 	// The username's length is counted as written: lower-casing can lengthen it ("İ" becomes two).
 	const name = username.normalize("NFC");
