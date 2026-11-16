@@ -27,8 +27,9 @@ export function createHashSlots(size: number): HashSlots {
 /**
  * The app's one set: at most 4 password hashes or verifications run at once, across the claim,
  * signing in, recovery and the password change, so a spread-out attack can't stall a small
- * server (SPEC-sign-in.md, "Signing in"). A refused slot is answered "Too many requests" with
- * `Retry-After: 5`.
+ * server (SPEC-sign-in.md, "Signing in"). A refused slot is a 429 with `Retry-After: 5`, which
+ * each caller words for its own surface as the server being busy, never as too many attempts:
+ * the person made none.
  */
 export const hashSlots = createHashSlots(4);
 
