@@ -67,7 +67,7 @@ export function sessionEnded(request: Request, returnTo: string): Response {
  * the system fallbacks of the fonts, since it loads no font either; and only links, to sign in
  * where it applies and home, since Go back and the language switcher need script. A form enhanced
  * with JavaScript gets SvelteKit's own action error, so SvelteKit shows its error page with the
- * message; any other caller that wants JSON gets `{ message }`.
+ * message and the status's title; any other caller that wants JSON gets `{ message }`.
  */
 function refusal(
 	request: Request,
@@ -78,7 +78,8 @@ function refusal(
 ): Response {
 	const json = { status, headers: { ...headers, "cache-control": "no-store" } };
 	if (request.headers.get("x-sveltekit-action") === "true") {
-		return Response.json({ type: "error", error: { message: description } }, json);
+		// With its status, as SvelteKit's own `error()` has it: its client drops the response's.
+		return Response.json({ type: "error", error: { message: description, status } }, json);
 	}
 	if (wantsJson(request)) return Response.json({ message: description }, json);
 	const signInLink =

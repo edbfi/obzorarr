@@ -292,7 +292,8 @@ on, signs the new owner in with a session and lands on the admin's Settings; and
 in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from one address, with a wait after
 10 failures in a row. Everything else under `/admin` needs the owner's session, inside the admin
 shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind its confirmation,
-the language switcher and the version.
+the language switcher and the version. The Security tab changes the owner's password, signing
+every other browser out, and has "Sign out everywhere else".
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -320,8 +321,8 @@ src/
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
   error.html                     SvelteKit's last resort when even the error page fails, in
                                  English and Danish
-  app.d.ts                       SvelteKit ambient types, and `__OBZORARR_VERSION__`, which the
-                                 build writes in
+  app.d.ts                       SvelteKit ambient types, `App.Error` with its optional status,
+                                 and `__OBZORARR_VERSION__`, which the build writes in
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
@@ -338,7 +339,9 @@ src/
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, the
                                  language switcher and the link to the owner's sign-in
     +error.svelte                the error page: "Page not found", "Access denied", "Too many
-                                 requests" or "Something went wrong", with Go back and Home
+                                 requests" or "Something went wrong", with Go back and Home, by
+                                 the error's own status where it has one, as an enhanced form's
+                                 action error does
     healthz/+server.ts           `/healthz`: public one-word status
     setup/                       `/setup`: the claim. +page.svelte: the form (surface brief
                                  `route-setup.md`); +page.server.ts: its load and the claim
@@ -355,7 +358,9 @@ src/
                                  to the Security tab until the overview exists;
                                  settings/+layout.svelte: the heading and the tabs;
                                  settings/+page.server.ts sends `/admin/settings` to its first
-                                 tab; settings/security/+page.svelte: the Security tab's frame
+                                 tab; settings/security/: the Security tab, its Password and
+                                 Sessions sections (+page.svelte) and their load and actions
+                                 (+page.server.ts)
     (app)/ api/                  later: member area and recaps, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
@@ -379,9 +384,9 @@ src/
                                  aggregate with its tables (settings.ts, owner.ts,
                                  owner-session.ts) and, from their first caller, its named
                                  operations: reading and writing a setting, whether an owner
-                                 exists, reading and creating the owner, storing, finding,
-                                 renewing and ending sessions; client.ts names the transaction and
-                                 executor types
+                                 exists, reading and creating the owner and replacing its hash,
+                                 storing, finding, renewing, counting and ending sessions;
+                                 client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
@@ -403,15 +408,24 @@ src/
       services/sign-in/sessions.ts
                                  owner sessions: 7 days unused or 30 days at most, the last use
                                  written at most hourly, started only for the current password,
-                                 and ended one by one at sign-out
+                                 ended one by one at sign-out, and the other browsers' counted
+                                 and ended
       services/sign-in/owner-check.ts
                                  which paths need the owner's session, and what a request without
                                  one gets: sign in and back, or "Your session ended"
       services/sign-in/sign-in.ts
-                                 signing in: its limit of 10 per 5 minutes and the waits, one
-                                 answer for a wrong username or password, a dummy verification for
-                                 a wrong username, a hash slot, then the session; the typed
-                                 username is never logged
+                                 signing in: the limit and the waits, one answer for a wrong
+                                 username or password, a dummy verification for a wrong
+                                 username, a hash slot, then the session; the typed username is
+                                 never logged
+      services/sign-in/password-checks.ts
+                                 what signing in and the password change share: the limit of 10
+                                 per 5 minutes, the failed checks and their waits, and the busy
+                                 answer
+      services/sign-in/password-change.ts
+                                 the password change: signing in's limit and waits, `setup`'s
+                                 rules, a hash slot, then one transaction for the new hash, the
+                                 other sessions ended and this one's new token
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -467,7 +481,10 @@ src/
                                  hidden past the 768px breakpoint
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
-                                 the claim and sign-in
+                                 the claim, sign-in and the password change
+      credentials/password-messages.ts
+                                 what each password rule says, shared by the claim and the
+                                 password change
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -481,7 +498,7 @@ tests/
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
                                  sign-in page, its limit, the hash slots, the owner check, the
-                                 admin shell and signing out
+                                 admin shell, signing out and the Security tab
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the

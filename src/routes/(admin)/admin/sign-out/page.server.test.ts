@@ -68,6 +68,7 @@ describe("/admin/sign-out", () => {
 		const { run, cookies } = post(null, "tok");
 		const refused = await outcome(run);
 		expect(isHttpError(refused, 403)).toBe(true);
+		expect(refused).toMatchObject({ body: { status: 403 } });
 		expect(endSession).not.toHaveBeenCalled();
 		expect(cookies.delete).not.toHaveBeenCalled();
 	});

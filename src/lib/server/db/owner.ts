@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { check, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { Executor } from "./client.ts";
 
@@ -40,4 +40,21 @@ export async function insertOwner(
 	values: { username: string; passwordHash: string; createdAt: Date },
 ): Promise<void> {
 	await db.insert(owner).values({ id: 1, ...values });
+}
+
+/**
+ * Replaces the owner's password hash `from` with `to`, only while `from` is still the stored one,
+ * so two changes at once can't both win. Whether it was replaced.
+ */
+export async function replacePasswordHash(
+	db: Executor,
+	from: string,
+	to: string,
+): Promise<boolean> {
+	const replaced = await db
+		.update(owner)
+		.set({ passwordHash: to })
+		.where(eq(owner.passwordHash, from))
+		.returning({ id: owner.id });
+	return replaced.length > 0;
 }

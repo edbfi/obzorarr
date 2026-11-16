@@ -1,10 +1,14 @@
 import type { Database } from "#lib/server/db/client.ts";
 import { findOwner } from "#lib/server/db/owner.ts";
 import { createLogger } from "#lib/server/logging/logger.ts";
-import { createFailedSignIns } from "#lib/server/security/failed-sign-ins.ts";
-import { HASH_SLOT_RETRY_SECONDS, hashSlots } from "#lib/server/security/hash-slots.ts";
+import { hashSlots } from "#lib/server/security/hash-slots.ts";
 import { hashPassword, verifyPassword } from "#lib/server/security/password.ts";
-import { createRateLimiter, rateLimitHeaders } from "#lib/server/security/rate-limit.ts";
+import {
+	countPasswordCheck,
+	refuseOverLimit,
+	SLOTS_BUSY,
+	type TooMany,
+} from "./password-checks.ts";
 import { deleteExpiredSessions, type StartedSession, startSession } from "./sessions.ts";
 
 export type SignInInput = {
@@ -18,27 +22,9 @@ export type SignInResult =
 	| { status: "signed-in"; session: StartedSession }
 	/** A wrong username or password: one answer for both. */
 	| { status: "wrong" }
-	/**
-	 * Refused for now, with when to try again and the headers saying so: the address used up the
-	 * limit, it must wait after failed sign-ins, or every hash slot was busy.
-	 */
-	| {
-			status: "too-many";
-			reason: "limit" | "wait" | "busy";
-			retryAfterSeconds: number;
-			headers: Record<string, string>;
-	  };
+	| TooMany;
 
 const log = createLogger("sign-in");
-
-/** Signing in: 10 per 5 minutes from one address (SPEC-sign-in.md, "Rate limits"). */
-const SIGN_IN_LIMIT = 10;
-const signInLimit = createRateLimiter({ limit: SIGN_IN_LIMIT, windowMs: 5 * 60_000 });
-
-/** The failed sign-ins per address, and the waits they start (D28). */
-const failedSignIns = createFailedSignIns({
-	warn: (message, metadata) => log.warn(message, metadata),
-});
 
 /**
  * What a wrong username is verified against, so it costs the same argon2id verification as a
@@ -72,30 +58,8 @@ export async function signIn(
 	now = new Date(),
 ): Promise<SignInResult> {
 	const address = input.clientAddress;
-	if (address !== undefined) {
-		// Every request counts towards the limit, one a wait refuses too (SPEC-sign-in.md, "Rate
-		// limits"). When both refuse, the answer is the one that ends later, so it never says to
-		// try again before the address may.
-		const decision = signInLimit.hit(address);
-		const wait = failedSignIns.wait(address);
-		if (wait !== undefined && (decision.allowed || wait.resetAt >= decision.resetAt)) {
-			return {
-				status: "too-many",
-				reason: "wait",
-				retryAfterSeconds: wait.retryAfterSeconds,
-				// The headers every refusal carries, describing the wait rather than the window.
-				headers: rateLimitHeaders({ allowed: false, limit: SIGN_IN_LIMIT, remaining: 0, ...wait }),
-			};
-		}
-		if (!decision.allowed) {
-			return {
-				status: "too-many",
-				reason: "limit",
-				retryAfterSeconds: decision.retryAfterSeconds,
-				headers: rateLimitHeaders(decision),
-			};
-		}
-	}
+	const refused = address === undefined ? undefined : refuseOverLimit(address);
+	if (refused !== undefined) return refused;
 	const found = await findOwner(db);
 	const owner =
 		found !== undefined && comparable(input.username) === comparable(found.username)
@@ -103,14 +67,7 @@ export async function signIn(
 			: undefined;
 	// The slot comes first, so making the dummy hash counts towards the cap too.
 	const releaseSlot = hashSlots.take();
-	if (releaseSlot === undefined) {
-		return {
-			status: "too-many",
-			reason: "busy",
-			retryAfterSeconds: HASH_SLOT_RETRY_SECONDS,
-			headers: { "retry-after": String(HASH_SLOT_RETRY_SECONDS) },
-		};
-	}
+	if (releaseSlot === undefined) return SLOTS_BUSY;
 	let verified: boolean;
 	try {
 		const hash = owner?.passwordHash ?? (await dummy());
@@ -127,11 +84,11 @@ export async function signIn(
 	// is a failure too: that password is no longer the owner's.
 	if (session === undefined) {
 		log.warn("a sign-in failed", { clientAddress: address });
-		if (address !== undefined) failedSignIns.failed(address);
+		countPasswordCheck(address, false);
 		return { status: "wrong" };
 	}
 	log.info("the owner signed in", { clientAddress: address });
-	if (address !== undefined) failedSignIns.succeeded(address);
+	countPasswordCheck(address, true);
 	return { status: "signed-in", session };
 }
 

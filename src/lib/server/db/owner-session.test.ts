@@ -6,7 +6,9 @@ import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
 import { insertOwner } from "./owner.ts";
 import {
+	countOtherSessions,
 	deleteExpiredSessions,
+	deleteOtherSessions,
 	deleteSession,
 	findSession,
 	insertSessionForPassword,
@@ -70,8 +72,9 @@ describe("touchSession and deleteSession", () => {
 		await insertSessionForPassword(db, row("touch"), "hash-1");
 		await touchSession(db, "touch", at(500), at(0));
 		expect((await findSession(db, "touch"))?.lastUsedAt).toEqual(at(500));
-		await deleteSession(db, "touch");
+		expect(await deleteSession(db, "touch")).toBe(true);
 		expect(await findSession(db, "touch")).toBeUndefined();
+		expect(await deleteSession(db, "touch")).toBe(false);
 	});
 });
 
@@ -93,5 +96,27 @@ describe("deleteExpiredSessions", () => {
 		await deleteExpiredSessions(db, now, 300);
 		const left = await db.select({ tokenHash: ownerSession.tokenHash }).from(ownerSession);
 		expect(left).toEqual([{ tokenHash: "live" }]);
+	});
+});
+
+describe("countOtherSessions and deleteOtherSessions", () => {
+	it("count the live sessions but one, and delete every session but one, saying how many", async () => {
+		await db.delete(ownerSession);
+		const now = at(10_000);
+		const live = { lastUsedAt: at(10_000 - 299), expiresAt: at(99_999) };
+		for (const hash of ["mine", "a", "b"]) {
+			await insertSessionForPassword(db, { ...row(hash), ...live }, "hash-1");
+		}
+		await insertSessionForPassword(db, { ...row("ended"), expiresAt: now }, "hash-1");
+		await insertSessionForPassword(
+			db,
+			{ ...row("idle"), lastUsedAt: at(10_000 - 300), expiresAt: at(99_999) },
+			"hash-1",
+		);
+		expect(await countOtherSessions(db, "mine", now, 300)).toBe(2);
+		expect(await deleteOtherSessions(db, "mine")).toBe(4);
+		const left = await db.select({ tokenHash: ownerSession.tokenHash }).from(ownerSession);
+		expect(left).toEqual([{ tokenHash: "mine" }]);
+		expect(await countOtherSessions(db, "mine", now, 300)).toBe(0);
 	});
 });

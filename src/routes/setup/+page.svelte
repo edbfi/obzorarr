@@ -1,6 +1,7 @@
 <script lang="ts">
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
+import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -22,14 +23,6 @@ const usernameMessages = {
 	empty: m.setup_username_empty,
 	"too-long": m.setup_username_too_long,
 	control: m.setup_username_control,
-};
-const passwordMessages = {
-	"too-short": m.setup_password_too_short,
-	"too-long": m.setup_password_too_long,
-	pattern: m.setup_password_pattern,
-	"app-name": m.setup_password_app_name,
-	username: m.setup_password_username,
-	common: m.setup_password_common,
 };
 
 const tokenError = $derived(

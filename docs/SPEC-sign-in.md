@@ -313,7 +313,9 @@ D20 fixes the mechanism; here is what the owner does.
 - **The error page** (`routes/+error.svelte`) is titled "Page not found", "Access denied", "Too many
   requests" or "Something went wrong", each with a one-line description, and Go back and Home
   actions; the not-found page doesn't show the status number. It shows the Obzorarr logo and
-  wordmark and the language switcher, in the viewer's language.
+  wordmark and the language switcher, in the viewer's language. A form enhanced with JavaScript
+  gets the same titles: SvelteKit's client drops the response's status from an action error, so
+  the error carries its own, as SvelteKit's `error()` and `handle`'s refusals give it.
 - **The pages `handle` builds itself** (the "Access denied" refusals and "Too many requests") look
   the same, under their own fixed, stricter policy
   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)), which allows no script. So their

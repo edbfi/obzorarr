@@ -120,6 +120,7 @@ describe("the sign-in action", () => {
 	it("refuses a browser that didn't say which address it is on, before checking anything", async () => {
 		const { outcome } = await post({ origin: null });
 		expect(isHttpError(outcome, 403)).toBe(true);
+		expect(outcome).toMatchObject({ body: { status: 403 } });
 		expect((outcome as { body: { message: string } }).body.message).toBe(
 			"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
 		);
