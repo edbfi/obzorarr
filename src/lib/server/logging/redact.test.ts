@@ -58,15 +58,36 @@ describe("redact", () => {
 			expect(redact("/app;jsessionid=abc123")).toBe(`/app;jsessionid=${R}`);
 		});
 
-		it("removes credentials after a scheme joined to a word, in linear time", () => {
+		it("removes credentials after a scheme joined to a word", () => {
 			expect(redact("dsn x_postgres://u:hunter2@h/db")).toBe(`dsn x_postgres://${R}@h/db`);
-			const started = performance.now();
-			redact("a.".repeat(50_000));
-			redact(`/x?${"a=1;".repeat(25_000)}token=t`);
-			redact(`/x?a=${"%2525".repeat(20_000)}`);
-			redact(`/x?${"a=%3F;".repeat(25_000)}`);
-			expect(performance.now() - started).toBeLessThan(200);
 			expect(redact(`/x?${"a=1;".repeat(25_000)}token=t`)).toMatch(/;token=\[redacted\]$/);
+		});
+
+		// Logged URLs come from outside, so a hostile one must not stall the logger. A time limit
+		// fails under load and misses a fast quadratic scan, so this compares growth instead: 8
+		// times the input takes about 8 times as long if linear, and 64 if quadratic. The small and
+		// large runs alternate, so load slows both alike, and the fastest of each counts. Contention
+		// for the CPU's cache can still slow the large run alone, so a test may try twice more: a
+		// quadratic scan fails every attempt.
+		it.each<[string, (size: number) => string]>([
+			["dots that could start a scheme", (size) => "a.".repeat(size * 4)],
+			["parameters behind semicolons", (size) => `/x?${"a=1;".repeat(size)}token=t`],
+			// Each round of decoding peels one layer off: `%2525…253F` is `size` layers deep.
+			["an escape encoded again and again", (size) => `/x?a=%${"25".repeat(size)}3F`],
+			["encoded values behind semicolons", (size) => `/x?${"a=%3F;".repeat(size)}`],
+		])("scans %s in linear time", { retry: 2 }, (_, input) => {
+			const texts = [input(5_000), input(40_000)];
+			const fastest = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+			for (let run = 0; run < 7; run++) {
+				texts.forEach((text, i) => {
+					const started = performance.now();
+					redact(text);
+					fastest[i] = Math.min(fastest[i] ?? 0, performance.now() - started);
+				});
+			}
+			const [small = 0, large = 0] = fastest;
+			// The 2 ms keeps timer noise on a fast scan from counting as growth.
+			expect(large).toBeLessThan(24 * small + 2);
 		});
 
 		it("redacts a parameter whose percent-encoded value hides a credential", () => {

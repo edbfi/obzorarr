@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { insertOwner, owner } from "#lib/server/db/owner.ts";
@@ -28,6 +28,7 @@ beforeAll(async () => {
 
 afterEach(() => {
 	stopFirstRun();
+	vi.useRealTimers();
 });
 
 afterAll(async () => {
@@ -42,7 +43,11 @@ async function newDatabase(): Promise<Database> {
 	return db;
 }
 
-const settle = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Fakes the clock from here on, so a token expires exactly when the test moves time on rather than
+ * whenever a loaded machine gets to it. Called once the database is open, which doesn't wait on it.
+ */
+const fakeClock = () => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
 
 /** A token line's token, without its dashes. */
 const tokenIn = (line: string | undefined) =>
@@ -54,8 +59,10 @@ const tokenIn = (line: string | undefined) =>
 describe("first run's bootstrap token", () => {
 	it("is printed with /setup when the instance is unclaimed, and a new one at expiry", async () => {
 		const printed: string[] = [];
+		const db = await newDatabase();
+		fakeClock();
 		await startFirstRun({
-			db: await newDatabase(),
+			db,
 			origin: undefined,
 			print: (line) => printed.push(line),
 			lifetimeMs: 60,
@@ -65,7 +72,9 @@ describe("first run's bootstrap token", () => {
 		expect(printed[0]).toMatch(/Setup token: [a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}\b/);
 		expect(printed[0]).toContain(" /setup ");
 		expect(printed[0]).not.toContain("http");
-		await settle(100);
+		vi.advanceTimersByTime(59);
+		expect(printed).toHaveLength(1);
+		vi.advanceTimersByTime(1);
 		expect(printed).toHaveLength(2);
 		expect(tokenIn(printed[1])).not.toBe(tokenIn(printed[0]));
 	});
@@ -82,14 +91,16 @@ describe("first run's bootstrap token", () => {
 
 	it("waits to print a new one while a claim is in progress", async () => {
 		const printed: string[] = [];
+		const db = await newDatabase();
+		fakeClock();
 		await startFirstRun({
-			db: await newDatabase(),
+			db,
 			origin: undefined,
 			print: (line) => printed.push(line),
 			lifetimeMs: 40,
 		});
 		await withClaimInProgress(async () => {
-			await settle(100);
+			vi.advanceTimersByTime(100);
 			expect(printed).toHaveLength(1);
 		});
 		expect(printed).toHaveLength(2);
@@ -97,14 +108,16 @@ describe("first run's bootstrap token", () => {
 
 	it("prints no more once stopped, as shutdown does", async () => {
 		const printed: string[] = [];
+		const db = await newDatabase();
+		fakeClock();
 		await startFirstRun({
-			db: await newDatabase(),
+			db,
 			origin: undefined,
 			print: (line) => printed.push(line),
 			lifetimeMs: 40,
 		});
 		stopFirstRun();
-		await settle(100);
+		vi.advanceTimersByTime(100);
 		expect(printed).toHaveLength(1);
 	});
 
@@ -114,13 +127,14 @@ describe("first run's bootstrap token", () => {
 			.insert(owner)
 			.values({ id: 1, username: "owner", passwordHash: "hash", createdAt: new Date() });
 		const printed: string[] = [];
+		fakeClock();
 		await startFirstRun({
 			db,
 			origin: undefined,
 			print: (line) => printed.push(line),
 			lifetimeMs: 40,
 		});
-		await settle(100);
+		vi.advanceTimersByTime(100);
 		expect(isClaimed()).toBe(true);
 		expect(printed).toEqual([]);
 	});
