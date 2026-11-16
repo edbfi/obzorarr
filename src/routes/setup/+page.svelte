@@ -111,7 +111,8 @@ const submit: SubmitFunction = () => {
 		if (tokenInput && !heldBack) tokenInput.value = "";
 		if (passwordInput) passwordInput.value = "";
 		await tick();
-		// The first field to fix; after a server failure, the token, which the message asks for.
+		// The first field to fix; otherwise the token: the message asks for it after a server failure,
+		// and a held-back claim kept it.
 		(document.querySelector<HTMLElement>("[aria-invalid='true']") ?? tokenInput)?.focus();
 	};
 };

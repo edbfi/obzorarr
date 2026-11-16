@@ -840,7 +840,8 @@ export const GET: RequestHandler = () => healthResponse();
   `security/hash-slots.test.ts`, the fifth refused and a slot freed once),
   `src/routes/setup/token-format.test.ts` (the token field's dashes),
   `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers),
-  `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in `src/lib/shared/i18n/`:
+  `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
+  `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
