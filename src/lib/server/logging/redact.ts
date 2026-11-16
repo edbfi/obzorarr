@@ -65,7 +65,7 @@ const URL_CREDENTIALS = /:\/\/[^\s/?#]*@/g;
 
 /**
  * The start of a query, fragment or path parameter: its separator and its name. This and
- * VALUE_END are shared `/g` patterns whose `lastIndex` the synchronous scan below resets.
+ * VALUE_END are `/g` patterns that each scan copies, since checking a value scans again.
  */
 const PARAMETER = /([?&#;])([^=&#;?\s"'<>]+)=/g;
 
@@ -75,29 +75,71 @@ const PARAMETER = /([?&#;])([^=&#;?\s"'<>]+)=/g;
  */
 const VALUE_END = /[&#\s]/g;
 
-function cleanText(text: string): string {
-	return cleanParameters(text.replace(URL_CREDENTIALS, `://${REDACTED}@`));
+/**
+ * How many rounds of percent-decoding a value gets in the search for a credential encoded inside
+ * it, such as the `X-Plex-Token` in the `url` that Plex's photo transcoder takes. A fixed number,
+ * so the scan stays linear.
+ */
+const DECODE_ROUNDS = 3;
+
+/** A run of `%XX` escapes, decoded run by run so a stray `%` doesn't stop the rest. */
+const ESCAPES = /(%[0-9A-Fa-f]{2})+/g;
+
+function cleanText(text: string, lookInside = true): string {
+	return cleanParameters(text.replace(URL_CREDENTIALS, `://${REDACTED}@`), lookInside);
 }
 
 /**
- * Redacts each sensitive parameter's whole value. An ordinary value is searched too, because
- * `?a=1;token=x` hides a second parameter behind the semicolon; one pass, without recursion.
+ * Redacts each sensitive parameter's whole value, and with `lookInside` each value that hides a
+ * credential once percent-decoded. An ordinary value is searched too, because `?a=1;token=x`
+ * hides a second parameter behind the semicolon; one pass, without recursion.
  */
-function cleanParameters(text: string): string {
+function cleanParameters(text: string, lookInside: boolean): string {
+	const parameter = new RegExp(PARAMETER);
+	const end = new RegExp(VALUE_END);
 	let out = "";
 	let kept = 0;
-	PARAMETER.lastIndex = 0;
-	for (let match = PARAMETER.exec(text); match !== null; match = PARAMETER.exec(text)) {
+	// The parameters inside one value (`?a=1;b=2`) all end where it ends, so each value's end is
+	// found, and its inside checked, once.
+	let valueEnd = -1;
+	for (let match = parameter.exec(text); match !== null; match = parameter.exec(text)) {
 		const [whole, , name = ""] = match;
 		const valueStart = match.index + whole.length;
-		if (!sensitive(decodeName(name))) continue; // `;token=` may hide in its value
-		VALUE_END.lastIndex = valueStart;
-		const valueEnd = VALUE_END.exec(text)?.index ?? text.length;
+		let hide = sensitive(decodeName(name));
+		if (valueStart > valueEnd) {
+			end.lastIndex = valueStart;
+			valueEnd = end.exec(text)?.index ?? text.length;
+			hide ||= lookInside && hidesCredential(text.slice(valueStart, valueEnd));
+		}
+		if (!hide) continue; // `;token=` may hide in its value
 		out += `${text.slice(kept, valueStart)}${REDACTED}`;
 		kept = valueEnd;
-		PARAMETER.lastIndex = valueEnd;
+		parameter.lastIndex = valueEnd;
 	}
 	return out + text.slice(kept);
+}
+
+/** Whether `value`, percent-decoded up to DECODE_ROUNDS times, holds something to redact. */
+function hidesCredential(value: string): boolean {
+	let text = value;
+	for (let round = 0; round < DECODE_ROUNDS; round++) {
+		const decoded = text.replace(ESCAPES, decodeEscapes);
+		if (decoded === text) return false;
+		text = decoded;
+		if (cleanText(text, false) !== text) return true;
+	}
+	return false;
+}
+
+/** A run of escapes as text; where it isn't valid UTF-8, only its ASCII escapes are decoded. */
+function decodeEscapes(run: string): string {
+	try {
+		return decodeURIComponent(run);
+	} catch {
+		return run.replace(/%([0-7][0-9A-Fa-f])/g, (_, hex: string) =>
+			String.fromCharCode(Number.parseInt(hex, 16)),
+		);
+	}
 }
 
 function decodeName(name: string): string {

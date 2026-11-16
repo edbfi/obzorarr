@@ -63,8 +63,33 @@ describe("redact", () => {
 			const started = performance.now();
 			redact("a.".repeat(50_000));
 			redact(`/x?${"a=1;".repeat(25_000)}token=t`);
+			redact(`/x?a=${"%2525".repeat(20_000)}`);
+			redact(`/x?${"a=%3F;".repeat(25_000)}`);
 			expect(performance.now() - started).toBeLessThan(200);
 			expect(redact(`/x?${"a=1;".repeat(25_000)}token=t`)).toMatch(/;token=\[redacted\]$/);
+		});
+
+		it("redacts a parameter whose percent-encoded value hides a credential", () => {
+			// Plex's photo transcoder takes its source, token included, as an encoded `url`.
+			expect(
+				redact(
+					"/photo/:/transcode?width=300&url=%2Flibrary%2Fmetadata%2F1%2Fthumb%3FX-Plex-Token%3Dabc123&height=450",
+				),
+			).toBe(`/photo/:/transcode?width=300&url=${R}&height=450`);
+			expect(redact("https://app.test/r?u=https%3A%2F%2Fowner%3Ahunter2%40plex.local%2F")).toBe(
+				`https://app.test/r?u=${R}`,
+			);
+			// Encoded twice, and next to a stray `%` that isn't an escape.
+			expect(redact("/r?u=100%25%20off%3Ftoken%253Dabc&x=1")).toBe(`/r?u=${R}&x=1`);
+			// Behind an escape that isn't valid UTF-8.
+			expect(redact("/r?u=%FF%3Ftoken%3Dabc")).toBe(`/r?u=${R}`);
+		});
+
+		it("keeps an encoded value that hides nothing", () => {
+			expect(redact("/login?next=%2Flibrary%3Ftype%3D1&lang=da")).toBe(
+				"/login?next=%2Flibrary%3Ftype%3D1&lang=da",
+			);
+			expect(redact("/search?q=100%25%20sure%")).toBe("/search?q=100%25%20sure%");
 		});
 
 		it("leaves a text without URLs as it is", () => {
