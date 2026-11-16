@@ -115,6 +115,18 @@ describe("redact", () => {
 			// A parameter behind a semicolon, whose own value starts with the credential.
 			expect(redact("/r?a=1;u=token%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
 			expect(redact("/r?a=1;b=2;u=token%3Dabc")).toBe(`/r?a=${R}`);
+			// A value that is itself a chain of assignments.
+			expect(redact("/r?a=1;u=v%3Dtoken%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
+			expect(redact("/r?u=v%3Dw%3Dx%3Dpassword%3Dabc&y=2")).toBe(`/r?u=${R}&y=2`);
+		});
+
+		it("still finds a hash or a URL's password encoded in a value, behind a semicolon too", () => {
+			const hash = "$argon2id$v=19$m=65536,t=3,p=4$c2FsdHNhbHQ$aGFzaGhhc2hoYXNo";
+			for (const hidden of [hash, hash.replace("$v=19", ""), "https://a;b=c:pw@host/"]) {
+				const encoded = encodeURIComponent(hidden);
+				expect(redact(`/r?u=${encoded}`)).toBe(`/r?u=${R}`);
+				expect(redact(`/r?u=1%3B${encoded}&y=2`)).toBe(`/r?u=${R}&y=2`);
+			}
 		});
 
 		it("keeps an encoded value that hides nothing", () => {
