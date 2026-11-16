@@ -403,12 +403,14 @@ test.describe("the owner check", () => {
 		});
 		try {
 			await claim(server);
-			const page_ = await fetch(`${server.url}/admin/settings/security`, { redirect: "manual" });
-			expect(page_.status).toBe(303);
-			expect(page_.headers.get("location")).toBe(
+			const signedOutPage = await fetch(`${server.url}/admin/settings/security`, {
+				redirect: "manual",
+			});
+			expect(signedOutPage.status).toBe(303);
+			expect(signedOutPage.headers.get("location")).toBe(
 				"/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity",
 			);
-			expect(page_.headers.get("cache-control")).toBe("no-store");
+			expect(signedOutPage.headers.get("cache-control")).toBe("no-store");
 			const data = await fetch(`${server.url}/admin/settings/security/__data.json`, {
 				redirect: "manual",
 			});

@@ -168,19 +168,16 @@ describe("sessionEnded", () => {
 
 describe("a form enhanced with JavaScript", () => {
 	it("gets SvelteKit's action error, so SvelteKit shows its error page with the message", async () => {
-		for (const make of [
-			(request: Request) => sessionEnded(request, "/admin"),
-			accessDenied,
-			tooMany,
-		]) {
+		for (const [make, message] of [
+			[(request: Request) => sessionEnded(request, "/admin"), "Your session ended. Sign in again."],
+			[accessDenied, "The request was refused because it didn't come from this site."],
+			[tooMany, "Too many requests came from your address. Wait a moment, then try again."],
+		] as const) {
 			const response = await refusal(make, "en", "application/json", {
 				"x-sveltekit-action": "true",
 			});
 			expect(response.headers.get("cache-control")).toBe("no-store");
-			const body = (await response.json()) as { type: string; error: { message: string } };
-			expect(body.type).toBe("error");
-			expect(body.error.message).toEqual(expect.any(String));
-			expect(body.error.message.length).toBeGreaterThan(0);
+			expect(await response.json()).toEqual({ type: "error", error: { message } });
 		}
 	});
 });
