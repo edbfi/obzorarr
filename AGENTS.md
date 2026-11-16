@@ -368,8 +368,9 @@ src/
                                  migrations; one file per aggregate with its tables (settings.ts,
                                  owner.ts, owner-session.ts) and, from their first caller, its
                                  named operations: reading and writing a setting, whether an owner
-                                 exists, reading and creating the owner, storing, finding, renewing and ending
-                                 sessions; client.ts names the transaction and executor types
+                                 exists, reading and creating the owner, storing, finding,
+                                 renewing and ending sessions; client.ts names the transaction and
+                                 executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs

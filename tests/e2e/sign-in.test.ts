@@ -173,6 +173,13 @@ test.describe("owner sign-in", () => {
 			await expect(page.locator("#password")).toHaveValue("");
 			await expect(page.locator("#password")).toBeFocused();
 
+			// A second refusal puts a new alert in the page, so a screen reader announces it again.
+			await page.getByRole("alert").evaluate((alert) => alert.setAttribute("data-seen", ""));
+			await page.locator("#password").fill("still not the right password");
+			await page.getByRole("button", { name: "Sign in", exact: true }).click();
+			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
+			await expect(page.locator("[role=alert][data-seen]")).toHaveCount(0);
+
 			// The username's case and the spaces around it don't matter; the query string is dropped.
 			await signIn(page, "  OWNER ", PASSWORD);
 			await page.waitForURL(`${server.url}/`);
@@ -213,6 +220,41 @@ test.describe("owner sign-in", () => {
 		}
 	});
 
+	test("keeps the password when the server was only busy, since nothing was checked", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			// Every hash slot busy, as SvelteKit answers an enhanced form when the action fails.
+			await page.route("**/admin/sign-in", (route) =>
+				route.request().method() === "POST"
+					? route.fulfill({
+							status: 429,
+							contentType: "application/json",
+							headers: { "retry-after": "5" },
+							body: JSON.stringify({
+								type: "failure",
+								status: 429,
+								data: JSON.stringify([{ username: 1, busy: 2 }, "owner", true]),
+							}),
+						})
+					: route.continue(),
+			);
+			await page.goto(`${server.url}/admin/sign-in`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await signIn(page, "owner", PASSWORD);
+			await expect(page.getByRole("alert")).toHaveText(
+				"Obzorarr is busy checking other passwords. Try again in a few seconds.",
+			);
+			await expect(page.locator("#password")).toHaveValue(PASSWORD);
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("drops an unsafe next and goes to the admin", async ({ page }) => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
@@ -223,6 +265,19 @@ test.describe("owner sign-in", () => {
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 			await signIn(page, "owner", PASSWORD);
 			await page.waitForURL(`${server.url}/admin/settings/security`);
+			// Without JavaScript, a path a Location header can't carry as typed is percent-encoded.
+			const native = await fetch(`${server.url}/admin/sign-in?next=%2F%E2%9C%93`, {
+				method: "POST",
+				headers: {
+					origin: server.url,
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+				redirect: "manual",
+			});
+			expect(native.status).toBe(303);
+			expect(native.headers.get("location")).toBe("/%E2%9C%93");
 		} finally {
 			await server.stop();
 		}

@@ -15,6 +15,7 @@ describe("returnPath", () => {
 	it("drops anything that isn't one leading slash and a path", () => {
 		for (const unsafe of [
 			null,
+			undefined,
 			"",
 			"admin",
 			"//evil.test/admin",
@@ -30,6 +31,13 @@ describe("returnPath", () => {
 		]) {
 			expect(returnPath(unsafe), JSON.stringify(unsafe)).toBeUndefined();
 		}
+	});
+
+	it("percent-encodes what a Location header can't carry, and resolves dot segments", () => {
+		expect(returnPath("/✓")).toBe("/%E2%9C%93");
+		expect(returnPath("/é/ü")).toBe("/%C3%A9/%C3%BC");
+		expect(returnPath("/admin/%E2%9C%93")).toBe("/admin/%E2%9C%93");
+		expect(returnPath("/admin/../settings")).toBe("/settings");
 	});
 
 	it("allows 2,048 characters at most, counted before the query is dropped", () => {

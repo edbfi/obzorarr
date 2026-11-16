@@ -14,12 +14,21 @@ const verify = vi.hoisted(() => ({
 	/** Runs while a verification is in flight, before it answers. */
 	during: undefined as (() => Promise<void>) | undefined,
 	hashes: [] as string[],
+	/** How many of the next hashes fail. */
+	hashFailures: 0,
 }));
 
 vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
 	const original = await importOriginal<typeof import("#lib/server/security/password.ts")>();
 	return {
 		...original,
+		hashPassword: (password: string) => {
+			if (verify.hashFailures > 0) {
+				verify.hashFailures--;
+				return Promise.reject(new Error("out of memory"));
+			}
+			return original.hashPassword(password);
+		},
 		verifyPassword: async (password: string, hash: string) => {
 			verify.hashes.push(hash);
 			const answer = await original.verifyPassword(password, hash);
@@ -103,6 +112,16 @@ describe("signIn", () => {
 		expect(verify.hashes).toHaveLength(1);
 		expect(verify.hashes[0]).toMatch(/^\$argon2id\$/);
 		expect(verify.hashes[0]).not.toBe(ownerHash);
+	});
+
+	it("makes the dummy hash again after it once failed, so wrong usernames don't keep failing", async () => {
+		vi.resetModules();
+		const fresh = await import("./sign-in.ts");
+		verify.hashFailures = 1;
+		await expect(fresh.signIn(db, { username: "someone", password: PASSWORD })).rejects.toThrow();
+		expect(await fresh.signIn(db, { username: "someone", password: PASSWORD })).toEqual({
+			status: "wrong",
+		});
 	});
 
 	it("starts no session when the password changed while it was being checked", async () => {

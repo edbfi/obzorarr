@@ -589,6 +589,39 @@ test.describe("the claim", () => {
 		}
 	});
 
+	test("puts a new alert in the page for each refusal, so a screen reader announces each", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			// The claim's 5 tries are used up first, so each claim below is refused as too many.
+			for (let i = 0; i < 5; i++) {
+				await request(`${server.url}/setup`, {
+					method: "POST",
+					headers: { origin: server.url, "content-type": "application/x-www-form-urlencoded" },
+					body: new URLSearchParams({ token: "aaaa-bbbb-cccc", username: "o", password: "p" }),
+				});
+			}
+			await page.goto(`${server.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			const claimOnce = async () => {
+				await page.locator("#token").fill("aaaa-bbbb-cccc");
+				await page.locator("#username").fill("Owner");
+				await page.locator("#password").fill("violet harbour lanterns");
+				await page.getByRole("button", { name: "Claim and create owner" }).click();
+				await expect(page.getByRole("alert")).toContainText("Too many attempts.");
+			};
+			await claimOnce();
+			await page.getByRole("alert").evaluate((alert) => alert.setAttribute("data-seen", ""));
+			await claimOnce();
+			await expect(page.locator("[role=alert][data-seen]")).toHaveCount(0);
+		} finally {
+			await server.stop();
+		}
+	});
+
 	const PASSWORD = "violet harbour lanterns";
 
 	test("a wrong token is refused, the right one claims, and /setup is then gone, also after a restart", async ({

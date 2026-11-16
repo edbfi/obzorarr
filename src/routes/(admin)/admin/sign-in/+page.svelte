@@ -15,8 +15,9 @@ let showPassword = $state(false);
 let passwordInput = $state<HTMLInputElement>();
 
 /**
- * While signing in, the button says so and can't be pressed again. A refused sign-in keeps the
- * username, clears the password and moves focus to it, the field to type again.
+ * While signing in, the button says so and can't be pressed again. A wrong username or password
+ * keeps the username, clears the password and moves focus to it, the field to type again; a busy
+ * server checked nothing, so the password stays.
  */
 const submit: SubmitFunction = () => {
 	submitting = true;
@@ -27,6 +28,7 @@ const submit: SubmitFunction = () => {
 		}
 		await update({ reset: false });
 		submitting = false;
+		if (result.type === "failure" && result.data?.busy) return;
 		showPassword = false;
 		if (passwordInput) passwordInput.value = "";
 		await tick();

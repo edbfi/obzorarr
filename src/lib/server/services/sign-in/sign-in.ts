@@ -28,11 +28,15 @@ const log = createLogger("sign-in");
 
 /**
  * What a wrong username is verified against, so it costs the same argon2id verification as a
- * wrong password. Hashed once, on first use, from a random password nobody keeps.
+ * wrong password. Hashed once, on first use, from a random password nobody keeps; a hash that
+ * failed is made again next time, so it can't fail every wrong username until a restart.
  */
 let dummyHash: Promise<string> | undefined;
 const dummy = () => {
-	dummyHash ??= hashPassword(crypto.randomUUID());
+	dummyHash ??= hashPassword(crypto.randomUUID()).catch((error: unknown) => {
+		dummyHash = undefined;
+		throw error;
+	});
 	return dummyHash;
 };
 
