@@ -4,15 +4,15 @@ The spec is [docs/SPEC-sign-in.md](../docs/SPEC-sign-in.md), and the plan is [pl
 Each task is one PR and writes its tests first. Each one updates AGENTS.md's status and structure,
 the README and SPEC.md's testing section (and its `smoke` row when it adds an e2e file) where they
 change, ticks off its items in `tasks/`, names what the sibling apps take in its PR body, gets a
-council review, and runs `bun run --bun check`, `test`, `lint`, `build`, `smoke` and
-`prek run --all-files --hook-stage manual` before every commit. From task 2 on, every e2e test on
-the shared server sends its own address through the fixture. A fresh server belongs to one test,
-so its limits are that test's alone: until task 4 its requests count under the connection's
-address, and from task 4 on, `tests/e2e/server.ts` starts it with `ADDRESS_HEADER=x-forwarded-for`
-and the fixture's address too. Tests that change the owner's password or sessions, or need an
-unclaimed or restarted server, use fresh servers. Every sweep timer is `unref`'d and stopped at
-shutdown, as first run's token timer is. Paths under `src/lib/server/` are shortened to
-`server/`, and the spec's sections are named in quotes.
+council review, and runs `bun run --bun check`, `test`, `lint`, `build`, `smoke` and `prek run
+--all-files --hook-stage manual` before every commit. From task 2 on, every e2e test on the shared
+server sends its own address through the fixture. A fresh server belongs to one test, so its limits
+are that test's alone: until task 4 its requests count under the connection's address, and from task
+4 on, `tests/e2e/server.ts` starts it with `ADDRESS_HEADER=x-forwarded-for` and the fixture's
+address too. Tests that change the owner's password or sessions, or need an unclaimed or restarted
+server, use fresh servers. The in-memory tables sweep themselves once a minute on the next request
+(`security/rate-limit.ts`), so no sweep timer needs stopping at shutdown. Paths under
+`src/lib/server/` are shortened to `server/`, and the spec's sections are named in quotes.
 
 ## Task 1: the error pages
 
@@ -66,15 +66,15 @@ The shared e2e server moves to `ADDRESS_HEADER=x-forwarded-for`, and every test 
 fixture that gives each test its own address.
 
 **Acceptance criteria:**
-- [ ] `server/security/client-address.test.ts` first fails, then passes, on a copied `Request` as
+- [x] `server/security/client-address.test.ts` first fails, then passes, on a copied `Request` as
   `handle` sees it: each address kind, the refusal and its one warning, the `X-Forwarded-For`
   warning without `ADDRESS_HEADER`, no address as unknown with one warning.
-- [ ] `server/security/rate-limit.test.ts`: a window at its edges, the headers, sweeping, the cap
+- [x] `server/security/rate-limit.test.ts`: a window at its edges, the headers, sweeping, the cap
   of 10,000 with the oldest out first; `server/config/address-header.test.ts`: set, unset, empty.
-- [ ] The fixture in `tests/e2e/` gives each test its own `X-Forwarded-For`; `global-setup.ts`,
+- [x] The fixture in `tests/e2e/` gives each test its own `X-Forwarded-For`; `global-setup.ts`,
   `smoke.test.ts`, `i18n.test.ts` and `errors.test.ts` use it, and `playwright.config.ts` starts
   the shared server with `ADDRESS_HEADER=x-forwarded-for`.
-- [ ] `tests/e2e/rate-limits.test.ts`: the 61st request in a minute gets 429 with `Retry-After` as
+- [x] `tests/e2e/rate-limits.test.ts`: the 61st request in a minute gets 429 with `Retry-After` as
   the branded page; a request without the header gets "Access denied" while `/healthz` answers.
 
 **Verification:** the gates; the README's `ADDRESS_HEADER` and `XFF_DEPTH` section (the port

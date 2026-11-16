@@ -6,12 +6,19 @@ import {
 } from "@sveltejs/kit/hooks";
 import * as m from "#lib/paraglide/messages.js";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import { createLogger } from "#lib/server/logging/logger.ts";
 import { logRequestError } from "#lib/server/logging/request-error.ts";
+import { clientAddressReader } from "#lib/server/security/client-address.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
-import { accessDenied } from "#lib/server/security/refusal-page.ts";
+import { createRateLimiter } from "#lib/server/security/rate-limit.ts";
+import { accessDenied, tooManyRequests } from "#lib/server/security/refusal-page.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
-import { currentOrigin, startUp } from "#lib/server/services/setup/startup.ts";
+import {
+	currentAddressHeader,
+	currentOrigin,
+	startUp,
+} from "#lib/server/services/setup/startup.ts";
 import { building, dev } from "$app/env";
 import * as env from "$app/env/private";
 
@@ -80,6 +87,31 @@ const crossOrigin: Handle = ({ event, resolve }) =>
 		? resolve(event)
 		: accessDenied(event.request);
 
+const rateLimitLog = createLogger("rate-limits");
+const readClientAddress = clientAddressReader({
+	addressHeader: currentAddressHeader,
+	warn: (message) => rateLimitLog.warn(message),
+});
+
+/** Every request through `handle` but `/healthz`: 60 a minute per client address. */
+const generalLimit = createRateLimiter({ limit: 60, windowMs: 60_000 });
+
+/**
+ * The client address and the general limit (SPEC-sign-in.md, "Rate limits and failed sign-ins").
+ * `/healthz` and internal subrequests are exempt. With `ADDRESS_HEADER` set, a request that didn't
+ * come through the proxy is refused; one with no address at all skips the limit. The claim's,
+ * signing in's and recovery's own limits are checked in their actions, so their refusal can show
+ * beside the form.
+ */
+const rateLimits: Handle = ({ event, resolve }) => {
+	if (event.isSubRequest || event.url.pathname === "/healthz") return resolve(event);
+	const address = readClientAddress(event.getClientAddress, event.request);
+	if (address.kind === "refused") return accessDenied(event.request, "not-through-proxy");
+	if (address.kind === "unknown") return resolve(event);
+	const decision = generalLimit.hit(address.key);
+	return decision.allowed ? resolve(event) : tooManyRequests(event.request, decision);
+};
+
 /**
  * The setup gate, the last stage: until first run is complete, every request but its current step
  * and `/healthz` gets a 303 to that step, returned so it keeps the headers.
@@ -91,4 +123,4 @@ const setupGate: Handle = ({ event, resolve }) => {
 		: new Response(null, { status: 303, headers: { location: step } });
 };
 
-export const handle = sequence(language, headers, crossOrigin, setupGate);
+export const handle = sequence(language, headers, crossOrigin, rateLimits, setupGate);

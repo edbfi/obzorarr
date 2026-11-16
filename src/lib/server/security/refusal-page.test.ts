@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import type { RateLimitDecision } from "./rate-limit.ts";
 import { accessDenied, tooManyRequests } from "./refusal-page.ts";
 
 const POLICY =
@@ -25,7 +26,14 @@ async function refusal(
 }
 
 const PAGE = "text/html,application/xhtml+xml";
-const tooMany = (request: Request) => tooManyRequests(request, 42);
+const decision: RateLimitDecision = {
+	allowed: false,
+	limit: 60,
+	remaining: 0,
+	resetAt: 1_700_000_000_000,
+	retryAfterSeconds: 42,
+};
+const tooMany = (request: Request) => tooManyRequests(request, decision);
 
 describe.each([
 	{
@@ -93,10 +101,28 @@ describe.each([
 });
 
 describe("tooManyRequests", () => {
-	it("says when to try again, on the page and in JSON", async () => {
+	it("says when to try again and which limit it ran into, on the page and in JSON", async () => {
 		for (const accept of [PAGE, "application/json"]) {
 			const response = await refusal(tooMany, "en", accept);
 			expect(response.headers.get("retry-after")).toBe("42");
+			expect(response.headers.get("x-ratelimit-limit")).toBe("60");
+			expect(response.headers.get("x-ratelimit-remaining")).toBe("0");
+			expect(response.headers.get("x-ratelimit-reset")).toBe("1700000000");
 		}
+	});
+});
+
+describe("accessDenied for a request that bypassed the proxy", () => {
+	const bypassed = (request: Request) => accessDenied(request, "not-through-proxy");
+
+	it.each([
+		["en", "The request didn't come through the proxy Obzorarr expects."],
+		["da", "Anmodningen kom ikke gennem den proxy, Obzorarr forventer."],
+	])("says so on the page and in JSON (%s)", async (language, message) => {
+		const page = await (await refusal(bypassed, language, PAGE)).text();
+		expect(page).toContain(message);
+		const json = await refusal(bypassed, language, "application/json");
+		expect(json.status).toBe(403);
+		expect(await json.json()).toEqual({ message });
 	});
 });

@@ -1,3 +1,4 @@
+import { type AddressHeaderEnv, readAddressHeader } from "#lib/server/config/address-header.ts";
 import { ConfigError } from "#lib/server/config/config-error.ts";
 import {
 	type DatabasePathEnv,
@@ -14,7 +15,11 @@ import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
 import { startFirstRun, stopFirstRun } from "./first-run.ts";
 
 /** Every variable startup reads. */
-export type StartupEnv = SecretKeyEnv & DatabasePathEnv & LogDebugEnv & OriginEnv;
+export type StartupEnv = SecretKeyEnv &
+	DatabasePathEnv &
+	LogDebugEnv &
+	OriginEnv &
+	AddressHeaderEnv;
 
 /** The parts of the process that shutdown uses, so tests can pass a stand-in. */
 export type ShutdownTarget = {
@@ -35,6 +40,7 @@ const DEADLINE_FLUSH_MS = 250;
 
 let database: Database | undefined;
 let origin: string | undefined;
+let addressHeader: string | undefined;
 
 /**
  * Runs startup's steps in order, before any request is served (SPEC-setup.md, "Startup and
@@ -66,6 +72,11 @@ export function currentDatabase(): Database {
 /** The browser's address from `ORIGIN`, which startup checked, or undefined when it is unset. */
 export function currentOrigin(): string | undefined {
 	return origin;
+}
+
+/** The header adapter-bun reads the client's address from, or undefined when it is unset. */
+export function currentAddressHeader(): string | undefined {
+	return addressHeader;
 }
 
 /**
@@ -140,6 +151,7 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	// 2. The configuration.
 	configureLogging({ debug: readLogDebug(env) });
 	origin = readOrigin(env);
+	addressHeader = readAddressHeader(env);
 	const path = await readDatabasePath(env);
 	// 3. The database, opened and migrated: the app is its one migration owner (D5).
 	const db = await openDatabase(path).catch((error: unknown) => {

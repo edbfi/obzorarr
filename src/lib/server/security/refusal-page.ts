@@ -3,6 +3,7 @@ import * as m from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import tokenDeclarations from "#styled-system/styles/tokens.css?raw";
 import { token } from "#styled-system/tokens";
+import { type RateLimitDecision, rateLimitHeaders } from "./rate-limit.ts";
 
 /**
  * The pages' own policy: they are built here and never pass through SvelteKit's renderer, so
@@ -11,25 +12,40 @@ import { token } from "#styled-system/tokens";
 const POLICY =
 	"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
+/** Why a request was refused with "Access denied". */
+export type AccessDeniedReason =
+	/** The cross-origin check refused it. */
+	| "cross-site"
+	/** `ADDRESS_HEADER` is set, and the request didn't come through the proxy that sets it. */
+	| "not-through-proxy";
+
+const accessDeniedDescriptions: Record<AccessDeniedReason, () => string> = {
+	"cross-site": m.error_access_denied_description,
+	"not-through-proxy": m.error_access_denied_proxy_description,
+};
+
 /**
- * The 403 for a request the cross-origin check refused, in the viewer's language: a JSON error
- * (`{ message }`) for a caller that wants JSON, otherwise the "Access denied" page.
+ * The 403 for a refused request, in the viewer's language: a JSON error (`{ message }`) for a
+ * caller that wants JSON, otherwise the "Access denied" page saying why.
  */
-export function accessDenied(request: Request): Response {
-	return refusal(request, 403, m.error_access_denied_title(), m.error_access_denied_description());
+export function accessDenied(
+	request: Request,
+	reason: AccessDeniedReason = "cross-site",
+): Response {
+	return refusal(request, 403, m.error_access_denied_title(), accessDeniedDescriptions[reason]());
 }
 
 /**
- * The 429 for a request over its limit, with the seconds until it may try again in
- * `Retry-After`: the "Too many requests" page, or a JSON error for a caller that wants JSON.
+ * The 429 for a request over its limit, with when to try again and the limit it ran into in its
+ * headers: the "Too many requests" page, or a JSON error for a caller that wants JSON.
  */
-export function tooManyRequests(request: Request, retryAfterSeconds: number): Response {
+export function tooManyRequests(request: Request, decision: RateLimitDecision): Response {
 	return refusal(
 		request,
 		429,
 		m.error_too_many_requests_title(),
 		m.error_too_many_requests_description(),
-		{ "retry-after": String(retryAfterSeconds) },
+		rateLimitHeaders(decision),
 	);
 }
 

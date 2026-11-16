@@ -4,6 +4,7 @@
 	"language_switcher_label": "Sprog",
 	"error_access_denied_title": "Adgang nægtet",
 	"error_access_denied_description": "Anmodningen blev afvist, fordi den ikke kom fra dette websted.",
+	"error_access_denied_proxy_description": "Anmodningen kom ikke gennem den proxy, Obzorarr forventer.",
 	"error_forbidden_description": "Du har ikke adgang til denne side.",
 	"error_not_found_title": "Siden blev ikke fundet",
 	"error_not_found_description": "Siden findes ikke, eller den er flyttet.",

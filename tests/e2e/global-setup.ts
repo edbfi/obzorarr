@@ -13,7 +13,12 @@ export default async function globalSetup(config: FullConfig) {
 	}
 	const browser = await chromium.launch();
 	try {
-		const page = await browser.newPage({ baseURL });
+		// The shared server runs with ADDRESS_HEADER=x-forwarded-for, so the claim carries an
+		// address of its own, apart from every test's (fixture.ts).
+		const page = await browser.newPage({
+			baseURL,
+			extraHTTPHeaders: { "x-forwarded-for": "10.255.0.1" },
+		});
 		await page.goto("/setup");
 		await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 		await page.locator("#token").fill(token);

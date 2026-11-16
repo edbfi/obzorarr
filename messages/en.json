@@ -4,6 +4,7 @@
 	"language_switcher_label": "Language",
 	"error_access_denied_title": "Access denied",
 	"error_access_denied_description": "The request was refused because it didn't come from this site.",
+	"error_access_denied_proxy_description": "The request didn't come through the proxy Obzorarr expects.",
 	"error_forbidden_description": "You don't have access to this page.",
 	"error_not_found_title": "Page not found",
 	"error_not_found_description": "This page doesn't exist, or it has moved.",

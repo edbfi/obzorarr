@@ -1,4 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixture.ts";
 
 /**
  * Collects console errors and CSP violations, which no error page may cause. Chromium also
@@ -29,8 +30,9 @@ test.describe("the error page", () => {
 	] as const) {
 		test(`an unknown page is "${title}" without its number, styled and hydrated (${locale})`, async ({
 			browser,
+			clientHeaders,
 		}) => {
-			const context = await browser.newContext({ locale });
+			const context = await browser.newContext({ locale, extraHTTPHeaders: clientHeaders });
 			try {
 				const page = await context.newPage();
 				const problems = await watchForProblems(page);
