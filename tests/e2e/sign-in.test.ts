@@ -487,6 +487,66 @@ test.describe("the owner check", () => {
 		}
 	});
 
+	test("its own answers keep the security headers and clear a stale cookie, data requests too", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const stale = { cookie: "obzorarr_session=made-up" };
+			const answers = {
+				page: await fetch(`${server.url}/admin/settings/security`, {
+					headers: stale,
+					redirect: "manual",
+				}),
+				data: await fetch(`${server.url}/admin/settings/security/__data.json`, {
+					headers: stale,
+					redirect: "manual",
+				}),
+				post: await fetch(`${server.url}/admin/settings/security`, {
+					method: "POST",
+					headers: {
+						...stale,
+						origin: server.url,
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+					},
+					body: "a=1",
+					redirect: "manual",
+				}),
+			};
+			expect(answers.page.status).toBe(303);
+			expect(await answers.data.json()).toMatchObject({ type: "redirect" });
+			expect(answers.post.status).toBe(403);
+			for (const [name, answer] of Object.entries(answers)) {
+				expect(answer.headers.get("x-frame-options"), name).toBe("DENY");
+				expect(answer.headers.get("x-content-type-options"), name).toBe("nosniff");
+				const cleared = (answer.headers.get("set-cookie") ?? "").toLowerCase();
+				expect(cleared, name).toMatch(/^obzorarr_session=;/);
+				expect(cleared, name).toContain("max-age=0");
+				expect(cleared, name).not.toContain("secure");
+			}
+			// Signing in over a stale cookie keeps the new session: nothing clears it after.
+			const signedIn = await fetch(`${server.url}/admin/sign-in`, {
+				method: "POST",
+				headers: {
+					...stale,
+					origin: server.url,
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+				redirect: "manual",
+			});
+			expect(signedIn.status).toBe(303);
+			const set = signedIn.headers.getSetCookie();
+			expect(set).toHaveLength(1);
+			expect(set[0]).toMatch(/^obzorarr_session=[A-Za-z0-9_-]{43};/);
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("/ links to the owner's sign-in", async ({ page }) => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),

@@ -933,7 +933,10 @@ export const GET: RequestHandler = () => healthResponse();
     SvelteKit's JSON redirect, and the browser signs in and comes back; an owner-only POST gets
     "Your session ended" as a page with a link to sign in, as SvelteKit's action error and as
     JSON; signed in, `/admin` and `/admin/settings` answer their 307 and the Security tab is
-    `no-store`, and the sign-in page sends the owner to `/admin`; and `/` links to sign in.
+    `no-store`, and the sign-in page sends the owner to `/admin`; the check's own answers (its
+    redirect, the data request's JSON redirect and its refusal) keep the security headers and clear
+    a stale session cookie, while signing in over one keeps the new session; and `/` links to sign
+    in.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

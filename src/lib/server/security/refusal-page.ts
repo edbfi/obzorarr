@@ -25,8 +25,8 @@ const accessDeniedDescriptions: Record<AccessDeniedReason, () => string> = {
 };
 
 /**
- * The 403 for a refused request, in the viewer's language: a JSON error (`{ message }`) for a
- * caller that wants JSON, otherwise the "Access denied" page saying why.
+ * The 403 for a refused request, in the viewer's language: the "Access denied" page saying why,
+ * or one of `refusal`'s JSON forms.
  */
 export function accessDenied(
 	request: Request,
@@ -76,12 +76,11 @@ function refusal(
 	description: string,
 	{ headers = {}, signIn }: { headers?: Record<string, string>; signIn?: string } = {},
 ): Response {
+	const json = { status, headers: { ...headers, "cache-control": "no-store" } };
 	if (request.headers.get("x-sveltekit-action") === "true") {
-		return Response.json({ type: "error", error: { message: description } }, { status, headers });
+		return Response.json({ type: "error", error: { message: description } }, json);
 	}
-	if (wantsJson(request)) {
-		return Response.json({ message: description }, { status, headers });
-	}
+	if (wantsJson(request)) return Response.json({ message: description }, json);
 	const signInLink =
 		signIn === undefined
 			? ""

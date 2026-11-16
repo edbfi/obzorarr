@@ -38,6 +38,15 @@ describe("ownerCheck", () => {
 		expect(signedOut("/admin/%E0%A4%A", "POST")).toMatchObject({ action: "refuse" });
 	});
 
+	it("guards a trailing slash, anything below sign-in or sign-out, and every method", () => {
+		expect(signedOut("/admin/")).toMatchObject({ action: "redirect" });
+		expect(signedOut("/admin/sign-in/x")).toMatchObject({ action: "redirect" });
+		expect(signedOut("/admin/sign-out/")).toEqual({ action: "pass", noStore: false });
+		expect(signedOut("/admin/settings", "OPTIONS")).toMatchObject({ action: "refuse" });
+		// `%2F` stays encoded, as SvelteKit leaves it, so this matches no route and is a 404.
+		expect(signedOut("/admin%2Fsettings")).toEqual({ action: "pass", noStore: false });
+	});
+
 	it("leaves every other path alone", () => {
 		for (const path of ["/", "/setup", "/healthz", "/administrator", "/admins/x"]) {
 			expect(signedOut(path), path).toEqual({ action: "pass", noStore: false });

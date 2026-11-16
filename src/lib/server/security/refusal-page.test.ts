@@ -94,6 +94,7 @@ describe.each([
 			const response = await refusal(make, language, "application/json");
 			expect(response.status).toBe(status);
 			expect(response.headers.get("content-type")).toMatch(/^application\/json/);
+			expect(response.headers.get("cache-control")).toBe("no-store");
 			expect(await response.json()).toEqual({ message: messages[language] });
 		},
 	);
@@ -175,6 +176,7 @@ describe("a form enhanced with JavaScript", () => {
 			const response = await refusal(make, "en", "application/json", {
 				"x-sveltekit-action": "true",
 			});
+			expect(response.headers.get("cache-control")).toBe("no-store");
 			const body = (await response.json()) as { type: string; error: { message: string } };
 			expect(body.type).toBe("error");
 			expect(body.error.message).toEqual(expect.any(String));

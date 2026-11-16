@@ -15,7 +15,9 @@ export type OwnerCheckDecision =
  * data request goes to sign in and back, and any other method is refused, never replayed. A
  * signed-in owner who opens the sign-in page goes to `/admin`. The path is decoded as SvelteKit
  * decodes it to match a route, so an encoded letter can't reach an owner-only route unchecked; a
- * path that can't be decoded counts as owner-only.
+ * path that can't be decoded counts as owner-only, wherever it points, which fails safe. The
+ * check reads the request's own path, which is the route's only while the app has no `reroute`
+ * hook and no remote functions: adding either means revisiting it.
  */
 export function ownerCheck({
 	path,

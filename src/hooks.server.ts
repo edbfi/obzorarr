@@ -1,3 +1,4 @@
+import type { RequestEvent } from "@sveltejs/kit";
 import {
 	type Handle,
 	type HandleServerError,
@@ -121,18 +122,60 @@ const rateLimits: Handle = ({ event, resolve }) => {
  * The session (SPEC-sign-in.md, "The request stages"): the owner a live session cookie signs in,
  * in `event.locals.owner`. It refuses nothing; a cookie whose session has ended or never existed
  * is cleared, with `secure: false`, since the browser's address isn't known on every request.
- * The clearing reaches the browser only on responses that pass through `resolve`, not on the
- * setup gate's own redirect.
+ * SvelteKit writes the clearing only on responses that pass through `resolve`, so a later stage's
+ * own answer, a redirect or a refusal, gets it here, unless that response sets the cookie itself,
+ * as signing in does.
  */
 const session: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(SESSION_COOKIE);
-	if (token !== undefined) {
-		const owner = await lookUpSession(currentDatabase(), token, new Date());
-		if (owner === undefined) event.cookies.delete(SESSION_COOKIE, SESSION_COOKIE_DELETION);
-		else event.locals.owner = owner;
+	if (token === undefined) return resolve(event);
+	const owner = await lookUpSession(currentDatabase(), token, new Date());
+	if (owner !== undefined) {
+		event.locals.owner = owner;
+		return resolve(event);
 	}
-	return resolve(event);
+	event.cookies.delete(SESSION_COOKIE, SESSION_COOKIE_DELETION);
+	const response = await resolve(event);
+	const setsCookie = response.headers
+		.getSetCookie()
+		.some((cookie) => cookie.startsWith(`${SESSION_COOKIE}=`));
+	if (setsCookie) return response;
+	const clearing = event.cookies.serialize(SESSION_COOKIE, "", {
+		...SESSION_COOKIE_DELETION,
+		maxAge: 0,
+	});
+	return withHeaderAppended(response, "set-cookie", clearing);
 };
+
+/** `response` with one more `name` header; one whose headers can't change is copied first. */
+function withHeaderAppended(response: Response, name: string, value: string): Response {
+	try {
+		response.headers.append(name, value);
+		return response;
+	} catch {
+		const copy = new Response(response.body, response);
+		copy.headers.append(name, value);
+		return copy;
+	}
+}
+
+/**
+ * A 303 a stage answers itself: for a data request, SvelteKit's own JSON redirect, built here
+ * rather than left to SvelteKit, which would build it after `handle` and so without the security
+ * headers. Neither is cached.
+ */
+function redirectFromHandle(event: RequestEvent, location: string): Response {
+	if (event.isDataRequest) {
+		return Response.json(
+			{ type: "redirect", status: 303, location },
+			{ headers: { "cache-control": "private, no-store" } },
+		);
+	}
+	return new Response(null, {
+		status: 303,
+		headers: { location, "cache-control": "no-store" },
+	});
+}
 
 /**
  * The setup gate: until first run is complete, every request but its current step
@@ -140,16 +183,13 @@ const session: Handle = async ({ event, resolve }) => {
  */
 const setupGate: Handle = ({ event, resolve }) => {
 	const step = firstRunRedirect(event.url.pathname);
-	return step === undefined
-		? resolve(event)
-		: new Response(null, { status: 303, headers: { location: step } });
+	return step === undefined ? resolve(event) : redirectFromHandle(event, step);
 };
 
 /**
  * The owner check, the last stage (SPEC-sign-in.md, "Owner-only pages"): a `handle` stage rather
- * than a layout `load`, since SvelteKit runs a form action before any `load`. Its redirects are
- * returned as 303s, which SvelteKit turns into its JSON redirect for a data request; its refusal is
- * returned too, so both keep the headers. What it lets through to the owner is `no-store`.
+ * than a layout `load`, since SvelteKit runs a form action before any `load`. Its redirect and its
+ * refusal are returned, so both keep the headers. What it lets through to the owner is `no-store`.
  */
 const ownerOnly: Handle = async ({ event, resolve }) => {
 	const decision = ownerCheck({
@@ -159,10 +199,7 @@ const ownerOnly: Handle = async ({ event, resolve }) => {
 	});
 	switch (decision.action) {
 		case "redirect":
-			return new Response(null, {
-				status: 303,
-				headers: { location: decision.location, "cache-control": "no-store" },
-			});
+			return redirectFromHandle(event, decision.location);
 		case "refuse":
 			return sessionEnded(event.request, decision.returnTo);
 		case "pass": {
