@@ -175,7 +175,9 @@ opens it goes to `/admin`; before the claim, the setup gate sends it to `/setup`
 
 **The return path** (`?next=`) is a same-origin path only: one leading slash and not two, no
 backslashes or control characters, at most 2,048 characters. Only the path is kept, never the query
-string or fragment. Anything else is dropped, and the browser goes to `/admin`.
+string or fragment, percent-encoded as a `Location` header needs and with its dot segments
+resolved; the result is checked again, so `/.//evil.test` can't become `//evil.test`, and counted
+again against 2,048. Anything else is dropped, and the browser goes to `/admin`.
 
 **"Forgot your password?"** on the sign-in page explains recovery in three steps (below), so an
 owner who can't sign in finds the way back without the docs.
