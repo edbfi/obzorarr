@@ -65,10 +65,10 @@ describe("redact", () => {
 
 		// Logged URLs come from outside, so a hostile one must not stall the logger. A time limit
 		// fails under load and misses a fast quadratic scan, so this compares growth instead: 8
-		// times the input takes about 8 times as long if linear, and 45 to 64 if quadratic. The small and
-		// large runs alternate, so load slows both alike, and the fastest of each counts. Contention
-		// for the CPU's cache can still slow the large run alone, so a test may try twice more: a
-		// quadratic scan fails every attempt.
+		// times the input takes about 8 times as long if linear, and 45 to 64 if quadratic. The
+		// small and large runs alternate, so load slows both alike, and the fastest of each counts.
+		// Contention for the CPU's cache can still slow the large run alone, so a test may try twice
+		// more: a quadratic scan fails every attempt.
 		it.each<[string, (size: number) => string]>([
 			["dots that could start a scheme", (size) => "a.".repeat(size * 4)],
 			["parameters behind semicolons", (size) => `/x?${"a=1;".repeat(size)}token=t`],
