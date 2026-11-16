@@ -298,8 +298,9 @@ are checked in the action and answered with `fail(429)`, its headers, and the me
 **Dependencies:** task 8.
 
 **Files:** `server/security/failed-sign-ins.ts` (+ test), `server/services/sign-in/sign-in.ts`
-(+ test), `server/services/setup/startup.ts`, `src/routes/(admin)/admin/sign-in/`, `messages/`,
-`tests/e2e/sign-in.test.ts`, `README.md`.
+(+ test), `src/routes/(admin)/admin/sign-in/`, `messages/`, `tests/e2e/sign-in.test.ts`,
+`README.md`; not `server/services/setup/startup.ts`, as first planned: the tables live in memory
+and sweep themselves, so startup has nothing to do.
 
 **Size:** M.
 
