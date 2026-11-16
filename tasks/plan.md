@@ -67,7 +67,7 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 
 ### Phase 1: refusing well
 
-- [ ] Task 1: the error pages
+- [x] Task 1: the error pages
 - [ ] Task 2: the client address and the general limit
 - [ ] Task 3: the claim's limit and the hash slots
 

@@ -759,13 +759,13 @@ Setup facts for this stack:
 
 | Command | Does |
 |---|---|
-| `bun ci` | frozen install; `prepare` runs `svelte-kit sync`, the message compile and Panda codegen |
+| `bun ci` | frozen install; `prepare` runs `svelte-kit sync`, the message compile, Panda codegen and Panda's token CSS (`styled-system/styles/`), which the refusal pages inline |
 | `bun run --bun dev` | Vite dev server; needs a key in `.env` or the environment, and without one every request fails with the key error |
 | `bun run --bun build` | production build through adapter-bun into `build/`; needs no key and never embeds one |
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
-| `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen, then `svelte-check` failing on any error or warning |
+| `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen and token CSS, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests (`src/**/*.test.ts` and `vite.config.test.ts`), once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests and the setup tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests and the error-page tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
@@ -818,12 +818,14 @@ export const GET: RequestHandler = () => healthResponse();
   `logging/redact.test.ts`, each redaction rule and nested; `logging/logger.test.ts`, with
   `flushLogs` against a slow shell pipe; `logging/request-error.test.ts`, an unexpected error as
   one redacted entry without the query, its cause, no entry for app or framework errors, and never
-  throwing; `src/hooks.server.test.ts`, the `handleError` hook writing through it;
+  throwing; `src/hooks.server.test.ts`, the `handleError` hook writing through it and answering
+  with the viewer's message;
   `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
   for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
-  `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/access-denied.test.ts`, the refusal page
-  and its JSON form in both languages; `security/bootstrap-token.test.ts`, the token's format,
+  `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/refusal-page.test.ts`, the "Access denied"
+  and "Too many requests" pages and their JSON forms in both languages, styled from the inline
+  token declarations, with only a link home; `security/bootstrap-token.test.ts`, the token's format,
   alphabet, unbiased draw, expiry and comparison; `security/password.test.ts`, the credential
   rules at their limits, NFC and case included, the list, patterns and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
@@ -874,6 +876,10 @@ export const GET: RequestHandler = () => healthResponse();
     `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
     hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
     smoke test runs in English, Playwright's default.
+  - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
+    without its number, styled and hydrated, with Go back and Home; that Go back returns to the
+    page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None
+    logs a console error or a CSP violation.
 - prek runs the unit tests (`tests` hook); CI's `smoke` job builds with no key and runs `smoke`.
 
 ## CI and repo tooling

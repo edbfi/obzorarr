@@ -4,11 +4,12 @@ import {
 	type ServerInit,
 	sequence,
 } from "@sveltejs/kit/hooks";
+import * as m from "#lib/paraglide/messages.js";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
 import { logRequestError } from "#lib/server/logging/request-error.ts";
-import { accessDenied } from "#lib/server/security/access-denied.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
+import { accessDenied } from "#lib/server/security/refusal-page.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import { currentOrigin, startUp } from "#lib/server/services/setup/startup.ts";
 import { building, dev } from "$app/env";
@@ -19,10 +20,17 @@ export const init: ServerInit = async () => {
 };
 
 /**
- * An unexpected error in a load, action, endpoint or `handle` becomes one redacted log entry,
- * instead of SvelteKit's default, which writes its stack to the console unredacted.
+ * An unexpected error while answering a request becomes one redacted log entry, instead of
+ * SvelteKit's default, which writes its stack to the console unredacted, and the viewer gets
+ * "Something went wrong. Try again." in their language. Errors the app raises itself, and the
+ * framework's, keep SvelteKit's own answer.
  */
-export const handleError: HandleServerError = logRequestError;
+export const handleError: HandleServerError = (input) => {
+	logRequestError(input);
+	return input.kind === "unknown"
+		? { message: m.error_something_went_wrong_description() }
+		: undefined;
+};
 
 /** Each request's language (SPEC-i18n.md); it refuses nothing. */
 const language: Handle = ({ event, resolve }) =>

@@ -50,6 +50,9 @@ export default defineConfig({
 	server: { fs: { allow: ["styled-system"] } },
 	test: {
 		environment: "node",
+		// Vitest empties every CSS import unless told otherwise; the refusal pages read Panda's
+		// generated token declarations as text.
+		css: { include: [/styled-system\/styles\/tokens\.css/] },
 		include: ["src/**/*.test.ts", "vite.config.test.ts"],
 		expect: { requireAssertions: true },
 	},

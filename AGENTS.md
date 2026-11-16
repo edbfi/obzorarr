@@ -283,7 +283,9 @@ is built: startup opens the database and applies its migrations, the app writes 
 it shuts down cleanly, every page carries the security headers and a nonce-based CSP, and a
 state-changing request from another site gets "Access denied". Until it is claimed, an instance
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
-which creates the owner account. The owner can't sign in yet: module 5, `sign-in`, comes next.
+which creates the owner account. The owner can't sign in yet: module 5, `sign-in`
+([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
+so far, errors and refusals show branded pages.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -309,19 +311,23 @@ src/
   app.html                       document shell; `class="dark"` sets the default colour mode,
                                  and `handle` writes the request's language into `<html lang>`
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
+  error.html                     SvelteKit's last resort when even the error page fails, in
+                                 English and Danish
   app.d.ts                       SvelteKit ambient types
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, then
                                  the setup gate; `handleError`: an unexpected error as one
-                                 redacted log entry
+                                 redacted log entry, answered with the viewer's message
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
                                  <html data-hydrated> once mounted
     (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
                                  language switcher
+    +error.svelte                the error page: "Page not found", "Access denied", "Too many
+                                 requests" or "Something went wrong", with Go back and Home
     healthz/+server.ts           `/healthz`: public one-word status
     setup/                       `/setup`: the claim. +page.svelte: the form (surface brief
                                  `route-setup.md`); +page.server.ts: its load and the claim
@@ -374,8 +380,9 @@ src/
       security/headers.ts        the security headers for a request, strict transport only over
                                  HTTPS
       security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
-      security/access-denied.ts  the check's 403: the "Access denied" page with its own policy,
-                                 or a JSON error
+      security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
+                                 requests", with their own policy and Panda's token declarations
+                                 inline, or a JSON error
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -395,6 +402,7 @@ tests/
   e2e/i18n.test.ts               the built server serves each viewer's language, the browser
                                  keeps it, and the switcher changes it
   e2e/setup.test.ts              startup and first run on fresh built servers
+  e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/global-setup.ts            claims the shared web server's instance before the other tests
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json
@@ -407,7 +415,9 @@ drizzle/                         the reviewed migrations Drizzle Kit generated (
                                  one folder each; Vite bundles their SQL into the build
 drizzle.config.ts                Drizzle Kit's options: the schema files it reads
 panda.config.ts                  every design token; components use them through
-                                 `#styled-system/<module>` (generated, gitignored)
+                                 `#styled-system/<module>` (generated, gitignored); the refusal
+                                 pages read the generated token CSS as
+                                 `#styled-system/styles/tokens.css?raw`
 vite.config.ts                   SvelteKit (all its configuration, exported as `kit`: the CSP,
                                  and SvelteKit's own form check off), Panda, Paraglide and Vitest
 vite.config.test.ts              SvelteKit's form check and remote functions stay off
