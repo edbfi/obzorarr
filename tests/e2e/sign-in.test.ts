@@ -775,6 +775,25 @@ test.describe("the admin shell and signing out", () => {
 				),
 			).toBe(true);
 
+			// Widening with the drawer's confirmation open closes both; focus still lands in the sidebar.
+			await page.setViewportSize({ width: 390, height: 844 });
+			await page.getByRole("button", { name: "Menu" }).click();
+			await page
+				.getByRole("dialog", { name: "Menu" })
+				.getByRole("button", { name: "Sign out" })
+				.click();
+			await expect(page.getByRole("alertdialog")).toBeVisible();
+			await page.setViewportSize({ width: 1024, height: 844 });
+			await expect(page.getByRole("alertdialog")).toBeHidden();
+			await expect
+				.poll(() =>
+					page.evaluate(
+						() =>
+							document.getElementById("admin-sidebar")?.contains(document.activeElement) ?? false,
+					),
+				)
+				.toBe(true);
+
 			// The other way: a confirmation opened from the sidebar, cancelled below 768 px, gives
 			// focus to Menu, since the sidebar's Sign out is hidden there.
 			await page.locator("#admin-sidebar").getByRole("button", { name: "Sign out" }).click();

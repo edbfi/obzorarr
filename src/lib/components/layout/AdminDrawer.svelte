@@ -34,7 +34,7 @@ afterNavigate(() => {
 });
 
 $effect(() => {
-	const wide = window.matchMedia("(min-width: 768px)");
+	const wide = window.matchMedia("(width >= 48rem)");
 	const closeWhenWide = () => {
 		if (wide.matches) open = false;
 	};

@@ -22,7 +22,7 @@ const behind = $derived(drawerOpen || modals.open > 0);
 <svelte:head>
 	<noscript>
 		<style>
-		@media (max-width: 767.98px) {
+		@media (width < 48rem) {
 			#admin-shell {
 				flex-direction: column;
 			}

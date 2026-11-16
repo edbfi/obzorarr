@@ -17,6 +17,11 @@ import { css } from "#styled-system/css";
 let { rail = false }: { rail?: boolean } = $props();
 
 let open = $state(false);
+// Only once the page has script does Sign out open a confirmation; before that it signs out.
+let hydrated = $state(false);
+$effect(() => {
+	hydrated = true;
+});
 let trigger = $state<HTMLButtonElement>();
 const modals = shellModals();
 $effect(() => {
@@ -50,8 +55,8 @@ const railLabel = css({ tabletOnly: { srOnly: true } });
 		bind:this={trigger}
 		type="submit"
 		data-sign-out
-		aria-haspopup="dialog"
-		aria-expanded={open}
+		aria-haspopup={hydrated ? "dialog" : undefined}
+		aria-expanded={hydrated ? open : undefined}
 		onclick={(event) => {
 			event.preventDefault();
 			open = true;
