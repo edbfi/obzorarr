@@ -317,8 +317,8 @@ src/
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
-                                 middleware, the security headers, the cross-origin check, then
-                                 the setup gate; `handleError`: an unexpected error as one
+                                 middleware, the security headers, the cross-origin check, the
+                                 client address and the general rate limit, then the setup gate; `handleError`: an unexpected error as one
                                  redacted log entry, and every error's message in the viewer's
                                  language
   hooks.client.ts                the browser keeps the language the server chose for the page
@@ -350,6 +350,7 @@ src/
       config/database-path.ts    the database file's path, its folder created and writable
       config/log-debug.ts        `OBZORARR_LOG_DEBUG`: whether debug entries are written
       config/origin.ts           `ORIGIN`, parsed and checked: a bare http or https origin
+      config/address-header.ts   `ADDRESS_HEADER`: whether a proxy names the client's address
       db/                        client.ts: opens the database; migrate.ts: applies the bundled
                                  migrations; one file per aggregate with its tables (settings.ts,
                                  owner.ts) and, from their first caller, its named operations:
@@ -381,6 +382,9 @@ src/
       security/headers.ts        the security headers for a request, strict transport only over
                                  HTTPS
       security/cross-origin.ts   the cross-origin check: one pure module the other apps copy
+      security/client-address.ts the rate limits' key: IPv4, IPv6 per /64, refused without the
+                                 configured header, or unknown
+      security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
       security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
                                  requests", with their own policy and Panda's token declarations
                                  inline, or a JSON error
@@ -404,6 +408,8 @@ tests/
                                  keeps it, and the switcher changes it
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
+  e2e/rate-limits.test.ts        the general limit and the refusal without the address header
+  e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/global-setup.ts            claims the shared web server's instance before the other tests
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json

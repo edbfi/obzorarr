@@ -131,6 +131,23 @@ the `Host` header, Obzorarr can't match the browser's address to the one it was 
 plain HTTP this affects every browser; over HTTPS only older ones (Safari before 16.4, Firefox
 before 90, Chrome before 76), since current browsers say where a request came from themselves.
 
+### Behind a reverse proxy: the client's address
+
+Obzorarr limits how many requests each visitor's address may make. Behind a reverse proxy, every
+request arrives from the proxy, so tell Obzorarr which header the proxy puts the visitor's address
+in; otherwise every visitor shares the proxy's address and its limits:
+
+| Variable | Holds | Default |
+| --- | --- | --- |
+| `ADDRESS_HEADER` | the header with the visitor's address, such as `x-forwarded-for` or `x-real-ip` | unset: the connection's address |
+| `XFF_DEPTH` | with `x-forwarded-for`, how many proxies sit in front of Obzorarr, counted from the right | `1` |
+
+With `ADDRESS_HEADER` set, Obzorarr refuses any request that doesn't carry it with "Access
+denied", since that request didn't come through the proxy; `/healthz` still answers, so a
+container health check keeps working. Make the port reachable only through the proxy: anyone who
+reaches it directly can put any address in the header. When the header arrives while
+`ADDRESS_HEADER` is unset, Obzorarr writes a warning to its logs.
+
 ## First run
 
 A new Obzorarr is claimed by whoever can read its console. Until then, every page sends you to

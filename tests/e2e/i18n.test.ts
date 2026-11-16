@@ -1,4 +1,5 @@
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./fixture.ts";
 
 // Each request gets the viewer's language, the browser keeps it, and the switcher changes it
 // (SPEC-i18n.md, "Choosing the language" and "The language switcher"). Runs against the built

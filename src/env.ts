@@ -1,4 +1,5 @@
 import { defineEnvVars, type EnvVarConfig } from "@sveltejs/kit/env";
+import type { AddressHeaderEnv } from "#lib/server/config/address-header.ts";
 import type { DatabasePathEnv } from "#lib/server/config/database-path.ts";
 import type { LogDebugEnv } from "#lib/server/config/log-debug.ts";
 import type { OriginEnv } from "#lib/server/config/origin.ts";
@@ -30,7 +31,16 @@ export const variables = defineEnvVars({
 		schema: optional,
 		description: "The address browsers use, such as https://obzorarr.example; optional.",
 	},
+	ADDRESS_HEADER: {
+		schema: optional,
+		description:
+			"The header a reverse proxy puts the client's address in, such as x-forwarded-for; adapter-bun reads it too.",
+	},
 } satisfies Record<
-	SecretKeyVariable | keyof DatabasePathEnv | keyof LogDebugEnv | keyof OriginEnv,
+	| SecretKeyVariable
+	| keyof DatabasePathEnv
+	| keyof LogDebugEnv
+	| keyof OriginEnv
+	| keyof AddressHeaderEnv,
 	EnvVarConfig<string | undefined>
 >);

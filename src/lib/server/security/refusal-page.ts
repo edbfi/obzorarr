@@ -11,12 +11,27 @@ import { token } from "#styled-system/tokens";
 const POLICY =
 	"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
+/** Why a request was refused with "Access denied". */
+export type AccessDeniedReason =
+	/** The cross-origin check refused it. */
+	| "cross-site"
+	/** `ADDRESS_HEADER` is set, and the request didn't come through the proxy that sets it. */
+	| "not-through-proxy";
+
+const accessDeniedDescriptions: Record<AccessDeniedReason, () => string> = {
+	"cross-site": m.error_access_denied_description,
+	"not-through-proxy": m.error_access_denied_proxy_description,
+};
+
 /**
- * The 403 for a request the cross-origin check refused, in the viewer's language: a JSON error
- * (`{ message }`) for a caller that wants JSON, otherwise the "Access denied" page.
+ * The 403 for a refused request, in the viewer's language: a JSON error (`{ message }`) for a
+ * caller that wants JSON, otherwise the "Access denied" page saying why.
  */
-export function accessDenied(request: Request): Response {
-	return refusal(request, 403, m.error_access_denied_title(), m.error_access_denied_description());
+export function accessDenied(
+	request: Request,
+	reason: AccessDeniedReason = "cross-site",
+): Response {
+	return refusal(request, 403, m.error_access_denied_title(), accessDeniedDescriptions[reason]());
 }
 
 /**

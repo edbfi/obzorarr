@@ -42,6 +42,9 @@ export default defineConfig({
 			PORT: String(port),
 			OBZORARR_SECRET_KEY: key,
 			OBZORARR_DATABASE_PATH: join(dataDir, "obzorarr.db"),
+			// Every test sends its own address (tests/e2e/fixture.ts), so the rate limits never
+			// count one test's requests against another's.
+			ADDRESS_HEADER: "x-forwarded-for",
 		},
 		reuseExistingServer: false,
 		gracefulShutdown: { signal: "SIGTERM", timeout: 5000 },

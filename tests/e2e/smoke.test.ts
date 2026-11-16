@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixture.ts";
 
 test("/ serves the placeholder page, hydrated and styled, without console errors", async ({
 	page,

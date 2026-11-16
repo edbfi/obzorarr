@@ -66,15 +66,15 @@ The shared e2e server moves to `ADDRESS_HEADER=x-forwarded-for`, and every test 
 fixture that gives each test its own address.
 
 **Acceptance criteria:**
-- [ ] `server/security/client-address.test.ts` first fails, then passes, on a copied `Request` as
+- [x] `server/security/client-address.test.ts` first fails, then passes, on a copied `Request` as
   `handle` sees it: each address kind, the refusal and its one warning, the `X-Forwarded-For`
   warning without `ADDRESS_HEADER`, no address as unknown with one warning.
-- [ ] `server/security/rate-limit.test.ts`: a window at its edges, the headers, sweeping, the cap
+- [x] `server/security/rate-limit.test.ts`: a window at its edges, the headers, sweeping, the cap
   of 10,000 with the oldest out first; `server/config/address-header.test.ts`: set, unset, empty.
-- [ ] The fixture in `tests/e2e/` gives each test its own `X-Forwarded-For`; `global-setup.ts`,
+- [x] The fixture in `tests/e2e/` gives each test its own `X-Forwarded-For`; `global-setup.ts`,
   `smoke.test.ts`, `i18n.test.ts` and `errors.test.ts` use it, and `playwright.config.ts` starts
   the shared server with `ADDRESS_HEADER=x-forwarded-for`.
-- [ ] `tests/e2e/rate-limits.test.ts`: the 61st request in a minute gets 429 with `Retry-After` as
+- [x] `tests/e2e/rate-limits.test.ts`: the 61st request in a minute gets 429 with `Retry-After` as
   the branded page; a request without the header gets "Access denied" while `/healthz` answers.
 
 **Verification:** the gates; the README's `ADDRESS_HEADER` and `XFF_DEPTH` section (the port

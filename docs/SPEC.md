@@ -765,7 +765,7 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen and token CSS, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests (`src/**/*.test.ts` and `vite.config.test.ts`), once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests and the error-page tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests, the error-page tests and the rate-limit tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
@@ -822,6 +822,9 @@ export const GET: RequestHandler = () => healthResponse();
   with the viewer's message;
   `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
   for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
+  `config/address-header.test.ts`; `security/client-address.test.ts`, each address kind on a
+  copied `Request`, the refusal without the configured header and the once-a-process warnings;
+  `security/rate-limit.test.ts`, a window at its edges, the sweep, the cap and the headers;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/refusal-page.test.ts`, the "Access denied"
   and "Too many requests" pages and their JSON forms in both languages, styled from the inline
@@ -876,6 +879,11 @@ export const GET: RequestHandler = () => healthResponse();
     `navigator.languages` lists `da-DK` gets English, the switcher marks English as current after
     hydration, pressing it does nothing, and no cookie is written. None logs a console error. The
     smoke test runs in English, Playwright's default.
+  - The shared web server runs with `ADDRESS_HEADER=x-forwarded-for`, and `fixture.ts` gives each
+    test its own address, so no test's requests count against another's.
+  - `rate-limits.test.ts` checks that the 61st request in a minute gets the "Too many requests"
+    page with `Retry-After` and the limit's headers, and that a request without the configured
+    header gets "Access denied" while `/healthz` answers.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

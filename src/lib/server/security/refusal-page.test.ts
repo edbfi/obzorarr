@@ -100,3 +100,18 @@ describe("tooManyRequests", () => {
 		}
 	});
 });
+
+describe("accessDenied for a request that bypassed the proxy", () => {
+	const bypassed = (request: Request) => accessDenied(request, "not-through-proxy");
+
+	it.each([
+		["en", "The request didn't come through the proxy Obzorarr expects."],
+		["da", "Anmodningen kom ikke gennem den proxy, Obzorarr forventer."],
+	])("says so on the page and in JSON (%s)", async (language, message) => {
+		const page = await (await refusal(bypassed, language, PAGE)).text();
+		expect(page).toContain(message);
+		const json = await refusal(bypassed, language, "application/json");
+		expect(json.status).toBe(403);
+		expect(await json.json()).toEqual({ message });
+	});
+});
