@@ -100,7 +100,28 @@ describe("logRequestError", () => {
 				level: "error",
 				source: "request",
 				message: "unexpected error, which couldn't be logged in full",
-				metadata: { method: "POST", path: "/admin/settings" },
+				metadata: {
+					method: "POST",
+					path: "/admin/settings",
+					route: "/admin/settings",
+					thrown: "Error",
+				},
+			}),
+		]);
+	});
+
+	it("never throws when the request itself can't be read, logging what was thrown", () => {
+		const broken = input("unknown", "plain text");
+		Object.defineProperty(broken.event, "url", {
+			get() {
+				throw new Error("no url");
+			},
+		});
+		expect(() => logRequestError(broken)).not.toThrow();
+		expect(entries()).toEqual([
+			expect.objectContaining({
+				message: "unexpected error, which couldn't be logged in full",
+				metadata: { thrown: "string" },
 			}),
 		]);
 	});

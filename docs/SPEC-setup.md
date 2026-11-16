@@ -99,7 +99,7 @@ it comes.
   owner's allowlist, 2026-11-16), whose values are still cleaned like any other;
 - a `Secret` (`secrets`) is already `[redacted]`.
 
-**An unexpected error** in a load, action, endpoint or `handle` is one such entry, written by the
+**An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its
 query; SvelteKit's default would write its stack to the console unredacted. Errors the app raises
 itself and the framework's, such as a 404, aren't logged, as SvelteKit's default doesn't.
