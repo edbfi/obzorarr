@@ -1,8 +1,8 @@
 # Spec: `sign-in`
 
-**Status:** proposed for the owner's approval. Module 5 of the capability map
-([docs/SPEC.md](SPEC.md)); it closes the two `sign-in` lines of "Open decisions each module
-closes" (D28) and leaves D14 to `sync`. `sign-in` is shared (D20,
+**Status:** approved by the owner (2026-11-16), with D28 and the one Security tab. Module 5 of the
+capability map ([docs/SPEC.md](SPEC.md)); it closes the two `sign-in` lines of "Open decisions each
+module closes" (D28) and leaves D14 to `sync`. `sign-in` is shared (D20,
 [Shared groundwork](../AGENTS.md#shared-groundwork)) and obzorarr is its reference: comradarr,
 zondarr, otpravkarr and zimuarr each specify theirs from this spec and obzorarr's code and tests
 once it is built.
@@ -211,11 +211,11 @@ process (one process, D17):
 | the claim | 5 per 5 minutes |
 | recovery | 5 per 5 minutes |
 
-Later modules add theirs from SPEC.md's Module notes (obzorarr: JSON endpoints 30 a minute, Plex
-sign-in's polling 60 a minute and its redirect 30 a minute, the landing page 30 a minute and its
-lookup 10 a minute, and the public-address check 12 a minute). A request counts towards the general
-limit and its own. The general limit runs in `handle`; the others, and the waits below, in their
-actions or services.
+Later modules apply theirs, which are listed here, their one home (obzorarr: JSON endpoints 30 a
+minute, Plex sign-in's polling 60 a minute and its redirect 30 a minute, the landing page 30 a
+minute and its lookup 10 a minute, and the public-address check 12 a minute). A request counts
+towards the general limit and its own. The general limit runs in `handle`; the others, and the waits
+below, in their actions or services.
 
 **Failed sign-ins** (D28), counted per client address, also include a wrong current password at the
 password change. After 10 failures in a row the address waits 5 minutes, and each further 10

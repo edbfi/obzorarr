@@ -5,7 +5,7 @@
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
 built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), ran and closed D19
 with the owner's verdict, module 4, `setup` ([SPEC-setup.md](SPEC-setup.md)), is built, and module
-5, `sign-in` ([SPEC-sign-in.md](SPEC-sign-in.md)), is proposed.
+5, `sign-in` ([SPEC-sign-in.md](SPEC-sign-in.md)), is approved.
 
 ## Objective
 
@@ -20,9 +20,9 @@ job is to make the first module spec cheap to build: every later PR adds behavio
 
 ## Capability map
 
-**Status:** approved by the owner (2026-10-24; shared rows aligned 2026-10-30). Module ids never
-change. Each module gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is
-built.
+**Status:** approved by the owner (2026-10-24; shared rows aligned 2026-10-30; rows 5, 6, 11 and 24
+given the one Security tab with `sign-in`'s spec, 2026-11-16). Module ids never change. Each module
+gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
 [surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
