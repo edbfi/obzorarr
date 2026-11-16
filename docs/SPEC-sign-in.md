@@ -295,9 +295,10 @@ D20 fixes the mechanism; here is what the owner does.
 ## Errors and error pages
 
 - **An unexpected error** is logged by `setup`'s `handleError` hook, and the user sees "Something
-  went wrong. Try again." (the hook returns the translated message); an expected error (`error()`)
-  passes its message through. Stack traces never reach the browser. (Providers map network failures
-  to fixed phrases when they come: `plex-connection`.)
+  went wrong. Try again." (the hook sets every error's message, in the viewer's language); an
+  expected error (`error()`) passes its own message through, and one raised without a message, and
+  the framework's own, get their status's description. Stack traces never reach the browser.
+  (Providers map network failures to fixed phrases when they come: `plex-connection`.)
 - **The error page** (`routes/+error.svelte`) is titled "Page not found", "Access denied", "Too many
   requests" or "Something went wrong", each with a one-line description, and Go back and Home
   actions; the not-found page doesn't show the status number. It shows the Obzorarr logo and
