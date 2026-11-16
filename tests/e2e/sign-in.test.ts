@@ -641,14 +641,19 @@ test.describe("the admin shell and signing out", () => {
 			await claimInBrowser(page, server);
 			await page.goto(`${server.url}/admin/sign-out`);
 			await page.waitForURL(`${server.url}/admin/settings/security`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 
 			const signOut = page.getByRole("button", { name: "Sign out" });
 			await signOut.click();
-			const dialog = page.getByRole("dialog", { name: "Sign out of Obzorarr?" });
+			const dialog = page.getByRole("alertdialog", { name: "Sign out of Obzorarr?" });
 			await expect(dialog).toBeVisible();
+			// The page and the sidebar behind the confirmation are inert while it is open.
+			await expect(page.locator("#admin-page")).toHaveAttribute("inert", "");
+			await expect(page.locator("#admin-sidebar")).toHaveAttribute("inert", "");
 			await page.keyboard.press("Escape");
 			await expect(dialog).toBeHidden();
 			await expect(signOut).toBeFocused();
+			await expect(page.locator("#admin-page")).not.toHaveAttribute("inert", "");
 			await expect(page).toHaveURL(`${server.url}/admin/settings/security`);
 
 			await signOut.click();
@@ -720,6 +725,89 @@ test.describe("the admin shell and signing out", () => {
 			await expect(drawer).toBeHidden();
 			await expect(page.locator("#admin-page")).not.toHaveAttribute("inert", "");
 			await expect(menu).toBeFocused();
+
+			// Signing out from the drawer: the confirmation opens over it, and the drawer is inert.
+			await menu.click();
+			await drawer.getByRole("button", { name: "Sign out" }).click();
+			const confirmation = page.getByRole("alertdialog", { name: "Sign out of Obzorarr?" });
+			await expect(confirmation).toBeVisible();
+			await expect(page.locator("#admin-drawer")).toHaveAttribute("inert", "");
+			await confirmation.getByRole("button", { name: "Sign out" }).click();
+			await page.waitForURL(`${server.url}/admin/sign-in`);
+		} finally {
+			await context.close();
+			await server.stop();
+		}
+	});
+
+	test("the drawer closes when the window widens past 768 px, freeing the page", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+		try {
+			const page = await context.newPage();
+			await claimInBrowser(page, server);
+			await page.getByRole("button", { name: "Menu" }).click();
+			await expect(page.getByRole("dialog", { name: "Menu" })).toBeVisible();
+			await page.setViewportSize({ width: 1024, height: 844 });
+			await expect(page.getByRole("dialog", { name: "Menu" })).toBeHidden();
+			await expect(page.locator("#admin-page")).not.toHaveAttribute("inert", "");
+		} finally {
+			await context.close();
+			await server.stop();
+		}
+	});
+
+	test("the rail from 768 px keeps every control's name", async ({ browser }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const context = await browser.newContext({ viewport: { width: 800, height: 900 } });
+		try {
+			const page = await context.newPage();
+			await claimInBrowser(page, server);
+			const sidebar = page.locator("#admin-sidebar");
+			await expect(sidebar).toBeVisible();
+			await expect(sidebar.getByRole("link", { name: "Settings" })).toBeVisible();
+			await expect(sidebar.getByRole("link", { name: "owner" })).toBeVisible();
+			await expect(sidebar.getByRole("button", { name: "Sign out" })).toBeVisible();
+			await expect(sidebar.getByRole("button", { name: "Dansk" })).toBeVisible();
+			// The labels are kept for screen readers only.
+			expect(await sidebar.getByText("Settings").evaluate((node) => node.clientWidth)).toBeLessThan(
+				2,
+			);
+		} finally {
+			await context.close();
+			await server.stop();
+		}
+	});
+
+	test("without JavaScript, the sidebar is shown on a phone and Sign out still signs out", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const cookie = sessionCookie(await claim(server));
+		const context = await browser.newContext({
+			javaScriptEnabled: false,
+			viewport: { width: 390, height: 844 },
+		});
+		try {
+			const [name, value] = cookie.split("=");
+			await context.addCookies([{ name: name ?? "", value: value ?? "", url: server.url }]);
+			const page = await context.newPage();
+			await page.goto(`${server.url}/admin/settings/security`);
+			await expect(
+				page.locator("#admin-sidebar").getByRole("link", { name: "Settings" }),
+			).toBeVisible();
+			await expect(page.getByRole("button", { name: "Menu" })).toBeHidden();
+			await page.locator("#admin-sidebar").getByRole("button", { name: "Sign out" }).click();
+			await page.waitForURL(`${server.url}/admin/sign-in`);
+			expect((await context.cookies()).map((each) => each.name)).not.toContain("obzorarr_session");
 		} finally {
 			await context.close();
 			await server.stop();

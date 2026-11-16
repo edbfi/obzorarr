@@ -288,11 +288,11 @@ which creates the owner account. Module 5, `sign-in`
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
-on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
-far; and the owner signs in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from
-one address, with a wait after 10 failures in a row. Everything else under `/admin` needs the
-owner's session, inside the admin shell: a sidebar, a rail or a drawer by width, with the owner,
-Sign out behind its confirmation, the language switcher and the version.
+on, signs the new owner in with a session and lands on the admin's Settings; and the owner signs
+in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from one address, with a wait after
+10 failures in a row. Everything else under `/admin` needs the owner's session, inside the admin
+shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind its confirmation,
+the language switcher and the version.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -456,7 +456,10 @@ src/
       layout/OwnerFooter.svelte  the owner's initial and username, Sign out, the language
                                  switcher and the version
       layout/SignOutDialog.svelte
-                                 Sign out and its confirmation
+                                 Sign out and its confirmation; without JavaScript, Sign out
+                                 posts straight away
+      layout/shell-modals.svelte.ts
+                                 the shell's open confirmations, which make the rest inert
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
                                  the claim and sign-in

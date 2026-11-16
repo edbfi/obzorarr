@@ -950,11 +950,14 @@ export const GET: RequestHandler = () => healthResponse();
     redirect and its refusal) keep the security headers and clear a stale session cookie, while
     signing in over one keeps the new session; and `/` links to sign in. In the admin shell, a GET
     to `/admin/sign-out` signs nobody out; Sign out asks first, closes on Escape giving focus
-    back, then ends the session and lands on sign-in; a sign-out POST without a session only
-    clears the cookie, and one with `Origin` stripped gets the 403; below 768px the menu's
-    drawer traps focus, makes the page inert and closes on Escape; and the shell shows its
-    heading, the owner, Sign out and the version in English and Danish with no console error or
-    CSP violation.
+    back, and makes the page and the sidebar inert while open, then ends the session and lands on
+    sign-in; a sign-out POST without a session only clears the cookie, and one with `Origin`
+    stripped gets the 403; below 768px the menu's drawer traps focus, makes the page inert and
+    closes on Escape, and the confirmation opened from it makes it inert too; the drawer closes
+    when the window widens past 768px; the rail keeps every control's name; without JavaScript,
+    the sidebar shows on a phone and Sign out still signs out; and the shell shows its heading,
+    the owner, Sign out and the version in English and Danish with no console error or CSP
+    violation.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

@@ -210,9 +210,9 @@ longer than `SHUTDOWN_TIMEOUT` plus 5 seconds to stop, or it's killed mid-write.
 ## Working on it
 
 The admin's sidebar shows the version Obzorarr was built as: `OBZORARR_VERSION` when it is set
-during the build (the image's build sets a release such as `0.2.0`, or a nightly such as
-`nightly-1a2b3c4`), and `dev` otherwise. It is fixed at build time, so setting it on a running
-container changes nothing.
+during the build (once the image is packaged, its build will set a release such as `0.2.0`, or a
+nightly such as `nightly-1a2b3c4`), and `dev` otherwise. It is fixed at build time, so setting it
+on a running container changes nothing.
 
 Start with [AGENTS.md](AGENTS.md): the house rules, the workflow and where each document lives.
 The product and design context is in [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) and

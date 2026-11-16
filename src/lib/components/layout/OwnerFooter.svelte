@@ -79,7 +79,7 @@ const railVersion = css({ tabletOnly: { textAlign: "center", paddingInline: "[0]
 		</span>
 	</a>
 	<SignOutDialog {rail} />
-	<LanguageSwitcher />
+	<LanguageSwitcher {rail} />
 	<p
 		class={[
 			css({

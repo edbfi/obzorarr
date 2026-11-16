@@ -2,15 +2,25 @@
 import { Dialog } from "@ark-ui/svelte/dialog";
 import { Portal } from "@ark-ui/svelte/portal";
 import LogOutIcon from "@lucide/svelte/icons/log-out";
+import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 
 /**
  * Sign out behind its confirmation (SPEC-sign-in.md, "Signing out"): the confirmation traps focus,
- * closes on Escape and gives focus back to Sign out; confirming posts to `/admin/sign-out`. In the
- * rail (`rail`), the button shows its icon and keeps its name for screen readers.
+ * closes on Escape, makes the shell behind it inert and gives focus back to Sign out; confirming
+ * posts to `/admin/sign-out`. Sign out is itself a form's submit button, so without JavaScript it
+ * still signs out, without asking; with it, the click opens the confirmation instead. In the rail
+ * (`rail`), the button shows its icon and keeps its name for screen readers.
  */
 let { rail = false }: { rail?: boolean } = $props();
+
+let open = $state(false);
+let trigger = $state<HTMLButtonElement>();
+const modals = shellModals();
+$effect(() => {
+	if (open && modals) return modals.hold();
+});
 
 const button = css({
 	minHeight: "controlHeight",
@@ -26,8 +36,15 @@ const railTrigger = css({ tabletOnly: { justifyContent: "center", paddingInline:
 const railLabel = css({ tabletOnly: { srOnly: true } });
 </script>
 
-<Dialog.Root>
-	<Dialog.Trigger
+<form method="post" action="/admin/sign-out">
+	<button
+		bind:this={trigger}
+		type="submit"
+		aria-haspopup="dialog"
+		onclick={(event) => {
+			event.preventDefault();
+			open = true;
+		}}
 		class={[
 			css({
 				display: "flex",
@@ -49,7 +66,16 @@ const railLabel = css({ tabletOnly: { srOnly: true } });
 		<span class={rail ? railLabel : undefined}>
 			{m.admin_sign_out()}
 		</span>
-	</Dialog.Trigger>
+	</button>
+</form>
+
+<Dialog.Root
+	bind:open
+	role="alertdialog"
+	lazyMount
+	unmountOnExit
+	finalFocusEl={() => trigger ?? null}
+>
 	<Portal>
 		<Dialog.Backdrop class={css({ position: "fixed", inset: "[0]", bg: "scrim" })} />
 		<Dialog.Positioner
