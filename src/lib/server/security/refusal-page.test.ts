@@ -44,8 +44,8 @@ describe.each([
 		status: 429,
 		titles: { en: "Too many requests", da: "For mange anmodninger" },
 		messages: {
-			en: "Too many requests came from your address. Wait a minute, then try again.",
-			da: "Der kom for mange anmodninger fra din adresse. Vent et minut, og prøv så igen.",
+			en: "Too many requests came from your address. Wait a moment, then try again.",
+			da: "Der kom for mange anmodninger fra din adresse. Vent lidt, og prøv så igen.",
 		},
 	},
 ] as const)("$name", ({ make, status, titles, messages }) => {

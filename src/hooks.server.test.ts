@@ -89,7 +89,7 @@ it("describes each status the error page titles, and anything else as something 
 		(await handle("framework", { status, message: "x" })) as { message: string };
 	expect((await described(403)).message).toBe("You don't have access to this page.");
 	expect((await described(429)).message).toBe(
-		"Too many requests came from your address. Wait a minute, then try again.",
+		"Too many requests came from your address. Wait a moment, then try again.",
 	);
 	expect((await described(405)).message).toBe("Something went wrong. Try again.");
 });

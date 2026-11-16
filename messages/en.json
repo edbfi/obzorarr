@@ -8,7 +8,7 @@
 	"error_not_found_title": "Page not found",
 	"error_not_found_description": "This page doesn't exist, or it has moved.",
 	"error_too_many_requests_title": "Too many requests",
-	"error_too_many_requests_description": "Too many requests came from your address. Wait a minute, then try again.",
+	"error_too_many_requests_description": "Too many requests came from your address. Wait a moment, then try again.",
 	"error_something_went_wrong_title": "Something went wrong",
 	"error_something_went_wrong_description": "Something went wrong. Try again.",
 	"error_go_back": "Go back",
