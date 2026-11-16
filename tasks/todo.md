@@ -171,7 +171,7 @@ until task 6.
   limits at their edges, the hourly write, expiry, the current-hash check), `claim` (the session
   in its transaction, none on failure); startup deletes expired sessions.
 - [x] `tests/e2e/sign-in.test.ts`, on fresh servers through `server.ts`: the claim's cookie is
-  `HttpOnly`, `SameSite=Lax` and not `Secure`, on `localhost` and on a non-loopback host name
+  `HttpOnly`, `SameSite=Lax` and not `Secure`, on `127.0.0.1` and on a non-loopback host name
   (Chromium's `--host-resolver-rules`).
 - [x] The migration is generated with `db:generate` and reviewed; the README says the cookie works
   over plain HTTP.

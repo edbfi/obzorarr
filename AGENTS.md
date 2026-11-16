@@ -283,7 +283,7 @@ is built: startup opens the database and applies its migrations, the app writes 
 it shuts down cleanly, every page carries the security headers and a nonce-based CSP, and a
 state-changing request from another site gets "Access denied". Until it is claimed, an instance
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
-which creates the owner account. The owner can't sign in yet: module 5, `sign-in`
+which creates the owner account. There is no sign-in page yet: module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
@@ -366,7 +366,8 @@ src/
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database, then first run; a failed step is logged, then thrown.
+                                 database, then deleting ended sessions and first run; a failed
+                                 step is logged, then thrown.
                                  Shutdown, in the built server only: `SIGHUP` as `SIGTERM`,
                                  stopping the timers, then closing and exiting, with a 5-second
                                  deadline
