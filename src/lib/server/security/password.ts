@@ -70,7 +70,11 @@ export function checkPassword(
 	if (length < 15) return { ok: false, error: "too-short" };
 	if (length > 128) return { ok: false, error: "too-long" };
 	const lower = password.toLowerCase();
-	if (isPattern([...lower])) return { ok: false, error: "pattern" };
+	// Each code point lower-cased on its own: the whole string's lower case can end in a final
+	// "ς" or turn "İ" into two code points, which would hide a repeat.
+	if (isPattern([...password].map((char) => char.toLowerCase()))) {
+		return { ok: false, error: "pattern" };
+	}
 	if (lower.includes(APP_NAME)) return { ok: false, error: "app-name" };
 	// The username's length is counted as written: lower-casing can lengthen it ("İ" becomes two).
 	const name = username.normalize("NFC");
