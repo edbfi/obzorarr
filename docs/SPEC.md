@@ -837,7 +837,9 @@ export const GET: RequestHandler = () => healthResponse();
   slashes; `db/owner.test.ts`, also reading the owner; `security/failed-sign-ins.test.ts`, the
   waits of 5, 10, 20, 40, 60 and 60 minutes, reset by a success and after 24 quiet hours, swept and
   capped, and the warn entry; `services/sign-in/sign-in.test.ts` also refuses the 11th sign-in in
-  5 minutes and a waiting address before any hash, and skips both for an unknown address;
+  5 minutes and a waiting address before any hash, answers with the wait when it outlasts the
+  limit, counts no refused request as a failure, starts the count again after a success, and
+  skips the limit and the waits for an unknown address;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,

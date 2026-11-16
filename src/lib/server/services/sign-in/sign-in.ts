@@ -73,22 +73,25 @@ export async function signIn(
 ): Promise<SignInResult> {
 	const address = input.clientAddress;
 	if (address !== undefined) {
+		// Every request counts towards the limit, one a wait refuses too (SPEC-sign-in.md, "Rate
+		// limits"); a wait is answered first, since it can outlast the limit's window.
 		const decision = signInLimit.hit(address);
-		if (!decision.allowed) {
-			return {
-				status: "too-many",
-				reason: "limit",
-				retryAfterSeconds: decision.retryAfterSeconds,
-				headers: rateLimitHeaders(decision),
-			};
-		}
 		const wait = failedSignIns.wait(address);
 		if (wait !== undefined) {
 			return {
 				status: "too-many",
 				reason: "wait",
 				retryAfterSeconds: wait.retryAfterSeconds,
+				// The headers every refusal carries, describing the wait rather than the window.
 				headers: rateLimitHeaders({ allowed: false, limit: SIGN_IN_LIMIT, remaining: 0, ...wait }),
+			};
+		}
+		if (!decision.allowed) {
+			return {
+				status: "too-many",
+				reason: "limit",
+				retryAfterSeconds: decision.retryAfterSeconds,
+				headers: rateLimitHeaders(decision),
 			};
 		}
 	}
@@ -119,6 +122,8 @@ export async function signIn(
 		owner !== undefined && verified
 			? await startSignedInSession(db, owner.passwordHash, now)
 			: undefined;
+	// A right password whose session didn't start, because the password changed during the check,
+	// is a failure too: that password is no longer the owner's.
 	if (session === undefined) {
 		log.warn("a sign-in failed", { clientAddress: address });
 		if (address !== undefined) failedSignIns.failed(address);
