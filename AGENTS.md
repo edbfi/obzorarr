@@ -288,7 +288,7 @@ which creates the owner account. The owner can't sign in yet: module 5, `sign-in
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
-on.
+on, and signs the new owner in with a session.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -322,7 +322,8 @@ src/
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, the
                                  client address (kept in `locals.clientAddress` for the actions'
-                                 own limits) and the general rate limit, then the setup gate;
+                                 own limits) and the general rate limit, the session (the owner in
+                                 `locals.owner`), then the setup gate;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page
@@ -357,9 +358,10 @@ src/
       config/address-header.ts   `ADDRESS_HEADER`: whether a proxy names the client's address
       db/                        client.ts: opens the database; migrate.ts: applies the bundled
                                  migrations; one file per aggregate with its tables (settings.ts,
-                                 owner.ts) and, from their first caller, its named operations:
-                                 reading and writing a setting, whether an owner exists, creating
-                                 the owner; client.ts names the transaction and executor types
+                                 owner.ts, owner-session.ts) and, from their first caller, its
+                                 named operations: reading and writing a setting, whether an owner
+                                 exists, creating the owner, storing, finding, renewing and ending
+                                 sessions; client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
@@ -376,7 +378,10 @@ src/
                                  and the gate's decision for a path
       services/setup/claim.ts    the claim: its limit of 5 per 5 minutes, the fields, a hash slot,
                                  then the token, then the hash, then one transaction for the
-                                 owner and the step pointer
+                                 owner, the step pointer and the owner's first session
+      services/sign-in/sessions.ts
+                                 owner sessions: 7 days unused or 30 days at most, the last use
+                                 written at most hourly, started only for the current password
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -391,6 +396,8 @@ src/
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
       security/hash-slots.ts     at most 4 password hashes or verifications at once
+      security/session-token.ts  a session's random token and the hash that is stored instead
+      security/session-cookie.ts `obzorarr_session` and its options, `Secure` only over https
       security/browser-address.ts
                                  `ORIGIN`, or the validated `Origin` of a POST: the address a
                                  cookie's `Secure` flag follows
@@ -417,6 +424,7 @@ tests/
                                  keeps it, and the switcher changes it
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
+  e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the

@@ -13,12 +13,15 @@ import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
 import { createRateLimiter } from "#lib/server/security/rate-limit.ts";
 import { accessDenied, tooManyRequests } from "#lib/server/security/refusal-page.ts";
+import { SESSION_COOKIE, SESSION_COOKIE_DELETION } from "#lib/server/security/session-cookie.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import {
 	currentAddressHeader,
+	currentDatabase,
 	currentOrigin,
 	startUp,
 } from "#lib/server/services/setup/startup.ts";
+import { lookUpSession } from "#lib/server/services/sign-in/sessions.ts";
 import { building, dev } from "$app/env";
 import * as env from "$app/env/private";
 
@@ -114,6 +117,21 @@ const rateLimits: Handle = ({ event, resolve }) => {
 };
 
 /**
+ * The session (SPEC-sign-in.md, "The request stages"): the owner a live session cookie signs in,
+ * in `event.locals.owner`. It refuses nothing; a cookie whose session has ended or never existed
+ * is cleared, with `secure: false`, since the browser's address isn't known on every request.
+ */
+const session: Handle = async ({ event, resolve }) => {
+	const token = event.cookies.get(SESSION_COOKIE);
+	if (token !== undefined) {
+		const owner = await lookUpSession(currentDatabase(), token, new Date());
+		if (owner === undefined) event.cookies.delete(SESSION_COOKIE, SESSION_COOKIE_DELETION);
+		else event.locals.owner = owner;
+	}
+	return resolve(event);
+};
+
+/**
  * The setup gate, the last stage: until first run is complete, every request but its current step
  * and `/healthz` gets a 303 to that step, returned so it keeps the headers.
  */
@@ -124,4 +142,4 @@ const setupGate: Handle = ({ event, resolve }) => {
 		: new Response(null, { status: 303, headers: { location: step } });
 };
 
-export const handle = sequence(language, headers, crossOrigin, rateLimits, setupGate);
+export const handle = sequence(language, headers, crossOrigin, rateLimits, session, setupGate);

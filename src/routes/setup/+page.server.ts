@@ -1,6 +1,7 @@
 import { error, fail, redirect } from "@sveltejs/kit";
 import * as m from "#lib/paraglide/messages.js";
 import { browserAddress } from "#lib/server/security/browser-address.ts";
+import { SESSION_COOKIE, sessionCookieOptions } from "#lib/server/security/session-cookie.ts";
 import { type ClaimResult, claimInstance } from "#lib/server/services/setup/claim.ts";
 import { isFirstRunComplete } from "#lib/server/services/setup/first-run.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
@@ -33,15 +34,14 @@ export const load: PageServerLoad = ({ request, setHeaders }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals, setHeaders }) => {
+	default: async ({ request, locals, setHeaders, cookies }) => {
 		setHeaders(NO_STORE);
 		// Once claimed, the claim no longer exists (D20), whatever the browser says.
 		if (isFirstRunComplete()) error(404);
 		// The claim sets a cookie once it signs the owner in, so it needs the browser's address
 		// next, before its limit counts the attempt and before the token can be used up.
-		if (browserAddress(request, currentOrigin()) === undefined) {
-			error(403, m.error_no_browser_address());
-		}
+		const address = browserAddress(request, currentOrigin());
+		if (address === undefined) error(403, m.error_no_browser_address());
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {
@@ -60,6 +60,12 @@ export const actions: Actions = {
 			fail<ClaimFailure>(status, { username, ...problem });
 		switch (result.status) {
 			case "claimed":
+				// The new owner is signed in (D20), in a cookie that is Secure only over https.
+				cookies.set(
+					SESSION_COOKIE,
+					result.session.token,
+					sessionCookieOptions(address, result.session.expiresAt, new Date()),
+				);
 				return redirect(303, "/");
 			case "not-found":
 				return error(404);

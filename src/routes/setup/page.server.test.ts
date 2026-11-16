@@ -21,6 +21,7 @@ const { actions } = await import("./+page.server.ts");
  */
 async function post(clientAddress: string | undefined, origin: string | null = "http://app.test") {
 	const setHeaders = vi.fn();
+	const cookies = { set: vi.fn() };
 	const request = new Request("http://app.test/setup", {
 		method: "POST",
 		headers: origin === null ? {} : { origin },
@@ -30,8 +31,9 @@ async function post(clientAddress: string | undefined, origin: string | null = "
 		request,
 		locals: { clientAddress },
 		setHeaders,
+		cookies,
 	} as unknown as Parameters<typeof actions.default>[0]);
-	return { result, setHeaders };
+	return { result, setHeaders, cookies };
 }
 
 beforeEach(() => {
@@ -105,5 +107,35 @@ describe("the claim action", () => {
 		}
 		expect(isHttpError(refused, 404)).toBe(true);
 		expect(claimInstance).not.toHaveBeenCalled();
+	});
+
+	it("signs the new owner in with the session cookie, not Secure over plain HTTP", async () => {
+		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+		claimInstance.mockResolvedValue({ status: "claimed", session: { token: "tok", expiresAt } });
+		const cookies = { set: vi.fn() };
+		const request = new Request("http://app.test/setup", {
+			method: "POST",
+			headers: { origin: "http://192.168.1.20:3000" },
+			body: new URLSearchParams({ token: "abcd-efgh-ijkl", username: "owner", password: "x" }),
+		});
+		let thrown: unknown;
+		try {
+			await actions.default({
+				request,
+				locals: {},
+				setHeaders: vi.fn(),
+				cookies,
+			} as unknown as Parameters<typeof actions.default>[0]);
+		} catch (redirect) {
+			thrown = redirect;
+		}
+		expect(thrown).toMatchObject({ status: 303, location: "/" });
+		expect(cookies.set).toHaveBeenCalledWith(
+			"obzorarr_session",
+			"tok",
+			expect.objectContaining({ path: "/", httpOnly: true, sameSite: "lax", secure: false }),
+		);
+		const maxAge = cookies.set.mock.calls[0]?.[2]?.maxAge as number;
+		expect(maxAge).toBeGreaterThan(30 * 24 * 60 * 60 - 5);
 	});
 });

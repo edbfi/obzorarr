@@ -12,6 +12,7 @@ import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { configureLogging, createLogger, flushLogs } from "#lib/server/logging/logger.ts";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
+import { deleteExpiredSessions } from "#lib/server/services/sign-in/sessions.ts";
 import { startFirstRun, stopFirstRun } from "./first-run.ts";
 
 /** Every variable startup reads. */
@@ -159,8 +160,10 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	});
 	await migrateDatabase(db);
 	database = db;
-	// 4. Each module's startup work: `setup` prints the bootstrap token while unclaimed.
+	// 4. Each module's startup work: `setup` prints the bootstrap token while unclaimed, and
+	// `sign-in` deletes the sessions that ended while the app was down.
 	await startFirstRun({ db, origin });
+	await deleteExpiredSessions(db, new Date());
 }
 
 /**

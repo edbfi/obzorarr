@@ -765,7 +765,7 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen and token CSS, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests (`src/**/*.test.ts` and `vite.config.test.ts`), once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests, the error-page tests and the rate-limit tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests, the error-page tests, the rate-limit tests and the sign-in tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
@@ -825,6 +825,9 @@ export const GET: RequestHandler = () => healthResponse();
   `config/address-header.test.ts`; `security/client-address.test.ts`, each address kind on a
   copied `Request`, the refusal without the configured header and the once-a-process warnings;
   `security/rate-limit.test.ts`, a window at its edges, the sweep, the cap and the headers;
+  `security/session-token.test.ts` and `security/session-cookie.test.ts`, the token, its hash
+  and the cookie's options; `db/owner-session.test.ts`; `services/sign-in/sessions.test.ts`, both
+  session limits at their edges, the hourly write, expiry and the current-password check;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
@@ -842,7 +845,8 @@ export const GET: RequestHandler = () => healthResponse();
   `security/hash-slots.test.ts`, the fifth refused and a slot freed once),
   `src/routes/setup/token-format.test.ts` (the token field's dashes),
   `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers, its 403 for a
-  browser that stripped `Origin` and a claimed instance's 404 before it, and `no-store`),
+  browser that stripped `Origin` and a claimed instance's 404 before it, `no-store`, and the
+  session cookie),
   `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
@@ -894,6 +898,9 @@ export const GET: RequestHandler = () => healthResponse();
   - `rate-limits.test.ts` checks that the 61st request in a minute gets the "Too many requests"
     page with `Retry-After` and the limit's headers, and that a request without the configured
     header gets "Access denied" while `/healthz` answers.
+  - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in with an
+    `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only, about 30 days long
+    and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't loopback.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

@@ -157,22 +157,23 @@ bare-origin rule, shared), `src/routes/setup/+page.server.ts` (+ test), `message
 ## Task 5: sessions, started at the claim
 
 **Description:** The `owner_session` table and its migration; `security/session-token.ts` and
-`session-cookie.ts`; `services/sign-in/sessions.ts` (start, look up, renew at most hourly, end,
-end the others, expired rows deleted, only for the current hash); the session stage in `handle`,
+`session-cookie.ts`; `services/sign-in/sessions.ts` (start, look up, renew at most hourly,
+expired rows deleted, only for the current hash; ending one session and ending the others join
+with their callers, tasks 10 and 11); the session stage in `handle`,
 which puts the owner in `event.locals` and clears an expired or unknown session's cookie with
 `secure: false`; and the claim, which writes the session in its transaction and sets
 `obzorarr_session` (its `Max-Age` the time left to the 30-day end). The claim still lands on `/`
 until task 6.
 
 **Acceptance criteria:**
-- [ ] Unit tests first fail, then pass: `session-token`, `session-cookie` (`http`, `https`,
+- [x] Unit tests first fail, then pass: `session-token`, `session-cookie` (`http`, `https`,
   deletion with `secure: false`, `Max-Age`), `db/owner-session`, `services/sign-in/sessions` (both
   limits at their edges, the hourly write, expiry, the current-hash check), `claim` (the session
   in its transaction, none on failure); startup deletes expired sessions.
-- [ ] `tests/e2e/sign-in.test.ts`, on fresh servers through `server.ts`: the claim's cookie is
+- [x] `tests/e2e/sign-in.test.ts`, on fresh servers through `server.ts`: the claim's cookie is
   `HttpOnly`, `SameSite=Lax` and not `Secure`, on `localhost` and on a non-loopback host name
   (Chromium's `--host-resolver-rules`).
-- [ ] The migration is generated with `db:generate` and reviewed; the README says the cookie works
+- [x] The migration is generated with `db:generate` and reviewed; the README says the cookie works
   over plain HTTP.
 
 **Verification:** the gates.

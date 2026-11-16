@@ -1,0 +1,44 @@
+/**
+ * The owner's session cookie, named after the app: cookies ignore ports, so apps on one address
+ * would otherwise sign each other out (SPEC-sign-in.md, "Cookies").
+ */
+export const SESSION_COOKIE = "obzorarr_session";
+
+/** What `cookies.set` and `cookies.delete` take for the session cookie. */
+export type SessionCookieOptions = {
+	readonly path: "/";
+	readonly httpOnly: true;
+	readonly sameSite: "lax";
+	readonly secure: boolean;
+	readonly maxAge?: number;
+};
+
+/**
+ * The cookie's options for a session ending at `expiresAt`: host-only, `HttpOnly`, `SameSite=Lax`,
+ * and `Secure` exactly when the browser's address is https, so a plain-HTTP install at home works.
+ * `secure` is always set, since SvelteKit's default is `Secure` on every host but `localhost`.
+ */
+export function sessionCookieOptions(
+	browserAddress: string,
+	expiresAt: Date,
+	now: Date,
+): SessionCookieOptions {
+	return {
+		path: "/",
+		httpOnly: true,
+		sameSite: "lax",
+		secure: browserAddress.startsWith("https:"),
+		maxAge: Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000)),
+	};
+}
+
+/**
+ * Deleting the cookie where the browser's address isn't known, as when a stale session is
+ * cleared on a GET: `secure: false` works over HTTP and HTTPS alike.
+ */
+export const SESSION_COOKIE_DELETION: SessionCookieOptions = {
+	path: "/",
+	httpOnly: true,
+	sameSite: "lax",
+	secure: false,
+};

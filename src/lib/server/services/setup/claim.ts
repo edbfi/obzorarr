@@ -11,6 +11,7 @@ import {
 	type UsernameError,
 } from "#lib/server/security/password.ts";
 import { createRateLimiter, rateLimitHeaders } from "#lib/server/security/rate-limit.ts";
+import { type StartedSession, startSession } from "#lib/server/services/sign-in/sessions.ts";
 import {
 	FIRST_RUN_COMPLETE,
 	FIRST_RUN_STEP_KEY,
@@ -29,7 +30,8 @@ export type ClaimInput = {
 };
 
 export type ClaimResult =
-	| { status: "claimed" }
+	/** Claimed, with the owner's new session, which signs them in (D20). */
+	| { status: "claimed"; session: StartedSession }
 	/** The instance is claimed already: the claim no longer exists. */
 	| { status: "not-found" }
 	| { status: "invalid"; username?: UsernameError; password?: PasswordError }
@@ -66,7 +68,8 @@ const SLOTS_BUSY: ClaimResult = {
  * 3. a hash slot, so a refused slot never burns the token (SPEC-sign-in.md, "Signing in");
  * 4. the token, checked and used up with no `await` between, so a wrong guess costs no hash;
  * 5. the hash of the password;
- * 6. one transaction that creates the owner and moves the step pointer.
+ * 6. one transaction that creates the owner, moves the step pointer and starts the owner's
+ *    session, so the new owner is signed in (D20).
  * If anything after the token fails while the instance is still unclaimed, first run prints a
  * new token. The claim stores nothing but the owner row and the pointer.
  */
@@ -102,6 +105,7 @@ export async function claimInstance(db: Database, input: ClaimInput): Promise<Cl
 			releaseSlot();
 			return { status: "token" };
 		}
+		let session: StartedSession;
 		try {
 			let passwordHash: string;
 			try {
@@ -111,15 +115,19 @@ export async function claimInstance(db: Database, input: ClaimInput): Promise<Cl
 				releaseSlot();
 			}
 			const now = new Date();
-			await db.transaction(async (tx) => {
+			session = await db.transaction(async (tx) => {
 				await insertOwner(tx, { username: username.username, passwordHash, createdAt: now });
 				await writeSetting(tx, FIRST_RUN_STEP_KEY, FIRST_RUN_COMPLETE, now);
+				const started = await startSession(tx, { passwordHash, now });
+				// The owner was written in this transaction, so their session always starts.
+				if (started === undefined) throw new Error("the claim's session didn't start");
+				return started;
 			});
 		} catch (error) {
 			log.error("the claim failed", { error });
 			return { status: "failed" };
 		}
 		markClaimed();
-		return { status: "claimed" };
+		return { status: "claimed", session };
 	});
 }

@@ -81,7 +81,7 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 ### Phase 2: signing in
 
 - [x] Task 4: the browser's address at the claim
-- [ ] Task 5: sessions, started at the claim
+- [x] Task 5: sessions, started at the claim
 - [ ] Task 6: the claim lands in the admin
 - [ ] Task 7: owner sign-in
 - [ ] Task 8: the owner check
