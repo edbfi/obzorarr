@@ -5,10 +5,12 @@ Each task is one PR and writes its tests first. Each one updates AGENTS.md's sta
 the README and SPEC.md's testing section (and its `smoke` row when it adds an e2e file) where they
 change, ticks off its items in `tasks/`, names what the sibling apps take in its PR body, gets a
 council review, and runs `bun run --bun check`, `test`, `lint`, `build`, `smoke` and
-`prek run --all-files --hook-stage manual` before every commit. From task 2 on, every e2e test on
-the shared server sends its own address through the fixture; tests that change the owner's
-password or sessions, or need an unclaimed or restarted server, use fresh servers through
-`tests/e2e/server.ts` (task 4). Paths under `src/lib/server/` are shortened to `server/`, and the
+`prek run --all-files --hook-stage manual` before every commit. From task 2 on, every e2e test sends
+its own address through the fixture: the shared server and every fresh server from
+`tests/e2e/server.ts` (task 4) run with `ADDRESS_HEADER=x-forwarded-for`, so no test's requests
+count against another's. Tests that change the owner's password or sessions, or need an unclaimed or
+restarted server, use fresh servers. Every sweep timer is `unref`'d and stopped at shutdown, as
+first run's token timer is. Paths under `src/lib/server/` are shortened to `server/`, and the
 spec's sections are named in quotes.
 
 ## Task 1: the error pages
@@ -52,8 +54,12 @@ and why.
 **Description:** `security/client-address.ts` and `security/rate-limit.ts` ("Configuration",
 "Rate limits and failed sign-ins"): the address per IPv4, per IPv6 `/64` and IPv4-mapped; with
 `ADDRESS_HEADER` set, a request missing it or carrying a bad one refused (`/healthz` excepted);
-the warnings; the fixed windows, swept and capped; and the rate-limit stage in `handle` with the
-general limit of 60 a minute, answered with the "Too many requests" page or JSON and its headers.
+the warnings; the fixed windows, each starting at an address's first request, swept every minute
+and capped; and the rate-limit stage in `handle` with the general limit of 60 a minute, answered
+with the "Too many requests" page or JSON and its headers. `ADDRESS_HEADER` is declared in
+`src/env.ts` and read once at startup by `config/address-header.ts`, since SvelteKit exposes only
+declared variables and the app needs to know whether it is set (adapter-bun still reads it
+itself).
 The shared e2e server moves to `ADDRESS_HEADER=x-forwarded-for`, and every test file on it to a
 fixture that gives each test its own address.
 
@@ -62,7 +68,7 @@ fixture that gives each test its own address.
   `handle` sees it: each address kind, the refusal and its one warning, the `X-Forwarded-For`
   warning without `ADDRESS_HEADER`, no address as unknown with one warning.
 - [ ] `server/security/rate-limit.test.ts`: a window at its edges, the headers, sweeping, the cap
-  of 10,000 with the oldest out first.
+  of 10,000 with the oldest out first; `server/config/address-header.test.ts`: set, unset, empty.
 - [ ] The fixture in `tests/e2e/` gives each test its own `X-Forwarded-For`; `global-setup.ts`,
   `smoke.test.ts`, `i18n.test.ts` and `errors.test.ts` use it, and `playwright.config.ts` starts
   the shared server with `ADDRESS_HEADER=x-forwarded-for`.
@@ -75,8 +81,10 @@ reachable only through the proxy).
 **Dependencies:** task 1.
 
 **Files:** `server/security/client-address.ts` (+ test), `server/security/rate-limit.ts`
-(+ test), `src/hooks.server.ts`, `tests/e2e/` (the fixture, `global-setup.ts`, `smoke.test.ts`,
-`i18n.test.ts`, `errors.test.ts`, `rate-limits.test.ts`), `playwright.config.ts`, `README.md`.
+(+ test), `server/config/address-header.ts` (+ test), `src/env.ts`,
+`server/services/setup/startup.ts`, `src/hooks.server.ts`, `tests/e2e/` (the fixture,
+`global-setup.ts`, `smoke.test.ts`, `i18n.test.ts`, `errors.test.ts`, `rate-limits.test.ts`),
+`playwright.config.ts`, `README.md`.
 
 **Size:** L. The fixture has to move with the stage, or the suite trips its own limit.
 
@@ -120,7 +128,8 @@ the validated `Origin` of the POST. The claim, its first caller, refuses a POST 
 stripped and `ORIGIN` unset first, before the claim's limit counts it and before the fields, with
 the 403 that says so (a `refusal-page.ts` variant). `/setup` and its action become
 `Cache-Control: no-store`. The spawn helpers in `setup.test.ts` (`startServer`, `claim`) move to
-`tests/e2e/server.ts`.
+`tests/e2e/server.ts`, which starts each fresh server with `ADDRESS_HEADER=x-forwarded-for` for the
+per-test address.
 
 **Acceptance criteria:**
 - [ ] `server/security/browser-address.test.ts` first fails, then passes: `ORIGIN`, a validated
@@ -213,8 +222,10 @@ yet, a signed-in owner lands on `/admin` as after the claim.
   session), `db/owner` (reading the owner).
 - [ ] `tests/e2e/sign-in.test.ts` gains, on a fresh server: a wrong password is refused with the
   username kept; the right one signs in and returns to `next`; an unsafe `next` is dropped; a POST
-  with `Origin` stripped gets the 403 that says so; five sign-ins at once fill the hash slots and
-  a sixth gets the form's 429; the page logs no console error or CSP violation, in both languages.
+  with `Origin` stripped gets the 403 that says so; with several sign-ins in flight at once, no
+  more than 4 hash and the rest get the form's 429 with `Retry-After: 5` (asserted on the set of
+  answers, not on which request is refused); the page logs no console error or CSP violation, in
+  both languages.
 - [ ] The page follows its brief in every state it names but too many attempts (task 9), at each
   width, zoom, keyboard and reduced motion, in English and Danish, with screenshots in the PR body.
 
@@ -241,11 +252,11 @@ response and the sign-in page are `no-store`. The placeholder `/` gets its "Owne
 **Acceptance criteria:**
 - [ ] `server/security/refusal-page.test.ts` gains the session-ended page and its JSON form, in
   both languages.
-- [ ] `tests/e2e/sign-in.test.ts` gains: without a session, `/admin` and a client-side navigation
-  go to sign in and back after; an owner-only POST gets 403 (a plain form gets the page;
-  `x-sveltekit-action: true` with `accept: application/json` gets a JSON `{ message }`); a
-  signed-in owner opening the sign-in page goes to `/admin`; the headers are `no-store`; `/` links
-  to sign in.
+- [ ] `tests/e2e/sign-in.test.ts` gains: without a session, `/admin` goes to sign in and back after,
+  and its `__data.json` request gets SvelteKit's JSON redirect with `next` set to the page's path;
+  an owner-only POST gets 403 (a plain form gets the page; `x-sveltekit-action: true` with `accept:
+  application/json` gets a JSON `{ message }`); a signed-in owner opening the sign-in page goes to
+  `/admin`; the headers are `no-store`; `/` links to sign in.
 
 **Verification:** the gates.
 
@@ -268,15 +279,19 @@ are checked in the action and answered with `fail(429)`, its headers, and the me
 - [ ] `server/security/failed-sign-ins.test.ts` first fails, then passes: 5, 10, 20, 40, 60 and
   60 minutes; reset by a success and after 24 hours; swept and capped; the warn entry.
 - [ ] `server/services/sign-in/sign-in.test.ts` gains: a wait refuses before any hash.
-- [ ] `tests/e2e/sign-in.test.ts` gains: the 11th attempt in 5 minutes shows the form's 429 message
-  with `Retry-After`; the sign-in page's too-many-attempts state follows its brief.
+- [ ] `tests/e2e/sign-in.test.ts` gains: after 10 successful sign-ins, which leave no failures,
+  the 11th within 5 minutes shows the form's 429 message with `Retry-After`; the sign-in page's
+  too-many-attempts state follows its brief; the earlier sign-in tests still pass under the limits.
+- [ ] The README's `ADDRESS_HEADER` section says it also keeps one visitor's failures from making
+  others wait.
 
 **Verification:** the gates.
 
 **Dependencies:** task 8.
 
 **Files:** `server/security/failed-sign-ins.ts` (+ test), `server/services/sign-in/sign-in.ts`
-(+ test), `src/routes/(admin)/admin/sign-in/`, `messages/`, `tests/e2e/sign-in.test.ts`.
+(+ test), `server/services/setup/startup.ts`, `src/routes/(admin)/admin/sign-in/`, `messages/`,
+`tests/e2e/sign-in.test.ts`, `README.md`.
 
 **Size:** M.
 
@@ -366,14 +381,15 @@ line names `/recovery`, which task 13 builds; no release is cut in between.
   setting on prints the token in no log entry or response, and the Security tab shows the warning;
   an unclaimed one prints none and warns.
 
-**Verification:** the gates.
+**Verification:** the gates; the README lists `OBZORARR_RECOVERY`.
 
 **Dependencies:** task 11.
 
 **Files:** `server/config/recovery.ts` (+ test), `src/env.ts`, `server/security/console-token.ts`
 (+ test, renamed), `server/services/sign-in/recovery.ts` (+ test),
 `server/services/setup/first-run.ts`, `server/services/setup/startup.ts`,
-`src/routes/(admin)/admin/(shell)/settings/security/`, `messages/`, `tests/e2e/recovery.test.ts`.
+`src/routes/(admin)/admin/(shell)/settings/security/`, `messages/`, `tests/e2e/recovery.test.ts`,
+`README.md` (the variable).
 
 **Size:** M.
 
