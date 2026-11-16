@@ -351,16 +351,16 @@ count of other sessions with "Sign out everywhere else". Its e2e runs on fresh s
 changes the owner's password and sessions.
 
 **Acceptance criteria:**
-- [ ] `server/services/sign-in/password-change.test.ts` first fails, then passes: a wrong current
+- [x] `server/services/sign-in/password-change.test.ts` first fails, then passes: a wrong current
   password counted, the shared window, a refused hash slot, the rules against the stored username,
   the other sessions ended, a new token, and a sign-in check with the old password that ends after
   the change starting no session.
-- [ ] `tests/e2e/sign-in.test.ts` gains, on fresh servers: the password change ends a second
+- [x] `tests/e2e/sign-in.test.ts` gains, on fresh servers: the password change ends a second
   browser's session and keeps this one; "Sign out everywhere else" does the same and says how
   many, and with none shows no button; the enhanced password form, after its session ends in
   another browser, gets the error page through SvelteKit; a change with `Origin` stripped gets the
   403 that says so; the tab logs no console error or CSP violation, in both languages.
-- [ ] Both sections follow the brief's states (initial, field errors, too many attempts, saving,
+- [x] Both sections follow the brief's states (initial, field errors, too many attempts, saving,
   saved; none, one and several other sessions), at each width, in English and Danish.
 
 **Verification:** the gates; the brief's checks.

@@ -1,6 +1,8 @@
 import type { Executor } from "#lib/server/db/client.ts";
 import {
+	countOtherSessions as countOthers,
 	deleteExpiredSessions as deleteExpired,
+	deleteOtherSessions,
 	deleteSession,
 	findSession,
 	insertSessionForPassword,
@@ -70,6 +72,20 @@ export async function lookUpSession(
 /** Ends the session `token` names, if there is one: signing out. */
 export async function endSession(db: Executor, token: string): Promise<void> {
 	await deleteSession(db, hashSessionToken(token));
+}
+
+/** How many other browsers are signed in at `now`, besides the one with `token`. */
+export async function countOtherSessions(db: Executor, token: string, now: Date): Promise<number> {
+	return countOthers(db, hashSessionToken(token), now, SESSION_IDLE_MS);
+}
+
+/**
+ * Signs every other browser out ("Sign out everywhere else"): the ended sessions are deleted first,
+ * so the count it gives is of the browsers that were still signed in.
+ */
+export async function endOtherSessions(db: Executor, token: string, now: Date): Promise<number> {
+	await deleteExpiredSessions(db, now);
+	return deleteOtherSessions(db, hashSessionToken(token));
 }
 
 /** Deletes every ended session, as startup does. */

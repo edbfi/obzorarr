@@ -1,4 +1,4 @@
-import { and, eq, lte, or, sql } from "drizzle-orm";
+import { and, count, eq, gt, lte, ne, or, sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { Executor } from "./client.ts";
 import { owner } from "./owner.ts";
@@ -73,9 +73,42 @@ export async function touchSession(
 	return touched.length > 0;
 }
 
-/** Ends one session. */
-export async function deleteSession(db: Executor, tokenHash: string): Promise<void> {
-	await db.delete(ownerSession).where(eq(ownerSession.tokenHash, tokenHash));
+/** Ends one session. Whether there was one. */
+export async function deleteSession(db: Executor, tokenHash: string): Promise<boolean> {
+	const deleted = await db
+		.delete(ownerSession)
+		.where(eq(ownerSession.tokenHash, tokenHash))
+		.returning({ tokenHash: ownerSession.tokenHash });
+	return deleted.length > 0;
+}
+
+/** How many sessions but `tokenHash` are live at `now`: before their end, and used within `idleMs`. */
+export async function countOtherSessions(
+	db: Executor,
+	tokenHash: string,
+	now: Date,
+	idleMs: number,
+): Promise<number> {
+	const [row] = await db
+		.select({ count: count() })
+		.from(ownerSession)
+		.where(
+			and(
+				ne(ownerSession.tokenHash, tokenHash),
+				gt(ownerSession.expiresAt, now),
+				gt(ownerSession.lastUsedAt, new Date(now.getTime() - idleMs)),
+			),
+		);
+	return row?.count ?? 0;
+}
+
+/** Ends every session but `tokenHash`. How many it ended. */
+export async function deleteOtherSessions(db: Executor, tokenHash: string): Promise<number> {
+	const deleted = await db
+		.delete(ownerSession)
+		.where(ne(ownerSession.tokenHash, tokenHash))
+		.returning({ tokenHash: ownerSession.tokenHash });
+	return deleted.length;
 }
 
 /** Ends every session past its end at `now`, or unused for `idleMs` or longer. */

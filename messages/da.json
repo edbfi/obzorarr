@@ -66,5 +66,20 @@
 	"admin_sign_out_cancel": "Annuller",
 	"admin_version": "Version {{version}}",
 	"admin_settings_tabs": "Indstillingssektioner",
-	"admin_settings_security": "Sikkerhed"
+	"admin_settings_security": "Sikkerhed",
+	"security_password_heading": "Adgangskode",
+	"security_password_current_label": "Nuværende adgangskode",
+	"security_password_new_label": "Ny adgangskode",
+	"security_password_submit": "Skift adgangskode",
+	"security_password_saving": "Gemmer…",
+	"security_password_changed": "Adgangskoden er skiftet. Andre sessioner blev logget ud.",
+	"security_password_wrong_current": "Den nuværende adgangskode er forkert.",
+	"security_sessions_heading": "Sessioner",
+	"security_sessions_count_one": "Logget ind i {{count, number}} anden browser.",
+	"security_sessions_count_other": "Logget ind i {{count, number}} andre browsere.",
+	"security_sessions_none": "Ingen anden browser er logget ind.",
+	"security_sessions_end": "Log ud alle andre steder",
+	"security_sessions_ending": "Logger ud…",
+	"security_sessions_ended_one": "Logget ud af {{count, number}} anden browser.",
+	"security_sessions_ended_other": "Logget ud af {{count, number}} andre browsere."
 }

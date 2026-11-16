@@ -502,7 +502,7 @@ test.describe("the owner check", () => {
 			expect(html).toContain('href="/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity"');
 			const enhanced = await post({ accept: "application/json", "x-sveltekit-action": "true" });
 			expect(enhanced.status).toBe(403);
-			expect(await enhanced.json()).toEqual({ type: "error", error: { message } });
+			expect(await enhanced.json()).toEqual({ type: "error", error: { message, status: 403 } });
 			const asJson = await post({ accept: "application/json" });
 			expect(asJson.status).toBe(403);
 			expect(await asJson.json()).toEqual({ message });
@@ -891,6 +891,186 @@ test.describe("the admin shell and signing out", () => {
 				);
 				await expect(page.getByRole("button", { name: signOut })).toBeVisible();
 				await expect(page.getByText(version)).toBeVisible();
+				expect(problems).toEqual([]);
+			} finally {
+				await context.close();
+				await server.stop();
+			}
+		});
+	}
+});
+
+/** Signs the owner in at `/admin/sign-in` in another browser, which lands on the Security tab. */
+async function signInElsewhere(page: Page, server: { url: string }, password = PASSWORD) {
+	await page.goto(`${server.url}/admin/sign-in`);
+	await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+	await signIn(page, "owner", password);
+	await page.waitForURL(`${server.url}/admin/settings/security`);
+	await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+}
+
+test.describe("the Security tab", () => {
+	const NEW_PASSWORD = "copper meadow tidewater";
+
+	test("the password change ends a second browser's session and keeps this one", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const mine = await browser.newContext();
+		const other = await browser.newContext();
+		try {
+			const page = await mine.newPage();
+			const problems = await watchForProblems(page);
+			await claimInBrowser(page, server);
+			const elsewhere = await other.newPage();
+			await signInElsewhere(elsewhere, server);
+			await page.reload();
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await expect(page.getByText("Signed in on 1 other browser.")).toBeVisible();
+
+			await page.locator("#current").fill(PASSWORD);
+			await page.locator("#next").fill(NEW_PASSWORD);
+			await page.getByRole("button", { name: "Change password" }).click();
+			await expect(
+				page.getByRole("status").filter({
+					hasText: "Password changed. Other sessions were signed out.",
+				}),
+			).toBeVisible();
+			await expect(page.getByText("No other browser is signed in.")).toBeVisible();
+			await expect(page.locator("#current")).toHaveValue("");
+			await expect(page.locator("#next")).toHaveValue("");
+
+			// This browser stays signed in with a new session; the other is signed out.
+			await page.reload();
+			await expect(page).toHaveURL(`${server.url}/admin/settings/security`);
+			await elsewhere.goto(`${server.url}/admin/settings/security`);
+			await elsewhere.waitForURL(/\/admin\/sign-in\?next=/);
+			// Only the new password signs in now.
+			await signInElsewhere(elsewhere, server, NEW_PASSWORD);
+			expect(problems).toEqual([]);
+		} finally {
+			await mine.close();
+			await other.close();
+			await server.stop();
+		}
+	});
+
+	test("Sign out everywhere else ends the others and says how many; with none, it offers no button", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const contexts = await Promise.all([1, 2, 3].map(() => browser.newContext()));
+		try {
+			const [page, ...others] = await Promise.all(contexts.map((context) => context.newPage()));
+			if (page === undefined) throw new Error("no page");
+			const problems = await watchForProblems(page);
+			await claimInBrowser(page, server);
+			const button = page.getByRole("button", { name: "Sign out everywhere else" });
+			await expect(page.getByText("No other browser is signed in.")).toBeVisible();
+			await expect(button).toHaveCount(0);
+			for (const other of others) await signInElsewhere(other, server);
+			await page.reload();
+			await expect(page.getByText("Signed in on 2 other browsers.")).toBeVisible();
+
+			await button.click();
+			await expect(
+				page.getByRole("status").filter({ hasText: "Signed out of 2 other browsers." }),
+			).toBeVisible();
+			await expect(page.getByText("No other browser is signed in.")).toBeVisible();
+			await expect(button).toHaveCount(0);
+			for (const other of others) {
+				await other.goto(`${server.url}/admin/settings/security`);
+				await other.waitForURL(/\/admin\/sign-in\?next=/);
+			}
+			await page.reload();
+			await expect(page).toHaveURL(`${server.url}/admin/settings/security`);
+			expect(problems).toEqual([]);
+		} finally {
+			for (const context of contexts) await context.close();
+			await server.stop();
+		}
+	});
+
+	test("the password form, once its session ended in another browser, gets SvelteKit's error page", async ({
+		browser,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		const mine = await browser.newContext();
+		const other = await browser.newContext();
+		try {
+			const page = await mine.newPage();
+			await claimInBrowser(page, server);
+			const elsewhere = await other.newPage();
+			await signInElsewhere(elsewhere, server);
+			await elsewhere.getByRole("button", { name: "Sign out everywhere else" }).click();
+			await expect(elsewhere.getByText("Signed out of 1 other browser.")).toBeVisible();
+
+			await page.locator("#current").fill(PASSWORD);
+			await page.locator("#next").fill(NEW_PASSWORD);
+			await page.getByRole("button", { name: "Change password" }).click();
+			await expect(page.getByText("Your session ended. Sign in again.")).toBeVisible();
+			await expect(page.getByRole("heading", { level: 1 })).toHaveText("Access denied");
+		} finally {
+			await mine.close();
+			await other.close();
+			await server.stop();
+		}
+	});
+
+	test("a password change with Origin stripped gets the 403 that says so", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const claimed = await claim(server);
+			const cookie = (claimed.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+			const stripped = await fetch(`${server.url}/admin/settings/security?/password`, {
+				method: "POST",
+				headers: {
+					"sec-fetch-site": "same-origin",
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+					cookie,
+				},
+				body: new URLSearchParams({ current: PASSWORD, next: NEW_PASSWORD }),
+				redirect: "manual",
+			});
+			expect(stripped.status).toBe(403);
+			expect(stripped.headers.get("set-cookie")).toBeNull();
+			expect((await stripped.text()).replace(/&#(39|x27);/g, "'")).toContain(
+				"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+			);
+		} finally {
+			await server.stop();
+		}
+	});
+
+	for (const [locale, password, sessions, none] of [
+		["en-GB", "Password", "Sessions", "No other browser is signed in."],
+		["da-DK", "Adgangskode", "Sessioner", "Ingen anden browser er logget ind."],
+	] as const) {
+		test(`shows its sections in ${locale} with no console error or CSP violation`, async ({
+			browser,
+		}) => {
+			const server = await startServer(root, {
+				OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+			});
+			const context = await browser.newContext({ locale, viewport: { width: 1440, height: 900 } });
+			try {
+				const page = await context.newPage();
+				const problems = await watchForProblems(page);
+				await claimInBrowser(page, server);
+				await expect(page.getByRole("heading", { level: 2, name: password })).toBeVisible();
+				await expect(page.getByRole("heading", { level: 2, name: sessions })).toBeVisible();
+				await expect(page.getByText(none)).toBeVisible();
+				await expect(page.locator("#current")).toHaveAttribute("autocomplete", "current-password");
+				await expect(page.locator("#next")).toHaveAttribute("autocomplete", "new-password");
 				expect(problems).toEqual([]);
 			} finally {
 				await context.close();

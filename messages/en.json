@@ -66,5 +66,20 @@
 	"admin_sign_out_cancel": "Cancel",
 	"admin_version": "Version {{version}}",
 	"admin_settings_tabs": "Settings sections",
-	"admin_settings_security": "Security"
+	"admin_settings_security": "Security",
+	"security_password_heading": "Password",
+	"security_password_current_label": "Current password",
+	"security_password_new_label": "New password",
+	"security_password_submit": "Change password",
+	"security_password_saving": "Saving…",
+	"security_password_changed": "Password changed. Other sessions were signed out.",
+	"security_password_wrong_current": "The current password is wrong.",
+	"security_sessions_heading": "Sessions",
+	"security_sessions_count_one": "Signed in on {{count, number}} other browser.",
+	"security_sessions_count_other": "Signed in on {{count, number}} other browsers.",
+	"security_sessions_none": "No other browser is signed in.",
+	"security_sessions_end": "Sign out everywhere else",
+	"security_sessions_ending": "Signing out…",
+	"security_sessions_ended_one": "Signed out of {{count, number}} other browser.",
+	"security_sessions_ended_other": "Signed out of {{count, number}} other browsers."
 }

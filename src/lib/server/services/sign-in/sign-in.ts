@@ -14,20 +14,22 @@ export type SignInInput = {
 	clientAddress?: string | undefined;
 };
 
+/**
+ * Refused for now, with when to try again and the headers saying so: the address used up the
+ * limit, it must wait after failed sign-ins, or every hash slot was busy.
+ */
+export type TooMany = {
+	status: "too-many";
+	reason: "limit" | "wait" | "busy";
+	retryAfterSeconds: number;
+	headers: Record<string, string>;
+};
+
 export type SignInResult =
 	| { status: "signed-in"; session: StartedSession }
 	/** A wrong username or password: one answer for both. */
 	| { status: "wrong" }
-	/**
-	 * Refused for now, with when to try again and the headers saying so: the address used up the
-	 * limit, it must wait after failed sign-ins, or every hash slot was busy.
-	 */
-	| {
-			status: "too-many";
-			reason: "limit" | "wait" | "busy";
-			retryAfterSeconds: number;
-			headers: Record<string, string>;
-	  };
+	| TooMany;
 
 const log = createLogger("sign-in");
 
@@ -39,6 +41,54 @@ const signInLimit = createRateLimiter({ limit: SIGN_IN_LIMIT, windowMs: 5 * 60_0
 const failedSignIns = createFailedSignIns({
 	warn: (message, metadata) => log.warn(message, metadata),
 });
+
+/** The answer when every hash slot is busy. */
+export const SLOTS_BUSY: TooMany = {
+	status: "too-many",
+	reason: "busy",
+	retryAfterSeconds: HASH_SLOT_RETRY_SECONDS,
+	headers: { "retry-after": String(HASH_SLOT_RETRY_SECONDS) },
+};
+
+/**
+ * Counts a request towards the address's limit, which signing in and the password change share,
+ * and refuses it when the address used the limit up or must wait after failed sign-ins (SPEC-
+ * sign-in.md, "Rate limits"). Every request counts towards the limit, one a wait refuses too. When
+ * both refuse, the answer is the one that ends later, so it never says to try again before the
+ * address may.
+ */
+export function refuseOverLimit(address: string): TooMany | undefined {
+	const decision = signInLimit.hit(address);
+	const wait = failedSignIns.wait(address);
+	if (wait !== undefined && (decision.allowed || wait.resetAt >= decision.resetAt)) {
+		return {
+			status: "too-many",
+			reason: "wait",
+			retryAfterSeconds: wait.retryAfterSeconds,
+			// The headers every refusal carries, describing the wait rather than the window.
+			headers: rateLimitHeaders({ allowed: false, limit: SIGN_IN_LIMIT, remaining: 0, ...wait }),
+		};
+	}
+	if (!decision.allowed) {
+		return {
+			status: "too-many",
+			reason: "limit",
+			retryAfterSeconds: decision.retryAfterSeconds,
+			headers: rateLimitHeaders(decision),
+		};
+	}
+	return undefined;
+}
+
+/**
+ * Records a checked password from an address: a failure (a wrong sign-in or a wrong current
+ * password) counts towards its next wait, and a success starts its count again (D28).
+ */
+export function countPasswordCheck(address: string | undefined, succeeded: boolean): void {
+	if (address === undefined) return;
+	if (succeeded) failedSignIns.succeeded(address);
+	else failedSignIns.failed(address);
+}
 
 /**
  * What a wrong username is verified against, so it costs the same argon2id verification as a
@@ -72,30 +122,8 @@ export async function signIn(
 	now = new Date(),
 ): Promise<SignInResult> {
 	const address = input.clientAddress;
-	if (address !== undefined) {
-		// Every request counts towards the limit, one a wait refuses too (SPEC-sign-in.md, "Rate
-		// limits"). When both refuse, the answer is the one that ends later, so it never says to
-		// try again before the address may.
-		const decision = signInLimit.hit(address);
-		const wait = failedSignIns.wait(address);
-		if (wait !== undefined && (decision.allowed || wait.resetAt >= decision.resetAt)) {
-			return {
-				status: "too-many",
-				reason: "wait",
-				retryAfterSeconds: wait.retryAfterSeconds,
-				// The headers every refusal carries, describing the wait rather than the window.
-				headers: rateLimitHeaders({ allowed: false, limit: SIGN_IN_LIMIT, remaining: 0, ...wait }),
-			};
-		}
-		if (!decision.allowed) {
-			return {
-				status: "too-many",
-				reason: "limit",
-				retryAfterSeconds: decision.retryAfterSeconds,
-				headers: rateLimitHeaders(decision),
-			};
-		}
-	}
+	const refused = address === undefined ? undefined : refuseOverLimit(address);
+	if (refused !== undefined) return refused;
 	const found = await findOwner(db);
 	const owner =
 		found !== undefined && comparable(input.username) === comparable(found.username)
@@ -103,14 +131,7 @@ export async function signIn(
 			: undefined;
 	// The slot comes first, so making the dummy hash counts towards the cap too.
 	const releaseSlot = hashSlots.take();
-	if (releaseSlot === undefined) {
-		return {
-			status: "too-many",
-			reason: "busy",
-			retryAfterSeconds: HASH_SLOT_RETRY_SECONDS,
-			headers: { "retry-after": String(HASH_SLOT_RETRY_SECONDS) },
-		};
-	}
+	if (releaseSlot === undefined) return SLOTS_BUSY;
 	let verified: boolean;
 	try {
 		const hash = owner?.passwordHash ?? (await dummy());
@@ -127,11 +148,11 @@ export async function signIn(
 	// is a failure too: that password is no longer the owner's.
 	if (session === undefined) {
 		log.warn("a sign-in failed", { clientAddress: address });
-		if (address !== undefined) failedSignIns.failed(address);
+		countPasswordCheck(address, false);
 		return { status: "wrong" };
 	}
 	log.info("the owner signed in", { clientAddress: address });
-	if (address !== undefined) failedSignIns.succeeded(address);
+	countPasswordCheck(address, true);
 	return { status: "signed-in", session };
 }
 

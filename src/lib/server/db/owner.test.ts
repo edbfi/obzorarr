@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
-import { findOwner, insertOwner, owner, ownerExists } from "./owner.ts";
+import { findOwner, insertOwner, owner, ownerExists, replacePasswordHash } from "./owner.ts";
 
 let root: string;
 let db: Database;
@@ -67,5 +67,15 @@ describe("insertOwner", () => {
 describe("findOwner", () => {
 	it("reads the owner's username and password hash", async () => {
 		expect(await findOwner(db)).toEqual({ username: "owner", passwordHash: "hash" });
+	});
+});
+
+describe("replacePasswordHash", () => {
+	it("replaces the hash only while it is still the one the change verified", async () => {
+		expect(await replacePasswordHash(db, "not the stored hash", "hash-2")).toBe(false);
+		expect((await findOwner(db))?.passwordHash).toBe("hash");
+		expect(await replacePasswordHash(db, "hash", "hash-2")).toBe(true);
+		expect((await findOwner(db))?.passwordHash).toBe("hash-2");
+		await replacePasswordHash(db, "hash-2", "hash");
 	});
 });

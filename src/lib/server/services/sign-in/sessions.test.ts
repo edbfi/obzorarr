@@ -8,7 +8,9 @@ import { insertOwner } from "#lib/server/db/owner.ts";
 import { findSession, ownerSession } from "#lib/server/db/owner-session.ts";
 import { hashSessionToken } from "#lib/server/security/session-token.ts";
 import {
+	countOtherSessions,
 	deleteExpiredSessions,
+	endOtherSessions,
 	endSession,
 	lookUpSession,
 	SESSION_IDLE_MS,
@@ -133,5 +135,24 @@ describe("endSession", () => {
 		// A token that names no session ends nothing.
 		await endSession(db, "made-up");
 		expect(await lookUpSession(db, second.token, T0)).toEqual({ username: "Owner" });
+	});
+});
+
+describe("countOtherSessions and endOtherSessions", () => {
+	it("count the other live sessions, and end them, saying how many were live", async () => {
+		const mine = await started();
+		const others = [await started(), await started()];
+		await started();
+		// A day before 7 idle days have passed, this browser and two others are used; the fourth
+		// isn't, so it has ended by `end`.
+		for (const session of [mine, ...others]) {
+			await lookUpSession(db, session.token, later(SESSION_IDLE_MS - 24 * SESSION_TOUCH_MS));
+		}
+		const end = later(SESSION_IDLE_MS);
+		expect(await countOtherSessions(db, mine.token, end)).toBe(2);
+		expect(await endOtherSessions(db, mine.token, end)).toBe(2);
+		expect(await lookUpSession(db, mine.token, end)).toEqual({ username: "Owner" });
+		expect(await db.select().from(ownerSession)).toHaveLength(1);
+		expect(await countOtherSessions(db, mine.token, end)).toBe(0);
 	});
 });
