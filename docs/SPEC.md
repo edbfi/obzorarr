@@ -834,12 +834,12 @@ export const GET: RequestHandler = () => healthResponse();
   ended sessions deleted, the logs without the typed username, and a check that ends after the
   password changed starting no session; `security/return-path.test.ts`, each rule at its limits, a
   path percent-encoded as a `Location` header needs, and dot segments that would leave two leading
-  slashes; `db/owner.test.ts`, also reading the owner; `security/failed-sign-ins.test.ts`, the
-  waits of 5, 10, 20, 40, 60 and 60 minutes, reset by a success and after 24 quiet hours, swept and
-  capped, and the warn entry; `services/sign-in/sign-in.test.ts` also refuses the 11th sign-in in
-  5 minutes and a waiting address before any hash, answers with whichever of the wait and the
-  limit ends later when both refuse, counts no refused request as a failure, starts the count again after a success, and
-  skips the limit and the waits for an unknown address;
+  slashes; `db/owner.test.ts`, also reading the owner; `security/failed-sign-ins.test.ts`, the waits
+  of 5, 10, 20, 40, 60 and 60 minutes, reset by a success and after 24 quiet hours, swept and
+  capped, and the warn entry; `services/sign-in/sign-in.test.ts` also refuses the 11th sign-in in 5
+  minutes and a waiting address before any hash, answers with whichever of the wait and the limit
+  ends later when both refuse, counts no refused request as a failure, starts the count again after
+  a success, and skips the limit and the waits for an unknown address;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,

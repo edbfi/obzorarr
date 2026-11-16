@@ -217,8 +217,8 @@ describe("signIn", () => {
 // The limit and the failed sign-ins live in the module and outlast each test, so every test here
 // signs in from an address of its own.
 describe("signIn's limits", () => {
-	// Many checks each, so the owner's password is checked without argon2id; the real check is
-	// covered above.
+	// Many checks each, so the owner's password is checked without argon2id; the real check, and
+	// the dummy one for a wrong username, are covered above. These tests sign in only as the owner.
 	beforeEach(() => {
 		verify.fast = (password, hash) => password === PASSWORD && hash === ownerHash;
 	});
