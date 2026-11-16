@@ -4,102 +4,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium, expect, type Page, test } from "@playwright/test";
 import { connect } from "@tursodatabase/database";
+import { claim, runToExit, type Server, startServer } from "./server.ts";
 
 // First run and the request checks on the built server (docs/SPEC.md, "Testing strategy"). Each
-// test starts its own server, with a generated key and a database in its own temporary folder.
-const BUILD = fileURLToPath(new URL("../../build", import.meta.url));
+// test starts its own server (`server.ts`), with a generated key and a database in its own
+// temporary folder.
 const MIGRATIONS = fileURLToPath(new URL("../../drizzle", import.meta.url));
-
-const randomKey = () => crypto.getRandomValues(new Uint8Array(32)).toBase64();
-
-/** A built server that started: its address, everything it printed so far, and how to stop it. */
-type Server = {
-	url: string;
-	output: () => string;
-	stop: (signal?: "SIGTERM" | "SIGHUP") => Promise<number | null>;
-};
-
-/**
- * Spawns the built server in `cwd` with a generated key, a free port and `env`, and nothing else
- * from the test's environment.
- */
-const spawnServer = (cwd: string, env: Record<string, string>) =>
-	Bun.spawn([process.execPath, "--no-env-file", BUILD], {
-		cwd,
-		env: { HOST: "127.0.0.1", PORT: "0", OBZORARR_SECRET_KEY: randomKey(), ...env },
-		stdout: "pipe",
-		stderr: "pipe",
-	});
-
-/**
- * Starts the built server with `env` and resolves once it listens, or rejects with its output if
- * it exits or is still starting after 10 s.
- */
-async function startServer(cwd: string, env: Record<string, string>): Promise<Server> {
-	const server = spawnServer(cwd, env);
-	let output = "";
-	const collect = async (stream: ReadableStream<Uint8Array>) => {
-		const decoder = new TextDecoder();
-		for await (const chunk of stream) output += decoder.decode(chunk, { stream: true });
-	};
-	const collected = Promise.all([collect(server.stdout), collect(server.stderr)]);
-	const deadline = Date.now() + 10_000;
-	while (Date.now() < deadline) {
-		const url = /Listening on (http:\/\/\S+?)\/?\s/.exec(output)?.[1];
-		if (url !== undefined) {
-			return {
-				url,
-				output: () => output,
-				stop: async (signal = "SIGTERM") => {
-					server.kill(signal);
-					await collected;
-					return server.exited;
-				},
-			};
-		}
-		if (server.exitCode !== null) break;
-		await Bun.sleep(50);
-	}
-	server.kill("SIGKILL");
-	await collected;
-	throw new Error(`the server didn't start:\n${output}`);
-}
-
-/** Runs the built server with `env` until it exits by itself, killing it after 10 s. */
-async function runToExit(cwd: string, env: Record<string, string>) {
-	const server = spawnServer(cwd, env);
-	const timer = setTimeout(() => server.kill("SIGKILL"), 10_000);
-	try {
-		const [stdout, stderr] = await Promise.all([
-			new Response(server.stdout).text(),
-			new Response(server.stderr).text(),
-		]);
-		await server.exited;
-		return { exitCode: server.exitCode, output: `${stdout}\n${stderr}` };
-	} finally {
-		clearTimeout(timer);
-	}
-}
-
-/**
- * Claims a fresh server through its form action, with the token it printed, as a browser's native
- * form post: asking for HTML, since SvelteKit answers an action in JSON to `Accept: *\/*`.
- */
-async function claim(server: Server) {
-	const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
-	const response = await fetch(`${server.url}/setup`, {
-		method: "POST",
-		headers: {
-			origin: server.url,
-			accept: "text/html",
-			"content-type": "application/x-www-form-urlencoded",
-		},
-		body: new URLSearchParams({ token, username: "owner", password: "violet harbour lanterns" }),
-		redirect: "manual",
-	});
-	expect(response.status, "the claim").toBe(303);
-	expect(response.headers.get("location")).toBe("/");
-}
 
 /** A GET, or a request with `init`, that doesn't follow a redirect. */
 const request = (url: string, init: RequestInit = {}) =>
@@ -544,6 +454,72 @@ test.describe("the bootstrap token", () => {
 });
 
 test.describe("the claim", () => {
+	test("refuses a browser that stripped Origin with a 403 that says so, leaving the token usable", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
+			const page = await request(`${server.url}/setup`);
+			expect(page.headers.get("cache-control")).toBe("no-store");
+			// A browser that strips Origin still says the request came from the app itself.
+			const stripped = await request(`${server.url}/setup`, {
+				method: "POST",
+				headers: {
+					"sec-fetch-site": "same-origin",
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				body: new URLSearchParams({
+					token,
+					username: "owner",
+					password: "violet harbour lanterns",
+				}),
+			});
+			expect(stripped.status).toBe(403);
+			expect(stripped.headers.get("cache-control")).toBe("no-store");
+			// The page escapes the apostrophe one way or another.
+			const refusal = (await stripped.text()).replace(/&#(39|x27);/g, "'");
+			expect(refusal).toContain("Access denied");
+			expect(refusal).toContain(
+				"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+			);
+			// An enhanced form gets SvelteKit's JSON error with the message, and a Danish browser
+			// gets it in Danish.
+			const strippedPost = (headers: Record<string, string>) =>
+				request(`${server.url}/setup`, {
+					method: "POST",
+					headers: {
+						"sec-fetch-site": "same-origin",
+						"content-type": "application/x-www-form-urlencoded",
+						...headers,
+					},
+					body: new URLSearchParams({ token, username: "owner", password: "x" }),
+				});
+			const enhanced = await strippedPost({
+				accept: "application/json",
+				"x-sveltekit-action": "true",
+			});
+			expect(enhanced.status).toBe(403);
+			expect(await enhanced.json()).toMatchObject({
+				type: "error",
+				error: {
+					message:
+						"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+				},
+			});
+			const danish = await strippedPost({ accept: "text/html", "accept-language": "da" });
+			expect(danish.status).toBe(403);
+			expect((await danish.text()).replace(/&#(39|x27);/g, "'")).toContain(
+				"Din browser oplyste ikke, hvilken adresse den bruger. Sæt ORIGIN, og genstart Obzorarr.",
+			);
+			// The token wasn't touched: the same one claims.
+			await claim(server);
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("allows 5 tries per 5 minutes from one address, then shows the wait beside the button", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
@@ -563,7 +539,12 @@ test.describe("the claim", () => {
 						password: "violet harbour lanterns",
 					}),
 				});
-			for (let i = 0; i < 5; i++) expect((await tryToClaim()).status).toBe(400);
+			for (let i = 0; i < 5; i++) {
+				const refused = await tryToClaim();
+				expect(refused.status).toBe(400);
+				// The action and the page's load both run on a native form post; the header is set once.
+				expect(refused.headers.get("cache-control")).toBe("no-store");
+			}
 			const refused = await tryToClaim();
 			expect(refused.status).toBe(429);
 			expect(Number(refused.headers.get("retry-after"))).toBeGreaterThan(0);

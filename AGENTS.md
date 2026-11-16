@@ -287,7 +287,8 @@ which creates the owner account. The owner can't sign in yet: module 5, `sign-in
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
-and password hashing to 4 at once.
+and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
+on.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -390,6 +391,9 @@ src/
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
       security/hash-slots.ts     at most 4 password hashes or verifications at once
+      security/browser-address.ts
+                                 `ORIGIN`, or the validated `Origin` of a POST: the address a
+                                 cookie's `Secure` flag follows
       security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
                                  requests", with their own policy and Panda's token declarations
                                  inline, or a JSON error
@@ -415,6 +419,8 @@ tests/
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
+  e2e/server.ts                  fresh built servers for the tests that need their own, and the
+                                 claim through its form action
   e2e/global-setup.ts            claims the shared web server's instance before the other tests
   fixtures/demo-fixtures.json    design fixtures
 messages/en.json  messages/da.json

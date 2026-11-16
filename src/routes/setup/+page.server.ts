@@ -1,7 +1,9 @@
 import { error, fail, redirect } from "@sveltejs/kit";
+import * as m from "#lib/paraglide/messages.js";
+import { browserAddress } from "#lib/server/security/browser-address.ts";
 import { type ClaimResult, claimInstance } from "#lib/server/services/setup/claim.ts";
 import { isFirstRunComplete } from "#lib/server/services/setup/first-run.ts";
-import { currentDatabase } from "#lib/server/services/setup/startup.ts";
+import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 type Invalid = Extract<ClaimResult, { status: "invalid" }>;
@@ -19,13 +21,27 @@ export type ClaimFailure = {
 	busy?: boolean;
 };
 
+/** The claim and its answers are never cached (SPEC-sign-in.md, "Owner-only pages"). */
+const NO_STORE = { "cache-control": "no-store" };
+
 // The claim is first run's first step; once first run is complete it no longer exists (D20).
-export const load: PageServerLoad = () => {
+export const load: PageServerLoad = ({ request, setHeaders }) => {
+	// The action sets it on every POST to `/setup`, and SvelteKit runs the load after the action
+	// on a native form post; setting a header twice throws.
+	if (request.method !== "POST") setHeaders(NO_STORE);
 	if (isFirstRunComplete()) error(404);
 };
 
 export const actions: Actions = {
 	default: async ({ request, locals, setHeaders }) => {
+		setHeaders(NO_STORE);
+		// Once claimed, the claim no longer exists (D20), whatever the browser says.
+		if (isFirstRunComplete()) error(404);
+		// The claim sets a cookie once it signs the owner in, so it needs the browser's address
+		// next, before its limit counts the attempt and before the token can be used up.
+		if (browserAddress(request, currentOrigin()) === undefined) {
+			error(403, m.error_no_browser_address());
+		}
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {

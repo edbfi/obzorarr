@@ -8,6 +8,7 @@
 	"error_too_many_attempts_one": "For mange forsøg. Prøv igen om {{count, number}} minut. Bag en reverse proxy skal du sætte ADDRESS_HEADER, så hver besøgende tælles for sig.",
 	"error_too_many_attempts_other": "For mange forsøg. Prøv igen om {{count, number}} minutter. Bag en reverse proxy skal du sætte ADDRESS_HEADER, så hver besøgende tælles for sig.",
 	"error_server_busy": "Obzorarr har travlt med at kontrollere andre adgangskoder. Prøv igen om et par sekunder.",
+	"error_no_browser_address": "Din browser oplyste ikke, hvilken adresse den bruger. Sæt ORIGIN, og genstart Obzorarr.",
 	"error_forbidden_description": "Du har ikke adgang til denne side.",
 	"error_not_found_title": "Siden blev ikke fundet",
 	"error_not_found_description": "Siden findes ikke, eller den er flyttet.",
