@@ -896,7 +896,7 @@ export const GET: RequestHandler = () => healthResponse();
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/access-denied.test.ts`, the refusal page
   and its JSON form in both languages; `security/bootstrap-token.test.ts`, the token's format,
   alphabet, unbiased draw, expiry and comparison; `security/password.test.ts`, the credential
-  rules at their limits, NFC and case included, the bundled list and an argon2id round trip;
+  rules at their limits, NFC and case included, the list, patterns and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
   printed, renewed, held back during a claim, stopped, never printed once claimed, the gate's
   decision for each path before and after the claim, and a restart after the claim;
