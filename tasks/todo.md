@@ -10,8 +10,9 @@ the shared server sends its own address through the fixture. A fresh server belo
 so its limits are that test's alone: until task 4 its requests count under the connection's
 address, and from task 4 on, `tests/e2e/server.ts` starts it with `ADDRESS_HEADER=x-forwarded-for`
 and the fixture's address too. Tests that change the owner's password or sessions, or need an
-unclaimed or restarted server, use fresh servers. Every sweep timer is `unref`'d and stopped at
-shutdown, as first run's token timer is. Paths under `src/lib/server/` are shortened to
+unclaimed or restarted server, use fresh servers. The in-memory tables sweep themselves once a
+minute on the next request (`security/rate-limit.ts`), so no sweep timer needs stopping at
+shutdown. Paths under `src/lib/server/` are shortened to
 `server/`, and the spec's sections are named in quotes.
 
 ## Task 1: the error pages
