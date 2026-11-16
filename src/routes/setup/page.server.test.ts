@@ -1,16 +1,24 @@
+import { isHttpError } from "@sveltejs/kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const claimInstance = vi.fn();
 vi.mock("#lib/server/services/setup/claim.ts", () => ({ claimInstance }));
-vi.mock("#lib/server/services/setup/startup.ts", () => ({ currentDatabase: () => ({}) }));
+vi.mock("#lib/server/services/setup/startup.ts", () => ({
+	currentDatabase: () => ({}),
+	currentOrigin: () => undefined,
+}));
 
 const { actions } = await import("./+page.server.ts");
 
-/** The claim action for a form post from `clientAddress`, with its headers caught. */
-async function post(clientAddress: string | undefined) {
+/**
+ * The claim action for a form post from `clientAddress`, with its headers caught; the browser
+ * says which address it is on, unless `origin` is null.
+ */
+async function post(clientAddress: string | undefined, origin: string | null = "http://app.test") {
 	const setHeaders = vi.fn();
 	const request = new Request("http://app.test/setup", {
 		method: "POST",
+		headers: origin === null ? {} : { origin },
 		body: new URLSearchParams({ token: "abcd-efgh-ijkl", username: "owner", password: "x" }),
 	});
 	const result = await actions.default({
@@ -59,5 +67,25 @@ describe("the claim action", () => {
 		expect(result).toMatchObject({ status: 429, data: { busy: true } });
 		expect((result as { data: object }).data).not.toHaveProperty("retryAfterSeconds");
 		expect(setHeaders).toHaveBeenCalledWith({ "retry-after": "5" });
+	});
+
+	it("refuses a browser that didn't say which address it is on, before anything else", async () => {
+		let refused: unknown;
+		try {
+			await post("198.51.100.9", null);
+		} catch (error) {
+			refused = error;
+		}
+		expect(isHttpError(refused, 403)).toBe(true);
+		expect((refused as { body: { message: string } }).body.message).toBe(
+			"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+		);
+		expect(claimInstance).not.toHaveBeenCalled();
+	});
+
+	it("keeps the claim's answers out of every cache", async () => {
+		claimInstance.mockResolvedValue({ status: "token" });
+		const { setHeaders } = await post("198.51.100.9");
+		expect(setHeaders).toHaveBeenCalledWith({ "cache-control": "no-store" });
 	});
 });

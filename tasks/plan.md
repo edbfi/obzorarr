@@ -73,14 +73,14 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 
 ### Checkpoint: after task 3
 
-- [ ] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
+- [x] `check`, `test`, `lint`, `build`, `smoke` and prek pass; CI's `checks`, `smoke` and `ci-ok`
   pass.
-- [ ] A cross-site POST, the 61st request in a minute and an unknown page each get their branded
+- [x] A cross-site POST, the 61st request in a minute and an unknown page each get their branded
   page, in the viewer's language, with the tokens' colours.
 
 ### Phase 2: signing in
 
-- [ ] Task 4: the browser's address at the claim
+- [x] Task 4: the browser's address at the claim
 - [ ] Task 5: sessions, started at the claim
 - [ ] Task 6: the claim lands in the admin
 - [ ] Task 7: owner sign-in

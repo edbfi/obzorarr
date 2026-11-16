@@ -8,6 +8,7 @@
 	"error_too_many_attempts_one": "Too many attempts. Try again in {{count, number}} minute. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.",
 	"error_too_many_attempts_other": "Too many attempts. Try again in {{count, number}} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.",
 	"error_server_busy": "Obzorarr is busy checking other passwords. Try again in a few seconds.",
+	"error_no_browser_address": "Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
 	"error_forbidden_description": "You don't have access to this page.",
 	"error_not_found_title": "Page not found",
 	"error_not_found_description": "This page doesn't exist, or it has moved.",

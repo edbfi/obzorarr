@@ -134,12 +134,12 @@ the 403 that says so (a `refusal-page.ts` variant). `/setup` and its action beco
 per-test address.
 
 **Acceptance criteria:**
-- [ ] `server/security/browser-address.test.ts` first fails, then passes: `ORIGIN`, a validated
+- [x] `server/security/browser-address.test.ts` first fails, then passes: `ORIGIN`, a validated
   `Origin`, a stripped one; and it searches `src/` for `event.url.origin` and `.url.protocol` on a
   request's URL, exempting `config/origin.ts` by name, which validates `ORIGIN` itself.
-- [ ] `server/security/refusal-page.test.ts` gains the stripped-address page, in both languages,
+- [x] `server/security/refusal-page.test.ts` gains the stripped-address page, in both languages,
   and its JSON form.
-- [ ] `tests/e2e/setup.test.ts`, through `server.ts`: a claim with `Origin` stripped gets the 403
+- [x] `tests/e2e/setup.test.ts`, through `server.ts`: a claim with `Origin` stripped gets the 403
   that says so and leaves the token unused; `/setup` and the claim's response are `no-store`.
 
 **Verification:** the gates.

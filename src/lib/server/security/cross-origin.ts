@@ -54,8 +54,9 @@ const BARE_ORIGIN = /^https?:\/\/(\[[0-9a-f:.]+\]|[^/\\?#@,:\s[\]]+)(:\d+)?$/i;
 /**
  * An `Origin` header as a URL, or null when it isn't one bare http or https origin: `null`, a
  * malformed value, several values (joined with commas), credentials, or anything after the host.
+ * The browser's address (`browser-address.ts`) reads `Origin` by the same rule.
  */
-function parseOrigin(value: string): URL | null {
+export function parseOrigin(value: string): URL | null {
 	if (!BARE_ORIGIN.test(value)) return null;
 	try {
 		return new URL(value);
