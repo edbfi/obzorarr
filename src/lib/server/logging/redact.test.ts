@@ -123,7 +123,6 @@ describe("redact", () => {
 					basicAuth: "f",
 					authHeader: "g",
 					authCode: "h",
-					authError: "i",
 					pass: "j",
 					passphrase: "k",
 					oauth: "l",
@@ -139,13 +138,41 @@ describe("redact", () => {
 				basicAuth: R,
 				authHeader: R,
 				authCode: R,
-				authError: R,
 				pass: R,
 				passphrase: R,
 				oauth: R,
 				author: "kept",
 				passage: "kept",
 			});
+		});
+
+		it("keeps the names known to hold no credential, matched exactly, and still cleans them", () => {
+			expect(
+				redact({
+					ratingKey: "5512",
+					parentRatingKey: "5510",
+					grandparentRatingKey: "5500",
+					keyId: "Zm9vYmFy",
+					maxTokens: 512,
+					authError: "Plex answered 401 for https://plex.tv/api?X-Plex-Token=abc123",
+					RatingKey: "x",
+					ratingKeys: "y",
+					userKeyId: "z",
+				}),
+			).toEqual({
+				ratingKey: "5512",
+				parentRatingKey: "5510",
+				grandparentRatingKey: "5500",
+				keyId: "Zm9vYmFy",
+				maxTokens: 512,
+				authError: `Plex answered 401 for https://plex.tv/api?X-Plex-Token=${R}`,
+				RatingKey: R,
+				ratingKeys: R,
+				userKeyId: R,
+			});
+			expect(redact("/library/metadata?ratingKey=5512&X-Plex-Token=abc123")).toBe(
+				`/library/metadata?ratingKey=5512&X-Plex-Token=${R}`,
+			);
 		});
 
 		it("redacts matching keys at any depth, in objects and arrays", () => {

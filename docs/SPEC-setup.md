@@ -92,7 +92,9 @@ it comes.
 **Redaction** runs before an entry is written:
 - credentials in URLs, and token-like query parameters;
 - token, authorisation and cookie fields in payloads and headers;
-- at any depth, any metadata key that looks like a token, secret, password, cookie, session or key;
+- at any depth, any metadata key that looks like a token, secret, password, cookie, session or key,
+  except the few names `redact.ts` lists as holding no credential, such as Plex's `ratingKey` (the
+  owner's allowlist, 2026-11-16), whose values are still cleaned like any other;
 - a `Secret` (`secrets`) is already `[redacted]`.
 
 Console output meant for whoever runs the server, such as the bootstrap token, is never a

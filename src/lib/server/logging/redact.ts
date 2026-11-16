@@ -25,8 +25,24 @@ const SENSITIVE_PARTS = [
  */
 const SENSITIVE_WORDS = new Set(["key", "keys", "pwd", "jwt", "auth", "pass"]);
 
+/**
+ * Names that match the rules above but hold no credential, matched exactly (the owner's
+ * allowlist, 2026-11-16): Plex's item ids, the keyring's key fingerprint, an AI request's token
+ * limit and an authentication error's message. Their values are still cleaned like any other.
+ * Add a name only when no value it can hold is a credential.
+ */
+const SAFE_NAMES = new Set([
+	"ratingKey",
+	"parentRatingKey",
+	"grandparentRatingKey",
+	"keyId",
+	"maxTokens",
+	"authError",
+]);
+
 /** Whether a key or parameter name looks like it holds a credential. */
 function sensitive(name: string): boolean {
+	if (SAFE_NAMES.has(name)) return false;
 	const words = name
 		.replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
