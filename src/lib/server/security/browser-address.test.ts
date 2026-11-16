@@ -56,8 +56,12 @@ const REQUEST_URL_ORIGIN = [
 	/\{[^}]*\b(origin|protocol)\b[^}]*\}\s*=\s*[\w.?]*\burl\b/,
 	/\burl\s*:\s*\{[^}]*\b(origin|protocol)\b/,
 ];
+/** `url` taken from a handler's or load's event, as in `({ url }) => …`, and its origin read. */
+const DESTRUCTURED_URL = /\(\s*\{[^})]*\burl\b[^})]*\}/;
+const URL_ORIGIN = /\burl\??\.(origin|protocol)\b/;
 const readsRequestUrlOrigin = (code: string) =>
-	REQUEST_URL_ORIGIN.some((pattern) => pattern.test(code));
+	REQUEST_URL_ORIGIN.some((pattern) => pattern.test(code)) ||
+	(DESTRUCTURED_URL.test(code) && URL_ORIGIN.test(code));
 
 describe("app code", () => {
 	it("is searched for every way of reading the request URL's origin or protocol", () => {
@@ -68,10 +72,17 @@ describe("app code", () => {
 			"const { origin } = event.url;",
 			"const { protocol, host } = page.url;",
 			"load({ url: { origin } })",
+			"export const load = ({ url }) => url.origin;",
+			"const handle = async ({ event: { url } }) => url?.protocol;",
 		]) {
 			expect(readsRequestUrlOrigin(code), code).toBe(true);
 		}
-		for (const code of ["url.protocol !== 'https:'", "sent.origin === origin", "upstream.origin"]) {
+		for (const code of [
+			"const url = new URL(value); url.protocol !== 'https:'",
+			"sent.origin === origin",
+			"upstream.origin",
+			"export const load = ({ url }) => url.pathname;",
+		]) {
 			expect(readsRequestUrlOrigin(code), code).toBe(false);
 		}
 	});

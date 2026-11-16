@@ -21,6 +21,9 @@ export type ClaimFailure = {
 	busy?: boolean;
 };
 
+/** The claim and its answers are never cached (SPEC-sign-in.md, "Owner-only pages"). */
+const NO_STORE = { "cache-control": "no-store" };
+
 // The claim is first run's first step; once first run is complete it no longer exists (D20).
 export const load: PageServerLoad = ({ request, setHeaders }) => {
 	// The action sets it on every POST to `/setup`, and SvelteKit runs the load after the action
@@ -28,9 +31,6 @@ export const load: PageServerLoad = ({ request, setHeaders }) => {
 	if (request.method !== "POST") setHeaders(NO_STORE);
 	if (isFirstRunComplete()) error(404);
 };
-
-/** The claim and its answers are never cached (SPEC-sign-in.md, "Owner-only pages"). */
-const NO_STORE = { "cache-control": "no-store" };
 
 export const actions: Actions = {
 	default: async ({ request, locals, setHeaders }) => {
