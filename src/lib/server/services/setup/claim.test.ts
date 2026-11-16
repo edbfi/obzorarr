@@ -6,6 +6,7 @@ import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { insertOwner, owner } from "#lib/server/db/owner.ts";
 import { readSetting } from "#lib/server/db/settings.ts";
+import { hashSlots } from "#lib/server/security/hash-slots.ts";
 import { verifyPassword } from "#lib/server/security/password.ts";
 import { claimInstance } from "./claim.ts";
 import {
@@ -178,5 +179,103 @@ describe("claimInstance", () => {
 		expect(printed).toHaveLength(2);
 		expect(token()).not.toBe(used);
 		expect(await readSetting(db, FIRST_RUN_STEP_KEY)).toBeUndefined();
+	});
+});
+
+describe("claimInstance's limits", () => {
+	it("refuses when every hash slot is busy, before the token, so the token stays usable", async () => {
+		const { db, token } = await freshInstance();
+		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
+		try {
+			expect(
+				await claimInstance(db, {
+					token: token(),
+					username: "owner",
+					password: PASSWORD,
+					clientAddress: "198.51.100.1",
+				}),
+			).toEqual({
+				status: "too-many",
+				reason: "busy",
+				retryAfterSeconds: 5,
+				headers: { "retry-after": "5" },
+			});
+		} finally {
+			for (const release of taken) release?.();
+		}
+		expect(
+			await claimInstance(db, {
+				token: token(),
+				username: "owner",
+				password: PASSWORD,
+				clientAddress: "198.51.100.1",
+			}),
+		).toEqual({ status: "claimed" });
+	});
+
+	it("refuses the sixth claim from one address within 5 minutes, before the token", async () => {
+		const { db, token } = await freshInstance();
+		const address = "198.51.100.2";
+		for (let i = 0; i < 5; i++) {
+			const result = await claimInstance(db, {
+				token: token(),
+				username: " ",
+				password: "short",
+				clientAddress: address,
+			});
+			expect(result.status).toBe("invalid");
+		}
+		const hash = vi.spyOn(Bun.password, "hash");
+		const refused = await claimInstance(db, {
+			token: token(),
+			username: "owner",
+			password: PASSWORD,
+			clientAddress: address,
+		});
+		expect(refused).toMatchObject({ status: "too-many", reason: "limit" });
+		if (refused.status !== "too-many") throw new Error("not refused");
+		expect(refused.retryAfterSeconds).toBeGreaterThan(0);
+		expect(refused.headers["x-ratelimit-limit"]).toBe("5");
+		expect(hash).not.toHaveBeenCalled();
+		// Another address isn't held back, and the token was never touched.
+		expect(
+			await claimInstance(db, {
+				token: token(),
+				username: "owner",
+				password: PASSWORD,
+				clientAddress: "198.51.100.3",
+			}),
+		).toEqual({ status: "claimed" });
+	});
+
+	it.each([
+		[
+			"throws",
+			() => {
+				throw new Error("no memory");
+			},
+		],
+		["rejects", () => Promise.reject(new Error("no memory"))],
+	])("frees its hash slot when the hash %s", async (_how, fail) => {
+		const { db, token } = await freshInstance();
+		vi.spyOn(Bun.password, "hash").mockImplementationOnce(fail as typeof Bun.password.hash);
+		expect(
+			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
+		).toEqual({ status: "failed" });
+		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
+		expect(taken.every((release) => typeof release === "function")).toBe(true);
+		for (const release of taken) release?.();
+		// A new token was printed, and claims.
+		expect(
+			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
+		).toEqual({ status: "claimed" });
+	});
+
+	it("skips the limit for a request with no known address", async () => {
+		const { db, token } = await freshInstance();
+		for (let i = 0; i < 6; i++) {
+			const result = await claimInstance(db, { token: token(), username: " ", password: "short" });
+			expect(result.status).toBe("invalid");
+		}
 	});
 });

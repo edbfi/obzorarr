@@ -90,7 +90,9 @@ function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
 
 /**
  * While the claim runs, the button says so and can't be pressed again. A failed claim keeps the
- * username, clears the token and the password, and moves focus to the first field to fix.
+ * username, clears the password, and moves focus to the first field to fix. It clears the token
+ * too, unless the claim was only held back (too many attempts, or the server busy), which leaves
+ * the token unused and worth keeping.
  */
 const submit: SubmitFunction = () => {
 	submitting = true;
@@ -104,10 +106,13 @@ const submit: SubmitFunction = () => {
 		submitting = false;
 		edited = { token: false, username: false, password: false };
 		showPassword = false;
-		if (tokenInput) tokenInput.value = "";
+		const heldBack =
+			result.type === "failure" && (result.data?.busy || result.data?.retryAfterSeconds);
+		if (tokenInput && !heldBack) tokenInput.value = "";
 		if (passwordInput) passwordInput.value = "";
 		await tick();
-		// The first field to fix; after a server failure, the token, which the message asks for.
+		// The first field to fix; otherwise the token: the message asks for it after a server failure,
+		// and a held-back claim kept it.
 		(document.querySelector<HTMLElement>("[aria-invalid='true']") ?? tokenInput)?.focus();
 	};
 };
@@ -338,6 +343,14 @@ const control = css({
 
 			{#if form?.failed}
 				<p class={error} role="alert">{m.setup_failed()}</p>
+			{/if}
+			{#if form?.busy}
+				<p class={error} role="alert">{m.error_server_busy()}</p>
+			{/if}
+			{#if form?.retryAfterSeconds}
+				<p class={error} role="alert">
+					{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
+				</p>
 			{/if}
 
 			<button

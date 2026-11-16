@@ -835,9 +835,13 @@ export const GET: RequestHandler = () => healthResponse();
   printed, renewed, held back during a claim, stopped, never printed once claimed, the gate's
   decision for each path before and after the claim, and a restart after the claim;
   `services/setup/claim.test.ts`, the claim's success, its field errors, wrong and expired tokens
-  that never reach the hash, a second claim, two at once, and a failed transaction printing a new
-  token), `src/routes/setup/token-format.test.ts` (the token field's dashes), `vite.config.test.ts`
-  (SvelteKit's own form check and remote functions are off), and in `src/lib/shared/i18n/`:
+  that never reach the hash, a second claim, two at once, a failed transaction printing a new
+  token, and its limit and a refused hash slot leaving the token unused;
+  `security/hash-slots.test.ts`, the fifth refused and a slot freed once),
+  `src/routes/setup/token-format.test.ts` (the token field's dashes),
+  `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers),
+  `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
+  `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
     language and checks that English formats as `en-GB` and that `formatDateTime` follows the zone
     it is given, not the machine's;
@@ -868,7 +872,8 @@ export const GET: RequestHandler = () => healthResponse();
     same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host
     name that isn't loopback (Chromium's `--host-resolver-rules`), getting the gate's 303 while
     unclaimed; every page sends a fresh server to `/setup` while `/healthz` answers `ok`; a fresh
-    server prints its bootstrap token before it listens, in no log entry or response; and the claim
+    server prints its bootstrap token before it listens, in no log entry or response; the sixth
+    claim from one address within 5 minutes gets the form's 429 with `Retry-After`; and the claim
     refuses a wrong token, keeping the username and clearing the token and password, claims with the
     right one, and answers 404 at `/setup` afterwards, also after a restart, which serves `/`
     without a redirect, with neither the token nor the password in any log entry or response.

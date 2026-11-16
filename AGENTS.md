@@ -285,8 +285,9 @@ state-changing request from another site gets "Access denied". Until it is claim
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
 which creates the owner account. The owner can't sign in yet: module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
-so far, errors and refusals show branded pages, and each client address is limited to 60
-requests a minute, with requests that bypass a configured proxy refused.
+so far, errors and refusals show branded pages, each client address is limited to 60 requests a
+minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
+and password hashing to 4 at once.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -319,7 +320,8 @@ src/
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, the
-                                 client address and the general rate limit, then the setup gate;
+                                 client address (kept in `locals.clientAddress` for the actions'
+                                 own limits) and the general rate limit, then the setup gate;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page
@@ -371,8 +373,9 @@ src/
                                  unclaimed: printed to standard output, renewed every 15 minutes,
                                  held back while a claim is in progress, used up by a claim;
                                  and the gate's decision for a path
-      services/setup/claim.ts    the claim: the fields, then the token, then the hash, then one
-                                 transaction for the owner and the step pointer
+      services/setup/claim.ts    the claim: its limit of 5 per 5 minutes, the fields, a hash slot,
+                                 then the token, then the hash, then one transaction for the
+                                 owner and the step pointer
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -386,6 +389,7 @@ src/
       security/client-address.ts the rate limits' key: IPv4, IPv6 per /64, refused without the
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
+      security/hash-slots.ts     at most 4 password hashes or verifications at once
       security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
                                  requests", with their own policy and Panda's token declarations
                                  inline, or a JSON error

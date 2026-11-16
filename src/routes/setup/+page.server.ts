@@ -13,6 +13,10 @@ export type ClaimFailure = {
 	passwordError?: Invalid["password"];
 	tokenRefused?: boolean;
 	failed?: boolean;
+	/** Too many attempts from this address: how long to wait before trying again. */
+	retryAfterSeconds?: number;
+	/** Every hash slot was busy: try again in a few seconds. */
+	busy?: boolean;
 };
 
 // The claim is first run's first step; once first run is complete it no longer exists (D20).
@@ -21,7 +25,7 @@ export const load: PageServerLoad = () => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals, setHeaders }) => {
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {
@@ -33,6 +37,7 @@ export const actions: Actions = {
 			token: field("token"),
 			username,
 			password: field("password"),
+			clientAddress: locals.clientAddress,
 		});
 		// A failed claim sends back only the typed username: never the token or the password.
 		const failure = (status: number, problem: Omit<ClaimFailure, "username">) =>
@@ -48,6 +53,14 @@ export const actions: Actions = {
 				return failure(400, { tokenRefused: true });
 			case "failed":
 				return failure(500, { failed: true });
+			case "too-many":
+				setHeaders(result.headers);
+				return failure(
+					429,
+					result.reason === "busy"
+						? { busy: true }
+						: { retryAfterSeconds: result.retryAfterSeconds },
+				);
 		}
 	},
 };

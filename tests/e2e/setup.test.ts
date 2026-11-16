@@ -544,6 +544,38 @@ test.describe("the bootstrap token", () => {
 });
 
 test.describe("the claim", () => {
+	test("allows 5 tries per 5 minutes from one address, then shows the wait beside the button", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const tryToClaim = () =>
+				request(`${server.url}/setup`, {
+					method: "POST",
+					headers: {
+						origin: server.url,
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+					},
+					body: new URLSearchParams({
+						token: "aaaa-bbbb-cccc",
+						username: "owner",
+						password: "violet harbour lanterns",
+					}),
+				});
+			for (let i = 0; i < 5; i++) expect((await tryToClaim()).status).toBe(400);
+			const refused = await tryToClaim();
+			expect(refused.status).toBe(429);
+			expect(Number(refused.headers.get("retry-after"))).toBeGreaterThan(0);
+			expect(refused.headers.get("x-ratelimit-limit")).toBe("5");
+			const page = await refused.text();
+			expect(page).toContain("Too many attempts. Try again in 5 minutes.");
+			expect(page).toContain("set ADDRESS_HEADER");
+		} finally {
+			await server.stop();
+		}
+	});
+
 	const PASSWORD = "violet harbour lanterns";
 
 	test("a wrong token is refused, the right one claims, and /setup is then gone, also after a restart", async ({

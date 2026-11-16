@@ -69,7 +69,7 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 
 - [x] Task 1: the error pages
 - [x] Task 2: the client address and the general limit
-- [ ] Task 3: the claim's limit and the hash slots
+- [x] Task 3: the claim's limit and the hash slots
 
 ### Checkpoint: after task 3
 

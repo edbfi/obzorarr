@@ -99,15 +99,15 @@ and uses up the token ("Signing in"). Filling the slots needs a second hashing e
 e2e waits for sign-in (task 7).
 
 **Acceptance criteria:**
-- [ ] `server/security/hash-slots.test.ts` first fails, then passes: the fifth refused at once,
+- [x] `server/security/hash-slots.test.ts` first fails, then passes: the fifth refused at once,
   a slot freed on success and on failure.
-- [ ] `server/services/setup/claim.test.ts` gains: a refused slot leaves the token unused; the
+- [x] `server/services/setup/claim.test.ts` gains: a refused slot leaves the token unused; the
   sixth claim within 5 minutes is refused without touching the token.
-- [ ] `src/routes/setup/page.server.test.ts`: a refused slot and the claim's limit become the
+- [x] `src/routes/setup/page.server.test.ts`: a refused slot and the claim's limit become the
   form's 429 error with `Retry-After`.
-- [ ] `tests/e2e/setup.test.ts`: the sixth claim attempt shows "Too many attempts…" beside the
+- [x] `tests/e2e/setup.test.ts`: the sixth claim attempt shows "Too many attempts…" beside the
   button, with `Retry-After`.
-- [ ] `route-setup.md` gains its too-many-attempts state, built in the claim page.
+- [x] `route-setup.md` gains its too-many-attempts state, built in the claim page.
 
 **Verification:** the gates; the claim page's new state at 360px and 1440px.
 
