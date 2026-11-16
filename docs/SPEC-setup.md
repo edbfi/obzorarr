@@ -105,9 +105,9 @@ log entry. It still reaches the container's output, which is why the console is 
 ## The request checks
 
 `handle` runs the language (`i18n`), the security headers, the cross-origin check, then the setup
-gate; SPEC.md's `sign-in` notes give the stages later modules add. Every refusal is returned, never
-thrown ([SPEC-i18n.md](SPEC-i18n.md#choosing-the-language)), so it keeps the language and the
-headers.
+gate; [SPEC-sign-in.md](SPEC-sign-in.md#the-request-stages) gives the stages later modules add.
+Every refusal is returned, never thrown ([SPEC-i18n.md](SPEC-i18n.md#choosing-the-language)), so it
+keeps the language and the headers.
 
 ### The cross-origin check
 
@@ -210,8 +210,8 @@ reuse:
 
 `setup` is built before `sign-in`, which brings the rest of the protections. Until then:
 - **Rate limits:** none. The token has 62 bits and lasts 15 minutes, and a wrong token costs no
-  hash, so guessing it isn't practical; `sign-in` adds the claim's limit (SPEC.md's `sign-in`
-  notes, "Rate limits").
+  hash, so guessing it isn't practical; `sign-in` adds the claim's limit
+  ([SPEC-sign-in.md](SPEC-sign-in.md#rate-limits-and-failed-sign-ins)).
 - **The browser's address and cookies:** the claim sets no cookie yet, so it needs neither. Once
   `sign-in` starts the owner's session at the claim, the claim needs the browser's address, and the
   session follows `sign-in`'s cookies.

@@ -431,6 +431,26 @@ Why: the owner wants every app on the newest stable release of everything (owner
 frequent updates are cheaper than a backlog of skipped majors, and D25 holds the services the apps
 talk to to the same rule.
 
+### D28. Owner sessions, and slowing failed sign-ins without a lockout
+
+An owner session ends 7 days after it was last used, and never later than 30 days after sign-in,
+with no setting and no "keep me signed in" choice. Failed sign-ins are slowed per client address
+(IPv6 per `/64`): beyond the rate limit, an address that keeps failing waits longer each time, from
+5 minutes up to an hour, until it signs in or stays quiet for 24 hours. There is no account-wide
+lockout. The owner sees no list of sessions, only how many others there are and "Sign out
+everywhere else". [SPEC-sign-in.md](SPEC-sign-in.md) has the details. The same in every edbfi app.
+
+Why: admin work comes in bursts (a few evenings at year end, a sync problem over a weekend), so a
+fixed 7 days would sign the owner out mid-task and, once `two-factor` is on, ask for a code again
+for nothing; 12 or 24 hours would mean signing in on almost every visit. The 30-day end bounds a
+stolen cookie. NIST SP 800-63B-4 asks to disable an account's password after at most 100 failures
+in a row; with one owner, that lets anyone with enough addresses lock the real owner out, and
+getting back in would take recovery (an environment setting and a restart), against PRODUCT.md's
+principle 5. A 15-character password checked against a blocklist already makes guessing hopeless
+at these rates; a reused password falls to one or two tries, which no lockout stops and
+`two-factor` does. Keeping no browser details stores nothing personal for a list one person with a
+few sessions hardly needs. A council of three models agreed on all three.
+
 ## Open
 
 ### D13. Producing the OpenAPI document

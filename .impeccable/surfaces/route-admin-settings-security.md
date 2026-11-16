@@ -1,0 +1,43 @@
+---
+version: 1
+slug: "route-admin-settings-security"
+primary_target: "route:/admin/settings/security"
+related_targets: []
+---
+
+# Obzorarr Security settings and the admin shell
+
+## Status
+
+Proposed brief for review, with no mockup yet. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+
+## Purpose and composition
+
+The one place the owner secures the instance: their password, their other sessions, and later two-factor, the Plex and OIDC links and the address check, each a section. Flat ocean-blue surfaces, no hero art, a settings page within the 672px form width under a tab bar.
+
+**The shell** (PRODUCT.md): a 224px sidebar with the logo and wordmark, then the navigation, which lists only pages that exist (Settings now), and a footer with the owner's username beside an initial (a Plex avatar once linked), linking to this tab; Sign out; the language switcher; and the version as small selectable mono text. From 1024px down the sidebar is a rail; below 768px a drawer behind a menu button in a 64px top bar, which traps focus, closes on Escape and makes the page behind it inert.
+
+## Visual reference
+
+None yet. The shared [design system](../../DESIGN.md); the owner dashboard's mockup (`route-admin.md`) shows the sidebar's look, and the connections mockup (`route-admin-settings-connections.md`) a settings page's.
+
+## Required content
+
+Page heading 'Settings', tab bar with 'Security' (the only tab for now). While `OBZORARR_RECOVERY` is on, a warning at the top: 'Recovery is on. Remove OBZORARR_RECOVERY from the environment and restart Obzorarr.'
+
+- **Password** (`h2`): 'Current password', 'New password' (helper: 'At least 15 characters.'), each with the Show/Hide control; action 'Change password', 'Saving…' while saving. Saved: 'Password changed. Other sessions were signed out.' Too many attempts (it shares sign-in's limit, and a wrong current password counts as a failed sign-in): the sign-in page's message (`route-admin-sign-in.md`).
+- **Sessions** (`h2`): 'Signed in on {count} other browsers' (plural-aware) and the secondary action 'Sign out everywhere else'; done: 'Signed out of {count} other browsers.'; with none: 'No other browser is signed in.' and no button.
+- **Sign out** in the shell's footer opens a dialog: 'Sign out of Obzorarr?', actions 'Cancel' and 'Sign out'.
+
+## Acceptance criteria
+
+- Only the owner sees the shell and this page. Nothing about members, Plex or the server shows here yet.
+- Field errors use the claim's messages for the new password and 'The current password is wrong.' for the current one; the current-password field has `autocomplete="current-password"`, the new one `new-password`.
+- Status and saved messages go to a polite live region; errors to an assertive one. Nothing reports success before the change is stored.
+- The sign-out dialog and the drawer trap focus, close on Escape and restore focus to the control that opened them.
+- Test keyboard focus, visible labels, disabled behavior and 200% zoom; target 360, 390, 768 and 1440px viewports, in English and Danish. Long translated labels wrap without hiding the actions.
+- States: the recovery warning on and off; password initial, field errors, too many attempts, saving, saved; sessions with none, one and several others, signing out, done; the drawer open and closed; the sign-out dialog.
+
+## Handoff prompt
+
+> Implement only this surface and the admin shell in Obzorarr's existing application. Read PRODUCT.md, DESIGN.md, docs/SPEC-sign-in.md and this brief first. Reuse existing Panda CSS tokens and Ark UI's Dialog for the drawer and the confirmation. Keep it quiet: this is an operational screen. Do not add navigation links or tabs for pages that don't exist yet.

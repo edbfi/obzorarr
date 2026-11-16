@@ -4,7 +4,8 @@
 (2026-10-18) and built. The capability map below is approved; module 1, `secrets`
 ([SPEC-secrets.md](SPEC-secrets.md)), and module 2, `i18n` ([SPEC-i18n.md](SPEC-i18n.md)), are
 built, module 3, `recap-spike` ([SPEC-recap-spike.md](SPEC-recap-spike.md)), ran and closed D19
-with the owner's verdict, and module 4, `setup` ([SPEC-setup.md](SPEC-setup.md)), is built.
+with the owner's verdict, module 4, `setup` ([SPEC-setup.md](SPEC-setup.md)), is built, and module
+5, `sign-in` ([SPEC-sign-in.md](SPEC-sign-in.md)), is approved.
 
 ## Objective
 
@@ -19,9 +20,9 @@ job is to make the first module spec cheap to build: every later PR adds behavio
 
 ## Capability map
 
-**Status:** approved by the owner (2026-10-24; shared rows aligned 2026-10-30). Module ids never
-change. Each module gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is
-built.
+**Status:** approved by the owner (2026-10-24; shared rows aligned 2026-10-30; rows 5, 6, 11 and 24
+given the one Security tab with `sign-in`'s spec, 2026-11-16). Module ids never change. Each module
+gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
 [surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
@@ -42,13 +43,13 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 2 | `i18n` | **Built.** The translation groundwork (D21) with Paraglide JS (D22): message files in English and Danish, choosing each request's language, the language switcher, formatting dates and numbers for the viewer's language, and a check that every message exists in both languages | — | the language switcher in each shell |
 | 3 | `recap-spike` | **Built.** The three-slide spike (D19): three slides on the demo fixtures in story mode, with motion, reduced motion and translated text, to settle the recap's design before it was committed. It closed D19 with the owner's verdict, and the verdict PR deleted its code, which becomes product code only through `recap`'s spec | `i18n` | none: `/spike/recap` went with the verdict |
 | 4 | `setup` | **Built.** Startup checks, database and migrations, settings, structured logging with redaction, security headers and CSP (ground-floor choice 3), `ORIGIN` and the cross-origin check (it asks the browser, stores no address and takes `ORIGIN` as an optional override), the setup gate, the bootstrap token, printed to the console and never through the stored logs, and claiming the instance for its one owner, with the owner's password rules and hashing | `secrets`, `i18n` | first-run setup (brief: `/setup`, the claim) |
-| 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (no brief yet); the admin shell; `/admin/settings`, which it builds first with the Security tab; later modules add their tabs; the password section of the owner's account settings |
-| 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; the owner's account settings (no brief yet); the reminder in the admin shell |
+| 5 | `sign-in` | Owner sign-in with username and password, signing the new owner in at the claim (D20), sessions, sign-out (POST only), rate limits, app-named cookies that work over plain HTTP at home and behind an HTTPS proxy, password change, error pages, recovery (D20), and the admin shell. obzorarr adds the scanner filter | `setup` | owner sign-in (brief: `/admin/sign-in`); recovery (brief: `/recovery`); the admin shell; `/admin/settings`, which it builds first with the Security tab (brief: `/admin/settings/security`), where the owner changes the password; later modules add their tabs, and their sections to the Security tab |
+| 6 | `two-factor` | Optional but strongly recommended (D20): authenticator codes, backup codes and the challenge after every way the owner signs in (except the optional OIDC skip, D20), with replay protection and a limit on failed attempts. Recovery turns it off. Adds the offer to first-run setup, right after the owner account is created and before any connection step, and the reminder in the admin shell while it is off | `sign-in` | the two-factor offer in first-run setup; its section of the Security tab; the reminder in the admin shell |
 | 7 | `public-address` | The public-address check, which only diagnoses: comparing the address the browser uses with the `Host` the app receives, `ORIGIN` when set and the forwarded address, classifying the forwarded headers and the source address, suggesting `ORIGIN=<address>` or the proxy line `proxy_set_header Host $http_host`, and the header recipes for common reverse proxies. It never blocks and saves nothing, and its suggestion also shows on the claim and owner sign-in pages, so someone without a session can recover | `sign-in` | its first-run step; a section of the Security tab; its hint on the claim and owner sign-in pages |
 | 8 | `plex-connection` | The Plex provider (D12, D18), SSRF-safe outbound HTTP (D8), and connecting the server: picking one of the owner's servers through a one-time Plex sign-in, or a URL and token; sorted connections; plain HTTP only for private hosts by opt-in; test and save; environment locks on settings and the per-group versions that catch a save from a stale tab; accepted only when the token belongs to the server's owner (D20). Changing the URL or token advances the authority epoch | `sign-in` | its first-run step; `/admin/settings/connections` (the Plex form) |
 | 9 | `identity` | Identity reconciliation: the all-or-nothing mapping from server-local accounts to Plex accounts, its proof record, the 24-hour freshness and the authority epoch | `plex-connection` | — |
 | 10 | `sync` | History sync: the three modes, a watermark that survives empty runs, enrichment with a retry window for failed lookups, the single running slot, claimed atomically by the start itself so a lost race shows at once, cancel, the admin and member progress streams, live sync when a recap opens, and the schedule with pause, resume and the instance time zone (D24), with every start visible and cancellable. Adds the first-run sync and time zone steps | `identity` | its first-run steps; `/admin/sync` (no brief yet); the time zone in the System tab |
-| 11 | `plex-sign-in` | Sign in with Plex. For members: PIN sign-in in a popup or by redirect, safe return paths, the membership check against a fresh mapping, revalidation with its grace window, member sessions and sign-out. For the owner: linking their Plex account in the account settings, after which Plex signs them in as the owner, through two-factor when it is on. Unlinked, the server owner's Plex account gets a member session (D20) | `two-factor`, `identity` | the sign-in flow and its popup page; the Plex section of the owner's account settings |
+| 11 | `plex-sign-in` | Sign in with Plex. For members: PIN sign-in in a popup or by redirect, safe return paths, the membership check against a fresh mapping, revalidation with its grace window, member sessions and sign-out. For the owner: linking their Plex account in the Security tab, after which Plex signs them in as the owner, through two-factor when it is on. Unlinked, the server owner's Plex account gets a member session (D20) | `two-factor`, `identity` | the sign-in flow and its popup page; the Plex section of the Security tab |
 | 12 | `stats` | The statistics engine: every calculator with its tie-breaks and determinism, runtime totals (D23), years and buckets in the instance time zone (D24), top movies and top shows grouped by key rather than title, series completion marked unknown when the lookup fails, and the per account-year cache with its invalidation | `sync` | — |
 | 13 | `sharing` | Share modes and the privacy floor, user control, slugs and per-year private-link tokens, identifier resolution with the uniform not-found, the names mode with hybrid comparing the same identity, and the member's sharing page | `plex-sign-in` | `/sharing` |
 | 14 | `recap` | The Wrapped experience, built on the spike's outcome: the slide catalogue with its empty states, story and scroll modes sharing one position and both ending with the summary, the summary's five layouts and the three motion levels (D19), year navigation, the voice rules, the logo mode, the artwork proxy with signed URLs, and the server recap with top viewers | `recap-spike`, `stats`, `sharing` | `/wrapped/[year]/[id]` (brief: `/wrapped/2025/me`); the server recap (no brief yet) |
@@ -61,7 +62,7 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 21 | `users-admin` | The per-year users table: watch time, effective share mode, the per-user control toggle and each recap's link. No delete, ban or roles | `sharing`, `stats` | `/admin/users` (no brief yet) |
 | 22 | `logs` | Stored log entries, the logs page with filters that match on the server, the live view, export, the retention job and the log settings | `sign-in` | `/admin/logs` (no brief yet); the log settings in the System tab |
 | 23 | `data-admin` | Clearing cached statistics and play history per year or wholesale, offering to reset the watermark, and the instance reset, which returns to the claim with a new token | `sync`, `stats` | the Data tab of `/admin/settings` (no brief yet) |
-| 24 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D20) | `two-factor` | the owner's account settings; its button on owner sign-in |
+| 24 | `oidc-sign-in` | Connecting one OpenID Connect provider (Authentik, Authelia, Pocket ID, Tinyauth and others) by its issuer, client id and secret, and linking the owner's account to it, after which it signs them in as the owner, and offering to skip `two-factor` when the provider's `amr` claim reports its own second factor (D20) | `two-factor` | its section of the Security tab; its button on owner sign-in |
 | 25 | `overview` | The owner dashboard and the Wrapped hub: viewers, hours, plays and records for a year, the sync card, the yearly activity chart, the owner's own recap (only when it has plays) and the server recap, and quick links | `sync`, `stats`, `recap` | `/admin`; the Wrapped hub (no brief yet) |
 
 Build order: `secrets` → `i18n` → `recap-spike` → `setup` → `sign-in` → `two-factor` →
@@ -89,8 +90,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
 | `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`, `security/cross-origin.ts`, `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the cross-origin check, the setup gate and the headers in `hooks.server.ts` |
-| `sign-in` | `services/sign-in/` (sessions and their storage, recovery), `db/` session schema, `security/` (session-token hashing, the in-memory rate limiter, scanner filter); the sign-in at the claim in `routes/setup/`, `routes/(admin)/` layout and sign-in page, `routes/(admin)/admin/settings/`, `lib/components/layout/` |
-| `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the owner's account settings, and the reminder in `lib/components/layout/` |
+| `sign-in` | `services/sign-in/` (sessions, signing in, the password change, recovery), `db/owner-session.ts`, `config/recovery.ts`, `security/` (the session token and cookie, the browser's and client's addresses, the in-memory rate limits, failed sign-ins, the return path, the refusal pages, the scanner filter); the sign-in at the claim in `routes/setup/`, `routes/recovery/`, `routes/(admin)/admin/` (the sign-in and sign-out routes, the shell's layout and `settings/security/`), `routes/+error.svelte`, `lib/components/layout/` (the shell) and `lib/components/credentials/` (the credential fields the claim shares) |
+| `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the Security tab, and the reminder in `lib/components/layout/` |
 | `public-address` | `services/public-address/`; its first-run step, its section of the Security tab and its hint on the claim and owner sign-in pages |
 | `plex-connection` | `providers/plex/`, `http/`, `services/connections/plex.ts`, `services/settings/` (environment locks and settings versions); `routes/(admin)/admin/settings/connections/` |
 | `identity` | `services/identity/`, `db/` account-mapping schema |
@@ -113,12 +114,8 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Open decisions each module closes
 
-- `sign-in`: how long an owner session lasts.
-- `sign-in`: how repeated failed sign-ins are slowed beyond the rate limits (backoff, or a lockout
-  where the app's approved docs allow one). The password rules are `setup`'s, since the claim sets
-  the first password ([SPEC-setup.md](SPEC-setup.md#first-run)).
-- The first module with a background job closes D14, the job lifecycle: `sign-in` if its session
-  cleanup is a job, otherwise `sync`.
+- `sync` closes D14, the job lifecycle, with the first background job: `sign-in` has none
+  ([SPEC-sign-in.md](SPEC-sign-in.md#sessions)).
 - `plex-connection`: D18, including the watched-time question (D23) and the history and mapping
   checks that `identity` and `sync` rely on.
 - D13: the first JSON endpoint called from the browser (`sync`'s progress stream or
@@ -150,12 +147,11 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 
 ### Surfaces with no brief yet
 
-First-run setup's steps after the claim, owner sign-in, the owner's account settings, the server
-recap, the Wrapped hub, `/admin/sync`, `/admin/users`, `/admin/logs` and the Security, Data and
-System tabs of `/admin/settings` are needed (the capability map, the Module notes or PRODUCT.md's
-admin shell describe them) but have no brief. The landing brief's signed-out navigation has only
-Obzorarr, Help and the language switcher, so it needs a way to owner sign-in. Each gets its brief
-before its module is specced.
+First-run setup's steps after the claim, the server recap, the Wrapped hub, `/admin/sync`,
+`/admin/users`, `/admin/logs` and the Data and System tabs of `/admin/settings` are needed (the
+capability map, the Module notes or PRODUCT.md's admin shell describe them) but have no brief. The
+landing brief's signed-out navigation has only Obzorarr, Help and the language switcher, so it needs
+a way to owner sign-in. Each gets its brief before its module is specced.
 
 ### Module notes
 
@@ -164,78 +160,9 @@ app and adapted to the decisions. It is behaviour to keep unless the module's ap
 decision changes it. Layout, placement, visuals and exact wording are not behaviour: where a note
 describes them, DESIGN.md and the surface's brief win, and for a surface with no brief yet the note
 is only a starting point for that brief. Each block moves into its module's `SPEC-<id>.md` when that
-module is specced (`setup`'s is in [SPEC-setup.md](SPEC-setup.md)). Rate limits are listed once,
-under `sign-in`. `sign-in` is shared with the other edbfi apps (D20): a bullet or clause marked
-"(obzorarr)" is this app's own, and the rest is the shared wording; a "(obzorarr)" mark inside a
-bullet covers the rest of that bullet, and "(obzorarr: …)" only its own parentheses. Decision
-numbers in these blocks are obzorarr's; each app cites its own.
-
-#### sign-in
-
-- **Request order** (startup has already finished in SvelteKit's `init` hook): the language (`i18n`,
-  which refuses nothing), the cross-origin check (`setup`), (obzorarr: the scanner filter), rate
-  limits, sign-in, the setup gate (`setup`), then the owner check. Security headers go on every
-  response, an early return from any stage included.
-- **Owner-only pages** send someone who isn't signed in to owner sign-in, with a return path that
-  keeps only the path, never the query string; where the app has member sessions, a signed-in member
-  goes to their dashboard. An owner-only form action answers "forbidden"; a member's form action
-  without a session answers "unauthenticated" rather than failing.
-- **Return paths** are same-origin paths only: one leading slash, no backslashes or control
-  characters, at most 2,048 characters. Only the path is kept.
-- **Rate limits** apply per client address. The client address comes from the connection, or from a
-  header and a proxy depth (default 1) set in the environment. Responses carry `Retry-After` and
-  remaining and reset headers, and come as a form error, a JSON error or a branded page, whichever
-  the caller expects. (obzorarr) A fixed window, kept in the process (one process, D17): 60 a minute
-  by default; signing in 10 per 5 minutes; the claim 5 per 5 minutes; JSON endpoints 30 a minute;
-  Plex sign-in's polling 60 a minute and its redirect 30 a minute; the landing page 30 a minute and
-  its lookup 10 a minute; and the public-address check 12 a minute. When no address can be found,
-  limits are skipped with a one-time warning, favouring availability.
-- **The browser's address** is `ORIGIN` when it is set, and otherwise the validated `Origin` of the
-  POST that passed the cross-origin check. It decides the cookies' `Secure` flag, the OIDC
-  `redirect_uri` and, where the app has Plex sign-in, Plex's forward URL. Every POST that sets or
-  deletes a cookie needs it, such as the claim, sign-in, the two-factor challenge, recovery,
-  sign-out and the start of OIDC sign-in (and of Plex sign-in, where the app has it): when a
-  browser stripped `Origin`, they get a 403 that says so (the "Access denied" page, or a JSON
-  error for JSON callers). OIDC sign-in (and Plex sign-in, where the app has it) keeps the address
-  in the flow's state. The OIDC callback address is saved when the owner configures OIDC, and must
-  match. Links shown on GET pages for copying, such as the OIDC callback to register (obzorarr: and
-  recap share links), are built in the browser from the address the user is on, or from `ORIGIN`
-  when it is set. App code never uses `event.url.origin` or `event.url.protocol` for security,
-  cookies or rendered URLs, which a test that searches the code enforces, and redirects stay
-  relative.
-- **The address hint:** when `ORIGIN` is set and doesn't match the address the browser is on, or
-  when `ORIGIN` is unset and that address's host and port don't match the `Host` header, the claim
-  and owner sign-in pages suggest setting `ORIGIN=<that address>` (or removing a wrong `ORIGIN`) or
-  adding the proxy line `proxy_set_header Host $http_host`, so someone without a session can
-  recover. (obzorarr) `public-address` adds it, with the check behind it.
-- **Forwarded headers:** a forwarded protocol must be `http` or `https`, and a forwarded host with
-  whitespace, control characters or URL-structural characters is rejected; forwarded headers never
-  set the browser's address or change the strict-transport decision. (obzorarr) Only the last proxy
-  hop is trusted, and the owner's reverse proxy only as far as the client-address header and proxy
-  depth in the environment say (the rate limits).
-- **Cookies:** session cookies are named after the app (obzorarr: `obzorarr_session` for the owner
-  session), because cookies ignore ports and apps on one address would otherwise sign each other
-  out. They are host-only, `HttpOnly` and `SameSite=Lax`. Every cookie is `Secure` exactly when the
-  browser's address is `https`, so a plain-HTTP install at home still works. Every cookie write and
-  deletion sets `secure` explicitly (SvelteKit's default is `Secure` on every host but `localhost`),
-  and a deletion whose scheme isn't known uses `secure: false`, which works over HTTP and HTTPS.
-- **A wrong address never locks the owner out.** No stored address can stop password sign-in: a
-  wrong `ORIGIN` is fixed or removed, then the app restarts. The OIDC callback address is stored,
-  so OIDC may need registering again after a move, but password sign-in always remains (D20).
-- **Errors:** an unexpected error is logged and the user sees "Something went wrong. Try again.";
-  expected errors pass through; network failures map to fixed phrases; stack traces never reach the
-  browser. Error pages are titled "Page not found", "Access denied", "Too many requests" or
-  "Something went wrong", each with a one-line description and Go back and Home actions; a
-  not-found page doesn't show the status number.
-- **Sign-out** is POST only, behind a confirmation; a GET only redirects, so an image tag or a
-  prefetch can't sign anyone out.
-- **The scanner filter** (obzorarr) answers well-known probe paths (environment files,
-  version-control folders, blog and database-admin tools, framework consoles, script gateways) with
-  a quiet "not found", and known scanner user agents with "forbidden".
-- **The admin shell** (obzorarr): PRODUCT.md's sidebar, and a footer with the signed-in owner (their
-  avatar once linked), sign-out behind a confirmation and the version as selectable text (a release,
-  a nightly build with its short hash, or a dev tag). On phones the sidebar is a drawer that traps
-  focus, closes on Escape and makes the page behind it inert.
+module is specced (`setup`'s is in [SPEC-setup.md](SPEC-setup.md), `sign-in`'s in
+[SPEC-sign-in.md](SPEC-sign-in.md), which also lists every rate limit once). Decision numbers in
+these blocks are obzorarr's.
 
 #### public-address
 
