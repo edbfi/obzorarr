@@ -162,7 +162,8 @@ function withHeaderAppended(response: Response, name: string, value: string): Re
 /**
  * A 303 a stage answers itself: for a data request, SvelteKit's own JSON redirect, built here
  * rather than left to SvelteKit, which would build it after `handle` and so without the security
- * headers. Neither is cached.
+ * headers. Neither is cached. The JSON lacks SvelteKit's `x-sveltekit-version` header, so the
+ * client skips its new-deployment check for that one answer, which is harmless.
  */
 function redirectFromHandle(event: RequestEvent, location: string): Response {
 	if (event.isDataRequest) {
@@ -179,7 +180,8 @@ function redirectFromHandle(event: RequestEvent, location: string): Response {
 
 /**
  * The setup gate: until first run is complete, every request but its current step
- * and `/healthz` gets a 303 to that step, returned so it keeps the headers.
+ * and `/healthz` is sent to that step, a data request through SvelteKit's JSON redirect; the
+ * answer is returned, so it keeps the headers.
  */
 const setupGate: Handle = ({ event, resolve }) => {
 	const step = firstRunRedirect(event.url.pathname);

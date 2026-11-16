@@ -398,6 +398,13 @@ test.describe("the setup gate", () => {
 				expect(response.status, label).toBe(303);
 				expect(response.headers.get("location"), label).toBe("/setup");
 			}
+			// A client-side navigation's data request gets SvelteKit's JSON redirect, with the
+			// security headers.
+			const data = await request(`${server.url}/__data.json`);
+			expect(data.status).toBe(200);
+			expect(data.headers.get("cache-control")).toBe("private, no-store");
+			expect(data.headers.get("x-frame-options")).toBe("DENY");
+			expect(await data.json()).toEqual({ type: "redirect", status: 303, location: "/setup" });
 			expect((await request(`${server.url}/setup`)).status).toBe(200);
 			const health = await request(`${server.url}/healthz`);
 			expect(health.status).toBe(200);

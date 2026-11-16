@@ -893,7 +893,8 @@ export const GET: RequestHandler = () => healthResponse();
     "Access denied" page with the headers, its own policy and the viewer's language; and a
     same-origin POST with no `Sec-Fetch-*` headers passes, on `localhost` and on a plain-HTTP host
     name that isn't loopback (Chromium's `--host-resolver-rules`), getting the gate's 303 while
-    unclaimed; every page sends a fresh server to `/setup` while `/healthz` answers `ok`; a fresh
+    unclaimed; every page sends a fresh server to `/setup`, a data request through SvelteKit's
+    JSON redirect with the security headers, while `/healthz` answers `ok`; a fresh
     server prints its bootstrap token before it listens, in no log entry or response; the sixth
     claim from one address within 5 minutes gets the form's 429 with `Retry-After`; a claim with
     `Origin` stripped gets the 403 that says so, in Danish too and as JSON to an enhanced form, and

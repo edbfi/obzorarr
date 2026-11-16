@@ -516,6 +516,8 @@ test.describe("the owner check", () => {
 				}),
 			};
 			expect(answers.page.status).toBe(303);
+			expect(answers.data.status).toBe(200);
+			expect(answers.data.headers.get("cache-control")).toBe("private, no-store");
 			expect(await answers.data.json()).toMatchObject({ type: "redirect" });
 			expect(answers.post.status).toBe(403);
 			for (const [name, answer] of Object.entries(answers)) {
