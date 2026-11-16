@@ -32,6 +32,22 @@ describe("clientAddressReader", () => {
 		});
 	});
 
+	it("keys an IPv4-mapped IPv6 address as its IPv4 however it is written, apart from others", () => {
+		const { read } = reader();
+		for (const address of [
+			"::ffff:192.0.2.20",
+			"::FFFF:c000:214",
+			"0:0:0:0:0:ffff:192.0.2.20",
+			"0000:0000:0000:0000:0000:ffff:c000:0214",
+		]) {
+			expect(read(gives(address), request())).toEqual({ kind: "known", key: "192.0.2.20" });
+		}
+		expect(read(gives("::ffff:c000:215"), request())).toEqual({
+			kind: "known",
+			key: "192.0.2.21",
+		});
+	});
+
 	it("keys an IPv6 address by its /64, however it is written", () => {
 		const { read } = reader();
 		const key = "2001:db8:aa:bb::/64";

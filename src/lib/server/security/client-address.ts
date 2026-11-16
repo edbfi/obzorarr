@@ -70,9 +70,12 @@ function addressKey(raw: string): string | undefined {
 		.replace(/%.*$/, "");
 	if (isIPv4(address)) return address;
 	if (!isIPv6(address)) return undefined;
-	const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(address);
-	if (mapped?.[1] !== undefined && isIPv4(mapped[1])) return mapped[1];
 	const groups = hextets(address);
+	// IPv4-mapped (`::ffff:0:0/96`), in any spelling: the IPv4 address in its last 32 bits.
+	if (groups.slice(0, 5).every((group) => group === "0") && groups[5] === "ffff") {
+		const [high = 0, low = 0] = groups.slice(6).map((group) => Number.parseInt(group, 16));
+		return [high >> 8, high & 255, low >> 8, low & 255].join(".");
+	}
 	return `${groups.slice(0, 4).join(":")}::/64`;
 }
 

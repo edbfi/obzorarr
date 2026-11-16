@@ -3,6 +3,7 @@ import * as m from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import tokenDeclarations from "#styled-system/styles/tokens.css?raw";
 import { token } from "#styled-system/tokens";
+import { type RateLimitDecision, rateLimitHeaders } from "./rate-limit.ts";
 
 /**
  * The pages' own policy: they are built here and never pass through SvelteKit's renderer, so
@@ -35,16 +36,16 @@ export function accessDenied(
 }
 
 /**
- * The 429 for a request over its limit, with the seconds until it may try again in
- * `Retry-After`: the "Too many requests" page, or a JSON error for a caller that wants JSON.
+ * The 429 for a request over its limit, with when to try again and the limit it ran into in its
+ * headers: the "Too many requests" page, or a JSON error for a caller that wants JSON.
  */
-export function tooManyRequests(request: Request, retryAfterSeconds: number): Response {
+export function tooManyRequests(request: Request, decision: RateLimitDecision): Response {
 	return refusal(
 		request,
 		429,
 		m.error_too_many_requests_title(),
 		m.error_too_many_requests_description(),
-		{ "retry-after": String(retryAfterSeconds) },
+		rateLimitHeaders(decision),
 	);
 }
 

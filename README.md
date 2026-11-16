@@ -142,11 +142,13 @@ in; otherwise every visitor shares the proxy's address and its limits:
 | `ADDRESS_HEADER` | the header with the visitor's address, such as `x-forwarded-for` or `x-real-ip` | unset: the connection's address |
 | `XFF_DEPTH` | with `x-forwarded-for`, how many proxies sit in front of Obzorarr, counted from the right | `1` |
 
-With `ADDRESS_HEADER` set, Obzorarr refuses any request that doesn't carry it with "Access
-denied", since that request didn't come through the proxy; `/healthz` still answers, so a
-container health check keeps working. Make the port reachable only through the proxy: anyone who
-reaches it directly can put any address in the header. When the header arrives while
-`ADDRESS_HEADER` is unset, Obzorarr writes a warning to its logs.
+With `ADDRESS_HEADER` set, Obzorarr refuses any request that doesn't carry it, or carries fewer
+addresses than `XFF_DEPTH` or something that isn't an address, with "Access denied", since that
+request didn't come through the proxy (so a `XFF_DEPTH` higher than your number of proxies turns
+every visitor away); `/healthz` still answers, so a container health check keeps working. Make the
+port reachable only through the proxy: anyone who reaches it directly can put any address in the
+header. When the header arrives while `ADDRESS_HEADER` is unset, Obzorarr writes a warning to its
+logs.
 
 ## First run
 

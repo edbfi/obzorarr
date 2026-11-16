@@ -11,7 +11,7 @@ import { logRequestError } from "#lib/server/logging/request-error.ts";
 import { clientAddressReader } from "#lib/server/security/client-address.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
-import { createRateLimiter, rateLimitHeaders } from "#lib/server/security/rate-limit.ts";
+import { createRateLimiter } from "#lib/server/security/rate-limit.ts";
 import { accessDenied, tooManyRequests } from "#lib/server/security/refusal-page.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import {
@@ -109,12 +109,7 @@ const rateLimits: Handle = ({ event, resolve }) => {
 	if (address.kind === "refused") return accessDenied(event.request, "not-through-proxy");
 	if (address.kind === "unknown") return resolve(event);
 	const decision = generalLimit.hit(address.key);
-	if (decision.allowed) return resolve(event);
-	const refusal = tooManyRequests(event.request, decision.retryAfterSeconds);
-	for (const [name, value] of Object.entries(rateLimitHeaders(decision))) {
-		refusal.headers.set(name, value);
-	}
-	return refusal;
+	return decision.allowed ? resolve(event) : tooManyRequests(event.request, decision);
 };
 
 /**
