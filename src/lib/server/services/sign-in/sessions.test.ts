@@ -156,6 +156,7 @@ describe("countOtherSessions and endOtherSessions", () => {
 		expect(await countOtherSessions(db, mine.token, end)).toBe(0);
 	});
 
+	// One step after the other is the real order: the database's transactions never interleave.
 	it("end nothing for a caller whose own session ended, as one a password change replaced", async () => {
 		const stale = await started();
 		const replacement = await started();

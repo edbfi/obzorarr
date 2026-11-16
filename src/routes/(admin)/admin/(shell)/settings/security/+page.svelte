@@ -14,6 +14,7 @@ import type { PageProps, SubmitFunction } from "./$types";
  */
 let { data, form }: PageProps = $props();
 
+// While either action runs, both buttons wait: a change and a sign-out from one tab never race.
 let saving = $state(false);
 let signingOut = $state(false);
 let showCurrent = $state(false);
@@ -170,7 +171,7 @@ const button = css({
 
 				<button
 					type="submit"
-					disabled={saving}
+					disabled={saving || signingOut}
 					class={[
 						button,
 						css({
@@ -203,7 +204,7 @@ const button = css({
 				<form method="post" action="?/sessions" use:enhance={signOutElsewhere}>
 					<button
 						type="submit"
-						disabled={signingOut}
+						disabled={signingOut || saving}
 						class={[
 							button,
 							css({
