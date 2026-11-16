@@ -91,8 +91,8 @@ it comes.
 
 **Redaction** runs before an entry is written:
 - credentials in URLs, and token-like query parameters, also inside a parameter's value once
-  percent-decoded (up to three times), as in Plex's transcoder `url`; such a value is redacted
-  whole;
+  percent-decoded (up to three times), as in Plex's transcoder `url`, however deep in it the
+  credential's name sits (`?a=1;u=token%3D…`, `?u=v%3Dtoken%3D…`); such a value is redacted whole;
 - token, authorisation and cookie fields in payloads and headers;
 - at any depth, any metadata key that looks like a token, secret, password, cookie, session or key,
   except the few names `redact.ts` lists as holding no credential, such as Plex's `ratingKey` (the

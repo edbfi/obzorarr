@@ -112,6 +112,23 @@ describe("redact", () => {
 			expect(redact("/r?u=%FF%3Ftoken%3Dabc")).toBe(`/r?u=${R}`);
 			// A bare query string, whose first parameter has no separator before it.
 			expect(redact("/r?u=token%3Dabc%26x%3D1&y=2")).toBe(`/r?u=${R}&y=2`);
+			// A parameter behind a semicolon, whose own value starts with the credential.
+			expect(redact("/r?a=1;u=token%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
+			expect(redact("/r?a=1;b=2;u=token%3Dabc")).toBe(`/r?a=${R}`);
+			// A value that is itself a chain of assignments.
+			expect(redact("/r?a=1;u=v%3Dtoken%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
+			expect(redact("/r?u=v%3Dw%3Dx%3Dpassword%3Dabc&y=2")).toBe(`/r?u=${R}&y=2`);
+			// A chain whose credential is encoded once more.
+			expect(redact("/r?a=1;u=v%3Dtoken%253Dabc")).toBe(`/r?a=${R}`);
+		});
+
+		it("still finds a hash or a URL's password encoded in a value, behind a semicolon too", () => {
+			const hash = "$argon2id$v=19$m=65536,t=3,p=4$c2FsdHNhbHQ$aGFzaGhhc2hoYXNo";
+			for (const hidden of [hash, hash.replace("$v=19", ""), "https://a;b=c:pw@host/"]) {
+				const encoded = encodeURIComponent(hidden);
+				expect(redact(`/r?u=${encoded}`)).toBe(`/r?u=${R}`);
+				expect(redact(`/r?u=1%3B${encoded}&y=2`)).toBe(`/r?u=${R}&y=2`);
+			}
 		});
 
 		it("keeps an encoded value that hides nothing", () => {
@@ -119,6 +136,10 @@ describe("redact", () => {
 				"/login?next=%2Flibrary%3Ftype%3D1&lang=da",
 			);
 			expect(redact("/search?q=100%25%20sure%")).toBe("/search?q=100%25%20sure%");
+			// A chained value in base64, whose padding is a run of `=`.
+			expect(redact("/login?next=%2Fa%3Fid%3DYWJjZA%3D%3D")).toBe(
+				"/login?next=%2Fa%3Fid%3DYWJjZA%3D%3D",
+			);
 		});
 
 		it("leaves a text without URLs as it is", () => {
