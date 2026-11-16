@@ -229,6 +229,10 @@ doubles the wait, up to an hour. A success from that address, or 24 hours withou
 resets its count. Each wait is logged at warn with the address, so an owner whose proxy hides
 every visitor behind one address can see it, and the form's message says how to fix that (the
 README says it too): set `ADDRESS_HEADER`. The waits live in memory, so a restart clears them.
+Only a request whose password was checked can fail: one the limit, a wait or a busy hash slot
+refuses never counts, so retrying during a wait can't make it longer. Every request counts towards
+the limit, one a wait refuses too, and when both refuse, the answer is whichever ends later, so it
+never says to try again before the address may.
 
 **A refused request** gets `Retry-After` and `X-RateLimit-Limit`, `X-RateLimit-Remaining` and
 `X-RateLimit-Reset`. An action's refusal is a form error beside the submit button (`fail(429)`,

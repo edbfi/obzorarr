@@ -17,7 +17,7 @@ let passwordInput = $state<HTMLInputElement>();
 /**
  * While signing in, the button says so and can't be pressed again. A wrong username or password
  * keeps the username, clears the password and moves focus to it, the field to type again; a busy
- * server checked nothing, so the password stays.
+ * server, too many attempts or a wait checked nothing, so the password stays.
  */
 const submit: SubmitFunction = () => {
 	submitting = true;
@@ -28,7 +28,7 @@ const submit: SubmitFunction = () => {
 		}
 		await update({ reset: false });
 		submitting = false;
-		if (result.type === "failure" && result.data?.busy) return;
+		if (result.type === "failure" && !result.data?.wrong) return;
 		showPassword = false;
 		if (passwordInput) passwordInput.value = "";
 		await tick();
@@ -107,6 +107,11 @@ const code = css({ fontFamily: "mono", fontSize: "code", overflowWrap: "anywhere
 		{/if}
 		{#if form?.busy}
 			<p class={error} role="alert">{m.error_server_busy()}</p>
+		{/if}
+		{#if form?.retryAfterSeconds}
+			<p class={error} role="alert">
+				{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
+			</p>
 		{/if}
 
 		<button

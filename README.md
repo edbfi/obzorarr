@@ -133,9 +133,12 @@ before 90, Chrome before 76), since current browsers say where a request came fr
 
 ### Behind a reverse proxy: the client's address
 
-Obzorarr limits how many requests each visitor's address may make. Behind a reverse proxy, every
-request arrives from the proxy, so tell Obzorarr which header the proxy puts the visitor's address
-in; otherwise every visitor shares the proxy's address and its limits:
+Obzorarr limits how many requests each visitor's address may make, and makes an address wait
+after 10 failed sign-ins in a row: 5 minutes, doubling with each further 10, up to an hour. Behind
+a reverse proxy, every request arrives from the proxy, so tell Obzorarr which header the proxy puts
+the visitor's address in; otherwise every visitor shares the proxy's address, its limits and its
+waits, and one visitor's failed sign-ins make everyone wait. A wait is written to the logs with the
+address it applies to; if that is always your proxy's address, set `ADDRESS_HEADER`:
 
 | Variable | Holds | Default |
 | --- | --- | --- |

@@ -82,14 +82,14 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 
 - [x] Task 4: the browser's address at the claim
 - [x] Task 5: sessions, started at the claim
-- [ ] Task 6: the claim lands in the admin
-- [ ] Task 7: owner sign-in
-- [ ] Task 8: the owner check
-- [ ] Task 9: the sign-in limit and the waits
+- [x] Task 6: the claim lands in the admin
+- [x] Task 7: owner sign-in
+- [x] Task 8: the owner check
+- [x] Task 9: the sign-in limit and the waits
 
 ### Checkpoint: after task 9
 
-- [ ] On a fresh built server over plain HTTP, the claim signs in with the right cookie; an
+- [x] On a fresh built server over plain HTTP, the claim signs in with the right cookie; an
   owner-only page sends a signed-out browser to sign in and back; repeated failures wait.
 
 ### Phase 3: the admin

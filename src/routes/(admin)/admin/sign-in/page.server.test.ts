@@ -103,6 +103,20 @@ describe("the sign-in action", () => {
 		expect(setHeaders).toHaveBeenCalledWith(headers);
 	});
 
+	it("shows the wait for a limit or a wait after failed sign-ins, with its headers", async () => {
+		for (const reason of ["limit", "wait"]) {
+			const headers = { "retry-after": "240", "x-ratelimit-limit": "10" };
+			signIn.mockResolvedValue({ status: "too-many", reason, retryAfterSeconds: 240, headers });
+			const { outcome, setHeaders } = await post();
+			expect(outcome, reason).toMatchObject({
+				status: 429,
+				data: { username: "owner", retryAfterSeconds: 240 },
+			});
+			expect((outcome as { data: object }).data).not.toHaveProperty("busy");
+			expect(setHeaders, reason).toHaveBeenCalledWith(headers);
+		}
+	});
+
 	it("refuses a browser that didn't say which address it is on, before checking anything", async () => {
 		const { outcome } = await post({ origin: null });
 		expect(isHttpError(outcome, 403)).toBe(true);

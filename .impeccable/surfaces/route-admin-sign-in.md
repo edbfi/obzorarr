@@ -49,4 +49,4 @@ FIRST VIEWPORT: header with logo, wordmark and language switcher across the form
 
 FORM: seed: none (pinned) "one quiet, centred form within the 672px form width, the claim's sibling".
 
-FINISH: checked at 360, 390, 768 and 1440px and at 200% zoom, by keyboard and with reduced motion (the disclosure's chevron turns at once), in English and Danish, in the initial, wrong credentials, busy and submitting states; too many attempts arrives with `sign-in`'s task 9.
+FINISH: checked at 360, 390, 768 and 1440px and at 200% zoom, by keyboard and with reduced motion (the disclosure's chevron turns at once), in English and Danish, in the initial, wrong credentials, busy, too many attempts and submitting states.

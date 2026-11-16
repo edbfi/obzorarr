@@ -14,6 +14,8 @@ export type SignInFailure = {
 	wrong?: boolean;
 	/** Every hash slot was busy: try again in a few seconds. */
 	busy?: boolean;
+	/** Too many attempts from this address, or its wait after failed sign-ins: how long it lasts. */
+	retryAfterSeconds?: number;
 };
 
 /** The sign-in page and its answers are never cached (SPEC-sign-in.md, "Owner-only pages"). */
@@ -56,7 +58,12 @@ export const actions: Actions = {
 				return fail<SignInFailure>(400, { username, wrong: true });
 			case "too-many":
 				setHeaders(result.headers);
-				return fail<SignInFailure>(429, { username, busy: true });
+				return fail<SignInFailure>(
+					429,
+					result.reason === "busy"
+						? { username, busy: true }
+						: { username, retryAfterSeconds: result.retryAfterSeconds },
+				);
 		}
 	},
 };

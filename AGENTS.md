@@ -289,8 +289,9 @@ so far, errors and refusals show branded pages, each client address is limited t
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
 on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
-far; and the owner signs in at `/admin/sign-in`, linked from `/`. Everything else under `/admin`
-needs the owner's session.
+far; and the owner signs in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from
+one address, with a wait after 10 failures in a row. Everything else under `/admin` needs the
+owner's session.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -397,9 +398,10 @@ src/
                                  which paths need the owner's session, and what a request without
                                  one gets: sign in and back, or "Your session ended"
       services/sign-in/sign-in.ts
-                                 signing in: one answer for a wrong username or password, a dummy
-                                 verification for a wrong username, a hash slot, then the session;
-                                 the typed username is never logged
+                                 signing in: its limit of 10 per 5 minutes and the waits, one
+                                 answer for a wrong username or password, a dummy verification for
+                                 a wrong username, a hash slot, then the session; the typed
+                                 username is never logged
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -414,6 +416,9 @@ src/
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
       security/hash-slots.ts     at most 4 password hashes or verifications at once
+      security/failed-sign-ins.ts
+                                 failed sign-ins per address: the wait after 10 in a row,
+                                 doubling to an hour, swept and capped
       security/return-path.ts    where sign-in returns to: a same-origin path, or nothing
       security/session-token.ts  a session's random token and the hash that is stored instead
       security/session-cookie.ts `obzorarr_session` and its options, `Secure` only over https
@@ -451,7 +456,7 @@ tests/
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
-                                 sign-in page, the hash slots and the owner check
+                                 sign-in page, its limit, the hash slots and the owner check
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the
