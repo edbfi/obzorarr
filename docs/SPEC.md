@@ -900,7 +900,8 @@ export const GET: RequestHandler = () => healthResponse();
     header gets "Access denied" while `/healthz` answers.
   - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in with an
     `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only, about 30 days long
-    and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't loopback.
+    and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't loopback, and that
+    a cookie naming no session is cleared, also without `Secure`.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None
