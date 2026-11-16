@@ -22,17 +22,21 @@ const behind = $derived(drawerOpen || modals.open > 0);
 <svelte:head>
 	<noscript>
 		<style>
-		#admin-shell {
-			flex-direction: column;
-		}
-		#admin-sidebar {
-			display: block;
-			position: static;
-			width: auto;
-			height: auto;
-		}
-		#admin-topbar {
-			display: none;
+		@media (max-width: 767.98px) {
+			#admin-shell {
+				flex-direction: column;
+			}
+			#admin-sidebar {
+				display: block;
+				position: static;
+				width: auto;
+				height: auto;
+				border-inline-end: 0;
+				border-block-end: 1px solid var(--colors-border);
+			}
+			#admin-topbar {
+				display: none;
+			}
 		}
 		</style>
 	</noscript>

@@ -460,6 +460,8 @@ src/
                                  posts straight away
       layout/shell-modals.svelte.ts
                                  the shell's open confirmations, which make the rest inert
+      layout/focus-fallback.ts   where focus goes back when the control that opened a dialog is
+                                 hidden past the 768px breakpoint
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
                                  the claim and sign-in

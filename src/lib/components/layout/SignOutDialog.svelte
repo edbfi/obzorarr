@@ -2,6 +2,7 @@
 import { Dialog } from "@ark-ui/svelte/dialog";
 import { Portal } from "@ark-ui/svelte/portal";
 import LogOutIcon from "@lucide/svelte/icons/log-out";
+import { firstVisible } from "#lib/components/layout/focus-fallback.ts";
 import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -22,6 +23,14 @@ $effect(() => {
 	if (open && modals) return modals.hold();
 });
 
+/** Focus goes back to this Sign out, or, once it is hidden, to one the page shows, or to Menu. */
+const focusAfter = () =>
+	firstVisible(
+		trigger,
+		...document.querySelectorAll("[data-sign-out]"),
+		document.querySelector("[data-admin-menu]"),
+	);
+
 const button = css({
 	minHeight: "controlHeight",
 	paddingInline: "lg",
@@ -40,7 +49,9 @@ const railLabel = css({ tabletOnly: { srOnly: true } });
 	<button
 		bind:this={trigger}
 		type="submit"
+		data-sign-out
 		aria-haspopup="dialog"
+		aria-expanded={open}
 		onclick={(event) => {
 			event.preventDefault();
 			open = true;
@@ -69,13 +80,7 @@ const railLabel = css({ tabletOnly: { srOnly: true } });
 	</button>
 </form>
 
-<Dialog.Root
-	bind:open
-	role="alertdialog"
-	lazyMount
-	unmountOnExit
-	finalFocusEl={() => trigger ?? null}
->
+<Dialog.Root bind:open role="alertdialog" lazyMount unmountOnExit finalFocusEl={focusAfter}>
 	<Portal>
 		<Dialog.Backdrop class={css({ position: "fixed", inset: "[0]", bg: "scrim" })} />
 		<Dialog.Positioner

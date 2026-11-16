@@ -4,6 +4,7 @@ import { Portal } from "@ark-ui/svelte/portal";
 import MenuIcon from "@lucide/svelte/icons/menu";
 import XIcon from "@lucide/svelte/icons/x";
 import AdminSidebar from "#lib/components/layout/AdminSidebar.svelte";
+import { firstVisible } from "#lib/components/layout/focus-fallback.ts";
 import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -20,6 +21,14 @@ let { username, open = $bindable(false) }: { username: string; open?: boolean } 
 
 const modals = shellModals();
 
+/** Focus goes back to Menu, or, once the sidebar has taken over, into the sidebar. */
+const focusAfter = () =>
+	firstVisible(
+		document.querySelector("[data-admin-menu]"),
+		document.querySelector("#admin-sidebar [data-sign-out]"),
+		document.querySelector("#admin-sidebar a"),
+	);
+
 afterNavigate(() => {
 	open = false;
 });
@@ -34,8 +43,9 @@ $effect(() => {
 });
 </script>
 
-<Dialog.Root bind:open lazyMount unmountOnExit>
+<Dialog.Root bind:open lazyMount unmountOnExit finalFocusEl={focusAfter}>
 	<Dialog.Trigger
+		data-admin-menu
 		class={css({
 			display: "flex",
 			alignItems: "center",

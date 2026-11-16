@@ -728,10 +728,23 @@ test.describe("the admin shell and signing out", () => {
 
 			// Signing out from the drawer: the confirmation opens over it, and the drawer is inert.
 			await menu.click();
-			await drawer.getByRole("button", { name: "Sign out" }).click();
+			const drawerSignOut = drawer.getByRole("button", { name: "Sign out" });
+			await drawerSignOut.click();
 			const confirmation = page.getByRole("alertdialog", { name: "Sign out of Obzorarr?" });
 			await expect(confirmation).toBeVisible();
+			// Inert, the drawer's controls leave the accessibility tree, so this one is found by its CSS.
+			await expect(page.locator("#admin-drawer [data-sign-out]")).toHaveAttribute(
+				"aria-expanded",
+				"true",
+			);
 			await expect(page.locator("#admin-drawer")).toHaveAttribute("inert", "");
+			// Cancelling gives focus back to the drawer's Sign out, with the drawer still open.
+			await page.keyboard.press("Escape");
+			await expect(confirmation).toBeHidden();
+			await expect(drawer).toBeVisible();
+			await expect(page.locator("#admin-drawer")).not.toHaveAttribute("inert", "");
+			await expect(drawerSignOut).toBeFocused();
+			await drawerSignOut.click();
 			await confirmation.getByRole("button", { name: "Sign out" }).click();
 			await page.waitForURL(`${server.url}/admin/sign-in`);
 		} finally {
@@ -755,6 +768,21 @@ test.describe("the admin shell and signing out", () => {
 			await page.setViewportSize({ width: 1024, height: 844 });
 			await expect(page.getByRole("dialog", { name: "Menu" })).toBeHidden();
 			await expect(page.locator("#admin-page")).not.toHaveAttribute("inert", "");
+			// Focus goes to the sidebar, which took the drawer's place, not to the page's body.
+			expect(
+				await page.evaluate(
+					() => document.getElementById("admin-sidebar")?.contains(document.activeElement) ?? false,
+				),
+			).toBe(true);
+
+			// The other way: a confirmation opened from the sidebar, cancelled below 768 px, gives
+			// focus to Menu, since the sidebar's Sign out is hidden there.
+			await page.locator("#admin-sidebar").getByRole("button", { name: "Sign out" }).click();
+			await expect(page.getByRole("alertdialog")).toBeVisible();
+			await page.setViewportSize({ width: 390, height: 844 });
+			await page.keyboard.press("Escape");
+			await expect(page.getByRole("alertdialog")).toBeHidden();
+			await expect(page.getByRole("button", { name: "Menu" })).toBeFocused();
 		} finally {
 			await context.close();
 			await server.stop();
@@ -805,6 +833,13 @@ test.describe("the admin shell and signing out", () => {
 				page.locator("#admin-sidebar").getByRole("link", { name: "Settings" }),
 			).toBeVisible();
 			await expect(page.getByRole("button", { name: "Menu" })).toBeHidden();
+			// From 768 px the sidebar stays beside the page, as with JavaScript.
+			await page.setViewportSize({ width: 1024, height: 800 });
+			const sidebarBox = await page.locator("#admin-sidebar").boundingBox();
+			const pageBox = await page.locator("#admin-page").boundingBox();
+			expect(sidebarBox?.width).toBe(224);
+			expect(pageBox?.x).toBe(224);
+			await page.setViewportSize({ width: 390, height: 844 });
 			await page.locator("#admin-sidebar").getByRole("button", { name: "Sign out" }).click();
 			await page.waitForURL(`${server.url}/admin/sign-in`);
 			expect((await context.cookies()).map((each) => each.name)).not.toContain("obzorarr_session");
