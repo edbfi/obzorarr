@@ -147,8 +147,8 @@ addresses than `XFF_DEPTH` or something that isn't an address, with "Access deni
 request didn't come through the proxy (so a `XFF_DEPTH` higher than your number of proxies turns
 every visitor away); `/healthz` still answers, so a container health check keeps working. Make the
 port reachable only through the proxy: anyone who reaches it directly can put any address in the
-header. When the header arrives while `ADDRESS_HEADER` is unset, Obzorarr writes a warning to its
-logs.
+header. When `X-Forwarded-For` arrives while `ADDRESS_HEADER` is unset, Obzorarr writes a warning to
+its logs.
 
 ## First run
 

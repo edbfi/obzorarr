@@ -46,13 +46,15 @@ in the README:
 | Variable | Default | Read by | Checked |
 |---|---|---|---|
 | `OBZORARR_RECOVERY` | off | `config/recovery.ts` | `true` or `false`; empty counts as unset |
-| `ADDRESS_HEADER` | unset: the connection's address | adapter-bun | by the adapter |
+| `ADDRESS_HEADER` | unset: the connection's address | adapter-bun; the app, to know whether it is set (`config/address-header.ts`) | by the adapter |
 | `XFF_DEPTH` | 1 | adapter-bun | by the adapter |
 
 **The client address** (`security/client-address.ts`) is `event.getClientAddress()`, which
 adapter-bun 1.0.1 already reads from `ADDRESS_HEADER` and `XFF_DEPTH` when they are set
 (`X-Forwarded-For` counted from the right, so the app trusts as many proxy hops as `XFF_DEPTH` says,
-by default 1, the last). The app adds no variable of its own for it.
+by default 1, the last). The app adds no variable of its own for it; it declares `ADDRESS_HEADER`
+in `src/env.ts` and reads it once at startup only to know whether it is set, since SvelteKit
+exposes only declared variables.
 - **With `ADDRESS_HEADER` set, a request whose header is missing, cut short or not an IP address**
   (the adapter throws, or the value doesn't parse) is refused as "Access denied" (`/healthz`
   excepted), with a warning once a process that names the variable. Setting it says every request
@@ -230,8 +232,9 @@ with the headers set through `setHeaders`): "Too many attempts. Try again in {mi
 Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart." The general limit's
 refusal is the branded "Too many requests" page or a JSON error, whichever the caller expects.
 
-**Memory stays bounded:** expired windows and counts are swept as they are passed and every minute,
-and each table holds at most 10,000 addresses; when full, the oldest entry goes first.
+**Memory stays bounded:** expired windows and counts are swept once a minute, on the next request,
+with no timer, and each table holds at most 10,000 addresses; when full, the oldest entry goes
+first.
 
 **When the address is unknown** (Configuration), the limits and the count are skipped, with one
 warning a process, favouring availability; the limit on hashes at once still holds.

@@ -285,7 +285,8 @@ state-changing request from another site gets "Access denied". Until it is claim
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
 which creates the owner account. The owner can't sign in yet: module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
-so far, errors and refusals show branded pages.
+so far, errors and refusals show branded pages, and each client address is limited to 60
+requests a minute, with requests that bypass a configured proxy refused.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
