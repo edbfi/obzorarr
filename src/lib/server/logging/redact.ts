@@ -44,7 +44,9 @@ const SAFE_NAMES = new Set([
 function sensitive(name: string): boolean {
 	if (SAFE_NAMES.has(name)) return false;
 	const words = name
-		.replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+		// A capital that starts a word after other capitals ("APIToken"); a lookahead, since
+		// `([A-Z]+)([A-Z][a-z])` backtracks through a long run of capitals in quadratic time.
+		.replace(/([A-Z])(?=[A-Z][a-z])/g, "$1 ")
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.toLowerCase()
 		.split(/[^a-z0-9]+/)
@@ -126,7 +128,9 @@ function hidesCredential(value: string): boolean {
 		const decoded = text.replace(ESCAPES, decodeEscapes);
 		if (decoded === text) return false;
 		text = decoded;
-		if (cleanText(text, false) !== text) return true;
+		// Read as a query of its own, so its first parameter (`token%3Dabc`) is found too.
+		const query = `?${text}`;
+		if (cleanText(query, false) !== query) return true;
 	}
 	return false;
 }

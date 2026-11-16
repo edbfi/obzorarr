@@ -65,7 +65,7 @@ describe("redact", () => {
 
 		// Logged URLs come from outside, so a hostile one must not stall the logger. A time limit
 		// fails under load and misses a fast quadratic scan, so this compares growth instead: 8
-		// times the input takes about 8 times as long if linear, and 64 if quadratic. The small and
+		// times the input takes about 8 times as long if linear, and 45 to 64 if quadratic. The small and
 		// large runs alternate, so load slows both alike, and the fastest of each counts. Contention
 		// for the CPU's cache can still slow the large run alone, so a test may try twice more: a
 		// quadratic scan fails every attempt.
@@ -75,17 +75,22 @@ describe("redact", () => {
 			// Each round of decoding peels one layer off: `%2525…253F` is `size` layers deep.
 			["an escape encoded again and again", (size) => `/x?a=%${"25".repeat(size)}3F`],
 			["encoded values behind semicolons", (size) => `/x?${"a=%3F;".repeat(size)}`],
+			// Splitting a name into words must not backtrack through a run of capitals.
+			["a parameter name in capitals", (size) => `/x?${"A".repeat(size)}=1`],
 		])("scans %s in linear time", { retry: 2 }, (_, input) => {
-			const texts = [input(5_000), input(40_000)];
-			const fastest = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+			const smallText = input(5_000);
+			const largeText = input(40_000);
+			const timed = (text: string) => {
+				const started = performance.now();
+				redact(text);
+				return performance.now() - started;
+			};
+			let small = Number.POSITIVE_INFINITY;
+			let large = Number.POSITIVE_INFINITY;
 			for (let run = 0; run < 7; run++) {
-				texts.forEach((text, i) => {
-					const started = performance.now();
-					redact(text);
-					fastest[i] = Math.min(fastest[i] ?? 0, performance.now() - started);
-				});
+				small = Math.min(small, timed(smallText));
+				large = Math.min(large, timed(largeText));
 			}
-			const [small = 0, large = 0] = fastest;
 			// The 2 ms keeps timer noise on a fast scan from counting as growth.
 			expect(large).toBeLessThan(24 * small + 2);
 		});
@@ -104,6 +109,8 @@ describe("redact", () => {
 			expect(redact("/r?u=100%25%20off%3Ftoken%253Dabc&x=1")).toBe(`/r?u=${R}&x=1`);
 			// Behind an escape that isn't valid UTF-8.
 			expect(redact("/r?u=%FF%3Ftoken%3Dabc")).toBe(`/r?u=${R}`);
+			// A bare query string, whose first parameter has no separator before it.
+			expect(redact("/r?u=token%3Dabc%26x%3D1&y=2")).toBe(`/r?u=${R}&y=2`);
 		});
 
 		it("keeps an encoded value that hides nothing", () => {

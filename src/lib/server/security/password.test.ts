@@ -81,6 +81,10 @@ describe("checkPassword", () => {
 		"567890123456789",
 		"987654321098765",
 		"aaaaaaaaaaaaaaa",
+		// Case is ignored letter by letter: lower-casing the whole word would end it in "ς", and
+		// would turn "İ" into two code points.
+		"ΣΣΣΣΣΣΣΣΣΣΣΣΣΣΣ",
+		"İabcİabcİabcİabc",
 	])("refuses %j: the whole password is a repeat or a straight run", (raw) => {
 		expect(checkPassword(raw, "owner")).toEqual({ ok: false, error: "pattern" });
 	});
