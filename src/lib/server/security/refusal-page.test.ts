@@ -167,17 +167,22 @@ describe("sessionEnded", () => {
 });
 
 describe("a form enhanced with JavaScript", () => {
-	it("gets SvelteKit's action error, so SvelteKit shows its error page with the message", async () => {
-		for (const [make, message] of [
-			[(request: Request) => sessionEnded(request, "/admin"), "Your session ended. Sign in again."],
-			[accessDenied, "The request was refused because it didn't come from this site."],
-			[tooMany, "Too many requests came from your address. Wait a moment, then try again."],
+	it("gets SvelteKit's action error, with its status, so SvelteKit shows the right error page", async () => {
+		for (const [make, message, status] of [
+			[
+				(request: Request) => sessionEnded(request, "/admin"),
+				"Your session ended. Sign in again.",
+				403,
+			],
+			[accessDenied, "The request was refused because it didn't come from this site.", 403],
+			[tooMany, "Too many requests came from your address. Wait a moment, then try again.", 429],
 		] as const) {
 			const response = await refusal(make, "en", "application/json", {
 				"x-sveltekit-action": "true",
 			});
 			expect(response.headers.get("cache-control")).toBe("no-store");
-			expect(await response.json()).toEqual({ type: "error", error: { message } });
+			// SvelteKit's client drops the response's status from an action error, so the body has it.
+			expect(await response.json()).toEqual({ type: "error", error: { message, status } });
 		}
 	});
 });

@@ -12,7 +12,8 @@ import { page } from "$app/state";
  * pages").
  */
 const title = $derived.by(() => {
-	switch (page.status) {
+	// An enhanced form's action error reaches this page as a 500; its own status is in the error.
+	switch (page.error?.status ?? page.status) {
 		case 404:
 			return m.error_not_found_title();
 		case 403:

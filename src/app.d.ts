@@ -4,7 +4,14 @@ declare global {
 	const __OBZORARR_VERSION__: string;
 
 	namespace App {
-		// interface Error {}
+		interface Error {
+			message: string;
+			/**
+			 * The error's status, which SvelteKit's `error()` puts in the body and `handle`'s refusals
+			 * add: an enhanced form's action error reaches the error page without the response's.
+			 */
+			status?: number;
+		}
 		interface Locals {
 			/**
 			 * The rate limits' key for the request's client address, which the rate-limit stage sets;

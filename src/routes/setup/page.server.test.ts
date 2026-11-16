@@ -85,6 +85,7 @@ describe("the claim action", () => {
 			refused = error;
 		}
 		expect(isHttpError(refused, 403)).toBe(true);
+		expect(refused).toMatchObject({ body: { status: 403 } });
 		expect((refused as { body: { message: string } }).body.message).toBe(
 			"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
 		);
