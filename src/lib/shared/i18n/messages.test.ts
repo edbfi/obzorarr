@@ -15,6 +15,13 @@ const messageName = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
  * `a<b and c>d` looks like a tag with bare attributes, so a tag with only bare ones isn't reported.
  */
 const tagShape = /<\/?[A-Za-z0-9][\w.-]*((\s+[\w:-]+)*\s+[\w:-]+\s*=[^<>]*)?\s*\/?>/;
+/**
+ * A brace left once every `{{…}}` placeholder is taken out. The plugin shows such a brace as
+ * written: `{name}` stays `{name}`, and `{{{name}}}` renders as `undefined}`. Reported as the
+ * single-brace pair it is part of, else as the lone brace.
+ */
+const strayBrace = (text: string) =>
+	/\{[^{}]*\}|[{}]/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
 
 /** One key of one file; `text` is missing when the value isn't a string. */
 interface Form {
@@ -136,6 +143,14 @@ function checkMessages(
 		for (const { key, text } of forms) {
 			const tag = tagShape.exec(text ?? "")?.[0];
 			if (tag) problems.push(`${locale}: ${key} holds something shaped like a tag: ${tag}`);
+		}
+		for (const { key, text } of forms) {
+			const brace = strayBrace(text ?? "");
+			if (brace) {
+				problems.push(
+					`${locale}: ${key} has a brace outside a {{placeholder}}, which shows as written: ${brace}`,
+				);
+			}
 		}
 
 		languages.set(locale, messages);
@@ -507,6 +522,23 @@ describe("the check", () => {
 				"da: recap_plays_other has no {{count, number}}",
 			],
 		},
+
+		// No brace is outside a `{{name}}` placeholder.
+		...[
+			["Your {year}", "{year}"],
+			["Your { year", "{"],
+			["Your year }", "}"],
+			["Your {{ year", "{"],
+			["Your year }}", "}"],
+			["Your {{{year}}}", "{}"],
+		].map(([text, found]) => ({
+			clause: `the stray brace in ${text}`,
+			files: broken(both({ landing_title: text })),
+			problems: [
+				`en: landing_title has a brace outside a {{placeholder}}, which shows as written: ${found}`,
+				`da: landing_title has a brace outside a {{placeholder}}, which shows as written: ${found}`,
+			],
+		})),
 
 		// No value holds anything shaped like a tag.
 		...[
