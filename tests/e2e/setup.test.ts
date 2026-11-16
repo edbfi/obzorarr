@@ -590,7 +590,7 @@ test.describe("the claim", () => {
 			await page.locator("#token").fill(token.toUpperCase().replaceAll("-", ""));
 			await page.locator("#password").fill(PASSWORD);
 			await page.getByRole("button", { name: "Claim and create owner" }).click();
-			await page.waitForURL(`${first.url}/`);
+			await page.waitForURL(`${first.url}/admin/settings/security`);
 			expect((await fetch(`${first.url}/setup`)).status).toBe(404);
 			const own = await fetch(`${first.url}/setup`, {
 				method: "POST",

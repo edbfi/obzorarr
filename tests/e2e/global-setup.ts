@@ -3,7 +3,7 @@ import { chromium, type FullConfig } from "@playwright/test";
 /**
  * Claims the web server's fresh instance through the form in a browser, with the token its
  * `wait.stdout` pattern captured, so the smoke and language tests run on a claimed instance
- * (docs/SPEC.md, "Testing strategy").
+ * (docs/SPEC.md, "Testing strategy"). The claim signs the owner in and lands on the Security tab.
  */
 export default async function globalSetup(config: FullConfig) {
 	const baseURL = config.projects[0]?.use.baseURL;
@@ -25,7 +25,7 @@ export default async function globalSetup(config: FullConfig) {
 		await page.locator("#username").fill("owner");
 		await page.locator("#password").fill("violet harbour lanterns");
 		await page.getByRole("button", { name: "Claim and create owner" }).click();
-		await page.waitForURL(`${baseURL}/`);
+		await page.waitForURL(`${baseURL}/admin/settings/security`);
 	} finally {
 		await browser.close();
 	}

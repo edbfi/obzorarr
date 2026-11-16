@@ -19,6 +19,28 @@ test.afterEach(async () => {
 const THIRTY_DAYS = 30 * 24 * 60 * 60;
 
 test.describe("the claim's session", () => {
+	test("lands the new owner on the Security tab, signed in", async ({ page }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
+			await page.goto(`${server.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await page.locator("#token").fill(token);
+			await page.locator("#username").fill("owner");
+			await page.locator("#password").fill("violet harbour lanterns");
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await page.waitForURL(`${server.url}/admin/settings/security`);
+			await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+			await expect(page).toHaveTitle("Settings");
+			const cookies = await page.context().cookies();
+			expect(cookies.map((cookie) => cookie.name)).toContain("obzorarr_session");
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("signs the new owner in with obzorarr_session: HttpOnly, SameSite=Lax, 30 days, not Secure over plain HTTP", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
@@ -82,7 +104,7 @@ test.describe("the claim's session", () => {
 			await page.locator("#username").fill("owner");
 			await page.locator("#password").fill("violet harbour lanterns");
 			await page.getByRole("button", { name: "Claim and create owner" }).click();
-			await page.waitForURL(`${appUrl}/`);
+			await page.waitForURL(`${appUrl}/admin/settings/security`);
 			const [cookie] = (await context.cookies()).filter((each) => each.name === "obzorarr_session");
 			expect(cookie).toMatchObject({
 				domain: "app.test",

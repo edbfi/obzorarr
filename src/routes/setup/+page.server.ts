@@ -66,7 +66,7 @@ export const actions: Actions = {
 					result.session.token,
 					sessionCookieOptions(address, result.session.expiresAt, new Date()),
 				);
-				return redirect(303, "/");
+				return redirect(303, "/admin");
 			case "not-found":
 				return error(404);
 			case "invalid":

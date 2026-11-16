@@ -42,5 +42,6 @@
 	"setup_password_common": "This password is on a list of common passwords. Choose another.",
 	"setup_submit": "Claim and create owner",
 	"setup_submitting": "Claiming…",
-	"setup_failed": "Obzorarr couldn't create the owner account. Try again with the newest setup token from the server console."
+	"setup_failed": "Obzorarr couldn't create the owner account. Try again with the newest setup token from the server console.",
+	"admin_settings_title": "Settings"
 }

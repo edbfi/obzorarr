@@ -31,7 +31,7 @@ Heading 'Claim this Obzorarr'. One line: 'Enter the setup token printed in the s
 - No other viewer, server or Plex detail appears.
 - Test keyboard focus, visible labels, disabled behavior and 200% zoom; target 360, 390, 768 and 1440px viewports. Translated text wraps without hiding the primary action.
 - Too many attempts (5 per 5 minutes from one address): 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.' Busy (the server already checking 4 passwords): 'Obzorarr is busy checking other passwords. Try again in a few seconds.' Each beside the button, in an assertive live region; the token stays in its field, still usable.
-- States: initial, field errors, token refused, too many attempts, busy, submitting. After success the browser leaves the page.
+- States: initial, field errors, token refused, too many attempts, busy, submitting. After success the new owner is signed in and lands on the Security tab of the admin's settings (`route-admin-settings-security.md`).
 
 ## Handoff prompt
 
