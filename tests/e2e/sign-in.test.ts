@@ -799,6 +799,7 @@ test.describe("the admin shell and signing out", () => {
 			await page.locator("#admin-sidebar").getByRole("button", { name: "Sign out" }).click();
 			await expect(page.getByRole("alertdialog")).toBeVisible();
 			await page.setViewportSize({ width: 390, height: 844 });
+			await expect(page.locator("#admin-sidebar")).toBeHidden();
 			await page.keyboard.press("Escape");
 			await expect(page.getByRole("alertdialog")).toBeHidden();
 			await expect(page.getByRole("button", { name: "Menu" })).toBeFocused();

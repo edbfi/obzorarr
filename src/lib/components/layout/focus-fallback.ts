@@ -14,14 +14,18 @@ export function firstVisible(...candidates: (Element | null | undefined)[]): HTM
 }
 
 /**
- * After a dialog closes: if focus fell to the page's body, as when the control it would go back to
- * was still inert or had just been hidden, move it to `pick()`'s control a frame later, once the
- * shell has lifted `inert`.
+ * After a dialog closes: if focus is lost a frame later, once the shell has lifted `inert`, move
+ * it to `pick()`'s control. Lost means on the page's body, on a control the page no longer shows
+ * (the layout crossed 768px as focus went back), or inside an inert part of the page.
  */
 export function refocusIfLost(pick: () => HTMLElement | null): void {
 	requestAnimationFrame(() => {
 		const active = document.activeElement;
-		if (active !== null && active !== document.body) return;
-		pick()?.focus();
+		const kept =
+			active instanceof HTMLElement &&
+			active !== document.body &&
+			active.getClientRects().length > 0 &&
+			active.closest("[inert]") === null;
+		if (!kept) pick()?.focus();
 	});
 }
