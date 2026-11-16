@@ -228,6 +228,9 @@ function walkError(error: Error, path: Set<object>): Record<string, unknown> {
 	};
 }
 
+/** The rest of a stack after its header, when it is stack frames and nothing else. */
+const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
+
 /**
  * An error's stack, its header (`Name: message`) cleaned as the message is and its frames after
  * it on their own, so a value in the message can't pass for a frame. A stack in any other shape,
@@ -241,6 +244,3 @@ function cleanStack(error: Error): string {
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
 	return `${error.name}: ${cleanText(error.message)}${cleanText(frames)}`;
 }
-
-/** The rest of a stack after its header, when it is stack frames and nothing else. */
-const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
