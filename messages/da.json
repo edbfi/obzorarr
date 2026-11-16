@@ -81,5 +81,6 @@
 	"security_sessions_end": "Log ud alle andre steder",
 	"security_sessions_ending": "Logger ud…",
 	"security_sessions_ended_one": "Logget ud af {{count, number}} anden browser.",
-	"security_sessions_ended_other": "Logget ud af {{count, number}} andre browsere."
+	"security_sessions_ended_other": "Logget ud af {{count, number}} andre browsere.",
+	"security_recovery_on": "Gendannelse er slået til. Fjern {{variable}} fra miljøet, og genstart Obzorarr."
 }

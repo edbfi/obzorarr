@@ -89,7 +89,7 @@ Paths are under `src/lib/server/`, except those starting with `routes/` (under `
 |---|---|
 | `secrets` | `security/secrets/` (key checks, keyring, cipher, `Secret`), `config/secret-key.ts`, `src/env.ts` and the `init` hook in `hooks.server.ts` |
 | `i18n` | `messages/en.json` and `messages/da.json`, `project.inlang/` (the inlang project and Paraglide's options), `lib/shared/i18n/` (formatting and the message check), `lib/components/layout/LanguageSwitcher.svelte`; the language handle in `hooks.server.ts`, and `hooks.client.ts` |
-| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/bootstrap-token.ts`, `security/headers.ts`, `security/password.ts`, `security/cross-origin.ts`, `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the cross-origin check, the setup gate and the headers in `hooks.server.ts` |
+| `setup` | `db/` (client, migrations, settings and owner schema), `config/`, `logging/` (with redaction), `services/setup/`, `security/console-token.ts` (the bootstrap token; `sign-in` reuses it for recovery), `security/headers.ts`, `security/password.ts`, `security/cross-origin.ts`, `vite.config.ts` (SvelteKit's own form check off, the CSP); `routes/setup/`, and the cross-origin check, the setup gate and the headers in `hooks.server.ts` |
 | `sign-in` | `services/sign-in/` (sessions, signing in, the password change, recovery), `db/owner-session.ts`, `config/recovery.ts`, `security/` (the session token and cookie, the browser's and client's addresses, the in-memory rate limits, failed sign-ins, the return path, the refusal pages, the scanner filter); the sign-in at the claim in `routes/setup/`, `routes/recovery/`, `routes/(admin)/admin/` (the sign-in and sign-out routes, the shell's layout and `settings/security/`), `routes/+error.svelte`, `lib/components/layout/` (the shell) and `lib/components/credentials/` (the credential fields the claim shares) |
 | `two-factor` | `services/two-factor/`, the owner schema's two-factor fields in `db/`; the offer in `routes/setup/`, the challenge page beside the sign-in page, its section of the Security tab, and the reminder in `lib/components/layout/` |
 | `public-address` | `services/public-address/`; its first-run step, its section of the Security tab and its hint on the claim and owner sign-in pages |
@@ -852,7 +852,7 @@ export const GET: RequestHandler = () => healthResponse();
   SvelteKit's action error for an enhanced form; `services/sign-in/owner-check.test.ts`, which paths
   need the owner, the redirect with `next`, the refusal, the open sign-in and sign-out, the path
   decoded as SvelteKit matches it, and a signed-in owner sent away from sign-in;
-  `security/bootstrap-token.test.ts`, the token's format, alphabet, unbiased draw, expiry and
+  `security/console-token.test.ts`, the token's format, alphabet, unbiased draw, expiry and
   comparison; `security/password.test.ts`, the credential rules at their limits, NFC and case
   included, the list, patterns and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token

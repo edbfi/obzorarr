@@ -81,5 +81,6 @@
 	"security_sessions_end": "Sign out everywhere else",
 	"security_sessions_ending": "Signing out…",
 	"security_sessions_ended_one": "Signed out of {{count, number}} other browser.",
-	"security_sessions_ended_other": "Signed out of {{count, number}} other browsers."
+	"security_sessions_ended_other": "Signed out of {{count, number}} other browsers.",
+	"security_recovery_on": "Recovery is on. Remove {{variable}} from the environment and restart Obzorarr."
 }

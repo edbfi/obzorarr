@@ -7,20 +7,23 @@ import {
 } from "#lib/server/config/database-path.ts";
 import { type LogDebugEnv, readLogDebug } from "#lib/server/config/log-debug.ts";
 import { type OriginEnv, readOrigin } from "#lib/server/config/origin.ts";
+import { type RecoveryEnv, readRecovery } from "#lib/server/config/recovery.ts";
 import type { SecretKeyEnv } from "#lib/server/config/secret-key.ts";
 import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { configureLogging, createLogger, flushLogs } from "#lib/server/logging/logger.ts";
 import { loadKeyring } from "#lib/server/security/secrets/keyring.ts";
+import { startRecovery } from "#lib/server/services/sign-in/recovery.ts";
 import { deleteExpiredSessions } from "#lib/server/services/sign-in/sessions.ts";
-import { startFirstRun, stopFirstRun } from "./first-run.ts";
+import { isClaimed, startFirstRun, stopFirstRun } from "./first-run.ts";
 
 /** Every variable startup reads. */
 export type StartupEnv = SecretKeyEnv &
 	DatabasePathEnv &
 	LogDebugEnv &
 	OriginEnv &
-	AddressHeaderEnv;
+	AddressHeaderEnv &
+	RecoveryEnv;
 
 /** The parts of the process that shutdown uses, so tests can pass a stand-in. */
 export type ShutdownTarget = {
@@ -153,6 +156,7 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	configureLogging({ debug: readLogDebug(env) });
 	origin = readOrigin(env);
 	addressHeader = readAddressHeader(env);
+	const recovery = readRecovery(env);
 	const path = await readDatabasePath(env);
 	// 3. The database, opened and migrated: the app is its one migration owner (D5).
 	const db = await openDatabase(path).catch((error: unknown) => {
@@ -161,9 +165,11 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	await migrateDatabase(db);
 	database = db;
 	// 4. Each module's startup work: `sign-in` deletes the sessions that ended while the app was
-	// down, then `setup` prints the bootstrap token while unclaimed.
+	// down, then `setup` prints the bootstrap token while unclaimed, then `sign-in` prints the
+	// recovery token while recovery is on and the instance claimed.
 	await deleteExpiredSessions(db, new Date());
 	await startFirstRun({ db, origin });
+	await startRecovery({ db, enabled: recovery, claimed: isClaimed(), origin });
 }
 
 /**

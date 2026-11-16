@@ -1,16 +1,19 @@
 import { timingSafeEqual } from "node:crypto";
 
+// The tokens printed to the console: setup's bootstrap token and sign-in's recovery token
+// (SPEC-setup.md, "The bootstrap token"; SPEC-sign-in.md, "Recovery").
+
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const LENGTH = 12;
 
 /** The largest multiple of the alphabet's size that fits in a byte: bytes from here up bias. */
 const UNBIASED_LIMIT = 256 - (256 % ALPHABET.length);
 
-/** How long a bootstrap token can claim the instance, from when it was printed. */
+/** How long a token lasts, from when it was printed. */
 export const TOKEN_LIFETIME_MS = 15 * 60 * 1000;
 
-/** A token, when it was issued and how long it lasts. Held only in memory (SPEC-setup.md). */
-export type BootstrapToken = {
+/** A token, when it was issued and how long it lasts. Held only in memory. */
+export type ConsoleToken = {
 	readonly value: string;
 	readonly issuedAt: number;
 	readonly lifetimeMs: number;
@@ -31,12 +34,12 @@ export function drawToken(): string {
 }
 
 /** A new token issued at `now`, lasting 15 minutes unless `lifetimeMs` says otherwise. */
-export function issueToken(now: number, lifetimeMs = TOKEN_LIFETIME_MS): BootstrapToken {
+export function issueToken(now: number, lifetimeMs = TOKEN_LIFETIME_MS): ConsoleToken {
 	return { value: drawToken(), issuedAt: now, lifetimeMs };
 }
 
-/** Whether `token` can still claim the instance at `now`. */
-export function isTokenValid(token: BootstrapToken, now: number): boolean {
+/** Whether `token` can still be used at `now`. */
+export function isTokenValid(token: ConsoleToken, now: number): boolean {
 	return now - token.issuedAt < token.lifetimeMs;
 }
 

@@ -383,10 +383,10 @@ also on an unclaimed instance; and the Security tab's warning while recovery is 
 line names `/recovery`, which task 13 builds; no release is cut in between.
 
 **Acceptance criteria:**
-- [ ] Unit tests first fail, then pass: `config/recovery`; `recovery` (the token printed or not for
+- [x] Unit tests first fail, then pass: `config/recovery`; `recovery` (the token printed or not for
   each state of the setting, the key and the claim; the key cleared when the setting is off; the
   warnings); `console-token` (renamed, unchanged).
-- [ ] `tests/e2e/recovery.test.ts`, through `server.ts`: a claimed server restarted with the
+- [x] `tests/e2e/recovery.test.ts`, through `server.ts`: a claimed server restarted with the
   setting on prints the token in no log entry or response, and the Security tab shows the warning;
   an unclaimed one prints none and warns.
 
