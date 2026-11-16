@@ -261,7 +261,9 @@ response and the sign-in page are `no-store`. The placeholder `/` gets its "Owne
   and its `__data.json` request gets SvelteKit's JSON redirect with `next` set to the page's path;
   an owner-only POST gets 403 (a plain form gets the page; `x-sveltekit-action: true` with `accept:
   application/json` gets a JSON `{ message }`); a signed-in owner opening the sign-in page goes to
-  `/admin`; the headers are `no-store`; `/` links to sign in.
+  `/admin`; the headers are `no-store`; `/` links to sign in; signed in, a direct request to
+  `/admin` and to `/admin/settings` gets the 307 to the Security tab, so the owner check runs
+  before those redirects.
 
 **Verification:** the gates.
 

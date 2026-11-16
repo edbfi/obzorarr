@@ -7,7 +7,7 @@ import { css } from "#styled-system/css";
 	<title>{m.admin_settings_title()}</title>
 </svelte:head>
 
-<!-- Only the heading until task 10 builds the admin shell and the Security tab
+<!-- Only the heading until the admin shell and the Security tab are built
 (.impeccable/surfaces/route-admin-settings-security.md). -->
 <main
 	class={css({

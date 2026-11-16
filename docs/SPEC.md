@@ -900,9 +900,9 @@ export const GET: RequestHandler = () => healthResponse();
     page with `Retry-After` and the limit's headers, and that a request without the configured
     header gets "Access denied" while `/healthz` answers.
   - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in and lands on the
-    Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only, about 30 days long
-    and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't loopback, and that
-    a cookie naming no session is cleared, also without `Secure`.
+    Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only,
+    about 30 days long and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't
+    loopback, and that a cookie naming no session is cleared, also without `Secure`.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

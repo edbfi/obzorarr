@@ -220,8 +220,8 @@ reuse:
 - **The browser's address and cookies:** the claim sets no cookie yet, so it needs neither. Once
   `sign-in` starts the owner's session at the claim, the claim needs the browser's address, and the
   session follows `sign-in`'s cookies.
-- **First run ends at the claim,** its only step: the claim completes first run and sends the
-  browser to `/`. `sign-in` signs the new owner in at the claim, and `two-factor` adds the first
+- **First run ends at the claim,** its only step: the claim completes first run. `sign-in` signs
+  the new owner in at the claim and sends the browser to `/admin`, and `two-factor` adds the first
   step after it, from which on the claim no longer completes first run.
 
 No release is cut between `setup` and `sign-in`.
