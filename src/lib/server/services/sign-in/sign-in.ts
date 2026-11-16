@@ -60,7 +60,7 @@ export async function signIn(
 		found !== undefined && comparable(input.username) === comparable(found.username)
 			? found
 			: undefined;
-	const hash = owner?.passwordHash ?? (await dummy());
+	// The slot comes first, so making the dummy hash counts towards the cap too.
 	const releaseSlot = hashSlots.take();
 	if (releaseSlot === undefined) {
 		return {
@@ -72,9 +72,10 @@ export async function signIn(
 	}
 	let verified: boolean;
 	try {
+		const hash = owner?.passwordHash ?? (await dummy());
 		verified = await verifyPassword(input.password, hash);
 	} finally {
-		// Freed however the verification ends, a throw before it returns a promise included.
+		// Freed however the check ends, a throw before it returns a promise included.
 		releaseSlot();
 	}
 	const session =

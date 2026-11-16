@@ -265,19 +265,27 @@ test.describe("owner sign-in", () => {
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 			await signIn(page, "owner", PASSWORD);
 			await page.waitForURL(`${server.url}/admin/settings/security`);
-			// Without JavaScript, a path a Location header can't carry as typed is percent-encoded.
-			const native = await fetch(`${server.url}/admin/sign-in?next=%2F%E2%9C%93`, {
-				method: "POST",
-				headers: {
-					origin: server.url,
-					accept: "text/html",
-					"content-type": "application/x-www-form-urlencoded",
-				},
-				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
-				redirect: "manual",
-			});
-			expect(native.status).toBe(303);
-			expect(native.headers.get("location")).toBe("/%E2%9C%93");
+			// Without JavaScript: a path a Location header can't carry as typed is percent-encoded,
+			// and dot segments that would resolve to two leading slashes are dropped.
+			const signInNatively = (next: string) =>
+				fetch(`${server.url}/admin/sign-in?next=${encodeURIComponent(next)}`, {
+					method: "POST",
+					headers: {
+						origin: server.url,
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+					},
+					body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+					redirect: "manual",
+				});
+			for (const [next, location] of [
+				["/✓", "/%E2%9C%93"],
+				["/.//evil.test", "/admin"],
+			] as const) {
+				const native = await signInNatively(next);
+				expect(native.status, next).toBe(303);
+				expect(native.headers.get("location"), next).toBe(location);
+			}
 		} finally {
 			await server.stop();
 		}

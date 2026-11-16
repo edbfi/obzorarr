@@ -81,9 +81,11 @@ describe("the sign-in action", () => {
 	});
 
 	it("drops an unsafe `next` and goes to /admin", async () => {
-		signedIn();
-		const { outcome } = await post({ query: "?next=%2F%2Fevil.test%2Fadmin" });
-		expect(outcome).toMatchObject({ status: 303, location: "/admin" });
+		for (const next of ["//evil.test/admin", "/.//evil.test", "/a/..//evil.test"]) {
+			signedIn();
+			const { outcome } = await post({ query: `?next=${encodeURIComponent(next)}` });
+			expect(outcome, next).toMatchObject({ status: 303, location: "/admin" });
+		}
 	});
 
 	it("answers a wrong username or password with one message, keeping only the username", async () => {

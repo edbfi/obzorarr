@@ -16,6 +16,8 @@ const verify = vi.hoisted(() => ({
 	hashes: [] as string[],
 	/** How many of the next hashes fail. */
 	hashFailures: 0,
+	/** How many hashes started. */
+	hashCalls: 0,
 }));
 
 vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
@@ -23,6 +25,7 @@ vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
 	return {
 		...original,
 		hashPassword: (password: string) => {
+			verify.hashCalls++;
 			if (verify.hashFailures > 0) {
 				verify.hashFailures--;
 				return Promise.reject(new Error("out of memory"));
@@ -122,6 +125,24 @@ describe("signIn", () => {
 		expect(await fresh.signIn(db, { username: "someone", password: PASSWORD })).toEqual({
 			status: "wrong",
 		});
+	});
+
+	it("makes the dummy hash inside a hash slot, so a busy server starts no hash at all", async () => {
+		vi.resetModules();
+		const fresh = await import("./sign-in.ts");
+		const slots = await import("#lib/server/security/hash-slots.ts");
+		const taken = [1, 2, 3, 4].map(() => slots.hashSlots.take());
+		try {
+			verify.hashCalls = 0;
+			expect(await fresh.signIn(db, { username: "someone", password: PASSWORD })).toMatchObject({
+				status: "too-many",
+				reason: "busy",
+			});
+			expect(verify.hashCalls).toBe(0);
+			expect(verify.hashes).toEqual([]);
+		} finally {
+			for (const release of taken) release?.();
+		}
 	});
 
 	it("starts no session when the password changed while it was being checked", async () => {

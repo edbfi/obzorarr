@@ -28,6 +28,13 @@ describe("returnPath", () => {
 			"/admin\u0085",
 			"?next=/admin",
 			"#/admin",
+			// Dot segments that would leave two leading slashes once resolved.
+			"/.//evil.test",
+			"/..//evil.test",
+			"/%2e//evil.test",
+			"/%2E%2E//evil.test",
+			"/a/..//evil.test",
+			"/a/../..//evil.test",
 		]) {
 			expect(returnPath(unsafe), JSON.stringify(unsafe)).toBeUndefined();
 		}
@@ -45,5 +52,8 @@ describe("returnPath", () => {
 		expect(returnPath(path)).toBe(path);
 		expect(returnPath(`/${"a".repeat(2048)}`)).toBeUndefined();
 		expect(returnPath(`/a?${"q".repeat(2046)}`)).toBeUndefined();
+		// Counted again once percent-encoded, which a Location header carries.
+		expect(returnPath(`/${"✓".repeat(227)}`)).toHaveLength(2044);
+		expect(returnPath(`/${"✓".repeat(228)}`)).toBeUndefined();
 	});
 });

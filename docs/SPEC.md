@@ -829,11 +829,12 @@ export const GET: RequestHandler = () => healthResponse();
   and the cookie's options; `db/owner-session.test.ts`; `services/sign-in/sessions.test.ts`, both
   session limits at their edges, the hourly write, expiry and the current-password check;
   `services/sign-in/sign-in.test.ts`, right and wrong credentials with one answer, the username's
-  case and spaces, the dummy verification for a wrong username and a dummy hash made again after
-  it failed, a busy hash slot, the slot freed however the check ends, ended sessions deleted, the
-  logs without the typed username, and a check that ends after the password changed starting no
-  session; `security/return-path.test.ts`, each rule at its limits, and a path percent-encoded as
-  a `Location` header needs; `db/owner.test.ts`, also reading the owner;
+  case and spaces, the dummy verification for a wrong username, its dummy hash made inside a hash
+  slot and made again after it failed, a busy hash slot, the slot freed however the check ends,
+  ended sessions deleted, the logs without the typed username, and a check that ends after the
+  password changed starting no session; `security/return-path.test.ts`, each rule at its limits, a
+  path percent-encoded as a `Location` header needs, and dot segments that would leave two leading
+  slashes; `db/owner.test.ts`, also reading the owner;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
@@ -918,7 +919,8 @@ export const GET: RequestHandler = () => healthResponse();
     cursor back in the emptied password field, and a second gets a new alert, so it is announced
     again; a busy answer keeps the password; the right one signs in, with the username in any case
     and spaces, and returns to `next` without its query string; an unsafe `next` goes to the admin,
-    and without JavaScript a `next` with characters outside ASCII is percent-encoded;
+    and without JavaScript a `next` with characters outside ASCII is percent-encoded and one with
+    dot segments that resolve to two leading slashes goes to the admin;
     while signing in, the button says so and the username keeps what was typed; a POST with
     `Origin` stripped gets the 403 that says so; of 20 sign-ins at once, every answer is a wrong
     password or the form's 429 with `Retry-After: 5`, with some of each; and the page and its
