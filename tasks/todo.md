@@ -6,13 +6,14 @@ the README and SPEC.md's testing section (and its `smoke` row when it adds an e2
 change, ticks off its items in `tasks/`, names what the sibling apps take in its PR body, gets a
 council review, and runs `bun run --bun check`, `test`, `lint`, `build`, `smoke` and `prek run
 --all-files --hook-stage manual` before every commit. From task 2 on, every e2e test on the shared
-server sends its own address through the fixture. A fresh server belongs to one test, so its limits
-are that test's alone: until task 4 its requests count under the connection's address, and from task
-4 on, `tests/e2e/server.ts` starts it with `ADDRESS_HEADER=x-forwarded-for` and the fixture's
-address too. Tests that change the owner's password or sessions, or need an unclaimed or restarted
-server, use fresh servers. The in-memory tables sweep themselves once a minute on the next request
-(`security/rate-limit.ts`), so no sweep timer needs stopping at shutdown. Paths under
-`src/lib/server/` are shortened to `server/`, and the spec's sections are named in quotes.
+server sends its own address through the fixture. A fresh server (`tests/e2e/server.ts`, from task
+4) belongs to one test, so its limits are that test's alone: its requests count under the
+connection's address, and a test that needs addresses of its own starts it with
+`ADDRESS_HEADER=x-forwarded-for`. Tests that change the owner's password or sessions, or need an
+unclaimed or restarted server, use fresh servers. The in-memory tables sweep themselves once a
+minute on the next request (`security/rate-limit.ts`), so no sweep timer needs stopping at shutdown.
+Paths under `src/lib/server/` are shortened to `server/`, and the spec's sections are named in
+quotes.
 
 ## Task 1: the error pages
 
@@ -128,17 +129,18 @@ See [plan.md](plan.md).
 **Description:** `security/browser-address.ts` ("The browser's address and cookies"): `ORIGIN`, or
 the validated `Origin` of the POST. The claim, its first caller, refuses a POST with `Origin`
 stripped and `ORIGIN` unset first, before the claim's limit counts it and before the fields, with
-the 403 that says so (a `refusal-page.ts` variant). `/setup` and its action become
+the 403 that says so: an action can't return a page of its own, so it raises `error(403)` with the
+message, which reaches the branded error page under "Access denied", or SvelteKit's JSON error for
+an enhanced form. An instance already claimed answers 404 first. `/setup` and its action become
 `Cache-Control: no-store`. The spawn helpers in `setup.test.ts` (`startServer`, `claim`) move to
-`tests/e2e/server.ts`, which starts each fresh server with `ADDRESS_HEADER=x-forwarded-for` for the
-per-test address.
+`tests/e2e/server.ts`.
 
 **Acceptance criteria:**
 - [x] `server/security/browser-address.test.ts` first fails, then passes: `ORIGIN`, a validated
-  `Origin`, a stripped one; and it searches `src/` for `event.url.origin` and `.url.protocol` on a
-  request's URL, exempting `config/origin.ts` by name, which validates `ORIGIN` itself.
-- [x] `server/security/refusal-page.test.ts` gains the stripped-address page, in both languages,
-  and its JSON form.
+  `Origin`, a stripped one; and it searches `src/` for the request URL's origin or protocol,
+  however it is written, with a check that its patterns match and its walk reaches app code.
+- [x] `src/routes/setup/page.server.test.ts`: the 403 before anything else, a claimed instance's
+  404 before it, and `no-store`; the e2e checks the message in both languages and as JSON.
 - [x] `tests/e2e/setup.test.ts`, through `server.ts`: a claim with `Origin` stripped gets the 403
   that says so and leaves the token unused; `/setup` and the claim's response are `no-store`.
 
@@ -146,9 +148,9 @@ per-test address.
 
 **Dependencies:** task 3.
 
-**Files:** `server/security/browser-address.ts` (+ test), `server/security/refusal-page.ts`
-(+ test), `src/routes/setup/+page.server.ts`, `messages/`, `tests/e2e/server.ts`,
-`tests/e2e/setup.test.ts`.
+**Files:** `server/security/browser-address.ts` (+ test), `server/security/cross-origin.ts` (its
+bare-origin rule, shared), `src/routes/setup/+page.server.ts` (+ test), `messages/`,
+`tests/e2e/server.ts`, `tests/e2e/setup.test.ts`.
 
 **Size:** M.
 

@@ -8,6 +8,11 @@ vi.mock("#lib/server/services/setup/startup.ts", () => ({
 	currentOrigin: () => undefined,
 }));
 
+let firstRunComplete = false;
+vi.mock("#lib/server/services/setup/first-run.ts", () => ({
+	isFirstRunComplete: () => firstRunComplete,
+}));
+
 const { actions } = await import("./+page.server.ts");
 
 /**
@@ -31,6 +36,7 @@ async function post(clientAddress: string | undefined, origin: string | null = "
 
 beforeEach(() => {
 	claimInstance.mockReset();
+	firstRunComplete = false;
 });
 
 describe("the claim action", () => {
@@ -87,5 +93,17 @@ describe("the claim action", () => {
 		claimInstance.mockResolvedValue({ status: "token" });
 		const { setHeaders } = await post("198.51.100.9");
 		expect(setHeaders).toHaveBeenCalledWith({ "cache-control": "no-store" });
+	});
+
+	it("answers not found once the instance is claimed, before asking for the browser's address", async () => {
+		firstRunComplete = true;
+		let refused: unknown;
+		try {
+			await post("198.51.100.9", null);
+		} catch (error) {
+			refused = error;
+		}
+		expect(isHttpError(refused, 404)).toBe(true);
+		expect(claimInstance).not.toHaveBeenCalled();
 	});
 });

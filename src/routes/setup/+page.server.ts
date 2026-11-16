@@ -23,7 +23,8 @@ export type ClaimFailure = {
 
 // The claim is first run's first step; once first run is complete it no longer exists (D20).
 export const load: PageServerLoad = ({ request, setHeaders }) => {
-	// After a native form post, the action has set it already, and setting it twice throws.
+	// The action sets it on every POST to `/setup`, and SvelteKit runs the load after the action
+	// on a native form post; setting a header twice throws.
 	if (request.method !== "POST") setHeaders(NO_STORE);
 	if (isFirstRunComplete()) error(404);
 };
@@ -34,8 +35,10 @@ const NO_STORE = { "cache-control": "no-store" };
 export const actions: Actions = {
 	default: async ({ request, locals, setHeaders }) => {
 		setHeaders(NO_STORE);
+		// Once claimed, the claim no longer exists (D20), whatever the browser says.
+		if (isFirstRunComplete()) error(404);
 		// The claim sets a cookie once it signs the owner in, so it needs the browser's address
-		// first, before its limit counts the attempt and before the token can be used up.
+		// next, before its limit counts the attempt and before the token can be used up.
 		if (browserAddress(request, currentOrigin()) === undefined) {
 			error(403, m.error_no_browser_address());
 		}

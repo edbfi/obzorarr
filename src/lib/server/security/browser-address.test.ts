@@ -45,16 +45,46 @@ async function sourceFiles(dir: string): Promise<string[]> {
 	return files.flat();
 }
 
+/**
+ * Reading the request URL's origin or protocol, however it is written: `event.url.origin`,
+ * `page.url?.protocol`, `new URL(event.request.url).origin`, or destructured from a `url`. A local
+ * variable that happens to be called `url`, such as a parsed upstream address, isn't one.
+ */
+const REQUEST_URL_ORIGIN = [
+	/\.url\??\.(origin|protocol)\b/,
+	/request\.url\)\s*\??\.(origin|protocol)\b/,
+	/\{[^}]*\b(origin|protocol)\b[^}]*\}\s*=\s*[\w.?]*\burl\b/,
+	/\burl\s*:\s*\{[^}]*\b(origin|protocol)\b/,
+];
+const readsRequestUrlOrigin = (code: string) =>
+	REQUEST_URL_ORIGIN.some((pattern) => pattern.test(code));
+
 describe("app code", () => {
+	it("is searched for every way of reading the request URL's origin or protocol", () => {
+		for (const code of [
+			"const at = event.url.origin;",
+			"page.url?.protocol",
+			"new URL(event.request.url).origin",
+			"const { origin } = event.url;",
+			"const { protocol, host } = page.url;",
+			"load({ url: { origin } })",
+		]) {
+			expect(readsRequestUrlOrigin(code), code).toBe(true);
+		}
+		for (const code of ["url.protocol !== 'https:'", "sent.origin === origin", "upstream.origin"]) {
+			expect(readsRequestUrlOrigin(code), code).toBe(false);
+		}
+	});
+
 	it("never takes the browser's address from the request URL's origin or protocol", async () => {
 		const src = join(import.meta.dirname, "../../..");
-		// `config/origin.ts` validates ORIGIN itself, and may read its parsed URL's parts.
-		const allowed = new Set(["lib/server/config/origin.ts"]);
+		const files = await sourceFiles(src);
+		// The walk reaches app code, so an empty result means something.
+		expect(files.map((file) => relative(src, file))).toContain("hooks.server.ts");
+		expect(files.length).toBeGreaterThan(30);
 		const offenders: string[] = [];
-		for (const file of await sourceFiles(src)) {
-			const name = relative(src, file);
-			if (allowed.has(name)) continue;
-			if (/\burl\.(origin|protocol)\b/.test(await readFile(file, "utf8"))) offenders.push(name);
+		for (const file of files) {
+			if (readsRequestUrlOrigin(await readFile(file, "utf8"))) offenders.push(relative(src, file));
 		}
 		expect(offenders).toEqual([]);
 	});

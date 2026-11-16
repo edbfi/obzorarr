@@ -484,6 +484,35 @@ test.describe("the claim", () => {
 			expect(refusal).toContain(
 				"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
 			);
+			// An enhanced form gets SvelteKit's JSON error with the message, and a Danish browser
+			// gets it in Danish.
+			const strippedPost = (headers: Record<string, string>) =>
+				request(`${server.url}/setup`, {
+					method: "POST",
+					headers: {
+						"sec-fetch-site": "same-origin",
+						"content-type": "application/x-www-form-urlencoded",
+						...headers,
+					},
+					body: new URLSearchParams({ token, username: "owner", password: "x" }),
+				});
+			const enhanced = await strippedPost({
+				accept: "application/json",
+				"x-sveltekit-action": "true",
+			});
+			expect(enhanced.status).toBe(403);
+			expect(await enhanced.json()).toMatchObject({
+				type: "error",
+				error: {
+					message:
+						"Your browser didn't say which address it is using. Set ORIGIN and restart Obzorarr.",
+				},
+			});
+			const danish = await strippedPost({ accept: "text/html", "accept-language": "da" });
+			expect(danish.status).toBe(403);
+			expect((await danish.text()).replace(/&#(39|x27);/g, "'")).toContain(
+				"Din browser oplyste ikke, hvilken adresse den bruger. Sæt ORIGIN, og genstart Obzorarr.",
+			);
 			// The token wasn't touched: the same one claims.
 			await claim(server);
 		} finally {
