@@ -816,7 +816,9 @@ export const GET: RequestHandler = () => healthResponse();
   before it is thrown, and shutdown: the work stopped on the signal, `SIGHUP` passed on as
   `SIGTERM`, the cleanup's exit codes and its 5-second deadline, and no handlers in `dev`;
   `logging/redact.test.ts`, each redaction rule and nested; `logging/logger.test.ts`, with
-  `flushLogs` against a slow shell pipe;
+  `flushLogs` against a slow shell pipe; `logging/request-error.test.ts`, an unexpected error as
+  one redacted entry without the query, its cause, no entry for app or framework errors, and never
+  throwing; `src/hooks.server.test.ts`, the `handleError` hook writing through it;
   `config/log-debug.test.ts`; `config/origin.test.ts`; `security/headers.test.ts`, the headers
   for HTTPS through `ORIGIN` or `Sec-Fetch-Site`, plain HTTP, `localhost` and loopback;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,

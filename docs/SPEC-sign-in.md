@@ -294,10 +294,10 @@ D20 fixes the mechanism; here is what the owner does.
 
 ## Errors and error pages
 
-- **An unexpected error** is logged, with its stack, through `handleError`, and the user sees
-  "Something went wrong. Try again."; an expected error (`error()`) passes its message through.
-  Stack traces never reach the browser. (Providers map network failures to fixed phrases when they
-  come: `plex-connection`.)
+- **An unexpected error** is logged by `setup`'s `handleError` hook, and the user sees "Something
+  went wrong. Try again." (the hook returns the translated message); an expected error (`error()`)
+  passes its message through. Stack traces never reach the browser. (Providers map network failures
+  to fixed phrases when they come: `plex-connection`.)
 - **The error page** (`routes/+error.svelte`) is titled "Page not found", "Access denied", "Too many
   requests" or "Something went wrong", each with a one-line description, and Go back and Home
   actions; the not-found page doesn't show the status number. It shows the Obzorarr logo and
@@ -347,7 +347,7 @@ The placeholder `/` gets an "Owner sign-in" link to `/admin/sign-in` until `land
 ```text
 src/env.ts                                       + OBZORARR_RECOVERY
 src/hooks.server.ts                              handle: + scanner filter, rate limits, session,
-                                                 owner check; handleError
+                                                 owner check; handleError's message
 src/error.html                                   the last-resort page
 src/lib/server/config/recovery.ts                OBZORARR_RECOVERY
 src/lib/server/db/owner.ts                       + reading the owner, replacing the hash

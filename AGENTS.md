@@ -314,7 +314,8 @@ src/
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, then
-                                 the setup gate
+                                 the setup gate; `handleError`: an unexpected error as one
+                                 redacted log entry
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
@@ -349,7 +350,7 @@ src/
                                  the owner; client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
-                                 is written
+                                 is written; request-error.ts: what `handleError` logs
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
                                  database, then first run; a failed step is logged, then thrown.
                                  Shutdown, in the built server only: `SIGHUP` as `SIGTERM`,

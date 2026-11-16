@@ -1,5 +1,11 @@
-import { type Handle, type ServerInit, sequence } from "@sveltejs/kit/hooks";
+import {
+	type Handle,
+	type HandleServerError,
+	type ServerInit,
+	sequence,
+} from "@sveltejs/kit/hooks";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
+import { logRequestError } from "#lib/server/logging/request-error.ts";
 import { accessDenied } from "#lib/server/security/access-denied.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
@@ -11,6 +17,12 @@ import * as env from "$app/env/private";
 export const init: ServerInit = async () => {
 	if (!building) await startUp(env, { dev });
 };
+
+/**
+ * An unexpected error in a load, action, endpoint or `handle` becomes one redacted log entry,
+ * instead of SvelteKit's default, which writes its stack to the console unredacted.
+ */
+export const handleError: HandleServerError = logRequestError;
 
 /** Each request's language (SPEC-i18n.md); it refuses nothing. */
 const language: Handle = ({ event, resolve }) =>
