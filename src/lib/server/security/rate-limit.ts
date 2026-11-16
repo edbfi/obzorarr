@@ -26,7 +26,7 @@ const SWEEP_EVERY_MS = 60_000;
  * at most `maxEntries` addresses (10,000 by default).
  */
 export function createRateLimiter(options: RateLimitOptions) {
-	const { limit, windowMs, maxEntries = 10_000, now = Date.now } = options;
+	const { limit, windowMs, maxEntries = 10_000, now = () => Date.now() } = options;
 	/** Each address's window, oldest first: a new window moves its address to the end. */
 	const windows = new Map<string, { start: number; count: number }>();
 	let sweptAt = now();

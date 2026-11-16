@@ -320,19 +320,22 @@ test.describe("owner sign-in", () => {
 	});
 
 	test("checks at most 4 passwords at once, answering the rest busy with Retry-After: 5", async () => {
+		// Each sign-in from an address of its own, so only the hash slots refuse any.
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+			ADDRESS_HEADER: "x-forwarded-for",
 		});
 		try {
-			await claim(server);
+			await claim(server, { "x-forwarded-for": "198.51.100.200" });
 			const answers = await Promise.all(
-				Array.from({ length: 20 }, () =>
+				Array.from({ length: 20 }, (_, i) =>
 					fetch(`${server.url}/admin/sign-in`, {
 						method: "POST",
 						headers: {
 							origin: server.url,
 							accept: "text/html",
 							"content-type": "application/x-www-form-urlencoded",
+							"x-forwarded-for": `198.51.100.${i + 1}`,
 						},
 						body: new URLSearchParams({ username: "owner", password: "not the right password" }),
 						redirect: "manual",
@@ -352,6 +355,50 @@ test.describe("owner sign-in", () => {
 				expect(answer.retryAfter).toBe("5");
 				expect(answer.body).toContain("Obzorarr is busy checking other passwords.");
 			}
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("allows 10 sign-ins per 5 minutes from one address, then shows the wait beside the button", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			// Ten that succeed, so they leave no failures behind: only the limit refuses the 11th.
+			for (let i = 0; i < 10; i++) {
+				const signedIn = await fetch(`${server.url}/admin/sign-in`, {
+					method: "POST",
+					headers: {
+						origin: server.url,
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+					},
+					body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+					redirect: "manual",
+				});
+				expect(signedIn.status, `sign-in ${i + 1}`).toBe(303);
+			}
+			await page.goto(`${server.url}/admin/sign-in`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			const answer = page.waitForResponse(
+				(response) =>
+					response.request().method() === "POST" && response.url().includes("/admin/sign-in"),
+			);
+			await signIn(page, "owner", PASSWORD);
+			const refused = await answer;
+			expect(refused.status()).toBe(429);
+			expect(Number(refused.headers()["retry-after"])).toBeGreaterThan(0);
+			expect(refused.headers()["x-ratelimit-limit"]).toBe("10");
+			await expect(page.getByRole("alert")).toHaveText(
+				"Too many attempts. Try again in 5 minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.",
+			);
+			// Nothing was checked, so the password stays, and the button can be pressed again.
+			await expect(page.locator("#password")).toHaveValue(PASSWORD);
+			await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
 		} finally {
 			await server.stop();
 		}

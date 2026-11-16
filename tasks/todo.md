@@ -284,13 +284,13 @@ are checked in the action and answered with `fail(429)`, its headers, and the me
 `ADDRESS_HEADER`.
 
 **Acceptance criteria:**
-- [ ] `server/security/failed-sign-ins.test.ts` first fails, then passes: 5, 10, 20, 40, 60 and
+- [x] `server/security/failed-sign-ins.test.ts` first fails, then passes: 5, 10, 20, 40, 60 and
   60 minutes; reset by a success and after 24 hours; swept and capped; the warn entry.
-- [ ] `server/services/sign-in/sign-in.test.ts` gains: a wait refuses before any hash.
-- [ ] `tests/e2e/sign-in.test.ts` gains: after 10 successful sign-ins, which leave no failures,
+- [x] `server/services/sign-in/sign-in.test.ts` gains: a wait refuses before any hash.
+- [x] `tests/e2e/sign-in.test.ts` gains: after 10 successful sign-ins, which leave no failures,
   the 11th within 5 minutes shows the form's 429 message with `Retry-After`; the sign-in page's
   too-many-attempts state follows its brief; the earlier sign-in tests still pass under the limits.
-- [ ] The README's `ADDRESS_HEADER` section says it also keeps one visitor's failures from making
+- [x] The README's `ADDRESS_HEADER` section says it also keeps one visitor's failures from making
   others wait.
 
 **Verification:** the gates.

@@ -78,9 +78,13 @@ export async function runToExit(cwd: string, env: Record<string, string>) {
 
 /**
  * Claims a fresh server through its form action, with the token it printed, as a browser's native
- * form post: asking for HTML, since SvelteKit answers an action in JSON to `Accept: *\/*`.
+ * form post: asking for HTML, since SvelteKit answers an action in JSON to `Accept: *\/*`. A
+ * server started with `ADDRESS_HEADER` needs the claim's address in `headers`.
  */
-export async function claim(server: Server): Promise<Response> {
+export async function claim(
+	server: Server,
+	headers: Record<string, string> = {},
+): Promise<Response> {
 	const token = /Setup token: ([a-z0-9-]{14}) /.exec(server.output())?.[1] ?? "";
 	const response = await fetch(`${server.url}/setup`, {
 		method: "POST",
@@ -88,6 +92,7 @@ export async function claim(server: Server): Promise<Response> {
 			origin: server.url,
 			accept: "text/html",
 			"content-type": "application/x-www-form-urlencoded",
+			...headers,
 		},
 		body: new URLSearchParams({ token, username: "owner", password: "violet harbour lanterns" }),
 		redirect: "manual",

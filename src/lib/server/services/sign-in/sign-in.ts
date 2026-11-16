@@ -1,8 +1,10 @@
 import type { Database } from "#lib/server/db/client.ts";
 import { findOwner } from "#lib/server/db/owner.ts";
 import { createLogger } from "#lib/server/logging/logger.ts";
+import { createFailedSignIns } from "#lib/server/security/failed-sign-ins.ts";
 import { HASH_SLOT_RETRY_SECONDS, hashSlots } from "#lib/server/security/hash-slots.ts";
 import { hashPassword, verifyPassword } from "#lib/server/security/password.ts";
+import { createRateLimiter, rateLimitHeaders } from "#lib/server/security/rate-limit.ts";
 import { deleteExpiredSessions, type StartedSession, startSession } from "./sessions.ts";
 
 export type SignInInput = {
@@ -16,15 +18,27 @@ export type SignInResult =
 	| { status: "signed-in"; session: StartedSession }
 	/** A wrong username or password: one answer for both. */
 	| { status: "wrong" }
-	/** Every hash slot was busy: try again in a few seconds. */
+	/**
+	 * Refused for now, with when to try again and the headers saying so: the address used up the
+	 * limit, it must wait after failed sign-ins, or every hash slot was busy.
+	 */
 	| {
 			status: "too-many";
-			reason: "busy";
+			reason: "limit" | "wait" | "busy";
 			retryAfterSeconds: number;
 			headers: Record<string, string>;
 	  };
 
 const log = createLogger("sign-in");
+
+/** Signing in: 10 per 5 minutes from one address (SPEC-sign-in.md, "Rate limits"). */
+const SIGN_IN_LIMIT = 10;
+const signInLimit = createRateLimiter({ limit: SIGN_IN_LIMIT, windowMs: 5 * 60_000 });
+
+/** The failed sign-ins per address, and the waits they start (D28). */
+const failedSignIns = createFailedSignIns({
+	warn: (message, metadata) => log.warn(message, metadata),
+});
 
 /**
  * What a wrong username is verified against, so it costs the same argon2id verification as a
@@ -44,17 +58,40 @@ const dummy = () => {
 const comparable = (username: string) => username.trim().normalize("NFC").toLowerCase();
 
 /**
- * Signs the owner in with their username and password (SPEC-sign-in.md, "Signing in"): a hash
- * slot, then one verification, against the owner's hash or, for a wrong username, a dummy one,
- * then a session, which starts only while the verified hash is still the owner's. Ended sessions
- * are deleted at every sign-in. The typed username is never logged: it may be a password typed
- * into the wrong field.
+ * Signs the owner in with their username and password (SPEC-sign-in.md, "Signing in"): the
+ * address's limit and any wait after its failed sign-ins, both before any hash; a hash slot; one
+ * verification, against the owner's hash or, for a wrong username, a dummy one; then a session,
+ * which starts only while the verified hash is still the owner's. A failure counts towards the
+ * address's next wait, and a success starts its count again. A request whose address isn't known
+ * skips the limit and the count (Configuration). Ended sessions are deleted at every sign-in. The
+ * typed username is never logged: it may be a password typed into the wrong field.
  */
 export async function signIn(
 	db: Database,
 	input: SignInInput,
 	now = new Date(),
 ): Promise<SignInResult> {
+	const address = input.clientAddress;
+	if (address !== undefined) {
+		const decision = signInLimit.hit(address);
+		if (!decision.allowed) {
+			return {
+				status: "too-many",
+				reason: "limit",
+				retryAfterSeconds: decision.retryAfterSeconds,
+				headers: rateLimitHeaders(decision),
+			};
+		}
+		const wait = failedSignIns.wait(address);
+		if (wait !== undefined) {
+			return {
+				status: "too-many",
+				reason: "wait",
+				retryAfterSeconds: wait.retryAfterSeconds,
+				headers: rateLimitHeaders({ allowed: false, limit: SIGN_IN_LIMIT, remaining: 0, ...wait }),
+			};
+		}
+	}
 	const found = await findOwner(db);
 	const owner =
 		found !== undefined && comparable(input.username) === comparable(found.username)
@@ -83,10 +120,12 @@ export async function signIn(
 			? await startSignedInSession(db, owner.passwordHash, now)
 			: undefined;
 	if (session === undefined) {
-		log.warn("a sign-in failed", { clientAddress: input.clientAddress });
+		log.warn("a sign-in failed", { clientAddress: address });
+		if (address !== undefined) failedSignIns.failed(address);
 		return { status: "wrong" };
 	}
-	log.info("the owner signed in", { clientAddress: input.clientAddress });
+	log.info("the owner signed in", { clientAddress: address });
+	if (address !== undefined) failedSignIns.succeeded(address);
 	return { status: "signed-in", session };
 }
 

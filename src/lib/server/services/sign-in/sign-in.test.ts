@@ -209,3 +209,64 @@ describe("signIn", () => {
 		expect(logged.join("\n")).not.toContain("Åse");
 	});
 });
+
+describe("signIn's limits", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("allows 10 sign-ins per 5 minutes from one address, refusing the 11th before any hash", async () => {
+		const clientAddress = "203.0.113.10";
+		for (let i = 0; i < 10; i++) {
+			expect(
+				await signIn(db, { username: "Åse", password: PASSWORD, clientAddress }),
+			).toMatchObject({ status: "signed-in" });
+		}
+		verify.hashes = [];
+		const refused = await signIn(db, { username: "Åse", password: PASSWORD, clientAddress });
+		expect(refused).toMatchObject({ status: "too-many", reason: "limit" });
+		expect(refused).toMatchObject({
+			headers: { "x-ratelimit-limit": "10", "x-ratelimit-remaining": "0" },
+		});
+		expect(verify.hashes).toEqual([]);
+		// Another address is counted apart.
+		expect(
+			await signIn(db, { username: "Åse", password: PASSWORD, clientAddress: "203.0.113.11" }),
+		).toMatchObject({ status: "signed-in" });
+	});
+
+	it("makes an address wait after 10 failures in a row, refusing before any hash", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		const start = new Date("2026-11-16T12:00:00Z").getTime();
+		vi.setSystemTime(start);
+		const clientAddress = "203.0.113.20";
+		const wrong = () => signIn(db, { username: "Åse", password: "not it at all", clientAddress });
+		await wrong();
+		// The other nine 2 minutes later, so the limit's window ends before the wait does.
+		vi.setSystemTime(start + 2 * 60_000);
+		for (let i = 0; i < 9; i++) expect(await wrong()).toEqual({ status: "wrong" });
+		vi.setSystemTime(start + 5 * 60_000);
+		verify.hashes = [];
+		const refused = await signIn(db, { username: "Åse", password: PASSWORD, clientAddress });
+		expect(refused).toMatchObject({
+			status: "too-many",
+			reason: "wait",
+			retryAfterSeconds: 120,
+			headers: { "retry-after": "120" },
+		});
+		expect(verify.hashes).toEqual([]);
+		// Once the wait is over, the right password signs in.
+		vi.setSystemTime(start + 7 * 60_000);
+		expect(await signIn(db, { username: "Åse", password: PASSWORD, clientAddress })).toMatchObject({
+			status: "signed-in",
+		});
+	});
+
+	it("skips the limit and the waits for a request whose address isn't known", async () => {
+		for (let i = 0; i < 11; i++) {
+			expect(await signIn(db, { username: "Åse", password: "not it at all" })).toEqual({
+				status: "wrong",
+			});
+		}
+	});
+});

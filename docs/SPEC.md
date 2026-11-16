@@ -834,7 +834,10 @@ export const GET: RequestHandler = () => healthResponse();
   ended sessions deleted, the logs without the typed username, and a check that ends after the
   password changed starting no session; `security/return-path.test.ts`, each rule at its limits, a
   path percent-encoded as a `Location` header needs, and dot segments that would leave two leading
-  slashes; `db/owner.test.ts`, also reading the owner;
+  slashes; `db/owner.test.ts`, also reading the owner; `security/failed-sign-ins.test.ts`, the
+  waits of 5, 10, 20, 40, 60 and 60 minutes, reset by a success and after 24 quiet hours, swept and
+  capped, and the warn entry; `services/sign-in/sign-in.test.ts` also refuses the 11th sign-in in
+  5 minutes and a waiting address before any hash, and skips both for an unknown address;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
@@ -920,24 +923,25 @@ export const GET: RequestHandler = () => healthResponse();
     Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only,
     about 30 days long and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't
     loopback, and that a cookie naming no session is cleared, also without `Secure`. On
-    `/admin/sign-in`, a wrong password gets one message, keeping the username and putting the
-    cursor back in the emptied password field, and a second gets a new alert, so it is announced
-    again; a busy answer keeps the password; the right one signs in, with the username in any case
-    and spaces, and returns to `next` without its query string; an unsafe `next` goes to the admin,
-    and without JavaScript a `next` with characters outside ASCII is percent-encoded and one with
-    dot segments that resolve to two leading slashes goes to the admin;
-    while signing in, the button says so and the username keeps what was typed; a POST with
-    `Origin` stripped gets the 403 that says so; of 20 sign-ins at once, every answer is a wrong
-    password or the form's 429 with `Retry-After: 5`, with some of each; and the page and its
-    recovery steps show in English and Danish with no console error or CSP violation. Without a
-    session, an admin page gets a `no-store` 303 to sign in with `next`, its `__data.json` gets
-    SvelteKit's JSON redirect, and the browser signs in and comes back; an owner-only POST gets
-    "Your session ended" as a page with a link to sign in, as SvelteKit's action error and as
-    JSON; signed in, `/admin` and `/admin/settings` answer their 307 and the Security tab is
-    `no-store`, and the sign-in page sends the owner to `/admin`; the check's own answers (its
-    redirect, the data request's JSON redirect and its refusal) keep the security headers and clear
-    a stale session cookie, while signing in over one keeps the new session; and `/` links to sign
-    in.
+    `/admin/sign-in`, a wrong password gets one message, keeping the username and putting the cursor
+    back in the emptied password field, and a second gets a new alert, so it is announced again; a
+    busy answer keeps the password; the right one signs in, with the username in any case and
+    spaces, and returns to `next` without its query string; an unsafe `next` goes to the admin, and
+    without JavaScript a `next` with characters outside ASCII is percent-encoded and one with dot
+    segments that resolve to two leading slashes goes to the admin; while signing in, the button
+    says so and the username keeps what was typed; a POST with `Origin` stripped gets the 403 that
+    says so; of 20 sign-ins at once, every answer is a wrong password or the form's 429 with
+    `Retry-After: 5`, with some of each, each from an address of its own; after 10 successful
+    sign-ins from one address, the 11th within 5 minutes shows the too-many-attempts message beside
+    the button, with `Retry-After`, keeping the password; and the page and its recovery steps show
+    in English and Danish with no console error or CSP violation. Without a session, an admin page
+    gets a `no-store` 303 to sign in with `next`, its `__data.json` gets SvelteKit's JSON redirect,
+    and the browser signs in and comes back; an owner-only POST gets "Your session ended" as a page
+    with a link to sign in, as SvelteKit's action error and as JSON; signed in, `/admin` and
+    `/admin/settings` answer their 307 and the Security tab is `no-store`, and the sign-in page
+    sends the owner to `/admin`; the check's own answers (its redirect, the data request's JSON
+    redirect and its refusal) keep the security headers and clear a stale session cookie, while
+    signing in over one keeps the new session; and `/` links to sign in.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None
