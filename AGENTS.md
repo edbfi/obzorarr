@@ -283,13 +283,13 @@ is built: startup opens the database and applies its migrations, the app writes 
 it shuts down cleanly, every page carries the security headers and a nonce-based CSP, and a
 state-changing request from another site gets "Access denied". Until it is claimed, an instance
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
-which creates the owner account. There is no sign-in page yet: module 5, `sign-in`
+which creates the owner account. Module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
 on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
-far.
+far; and the owner signs in at `/admin/sign-in`. Nothing under `/admin` asks for a session yet.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -340,6 +340,9 @@ src/
                                  `route-setup.md`); +page.server.ts: its load and the claim
                                  action, "not found" once claimed; token-format.ts: the token
                                  field's dashes as it is typed
+    (admin)/admin/sign-in/       `/admin/sign-in`: +page.svelte, the form (surface brief
+                                 `route-admin-sign-in.md`); +page.server.ts: the sign-in action,
+                                 the cookie and the return path
     (admin)/admin/(shell)/       the owner's admin panel: +page.server.ts sends `/admin` to the
                                  Security tab until the overview exists, settings/+page.server.ts
                                  sends `/admin/settings` there too, and settings/security/
@@ -365,8 +368,9 @@ src/
                                  migrations; one file per aggregate with its tables (settings.ts,
                                  owner.ts, owner-session.ts) and, from their first caller, its
                                  named operations: reading and writing a setting, whether an owner
-                                 exists, creating the owner, storing, finding, renewing and ending
-                                 sessions; client.ts names the transaction and executor types
+                                 exists, reading and creating the owner, storing, finding,
+                                 renewing and ending sessions; client.ts names the transaction and
+                                 executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
@@ -388,6 +392,10 @@ src/
       services/sign-in/sessions.ts
                                  owner sessions: 7 days unused or 30 days at most, the last use
                                  written at most hourly, started only for the current password
+      services/sign-in/sign-in.ts
+                                 signing in: one answer for a wrong username or password, a dummy
+                                 verification for a wrong username, a hash slot, then the session;
+                                 the typed username is never logged
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -402,6 +410,7 @@ src/
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
       security/hash-slots.ts     at most 4 password hashes or verifications at once
+      security/return-path.ts    where sign-in returns to: a same-origin path, or nothing
       security/session-token.ts  a session's random token and the hash that is stored instead
       security/session-cookie.ts `obzorarr_session` and its options, `Secure` only over https
       security/browser-address.ts
@@ -419,6 +428,11 @@ src/
     components/                  later: ui/ (Ark wrappers), <feature>/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
+      layout/PanelPage.svelte    a one-task page outside the admin shell, the claim's and
+                                 sign-in's: logo, wordmark and language switcher above one panel
+      credentials/PasswordField.svelte
+                                 the owner's password field with its Show/Hide control, shared by
+                                 the claim and sign-in
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -430,7 +444,8 @@ tests/
                                  keeps it, and the switcher changes it
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
-  e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie
+  e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
+                                 sign-in page and the hash slots
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the

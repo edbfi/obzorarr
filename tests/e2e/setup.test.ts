@@ -520,6 +520,38 @@ test.describe("the claim", () => {
 		}
 	});
 
+	test("keeps what was typed while claiming, with the button saying so", async ({ page }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			// The answer is held back, so the page can be seen while it waits.
+			let answer = () => {};
+			await page.route("**/setup", async (route) => {
+				if (route.request().method() === "POST") {
+					await new Promise<void>((resolve) => {
+						answer = resolve;
+					});
+				}
+				await route.continue();
+			});
+			await page.goto(`${server.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await page.locator("#token").fill("aaaa-bbbb-cccc");
+			await page.locator("#username").fill("Owner");
+			await page.locator("#password").fill("violet harbour lanterns");
+			await page.getByRole("button", { name: "Claim and create owner" }).click();
+			await expect(page.getByRole("button", { name: "Claiming…" })).toBeDisabled();
+			await expect(page.locator("#username")).toHaveValue("Owner");
+			await expect(page.locator("#token")).toHaveValue("aaaa-bbbb-cccc");
+			answer();
+			await expect(page.locator("#token-error")).toBeVisible();
+			await expect(page.locator("#username")).toHaveValue("Owner");
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("allows 5 tries per 5 minutes from one address, then shows the wait beside the button", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
@@ -552,6 +584,39 @@ test.describe("the claim", () => {
 			const page = await refused.text();
 			expect(page).toContain("Too many attempts. Try again in 5 minutes.");
 			expect(page).toContain("set ADDRESS_HEADER");
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("puts a new alert in the page for each refusal, so a screen reader announces each", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			// The claim's 5 tries are used up first, so each claim below is refused as too many.
+			for (let i = 0; i < 5; i++) {
+				await request(`${server.url}/setup`, {
+					method: "POST",
+					headers: { origin: server.url, "content-type": "application/x-www-form-urlencoded" },
+					body: new URLSearchParams({ token: "aaaa-bbbb-cccc", username: "o", password: "p" }),
+				});
+			}
+			await page.goto(`${server.url}/setup`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			const claimOnce = async () => {
+				await page.locator("#token").fill("aaaa-bbbb-cccc");
+				await page.locator("#username").fill("Owner");
+				await page.locator("#password").fill("violet harbour lanterns");
+				await page.getByRole("button", { name: "Claim and create owner" }).click();
+				await expect(page.getByRole("alert")).toContainText("Too many attempts.");
+			};
+			await claimOnce();
+			await page.getByRole("alert").evaluate((alert) => alert.setAttribute("data-seen", ""));
+			await claimOnce();
+			await expect(page.locator("[role=alert][data-seen]")).toHaveCount(0);
 		} finally {
 			await server.stop();
 		}

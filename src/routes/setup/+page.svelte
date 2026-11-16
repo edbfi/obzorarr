@@ -1,9 +1,7 @@
 <script lang="ts">
-import EyeIcon from "@lucide/svelte/icons/eye";
-import EyeOffIcon from "@lucide/svelte/icons/eye-off";
-import { onMount, tick } from "svelte";
-import icon from "#lib/assets/obzorarr-icon.svg";
-import LanguageSwitcher from "#lib/components/layout/LanguageSwitcher.svelte";
+import { tick } from "svelte";
+import PasswordField from "#lib/components/credentials/PasswordField.svelte";
+import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
@@ -14,11 +12,6 @@ let { form }: PageProps = $props();
 
 let submitting = $state(false);
 let showPassword = $state(false);
-// The control that shows the password needs script, so it appears only once the page has it.
-let hydrated = $state(false);
-onMount(() => {
-	hydrated = true;
-});
 
 /** Fields edited since the last answer: their old error no longer describes what they hold. */
 let edited = $state({ token: false, username: false, password: false });
@@ -142,237 +135,117 @@ const control = css({
 	<title>{m.setup_page_title()}</title>
 </svelte:head>
 
-<div
-	class={css({
-		maxWidth: "formMax",
-		marginInline: "auto",
-		paddingBlock: { base: "xl", tablet: "section" },
-		paddingInline: { base: "mobileGutter", tablet: "tabletGutter" },
-	})}
->
-	<header
+<PanelPage>
+	<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{m.setup_title()}</h1>
+	<p class={css({ marginBlockStart: "sm", color: "muted" })}>
+		{m.setup_intro()}
+	</p>
+
+	<form
+		method="post"
+		novalidate
+		use:enhance={submit}
 		class={css({
 			display: "flex",
-			flexWrap: "wrap",
-			alignItems: "center",
-			justifyContent: "space-between",
-			gap: "md",
+			flexDirection: "column",
+			gap: "xl",
+			marginBlockStart: "xl",
 		})}
 	>
-		<p
-			class={css({
-				display: "flex",
-				alignItems: "center",
-				gap: "sm",
-				fontFamily: "display",
-				fontSize: "h3",
-				fontWeight: "semibold",
-				lineHeight: "h3",
-			})}
-		>
-			<img src={icon} alt="" width="24" height="24">
-			Obzorarr
-		</p>
-		<LanguageSwitcher />
-	</header>
-
-	<main
-		class={css({
-			marginBlockStart: { base: "xl", tablet: "xxl" },
-			padding: { base: "lg", tablet: "xxl" },
-			bg: "surface",
-			borderWidth: "1px",
-			borderStyle: "solid",
-			borderColor: "border",
-			borderRadius: "panel",
-		})}
-	>
-		<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{m.setup_title()}</h1>
-		<p class={css({ marginBlockStart: "sm", color: "muted" })}>
-			{m.setup_intro()}
-		</p>
-
-		<form
-			method="post"
-			novalidate
-			use:enhance={submit}
-			class={css({
-				display: "flex",
-				flexDirection: "column",
-				gap: "xl",
-				marginBlockStart: "xl",
-			})}
-		>
-			<div class={field}>
-				<label class={label} for="token">{m.setup_token_label()}</label>
-				<input
-					bind:this={tokenInput}
-					class={[
-						control,
-						css({
-							fontFamily: "mono",
-							fontSize: "body",
-							fontVariantNumeric: "tabular-nums",
-						}),
-					]}
-					id="token"
-					name="token"
-					type="text"
-					autocomplete="off"
-					autocapitalize="none"
-					spellcheck="false"
-					aria-invalid={tokenError ? "true" : undefined}
-					aria-describedby={describedBy("token", tokenError, true)}
-					oninput={formatToken}
-					onbeforeinput={stepOverDash}
-				>
-				{#if tokenError}
-					<p class={error} id="token-error">{tokenError}</p>
-				{/if}
-				<!-- biome-ignore format: one line, so no whitespace lands between the format and its full stop -->
-				<p class={help} id="token-help">{#each tokenHelp as part, index (index)}{#if index > 0}<code class={css({ fontFamily: "mono" })}>xxxx-xxxx-xxxx</code>{/if}{part}{/each}</p>
-			</div>
-
-			<div class={field}>
-				<label class={label} for="username">{m.setup_username_label()}</label>
-				<input
-					class={control}
-					id="username"
-					name="username"
-					type="text"
-					autocomplete="username"
-					autocapitalize="none"
-					spellcheck="false"
-					value={form?.username ?? ""}
-					aria-invalid={usernameError ? "true" : undefined}
-					oninput={() => (edited.username = true)}
-					aria-describedby={describedBy("username", usernameError, false)}
-				>
-				{#if usernameError}
-					<p class={error} id="username-error">{usernameError}</p>
-				{/if}
-			</div>
-
-			<div class={field}>
-				<label class={label} for="password">{m.setup_password_label()}</label>
-				<!-- One bordered group holds the field and the control that shows what was typed. -->
-				<div
-					class={css({
-						display: "flex",
-						alignItems: "stretch",
-						bg: "surface",
-						borderWidth: "1px",
-						borderStyle: "solid",
-						borderColor: "control-border",
-						borderRadius: "control",
-						transitionProperty: "border-color",
-						transitionDuration: "feedback",
-						_hover: { borderColor: "muted" },
-						"&:has([aria-invalid=true])": { borderColor: "danger" },
-						// The field's focus ring goes round the whole group, as on the other fields.
-						"&:has(input:focus-visible)": {
-							outlineStyle: "solid",
-							outlineWidth: "2px",
-							outlineColor: "secondary",
-							// DESIGN.md's 2px offset, as the global focus rule draws it.
-							outlineOffset: "[2px]",
-						},
-					})}
-				>
-					<input
-						bind:this={passwordInput}
-						class={css({
-							flex: "1",
-							minHeight: "controlHeight",
-							paddingInline: "md",
-							bg: "transparent",
-							color: "text",
-							caretColor: "primary",
-							borderRadius: "control",
-							_focusVisible: { outlineStyle: "none" },
-						})}
-						id="password"
-						name="password"
-						size="1"
-						type={showPassword ? "text" : "password"}
-						autocomplete="new-password"
-						aria-invalid={passwordError ? "true" : undefined}
-						aria-describedby={describedBy("password", passwordError, passwordHelp)}
-						oninput={() => (edited.password = true)}
-					>
-					{#if hydrated}
-						<button
-							type="button"
-							aria-controls="password"
-							aria-label={showPassword
-								? m.setup_password_hide_label()
-								: m.setup_password_show_label()}
-							onclick={() => (showPassword = !showPassword)}
-							class={css({
-								flex: "none",
-								display: "flex",
-								alignItems: "center",
-								gap: "xs",
-								paddingInline: "md",
-								textStyle: "label",
-								color: "muted",
-								cursor: "pointer",
-								borderRadius: "control",
-								_hover: { color: "text" },
-								// Inside the group's border, so it never reads as a box beside the box.
-								_focusVisible: { outlineOffset: "-xs" },
-							})}
-						>
-							{#if showPassword}
-								<EyeOffIcon size={20} aria-hidden="true" />
-								{m.setup_password_hide()}
-							{:else}
-								<EyeIcon size={20} aria-hidden="true" />
-								{m.setup_password_show()}
-							{/if}
-						</button>
-					{/if}
-				</div>
-				{#if passwordError}
-					<p class={error} id="password-error">{passwordError}</p>
-				{/if}
-				{#if passwordHelp}
-					<p class={help} id="password-help">{m.setup_password_help()}</p>
-				{/if}
-			</div>
-
-			{#if form?.failed}
-				<p class={error} role="alert">{m.setup_failed()}</p>
-			{/if}
-			{#if form?.busy}
-				<p class={error} role="alert">{m.error_server_busy()}</p>
-			{/if}
-			{#if form?.retryAfterSeconds}
-				<p class={error} role="alert">
-					{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
-				</p>
-			{/if}
-
-			<button
-				type="submit"
-				disabled={submitting}
-				class={css({
-					minHeight: "controlHeight",
-					paddingInline: "xl",
-					bg: "primary",
-					color: "background",
-					textStyle: "label",
-					fontSize: "body",
-					borderRadius: "control",
-					cursor: "pointer",
-					transitionProperty: "background-color, color",
-					transitionDuration: "press",
-					_enabled: { _hover: { bg: "secondary" } },
-					_disabled: { bg: "raised", color: "muted", cursor: "progress" },
-				})}
+		<div class={field}>
+			<label class={label} for="token">{m.setup_token_label()}</label>
+			<input
+				bind:this={tokenInput}
+				class={[
+					control,
+					css({
+						fontFamily: "mono",
+						fontSize: "body",
+						fontVariantNumeric: "tabular-nums",
+					}),
+				]}
+				id="token"
+				name="token"
+				type="text"
+				autocomplete="off"
+				autocapitalize="none"
+				spellcheck="false"
+				aria-invalid={tokenError ? "true" : undefined}
+				aria-describedby={describedBy("token", tokenError, true)}
+				oninput={formatToken}
+				onbeforeinput={stepOverDash}
 			>
-				{submitting ? m.setup_submitting() : m.setup_submit()}
-			</button>
-		</form>
-	</main>
-</div>
+			{#if tokenError}
+				<p class={error} id="token-error">{tokenError}</p>
+			{/if}
+			<!-- biome-ignore format: one line, so no whitespace lands between the format and its full stop -->
+			<p class={help} id="token-help">{#each tokenHelp as part, index (index)}{#if index > 0}<code class={css({ fontFamily: "mono" })}>xxxx-xxxx-xxxx</code>{/if}{part}{/each}</p>
+		</div>
+
+		<div class={field}>
+			<label class={label} for="username">{m.setup_username_label()}</label>
+			<!-- The answer's username is the field's default, so a re-render while the form is sent
+			never writes over what was typed, as a reactive `value` does. -->
+			<input
+				class={control}
+				id="username"
+				name="username"
+				type="text"
+				autocomplete="username"
+				autocapitalize="none"
+				spellcheck="false"
+				defaultValue={form?.username ?? ""}
+				aria-invalid={usernameError ? "true" : undefined}
+				oninput={() => (edited.username = true)}
+				aria-describedby={describedBy("username", usernameError, false)}
+			>
+			{#if usernameError}
+				<p class={error} id="username-error">{usernameError}</p>
+			{/if}
+		</div>
+
+		<PasswordField
+			bind:input={passwordInput}
+			bind:shown={showPassword}
+			id="password"
+			label={m.setup_password_label()}
+			autocomplete="new-password"
+			error={passwordError}
+			help={passwordHelp ? m.setup_password_help() : undefined}
+			oninput={() => (edited.password = true)}
+		/>
+
+		{#if form?.failed}
+			<p class={error} role="alert">{m.setup_failed()}</p>
+		{/if}
+		{#if form?.busy}
+			<p class={error} role="alert">{m.error_server_busy()}</p>
+		{/if}
+		{#if form?.retryAfterSeconds}
+			<p class={error} role="alert">
+				{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
+			</p>
+		{/if}
+
+		<button
+			type="submit"
+			disabled={submitting}
+			class={css({
+				minHeight: "controlHeight",
+				paddingInline: "xl",
+				bg: "primary",
+				color: "background",
+				textStyle: "label",
+				fontSize: "body",
+				borderRadius: "control",
+				cursor: "pointer",
+				transitionProperty: "background-color, color",
+				transitionDuration: "press",
+				_enabled: { _hover: { bg: "secondary" } },
+				_disabled: { bg: "raised", color: "muted", cursor: "progress" },
+			})}
+		>
+			{submitting ? m.setup_submitting() : m.setup_submit()}
+		</button>
+	</form>
+</PanelPage>

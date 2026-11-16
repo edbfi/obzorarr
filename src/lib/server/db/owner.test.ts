@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
-import { insertOwner, owner, ownerExists } from "./owner.ts";
+import { findOwner, insertOwner, owner, ownerExists } from "./owner.ts";
 
 let root: string;
 let db: Database;
@@ -23,6 +23,7 @@ afterAll(async () => {
 describe("ownerExists", () => {
 	it("is false until the owner row exists, then true", async () => {
 		expect(await ownerExists(db)).toBe(false);
+		expect(await findOwner(db)).toBeUndefined();
 		await db
 			.insert(owner)
 			.values({ id: 1, username: "owner", passwordHash: "hash", createdAt: new Date() });
@@ -60,5 +61,11 @@ describe("insertOwner", () => {
 		} finally {
 			await other.$client.close();
 		}
+	});
+});
+
+describe("findOwner", () => {
+	it("reads the owner's username and password hash", async () => {
+		expect(await findOwner(db)).toEqual({ username: "owner", passwordHash: "hash" });
 	});
 });
