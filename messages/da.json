@@ -54,5 +54,8 @@
 	"sign_in_forgot": "Har du glemt din adgangskode?",
 	"sign_in_forgot_restart": "Sæt {{variable}} i miljøet, og genstart Obzorarr.",
 	"sign_in_forgot_token": "Kopiér gendannelsestokenet, der er skrevet i serverkonsollen.",
-	"sign_in_forgot_recovery": "Åbn {{path}}, og vælg en ny adgangskode."
+	"sign_in_forgot_recovery": "Åbn {{path}}, og vælg en ny adgangskode.",
+	"error_session_ended_description": "Din session er udløbet. Log ind igen.",
+	"error_sign_in": "Log ind",
+	"landing_owner_sign_in": "Log ind som ejer"
 }

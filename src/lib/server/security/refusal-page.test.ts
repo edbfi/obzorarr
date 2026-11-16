@@ -1,20 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
 import type { RateLimitDecision } from "./rate-limit.ts";
-import { accessDenied, tooManyRequests } from "./refusal-page.ts";
+import { accessDenied, sessionEnded, tooManyRequests } from "./refusal-page.ts";
 
 const POLICY =
 	"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
 
-/** The refusal `make` builds for a browser that prefers `language` and accepts `accept`. */
+/**
+ * The refusal `make` builds for a browser that prefers `language` and accepts `accept`, with any
+ * other `headers`.
+ */
 async function refusal(
 	make: (request: Request) => Response,
 	language: string,
 	accept: string,
+	headers: Record<string, string> = {},
 ): Promise<Response> {
 	const request = new Request("http://obzorarr.example/", {
 		method: "POST",
-		headers: { "accept-language": language, accept },
+		headers: { "accept-language": language, accept, ...headers },
 	});
 	let response: Response | undefined;
 	await paraglideMiddleware(request, ({ request: translated }) => {
@@ -90,6 +94,7 @@ describe.each([
 			const response = await refusal(make, language, "application/json");
 			expect(response.status).toBe(status);
 			expect(response.headers.get("content-type")).toMatch(/^application\/json/);
+			expect(response.headers.get("cache-control")).toBe("no-store");
 			expect(await response.json()).toEqual({ message: messages[language] });
 		},
 	);
@@ -124,5 +129,55 @@ describe("accessDenied for a request that bypassed the proxy", () => {
 		const json = await refusal(bypassed, language, "application/json");
 		expect(json.status).toBe(403);
 		expect(await json.json()).toEqual({ message });
+	});
+});
+
+describe("sessionEnded", () => {
+	const ended = (request: Request) => sessionEnded(request, "/admin/settings/security");
+
+	it.each([
+		["en", "Access denied", "Your session ended. Sign in again.", "Sign in", "Home"],
+		["da", "Adgang nægtet", "Din session er udløbet. Log ind igen.", "Log ind", "Forside"],
+	])(
+		"is the Access denied page saying so (%s), with a link to sign in that returns to the page",
+		async (language, title, message, signIn, home) => {
+			const response = await refusal(ended, language, PAGE);
+			expect(response.status).toBe(403);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+			const html = await response.text();
+			expect(html).toContain(`<title>${title}</title>`);
+			expect(html).toContain(message);
+			expect(html).toMatch(
+				new RegExp(
+					`<a [^>]*href="/admin/sign-in\\?next=%2Fadmin%2Fsettings%2Fsecurity"[^>]*>${signIn}</a>`,
+				),
+			);
+			expect(html).toMatch(new RegExp(`<a [^>]*href="/"[^>]*>${home}</a>`));
+		},
+	);
+
+	it.each([
+		["en", "Your session ended. Sign in again."],
+		["da", "Din session er udløbet. Log ind igen."],
+	])("is a JSON error for a caller that wants JSON (%s)", async (language, message) => {
+		const response = await refusal(ended, language, "application/json");
+		expect(response.status).toBe(403);
+		expect(await response.json()).toEqual({ message });
+	});
+});
+
+describe("a form enhanced with JavaScript", () => {
+	it("gets SvelteKit's action error, so SvelteKit shows its error page with the message", async () => {
+		for (const [make, message] of [
+			[(request: Request) => sessionEnded(request, "/admin"), "Your session ended. Sign in again."],
+			[accessDenied, "The request was refused because it didn't come from this site."],
+			[tooMany, "Too many requests came from your address. Wait a moment, then try again."],
+		] as const) {
+			const response = await refusal(make, "en", "application/json", {
+				"x-sveltekit-action": "true",
+			});
+			expect(response.headers.get("cache-control")).toBe("no-store");
+			expect(await response.json()).toEqual({ type: "error", error: { message } });
+		}
 	});
 });

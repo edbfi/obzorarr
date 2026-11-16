@@ -389,3 +389,181 @@ test.describe("owner sign-in", () => {
 		});
 	}
 });
+
+/** The session cookie a claim's response set, as a `cookie` header. */
+const sessionCookie = (response: Response) =>
+	(response.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+
+test.describe("the owner check", () => {
+	test("sends a signed-out browser to sign in and back, and a data request gets SvelteKit's JSON redirect", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const signedOutPage = await fetch(`${server.url}/admin/settings/security`, {
+				redirect: "manual",
+			});
+			expect(signedOutPage.status).toBe(303);
+			expect(signedOutPage.headers.get("location")).toBe(
+				"/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity",
+			);
+			expect(signedOutPage.headers.get("cache-control")).toBe("no-store");
+			const data = await fetch(`${server.url}/admin/settings/security/__data.json`, {
+				redirect: "manual",
+			});
+			expect(await data.json()).toMatchObject({
+				type: "redirect",
+				location: "/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity",
+			});
+
+			await page.goto(`${server.url}/admin/settings`);
+			await page.waitForURL(`${server.url}/admin/sign-in?next=%2Fadmin%2Fsettings`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await signIn(page, "owner", PASSWORD);
+			await page.waitForURL(`${server.url}/admin/settings/security`);
+			await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("refuses an owner-only POST without a session, as a page, as SvelteKit's error and as JSON", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const post = (headers: Record<string, string>) =>
+				fetch(`${server.url}/admin/settings/security`, {
+					method: "POST",
+					headers: {
+						origin: server.url,
+						"content-type": "application/x-www-form-urlencoded",
+						...headers,
+					},
+					body: "a=1",
+					redirect: "manual",
+				});
+			const message = "Your session ended. Sign in again.";
+			const asPage = await post({ accept: "text/html" });
+			expect(asPage.status).toBe(403);
+			const html = await asPage.text();
+			expect(html).toContain(message);
+			expect(html).toContain('href="/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity"');
+			const enhanced = await post({ accept: "application/json", "x-sveltekit-action": "true" });
+			expect(enhanced.status).toBe(403);
+			expect(await enhanced.json()).toEqual({ type: "error", error: { message } });
+			const asJson = await post({ accept: "application/json" });
+			expect(asJson.status).toBe(403);
+			expect(await asJson.json()).toEqual({ message });
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("lets the signed-in owner in, out of every cache, past /admin's redirects and away from sign-in", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const cookie = sessionCookie(await claim(server));
+			const get = (path: string) =>
+				fetch(`${server.url}${path}`, { headers: { cookie }, redirect: "manual" });
+			for (const path of ["/admin", "/admin/settings"]) {
+				const response = await get(path);
+				expect(response.status, path).toBe(307);
+				expect(response.headers.get("location"), path).toBe("/admin/settings/security");
+				expect(response.headers.get("cache-control"), path).toBe("no-store");
+			}
+			const tab = await get("/admin/settings/security");
+			expect(tab.status).toBe(200);
+			expect(tab.headers.get("cache-control")).toBe("no-store");
+			const signInPage = await get("/admin/sign-in");
+			expect(signInPage.status).toBe(303);
+			expect(signInPage.headers.get("location")).toBe("/admin");
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("its own answers keep the security headers and clear a stale cookie, data requests too", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const stale = { cookie: "obzorarr_session=made-up" };
+			const answers = {
+				page: await fetch(`${server.url}/admin/settings/security`, {
+					headers: stale,
+					redirect: "manual",
+				}),
+				data: await fetch(`${server.url}/admin/settings/security/__data.json`, {
+					headers: stale,
+					redirect: "manual",
+				}),
+				post: await fetch(`${server.url}/admin/settings/security`, {
+					method: "POST",
+					headers: {
+						...stale,
+						origin: server.url,
+						accept: "text/html",
+						"content-type": "application/x-www-form-urlencoded",
+					},
+					body: "a=1",
+					redirect: "manual",
+				}),
+			};
+			expect(answers.page.status).toBe(303);
+			expect(answers.data.status).toBe(200);
+			expect(answers.data.headers.get("cache-control")).toBe("private, no-store");
+			expect(await answers.data.json()).toMatchObject({ type: "redirect" });
+			expect(answers.post.status).toBe(403);
+			for (const [name, answer] of Object.entries(answers)) {
+				expect(answer.headers.get("x-frame-options"), name).toBe("DENY");
+				expect(answer.headers.get("x-content-type-options"), name).toBe("nosniff");
+				const cleared = (answer.headers.get("set-cookie") ?? "").toLowerCase();
+				expect(cleared, name).toMatch(/^obzorarr_session=;/);
+				expect(cleared, name).toContain("max-age=0");
+				expect(cleared, name).not.toContain("secure");
+			}
+			// Signing in over a stale cookie keeps the new session: nothing clears it after.
+			const signedIn = await fetch(`${server.url}/admin/sign-in`, {
+				method: "POST",
+				headers: {
+					...stale,
+					origin: server.url,
+					accept: "text/html",
+					"content-type": "application/x-www-form-urlencoded",
+				},
+				body: new URLSearchParams({ username: "owner", password: PASSWORD }),
+				redirect: "manual",
+			});
+			expect(signedIn.status).toBe(303);
+			const set = signedIn.headers.getSetCookie();
+			expect(set).toHaveLength(1);
+			expect(set[0]).toMatch(/^obzorarr_session=[A-Za-z0-9_-]{43};/);
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("/ links to the owner's sign-in", async ({ page }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			await page.goto(`${server.url}/`);
+			await expect(page.getByRole("link", { name: "Owner sign-in" })).toHaveAttribute(
+				"href",
+				"/admin/sign-in",
+			);
+		} finally {
+			await server.stop();
+		}
+	});
+});

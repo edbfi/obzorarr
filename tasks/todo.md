@@ -255,12 +255,13 @@ enhanced form); a signed-in owner opening the sign-in page goes to `/admin`; and
 response and the sign-in page are `no-store`. The placeholder `/` gets its "Owner sign-in" link.
 
 **Acceptance criteria:**
-- [ ] `server/security/refusal-page.test.ts` gains the session-ended page and its JSON form, in
+- [x] `server/security/refusal-page.test.ts` gains the session-ended page and its JSON form, in
   both languages.
-- [ ] `tests/e2e/sign-in.test.ts` gains: without a session, `/admin` goes to sign in and back after,
+- [x] `tests/e2e/sign-in.test.ts` gains: without a session, `/admin` goes to sign in and back after,
   and its `__data.json` request gets SvelteKit's JSON redirect with `next` set to the page's path;
-  an owner-only POST gets 403 (a plain form gets the page; `x-sveltekit-action: true` with `accept:
-  application/json` gets a JSON `{ message }`); a signed-in owner opening the sign-in page goes to
+  an owner-only POST gets 403 (a plain form gets the page; `x-sveltekit-action: true` gets
+  SvelteKit's action error, so its error page shows the message; another JSON caller gets `{
+  message }`); a signed-in owner opening the sign-in page goes to
   `/admin`; the headers are `no-store`; `/` links to sign in; signed in, a direct request to
   `/admin` and to `/admin/settings` gets the 307 to the Security tab, so the owner check runs
   before those redirects.

@@ -289,7 +289,8 @@ so far, errors and refusals show branded pages, each client address is limited t
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
 on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
-far; and the owner signs in at `/admin/sign-in`. Nothing under `/admin` asks for a session yet.
+far; and the owner signs in at `/admin/sign-in`, linked from `/`. Everything else under `/admin`
+needs the owner's session.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -324,15 +325,15 @@ src/
                                  middleware, the security headers, the cross-origin check, the
                                  client address (kept in `locals.clientAddress` for the actions'
                                  own limits) and the general rate limit, the session (the owner in
-                                 `locals.owner`), then the setup gate;
+                                 `locals.owner`), the setup gate, then the owner check;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks
                                  <html data-hydrated> once mounted
-    (public)/+page.svelte        `/`: placeholder page, its text from the messages, and the
-                                 language switcher
+    (public)/+page.svelte        `/`: placeholder page, its text from the messages, the
+                                 language switcher and the link to the owner's sign-in
     +error.svelte                the error page: "Page not found", "Access denied", "Too many
                                  requests" or "Something went wrong", with Go back and Home
     healthz/+server.ts           `/healthz`: public one-word status
@@ -392,6 +393,9 @@ src/
       services/sign-in/sessions.ts
                                  owner sessions: 7 days unused or 30 days at most, the last use
                                  written at most hourly, started only for the current password
+      services/sign-in/owner-check.ts
+                                 which paths need the owner's session, and what a request without
+                                 one gets: sign in and back, or "Your session ended"
       services/sign-in/sign-in.ts
                                  signing in: one answer for a wrong username or password, a dummy
                                  verification for a wrong username, a hash slot, then the session;
@@ -416,9 +420,11 @@ src/
       security/browser-address.ts
                                  `ORIGIN`, or the validated `Origin` of a POST: the address a
                                  cookie's `Secure` flag follows
-      security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
+      security/refusal-page.ts   the pages `handle` builds itself, "Access denied" (also for a
+                                 session that ended, with a link to sign in) and "Too many
                                  requests", with their own policy and Panda's token declarations
-                                 inline, or a JSON error
+                                 inline, SvelteKit's action error for an enhanced form, or a JSON
+                                 error
       security/secrets/          key-text.ts: a master key's text to its 32 bytes, refusing
                                  malformed and weak keys; keyring.ts: loads the key and derives
                                  the AES key and key ID; secret.ts: the `Secret` wrapper,
@@ -445,7 +451,7 @@ tests/
   e2e/setup.test.ts              startup and first run on fresh built servers
   e2e/errors.test.ts             the error page and the pages `handle` builds, styled
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
-                                 sign-in page and the hash slots
+                                 sign-in page, the hash slots and the owner check
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the
