@@ -351,6 +351,21 @@ describe("redact", () => {
 			);
 		});
 
+		it("cleans the whole stack as text when its header isn't the error's message", () => {
+			// The stack was built before the message was shortened.
+			const shortened = new Error("q\nparams: a\nSECRET");
+			void shortened.stack;
+			shortened.message = "q\nparams: a";
+			const custom = Object.assign(new Error("boom"), {
+				stack: "Custom: header\nparams: a\nSECRET\n    at frame (file.ts:1:1)",
+			});
+			for (const error of [shortened, custom]) {
+				const text = JSON.stringify(redact(error));
+				expect(text).not.toContain("SECRET");
+				expect(text).not.toContain("frame (file.ts");
+			}
+		});
+
 		it("stays fast on text built to slow the parameters' rule down", () => {
 			const started = performance.now();
 			redact(`\nparams: ${"\n ".repeat(200_000)}x`);

@@ -94,8 +94,9 @@ const ARGON2_HASH =
 /**
  * What a failed query's message adds after its text when it carries the values bound to it
  * (Drizzle's `DrizzleQueryError`): `params:` and everything after it, since a value can hold line
- * breaks, even ones that look like a stack frame. An error's stack keeps its frames: it is
- * cleaned apart from its message (`walkError`).
+ * breaks, even ones that look like a stack frame. It applies to every string an entry logs, so
+ * any text with a line that starts with `params: ` loses the rest of that line and everything
+ * after it. An error's stack keeps its frames when they can be told apart (`cleanStack`).
  */
 const QUERY_PARAMS = /(\nparams: )[\s\S]*/g;
 
@@ -229,12 +230,17 @@ function walkError(error: Error, path: Set<object>): Record<string, unknown> {
 
 /**
  * An error's stack, its header (`Name: message`) cleaned as the message is and its frames after
- * it on their own, so a value in the message can't pass for a frame. A stack in any other shape
- * is cleaned as text, which hides everything after a `params:` line, its frames included.
+ * it on their own, so a value in the message can't pass for a frame. A stack in any other shape,
+ * such as one made before its message changed, is cleaned as text, which hides everything after a
+ * `params:` line, its frames included.
  */
 function cleanStack(error: Error): string {
 	const stack = error.stack ?? "";
 	const header = `${error.name}: ${error.message}`;
-	if (!stack.startsWith(header)) return cleanText(stack);
-	return `${error.name}: ${cleanText(error.message)}${cleanText(stack.slice(header.length))}`;
+	const frames = stack.slice(header.length);
+	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
+	return `${error.name}: ${cleanText(error.message)}${cleanText(frames)}`;
 }
+
+/** The rest of a stack after its header, when it is stack frames and nothing else. */
+const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
