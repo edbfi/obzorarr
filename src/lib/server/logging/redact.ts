@@ -145,8 +145,10 @@ function hidesCredential(value: string): boolean {
 		const decoded = text.replace(ESCAPES, decodeEscapes);
 		if (decoded === text) return false;
 		text = decoded;
-		// Read as a query of its own, so its first parameter (`token%3Dabc`) is found too.
-		const query = `?${text}`;
+		// Read as a query of its own, so its first parameter (`token%3Dabc`) is found too, and so is
+		// the first one in each of its parameters' values (`1;u=token%3Dabc`): the scan checks
+		// those values only as part of the whole.
+		const query = `?${text}`.replace(PARAMETER, "$&?");
 		if (cleanText(query, false) !== query) return true;
 	}
 	return false;

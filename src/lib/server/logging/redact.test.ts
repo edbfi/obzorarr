@@ -112,6 +112,9 @@ describe("redact", () => {
 			expect(redact("/r?u=%FF%3Ftoken%3Dabc")).toBe(`/r?u=${R}`);
 			// A bare query string, whose first parameter has no separator before it.
 			expect(redact("/r?u=token%3Dabc%26x%3D1&y=2")).toBe(`/r?u=${R}&y=2`);
+			// A parameter behind a semicolon, whose own value starts with the credential.
+			expect(redact("/r?a=1;u=token%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
+			expect(redact("/r?a=1;b=2;u=token%3Dabc")).toBe(`/r?a=${R}`);
 		});
 
 		it("keeps an encoded value that hides nothing", () => {
