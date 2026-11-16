@@ -288,7 +288,8 @@ which creates the owner account. There is no sign-in page yet: module 5, `sign-i
 so far, errors and refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
-on, and signs the new owner in with a session.
+on, signs the new owner in with a session and lands on the admin's Settings, only its heading so
+far.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -339,7 +340,11 @@ src/
                                  `route-setup.md`); +page.server.ts: its load and the claim
                                  action, "not found" once claimed; token-format.ts: the token
                                  field's dashes as it is typed
-    (app)/ (admin)/ api/         later: member area and recaps, owner admin panel, JSON endpoints
+    (admin)/admin/(shell)/       the owner's admin panel: +page.server.ts sends `/admin` to the
+                                 Security tab until the overview exists, settings/+page.server.ts
+                                 sends `/admin/settings` there too, and settings/security/
+                                 +page.svelte is the Security tab, only its heading so far
+    (app)/ api/                  later: member area and recaps, JSON endpoints
   lib/                           imported as `#lib/<path>.<ext>`, e.g.
                                  `#lib/server/services/health.ts`
     assets/obzorarr-icon.svg     the logo: the README shows it, the layout imports it as favicon

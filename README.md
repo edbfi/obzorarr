@@ -170,9 +170,9 @@ common password or, as a whole, a simple pattern such as `abcabcabcabcabc` or `a
 - **An expired token:** each lasts 15 minutes, and a new one is printed when it expires. Use the
   newest.
 - **Once claimed,** no token is printed again and `/setup` is gone, also after a restart.
-- **The claim signs you in,** with an `obzorarr_session` cookie that lasts until 7 days pass
-  without use, and 30 days at most. It is marked `Secure` only when your browser reaches
-  Obzorarr over HTTPS, so a plain-HTTP install at home works too.
+- **The claim signs you in** and opens the admin's Settings, with an `obzorarr_session` cookie
+  that lasts until 7 days pass without use, and 30 days at most. It is marked `Secure` only when
+  your browser reaches Obzorarr over HTTPS, so a plain-HTTP install at home works too.
 
 ## Logs
 

@@ -42,5 +42,6 @@
 	"setup_password_common": "Adgangskoden står på en liste over almindelige adgangskoder. Vælg en anden.",
 	"setup_submit": "Tag i brug og opret ejer",
 	"setup_submitting": "Tager i brug…",
-	"setup_failed": "Obzorarr kunne ikke oprette ejerkontoen. Prøv igen med den nyeste opsætningskode fra serverkonsollen."
+	"setup_failed": "Obzorarr kunne ikke oprette ejerkontoen. Prøv igen med den nyeste opsætningskode fra serverkonsollen.",
+	"admin_settings_title": "Indstillinger"
 }

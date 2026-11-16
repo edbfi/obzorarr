@@ -196,10 +196,10 @@ with no data or actions, until task 10 builds the shell and the tab; the owner c
 the sign-in page (task 8). Every e2e file that expects `/` after a claim moves to the admin.
 
 **Acceptance criteria:**
-- [ ] `tests/e2e/global-setup.ts` waits for the Security tab after its claim; `server.ts`'s claim
+- [x] `tests/e2e/global-setup.ts` waits for the Security tab after its claim; `server.ts`'s claim
   expects `/admin`; `setup.test.ts`'s browser claim waits for the Security tab.
-- [ ] `tests/e2e/sign-in.test.ts` gains: the claim lands on the Security tab, signed in.
-- [ ] `route-setup.md` says the claim lands in the admin.
+- [x] `tests/e2e/sign-in.test.ts` gains: the claim lands on the Security tab, signed in.
+- [x] `route-setup.md` says the claim lands in the admin.
 
 **Verification:** the gates.
 

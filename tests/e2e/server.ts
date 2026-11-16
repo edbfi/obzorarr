@@ -93,6 +93,6 @@ export async function claim(server: Server): Promise<Response> {
 		redirect: "manual",
 	});
 	expect(response.status, "the claim").toBe(303);
-	expect(response.headers.get("location")).toBe("/");
+	expect(response.headers.get("location")).toBe("/admin");
 	return response;
 }

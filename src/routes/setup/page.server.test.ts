@@ -129,7 +129,7 @@ describe("the claim action", () => {
 		} catch (redirect) {
 			thrown = redirect;
 		}
-		expect(thrown).toMatchObject({ status: 303, location: "/" });
+		expect(thrown).toMatchObject({ status: 303, location: "/admin" });
 		expect(cookies.set).toHaveBeenCalledWith(
 			"obzorarr_session",
 			"tok",

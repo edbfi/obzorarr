@@ -846,7 +846,8 @@ export const GET: RequestHandler = () => healthResponse();
   `src/routes/setup/token-format.test.ts` (the token field's dashes),
   `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers, its 403 for a
   browser that stripped `Origin` and a claimed instance's 404 before it, `no-store`, and the
-  session cookie),
+  session cookie with the redirect to `/admin`), `src/routes/(admin)/admin/(shell)/` (`/admin`
+  and `/admin/settings` open the Security tab),
   `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
@@ -859,8 +860,8 @@ export const GET: RequestHandler = () => healthResponse();
 - **e2e (Playwright, Chromium, under Bun):** against the built adapter-bun server, with a master key
   Playwright generates for each run, so CI needs no stored secret, and a temporary database. The web
   server counts as started once its output runs from the token line through "Listening on", which
-  captures the token; `global-setup.ts` then claims the instance through the form in a browser, so
-  the smoke and language tests run on a claimed instance.
+  captures the token; `global-setup.ts` then claims the instance through the form in a browser and
+  waits for the Security tab, so the smoke and language tests run on a claimed instance.
   - `smoke.test.ts` checks that `/` returns 200, shows the placeholder heading, hydrates (it waits
     for the `data-hydrated` attribute the root layout sets when mounted), applies the Panda
     background token and display text style and logs no console errors; that each of Panda's three
@@ -898,8 +899,8 @@ export const GET: RequestHandler = () => healthResponse();
   - `rate-limits.test.ts` checks that the 61st request in a minute gets the "Too many requests"
     page with `Retry-After` and the limit's headers, and that a request without the configured
     header gets "Access denied" while `/healthz` answers.
-  - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in with an
-    `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only, about 30 days long
+  - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in and lands on the
+    Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only, about 30 days long
     and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't loopback, and that
     a cookie naming no session is cleared, also without `Secure`.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
