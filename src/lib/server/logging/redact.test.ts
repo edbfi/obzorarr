@@ -333,6 +333,24 @@ describe("redact", () => {
 			expect(text).toContain("UNIQUE constraint failed: owner.id");
 		});
 
+		it("isn't fooled by a value that looks like a stack frame", () => {
+			const query = 'update "settings" set "value" = ? where "key" = ?';
+			const failed = new DrizzleQueryError(
+				query,
+				["before\n\tat sensitive\nafter", "k"],
+				new Error("x"),
+			);
+			const logged = redact(failed) as Record<string, unknown>;
+			const text = JSON.stringify(logged);
+			expect(text).not.toContain("sensitive");
+			expect(text).not.toContain("after");
+			expect(logged.message).toBe(`Failed query: ${query}\nparams: ${R}`);
+			// The real frames are still there.
+			expect(logged.stack).toMatch(
+				/^DrizzleQueryError: Failed query: [^\n]*\nparams: \[redacted\]\n\s+at /,
+			);
+		});
+
 		it("stays fast on text built to slow the parameters' rule down", () => {
 			const started = performance.now();
 			redact(`\nparams: ${"\n ".repeat(200_000)}x`);
@@ -343,6 +361,10 @@ describe("redact", () => {
 		it("hides a hash written in base64url or with JSON's escaped slashes", () => {
 			expect(redact("$argon2id$v=19$m=65536,t=2,p=1$c2_x-dA$aG_Fz-aA")).toBe(R);
 			expect(redact(String.raw`"$argon2id$v=19$m=65536,t=2,p=1$ab\/cd$ef\/gh"`)).toBe(`"${R}"`);
+			// Another escape ends it, so the text after it stays.
+			expect(redact(String.raw`"$argon2id$v=19$m=65536,t=2,p=1$abcd$efgh\nnext line"`)).toBe(
+				String.raw`"${R}\nnext line"`,
+			);
 		});
 	});
 });

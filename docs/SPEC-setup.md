@@ -102,8 +102,8 @@ it comes.
 - a failed query's bound values, which can be the owner's username and password hash: the database
   is opened with Drizzle's `paramsInErrors` off, and a failed claim logs only the query and the
   database's own error (`queryFailure`); should values still appear, everything after `params:` in
-  a message or stack, up to the stack's frames, and the `params` field of an error that also has a
-  `query` are hidden.
+  any text is hidden, an error's stack keeping its frames, and so is the `params` field of an
+  error that also has a `query`.
 
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its
