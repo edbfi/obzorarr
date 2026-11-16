@@ -19,16 +19,19 @@ const { actions, load } = await import("./+page.server.ts");
 type Action = (typeof actions)["password"];
 
 /**
- * The action `name` for a form post from a browser with the session cookie `tok` on
- * `http://192.168.1.20:3000`, or with no `Origin` when `origin` is null. What it returned or threw,
+ * The action `name` for a form post from a browser with the session cookie `cookie` (none when
+ * null) on `http://192.168.1.20:3000`, or with no `Origin` when `origin` is null. What it returned or threw,
  * and the headers and cookies it set.
  */
 async function post(
 	name: "password" | "sessions",
-	{ origin = "http://192.168.1.20:3000" }: { origin?: string | null } = {},
+	{
+		origin = "http://192.168.1.20:3000",
+		cookie = "tok",
+	}: { origin?: string | null; cookie?: string | null } = {},
 ) {
 	const setHeaders = vi.fn();
-	const cookies = { get: vi.fn(() => "tok"), set: vi.fn(), delete: vi.fn() };
+	const cookies = { get: vi.fn(() => cookie ?? undefined), set: vi.fn(), delete: vi.fn() };
 	const url = new URL(`http://app.test/admin/settings/security?/${name}`);
 	const request = new Request(url, {
 		method: "POST",
@@ -150,5 +153,27 @@ describe("the sessions action", () => {
 		const { outcome } = await post("sessions");
 		expect(outcome).toEqual({ sessions: { ended: 3 } });
 		expect(endOtherSessions.mock.calls[0]?.[1]).toBe("tok");
+	});
+
+	it("says the session ended, clearing its cookie, when the caller's own session ended", async () => {
+		endOtherSessions.mockResolvedValue(undefined);
+		const { outcome, cookies } = await post("sessions");
+		expect(isHttpError(outcome, 403)).toBe(true);
+		expect(outcome).toMatchObject({ body: { message: "Your session ended. Sign in again." } });
+		expect(cookies.delete).toHaveBeenCalledWith(
+			"obzorarr_session",
+			expect.objectContaining({ path: "/", secure: false }),
+		);
+	});
+});
+
+describe("a request without the session cookie", () => {
+	it("is told its session ended, and neither action does anything", async () => {
+		for (const name of ["password", "sessions"] as const) {
+			const { outcome } = await post(name, { cookie: null });
+			expect(isHttpError(outcome, 403), name).toBe(true);
+		}
+		expect(changePassword).not.toHaveBeenCalled();
+		expect(endOtherSessions).not.toHaveBeenCalled();
 	});
 });

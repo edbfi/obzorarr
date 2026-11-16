@@ -1,4 +1,4 @@
-import type { Executor } from "#lib/server/db/client.ts";
+import type { Database, Executor } from "#lib/server/db/client.ts";
 import {
 	countOtherSessions as countOthers,
 	deleteExpiredSessions as deleteExpired,
@@ -59,7 +59,7 @@ export async function lookUpSession(
 	const session = await findSession(db, hash);
 	if (session === undefined) return undefined;
 	const at = now.getTime();
-	if (at >= session.expiresAt.getTime() || at - session.lastUsedAt.getTime() >= SESSION_IDLE_MS) {
+	if (hasEnded(session, at)) {
 		await deleteSession(db, hash);
 		return undefined;
 	}
@@ -80,12 +80,28 @@ export async function countOtherSessions(db: Executor, token: string, now: Date)
 }
 
 /**
- * Signs every other browser out ("Sign out everywhere else"): the ended sessions are deleted first,
- * so the count it gives is of the browsers that were still signed in.
+ * Signs every other browser out ("Sign out everywhere else"), in one transaction: only while the
+ * session `token` names is still live, so a request that waited while a password change replaced
+ * its session can't end the replacement; then the ended sessions, so the count it gives is of the
+ * browsers that were still signed in. Undefined, ending nothing, when the caller's session ended.
  */
-export async function endOtherSessions(db: Executor, token: string, now: Date): Promise<number> {
-	await deleteExpiredSessions(db, now);
-	return deleteOtherSessions(db, hashSessionToken(token));
+export async function endOtherSessions(
+	db: Database,
+	token: string,
+	now: Date,
+): Promise<number | undefined> {
+	const hash = hashSessionToken(token);
+	return db.transaction(async (tx) => {
+		const own = await findSession(tx, hash);
+		if (own === undefined || hasEnded(own, now.getTime())) return undefined;
+		await deleteExpiredSessions(tx, now);
+		return deleteOtherSessions(tx, hash);
+	});
+}
+
+/** Whether a session has ended at `at`: past its 30-day end, or unused for 7 days. */
+function hasEnded(session: { expiresAt: Date; lastUsedAt: Date }, at: number): boolean {
+	return at >= session.expiresAt.getTime() || at - session.lastUsedAt.getTime() >= SESSION_IDLE_MS;
 }
 
 /** Deletes every ended session, as startup does. */

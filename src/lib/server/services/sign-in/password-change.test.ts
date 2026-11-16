@@ -175,9 +175,17 @@ describe("changePassword", () => {
 		verify.during = async () => {
 			await db.delete(ownerSession);
 		};
-		expect(await change()).toEqual({ status: "signed-out" });
+		expect(await change({ clientAddress: "203.0.113.43" })).toEqual({ status: "signed-out" });
 		expect((await findOwner(db))?.passwordHash).toBe(ownerHash);
 		expect(await storedHashes()).toEqual([]);
+		// Logged, so an owner signed out by a second click sees why.
+		expect(logged.map((line) => JSON.parse(line))).toContainEqual(
+			expect.objectContaining({
+				level: "info",
+				message: "a password change found its session ended",
+				metadata: { clientAddress: "203.0.113.43" },
+			}),
+		);
 	});
 
 	it("changes nothing when the password changed while it was checked", async () => {

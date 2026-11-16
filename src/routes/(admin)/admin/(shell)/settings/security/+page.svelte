@@ -32,13 +32,16 @@ const currentError = $derived(
 const nextError = $derived(
 	answer?.error && !edited.next ? passwordMessages[answer.error]() : undefined,
 );
+/** The field error the assertive region announces, while the field shows it below itself. */
+const fieldError = $derived(currentError ?? nextError);
 // "Use at least 15 characters." already says what the helper says.
 const nextHelp = $derived(!(nextError && answer?.error === "too-short"));
 
 /**
  * While the change is saved, the button says so and can't be pressed again. A change, or a
- * field error, empties both fields and hides what was typed; the field to fix takes focus. Too
- * many attempts or a busy server checked nothing, so both passwords stay.
+ * field error, empties both fields and hides what was typed; the field to fix takes focus, or
+ * after a change the section's heading, since the disabled button lost it. Too many attempts or
+ * a busy server checked nothing, so both passwords stay.
  */
 const savePassword: SubmitFunction = () => {
 	saving = true;
@@ -56,20 +59,28 @@ const savePassword: SubmitFunction = () => {
 		if (currentInput) currentInput.value = "";
 		if (nextInput) nextInput.value = "";
 		await tick();
-		document.querySelector<HTMLElement>("#password-section [aria-invalid='true']")?.focus();
+		(
+			document.querySelector<HTMLElement>("#password-section [aria-invalid='true']") ??
+			document.querySelector<HTMLElement>("#password-heading")
+		)?.focus();
 	};
 };
 
+/** Once the others are signed out, the button is gone, so focus goes to the section's heading. */
 const signOutElsewhere: SubmitFunction = () => {
 	signingOut = true;
-	return async ({ update }) => {
+	return async ({ result, update }) => {
 		await update();
 		signingOut = false;
+		if (result.type !== "success") return;
+		await tick();
+		document.querySelector<HTMLElement>("#sessions-heading")?.focus();
 	};
 };
 
 const section = css({ display: "flex", flexDirection: "column", gap: "lg" });
-const heading = css({ textStyle: "h2", textWrap: "balance" });
+/** A heading that takes focus after its section's action, without a ring: it isn't a control. */
+const heading = css({ textStyle: "h2", textWrap: "balance", _focus: { outlineStyle: "none" } });
 const status = css({ textStyle: "body", color: "success" });
 const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold" });
 /** A message above the control it is about. */
@@ -104,7 +115,7 @@ const button = css({
 	})}
 >
 	<section id="password-section" class={section} aria-labelledby="password-heading">
-		<h2 class={heading} id="password-heading">{m.security_password_heading()}</h2>
+		<h2 class={heading} id="password-heading" tabindex="-1">{m.security_password_heading()}</h2>
 		<form
 			method="post"
 			action="?/password"
@@ -133,21 +144,28 @@ const button = css({
 			/>
 
 			<!-- The messages sit with the button, so an empty live region takes no space. Errors are
-			announced at once; the saved message waits its turn. -->
+			announced at once, a field's too, which it also shows below itself; the saved message waits
+			its turn. Each answer renders its message anew, so the same message is announced again. -->
 			<div>
 				<div role="alert">
-					{#if answer?.busy}
-						<p class={[error, message]}>{m.error_server_busy()}</p>
-					{:else if answer?.retryAfterSeconds}
-						<p class={[error, message]}>
-							{m.error_too_many_attempts({ count: Math.ceil(answer.retryAfterSeconds / 60) })}
-						</p>
-					{/if}
+					{#key form}
+						{#if answer?.busy}
+							<p class={[error, message]}>{m.error_server_busy()}</p>
+						{:else if answer?.retryAfterSeconds}
+							<p class={[error, message]}>
+								{m.error_too_many_attempts({ count: Math.ceil(answer.retryAfterSeconds / 60) })}
+							</p>
+						{:else if fieldError}
+							<p class={css({ srOnly: true })}>{fieldError}</p>
+						{/if}
+					{/key}
 				</div>
 				<div role="status">
-					{#if answer?.changed}
-						<p class={[status, message]}>{m.security_password_changed()}</p>
-					{/if}
+					{#key form}
+						{#if answer?.changed}
+							<p class={[status, message]}>{m.security_password_changed()}</p>
+						{/if}
+					{/key}
 				</div>
 
 				<button
@@ -170,13 +188,15 @@ const button = css({
 	</section>
 
 	<section class={section} aria-labelledby="sessions-heading">
-		<h2 class={heading} id="sessions-heading">{m.security_sessions_heading()}</h2>
+		<h2 class={heading} id="sessions-heading" tabindex="-1">{m.security_sessions_heading()}</h2>
 		<!-- The done message sits with the count, so an empty live region takes no space. -->
 		<div>
 			<div role="status">
-				{#if ended !== undefined}
-					<p class={[status, message]}>{m.security_sessions_ended({ count: ended })}</p>
-				{/if}
+				{#key form}
+					{#if ended !== undefined}
+						<p class={[status, message]}>{m.security_sessions_ended({ count: ended })}</p>
+					{/if}
+				{/key}
 			</div>
 			{#if data.otherSessions > 0}
 				<p class={message}>{m.security_sessions_count({ count: data.otherSessions })}</p>

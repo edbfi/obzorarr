@@ -385,8 +385,8 @@ src/
                                  owner-session.ts) and, from their first caller, its named
                                  operations: reading and writing a setting, whether an owner
                                  exists, reading and creating the owner and replacing its hash,
-                                 storing, finding, renewing, counting and ending sessions; client.ts names the transaction and
-                                 executor types
+                                 storing, finding, renewing, counting and ending sessions;
+                                 client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
@@ -414,10 +414,14 @@ src/
                                  which paths need the owner's session, and what a request without
                                  one gets: sign in and back, or "Your session ended"
       services/sign-in/sign-in.ts
-                                 signing in: its limit of 10 per 5 minutes and the waits, one
-                                 answer for a wrong username or password, a dummy verification for
-                                 a wrong username, a hash slot, then the session; the typed
-                                 username is never logged
+                                 signing in: the limit and the waits, one answer for a wrong
+                                 username or password, a dummy verification for a wrong
+                                 username, a hash slot, then the session; the typed username is
+                                 never logged
+      services/sign-in/password-checks.ts
+                                 what signing in and the password change share: the limit of 10
+                                 per 5 minutes, the failed checks and their waits, and the busy
+                                 answer
       services/sign-in/password-change.ts
                                  the password change: signing in's limit and waits, `setup`'s
                                  rules, a hash slot, then one transaction for the new hash, the

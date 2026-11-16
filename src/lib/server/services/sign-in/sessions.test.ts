@@ -155,4 +155,15 @@ describe("countOtherSessions and endOtherSessions", () => {
 		expect(await db.select().from(ownerSession)).toHaveLength(1);
 		expect(await countOtherSessions(db, mine.token, end)).toBe(0);
 	});
+
+	it("end nothing for a caller whose own session ended, as one a password change replaced", async () => {
+		const stale = await started();
+		const replacement = await started();
+		await endSession(db, stale.token);
+		expect(await endOtherSessions(db, stale.token, T0)).toBeUndefined();
+		expect(await lookUpSession(db, replacement.token, T0)).toEqual({ username: "Owner" });
+		// A session past its 7 idle days counts as ended too, though it isn't deleted yet.
+		const idle = await started();
+		expect(await endOtherSessions(db, idle.token, later(SESSION_IDLE_MS))).toBeUndefined();
+	});
 });

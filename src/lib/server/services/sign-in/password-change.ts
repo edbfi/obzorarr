@@ -10,8 +10,13 @@ import {
 	verifyPassword,
 } from "#lib/server/security/password.ts";
 import { hashSessionToken } from "#lib/server/security/session-token.ts";
+import {
+	countPasswordCheck,
+	refuseOverLimit,
+	SLOTS_BUSY,
+	type TooMany,
+} from "./password-checks.ts";
 import { type StartedSession, startSession } from "./sessions.ts";
-import { countPasswordCheck, refuseOverLimit, SLOTS_BUSY, type TooMany } from "./sign-in.ts";
 
 export type PasswordChangeInput = {
 	/** The token of the session the change is made in, which it keeps with a new token. */
@@ -93,7 +98,10 @@ export async function changePassword(
 			return started;
 		});
 	} catch (error) {
-		if (error instanceof SignedOut) return { status: "signed-out" };
+		if (error instanceof SignedOut) {
+			log.info("a password change found its session ended", { clientAddress: address });
+			return { status: "signed-out" };
+		}
 		throw error;
 	}
 	log.info("the owner changed their password", { clientAddress: address });

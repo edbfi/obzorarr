@@ -1,9 +1,10 @@
-import { error, fail } from "@sveltejs/kit";
+import { type Cookies, error, fail } from "@sveltejs/kit";
 import * as m from "#lib/paraglide/messages.js";
 import { browserAddress } from "#lib/server/security/browser-address.ts";
 import type { PasswordError } from "#lib/server/security/password.ts";
 import {
 	SESSION_COOKIE,
+	SESSION_COOKIE_DELETION,
 	sessionCookieDeletion,
 	sessionCookieOptions,
 } from "#lib/server/security/session-cookie.ts";
@@ -39,6 +40,20 @@ export const load: PageServerLoad = async ({ cookies }) => {
 /** The password change's answer, under its own key, apart from the sessions action's. */
 const password = (answer: PasswordAnswer) => ({ password: answer });
 
+/**
+ * "Your session ended", as the owner check answers a request whose session is gone: here, one
+ * that ended while the action ran, or a request without the cookie, which the owner check lets
+ * through only in a test. The cookie is cleared; its `Secure` follows the browser's address when
+ * it is known, and is off otherwise, which clears it over both schemes.
+ */
+function sessionEnded(cookies: Cookies, address: string | undefined): never {
+	cookies.delete(
+		SESSION_COOKIE,
+		address === undefined ? SESSION_COOKIE_DELETION : sessionCookieDeletion(address),
+	);
+	error(403, m.error_session_ended_description());
+}
+
 /** A form field as text; anything else counts as empty, since form fields are external input. */
 const field = (form: FormData, name: string) => {
 	const value = form.get(name);
@@ -54,9 +69,11 @@ export const actions: Actions = {
 	password: async ({ request, locals, setHeaders, cookies }) => {
 		const address = browserAddress(request, currentOrigin());
 		if (address === undefined) error(403, m.error_no_browser_address());
+		const sessionToken = cookies.get(SESSION_COOKIE);
+		if (sessionToken === undefined) sessionEnded(cookies, address);
 		const form = await request.formData();
 		const result = await changePassword(currentDatabase(), {
-			sessionToken: cookies.get(SESSION_COOKIE) ?? "",
+			sessionToken,
 			current: field(form, "current"),
 			next: field(form, "next"),
 			clientAddress: locals.clientAddress,
@@ -84,16 +101,22 @@ export const actions: Actions = {
 					),
 				);
 			case "signed-out":
-				// The session ended while the password was checked: as the owner check answers.
-				cookies.delete(SESSION_COOKIE, sessionCookieDeletion(address));
-				error(403, m.error_session_ended_description());
+				// Without JavaScript, a second click sends the old cookie too: it loses this race, and
+				// clears the cookie the first set, so the owner signs in again with the new password.
+				sessionEnded(cookies, address);
 		}
 	},
 
-	/** "Sign out everywhere else": ends every other session and says how many. */
-	sessions: async ({ cookies }) => {
-		const token = cookies.get(SESSION_COOKIE) ?? "";
+	/**
+	 * "Sign out everywhere else": ends every other session and says how many, only while this
+	 * browser's own session is live. It sets no cookie, so it doesn't need the browser's address.
+	 */
+	sessions: async ({ request, cookies }) => {
+		const address = browserAddress(request, currentOrigin());
+		const token = cookies.get(SESSION_COOKIE);
+		if (token === undefined) sessionEnded(cookies, address);
 		const ended = await endOtherSessions(currentDatabase(), token, new Date());
+		if (ended === undefined) sessionEnded(cookies, address);
 		return { sessions: { ended } };
 	},
 };

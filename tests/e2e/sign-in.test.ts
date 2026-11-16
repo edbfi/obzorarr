@@ -939,6 +939,8 @@ test.describe("the Security tab", () => {
 				}),
 			).toBeVisible();
 			await expect(page.getByText("No other browser is signed in.")).toBeVisible();
+			// The disabled button lost focus, so the section's heading has it.
+			await expect(page.locator("#password-heading")).toBeFocused();
 			await expect(page.locator("#current")).toHaveValue("");
 			await expect(page.locator("#next")).toHaveValue("");
 
@@ -980,6 +982,8 @@ test.describe("the Security tab", () => {
 			await expect(
 				page.getByRole("status").filter({ hasText: "Signed out of 2 other browsers." }),
 			).toBeVisible();
+			// The button is gone, so the section's heading has focus.
+			await expect(page.locator("#sessions-heading")).toBeFocused();
 			await expect(page.getByText("No other browser is signed in.")).toBeVisible();
 			await expect(button).toHaveCount(0);
 			for (const other of others) {
@@ -1019,6 +1023,30 @@ test.describe("the Security tab", () => {
 		} finally {
 			await mine.close();
 			await other.close();
+			await server.stop();
+		}
+	});
+
+	test("a wrong current password is announced at once and its field takes focus", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claimInBrowser(page, server);
+			await page.locator("#current").fill("not the password at all");
+			await page.locator("#next").fill(NEW_PASSWORD);
+			await page.getByRole("button", { name: "Change password" }).click();
+			await expect(page.locator("#current")).toBeFocused();
+			await expect(page.locator("#current")).toHaveAttribute("aria-invalid", "true");
+			await expect(page.locator("#current-error")).toHaveText("The current password is wrong.");
+			await expect(
+				page.locator("#password-section [role=alert]").filter({
+					hasText: "The current password is wrong.",
+				}),
+			).toHaveCount(1);
+		} finally {
 			await server.stop();
 		}
 	});
