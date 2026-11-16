@@ -27,7 +27,7 @@ export function sessionCookieOptions(
 		path: "/",
 		httpOnly: true,
 		sameSite: "lax",
-		secure: browserAddress.startsWith("https:"),
+		secure: isHttps(browserAddress),
 		maxAge: Math.max(0, Math.floor((expiresAt.getTime() - now.getTime()) / 1000)),
 	};
 }
@@ -45,5 +45,10 @@ export const SESSION_COOKIE_DELETION: SessionCookieOptions = {
 
 /** Deleting the cookie where the browser's address is known, as at sign-out. */
 export function sessionCookieDeletion(browserAddress: string): SessionCookieOptions {
-	return { ...SESSION_COOKIE_DELETION, secure: browserAddress.startsWith("https:") };
+	return { ...SESSION_COOKIE_DELETION, secure: isHttps(browserAddress) };
+}
+
+/** Whether the browser's address is https: the one rule for every write and deletion's `Secure`. */
+function isHttps(browserAddress: string): boolean {
+	return browserAddress.startsWith("https:");
 }

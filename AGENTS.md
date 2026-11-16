@@ -320,7 +320,8 @@ src/
   app.css                        Panda layer order; the Vite plugin appends the generated CSS
   error.html                     SvelteKit's last resort when even the error page fails, in
                                  English and Danish
-  app.d.ts                       SvelteKit ambient types
+  app.d.ts                       SvelteKit ambient types, and `__OBZORARR_VERSION__`, which the
+                                 build writes in
   env.ts                         declares the app's variables: private, read at runtime, optional
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
