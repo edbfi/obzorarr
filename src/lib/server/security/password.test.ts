@@ -31,11 +31,12 @@ describe("checkUsername", () => {
 describe("checkPassword", () => {
 	it("normalises to NFC and accepts 15 to 128 code points of any characters", () => {
 		expect(checkPassword(GOOD, "owner")).toEqual({ ok: true, password: GOOD });
-		expect(checkPassword("é".repeat(15), "owner")).toEqual({
+		// The last "x" keeps each from being a repeat, which `pattern` refuses.
+		expect(checkPassword(`${"é".repeat(14)}x`, "owner")).toEqual({
 			ok: true,
-			password: "é".repeat(15),
+			password: `${"é".repeat(14)}x`,
 		});
-		expect(checkPassword("😀".repeat(128), "owner").ok).toBe(true);
+		expect(checkPassword(`${"😀".repeat(127)}x`, "owner").ok).toBe(true);
 		expect(checkPassword("  spaces count too  ", "owner").ok).toBe(true);
 	});
 
@@ -64,6 +65,37 @@ describe("checkPassword", () => {
 		expect(checkPassword("correct-bob-horse-battery", "bob").ok).toBe(true);
 		// Counted as written: "İab" is 3 characters, though lower-casing makes "İ" two.
 		expect(checkPassword("terrace-\u0130ab-evenings", "\u0130ab").ok).toBe(true);
+	});
+
+	it.each([
+		"bbbbbbbbbbbbbbb",
+		"999999999999999",
+		"abababababababab",
+		"abcabcabcabcabc",
+		"AbcDabcdABCDabcd",
+		// A last repeat may be cut short.
+		"wxyzwxyzwxyzwxy",
+		"abcdefghijklmnop",
+		"ZYXWVUTSRQPONMLK",
+		// Digits run on from 9 to 0, and back.
+		"567890123456789",
+		"987654321098765",
+		"aaaaaaaaaaaaaaa",
+	])("refuses %j: the whole password is a repeat or a straight run", (raw) => {
+		expect(checkPassword(raw, "owner")).toEqual({ ok: false, error: "pattern" });
+	});
+
+	it.each([
+		// The rule covers the whole password, never a part of it.
+		"aaaaaaaaaaaaaaa-terrace",
+		"abcdefghijklmnop!",
+		// A unit of 5 is out of scope; the list and length carry the rest.
+		"abcdeabcdeabcde",
+		// Runs that change direction, or skip, are not straight.
+		"abcdefghgfedcbab",
+		"acegikmoqsuwyace",
+	])("accepts %j: not a whole-password repeat of up to 4 or a straight run", (raw) => {
+		expect(checkPassword(raw, "owner").ok).toBe(true);
 	});
 
 	it("refuses an entry of the bundled list, after NFC and lower-casing", () => {

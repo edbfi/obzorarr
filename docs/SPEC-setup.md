@@ -192,7 +192,9 @@ reuse:
   that is the only factor, which it is until two-factor is turned on. NIST also requires a
   blocklist, and length alone accepts the long passwords such lists hold, so the bundled list of
   common passwords is checked too (the owner chose the list, 2026-11-12). `password.ts` names its
-  source and how to rebuild it. There are no composition rules.
+  source and how to rebuild it. The list holds only some patterns, so the password also may not be,
+  as a whole, one unit of up to 4 characters repeated or one straight run up or down (the owner
+  added this, 2026-11-16). There are no composition rules.
 - **The hash** is of the NFC form, so `sign-in` verifies what was hashed. The password is never
   logged or returned.
 - **The form** has one password field with a control that shows what was typed, and no

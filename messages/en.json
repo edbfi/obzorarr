@@ -22,6 +22,7 @@
 	"setup_password_hide_label": "Hide password",
 	"setup_password_too_short": "Use at least 15 characters.",
 	"setup_password_too_long": "Use 128 characters or fewer.",
+	"setup_password_pattern": "This password is a simple pattern. Choose another.",
 	"setup_password_app_name": "Leave out the word Obzorarr.",
 	"setup_password_username": "Leave out your username.",
 	"setup_password_common": "This password is on a list of common passwords. Choose another.",
