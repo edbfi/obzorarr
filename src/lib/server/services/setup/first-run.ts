@@ -2,13 +2,13 @@ import type { Database } from "#lib/server/db/client.ts";
 import { ownerExists } from "#lib/server/db/owner.ts";
 import { readSetting } from "#lib/server/db/settings.ts";
 import {
-	type BootstrapToken,
+	type ConsoleToken,
 	formatToken,
 	issueToken,
 	isTokenValid,
 	TOKEN_LIFETIME_MS,
 	tokenMatches,
-} from "#lib/server/security/bootstrap-token.ts";
+} from "#lib/server/security/console-token.ts";
 
 /**
  * The settings key of first run's step pointer. The claim is the only step until `two-factor`
@@ -29,7 +29,7 @@ export type FirstRunOptions = {
 /** First run's state, in memory (one process, D17): startup loads it, the claim updates it. */
 let claimed = false;
 let complete = false;
-let token: BootstrapToken | undefined;
+let token: ConsoleToken | undefined;
 let timer: ReturnType<typeof setTimeout> | undefined;
 let claimsInProgress = 0;
 let renewalWaiting = false;

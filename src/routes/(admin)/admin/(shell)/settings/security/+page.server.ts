@@ -10,6 +10,7 @@ import {
 } from "#lib/server/security/session-cookie.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
 import { changePassword } from "#lib/server/services/sign-in/password-change.ts";
+import { isRecoveryOn } from "#lib/server/services/sign-in/recovery.ts";
 import { countOtherSessions, endOtherSessions } from "#lib/server/services/sign-in/sessions.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
@@ -34,6 +35,7 @@ export const load: PageServerLoad = async ({ cookies }) => {
 	return {
 		otherSessions:
 			token === undefined ? 0 : await countOtherSessions(currentDatabase(), token, new Date()),
+		recoveryOn: isRecoveryOn(),
 	};
 };
 

@@ -132,6 +132,47 @@ describe("startUp", () => {
 		await expect(stat(join(root, "never-created"))).rejects.toThrow();
 	});
 
+	it("refuses an OBZORARR_RECOVERY that isn't true or false, before the database opens", async () => {
+		const path = join(root, "recovery-never-created", "app.db");
+		const error = await startUp(
+			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path, OBZORARR_RECOVERY: "yes" },
+			{ dev: true },
+		).catch((caught: unknown) => caught);
+		expect(error).toBeInstanceOf(ConfigError);
+		expect((error as ConfigError).variable).toBe("OBZORARR_RECOVERY");
+		await expect(stat(join(root, "recovery-never-created"))).rejects.toThrow();
+	});
+
+	it("prints a recovery token on a claimed instance with OBZORARR_RECOVERY on", async () => {
+		const path = join(root, "recovery", "app.db");
+		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
+		await insertOwner(currentDatabase(), {
+			username: "owner",
+			passwordHash: "hash",
+			createdAt: new Date(),
+		});
+		await closeServices();
+		lines = [];
+		await startUp(
+			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path, OBZORARR_RECOVERY: "true" },
+			{ dev: true },
+		);
+		expect(lines.filter((line) => line.startsWith("Recovery token: "))).toHaveLength(1);
+		expect(lines.some((line) => line.startsWith("Setup token: "))).toBe(false);
+		await closeServices();
+	});
+
+	it("prints no recovery token on an unclaimed instance with OBZORARR_RECOVERY on, only the setup token", async () => {
+		const path = join(root, "recovery-unclaimed", "app.db");
+		await startUp(
+			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path, OBZORARR_RECOVERY: "true" },
+			{ dev: true },
+		);
+		expect(lines.some((line) => line.startsWith("Recovery token: "))).toBe(false);
+		expect(lines.filter((line) => line.startsWith("Setup token: "))).toHaveLength(1);
+		await closeServices();
+	});
+
 	it("refuses a bad ORIGIN before the database opens", async () => {
 		const path = join(root, "origin-never-created", "app.db");
 		const error = await startUp(

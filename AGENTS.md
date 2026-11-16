@@ -293,7 +293,9 @@ in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from one address
 10 failures in a row. Everything else under `/admin` needs the owner's session, inside the admin
 shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind its confirmation,
 the language switcher and the version. The Security tab changes the owner's password, signing
-every other browser out, and has "Sign out everywhere else".
+every other browser out, and has "Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup
+prints a recovery token for the owner and warns, and the Security tab says to turn it off;
+`/recovery`, where the token is used, comes next.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -378,12 +380,13 @@ src/
       config/log-debug.ts        `OBZORARR_LOG_DEBUG`: whether debug entries are written
       config/origin.ts           `ORIGIN`, parsed and checked: a bare http or https origin
       config/address-header.ts   `ADDRESS_HEADER`: whether a proxy names the client's address
+      config/recovery.ts         `OBZORARR_RECOVERY`: whether recovery is on
       db/                        client.ts: opens the database, its failed queries never carrying
                                  their values, and `queryFailure`, what a log keeps of one;
                                  migrate.ts: applies the bundled migrations; one file per
                                  aggregate with its tables (settings.ts, owner.ts,
                                  owner-session.ts) and, from their first caller, its named
-                                 operations: reading and writing a setting, whether an owner
+                                 operations: reading, writing and deleting a setting, whether an owner
                                  exists, reading and creating the owner and replacing its hash,
                                  storing, finding, renewing, counting and ending sessions;
                                  client.ts names the transaction and executor types
@@ -391,8 +394,8 @@ src/
                                  flushing it; redact.ts: the rules every entry passes before it
                                  is written; request-error.ts: what `handleError` logs
       services/setup/startup.ts  startup's steps in order: the key, the configuration, the
-                                 database, then deleting ended sessions and first run; a failed
-                                 step is logged, then thrown.
+                                 database, then deleting ended sessions, first run and recovery;
+                                 a failed step is logged, then thrown.
                                  Shutdown, in the built server only: `SIGHUP` as `SIGTERM`,
                                  stopping the timers, then closing and exiting, with a 5-second
                                  deadline
@@ -418,6 +421,10 @@ src/
                                  username or password, a dummy verification for a wrong
                                  username, a hash slot, then the session; the typed username is
                                  never logged
+      services/sign-in/recovery.ts
+                                 recovery at startup: the token printed while `OBZORARR_RECOVERY`
+                                 is on, the instance claimed and no token used since; the record
+                                 of a used token cleared while it is off; the warnings
       services/sign-in/password-checks.ts
                                  what signing in and the password change share: the limit of 10
                                  per 5 minutes, the failed checks and their waits, and the busy
@@ -426,9 +433,9 @@ src/
                                  the password change: signing in's limit and waits, `setup`'s
                                  rules, a hash slot, then one transaction for the new hash, the
                                  other sessions ended and this one's new token
-      security/bootstrap-token.ts
-                                 the token: drawn without bias, formatted, compared in constant
-                                 time, valid for 15 minutes
+      security/console-token.ts  the tokens printed to the console, setup's and recovery's: drawn
+                                 without bias, formatted, compared in constant time, valid for 15
+                                 minutes
       security/password.ts       the owner's username and password rules, hashing and verifying
       security/common-passwords.txt
                                  the bundled list the password rule checks; its source and how it
@@ -499,6 +506,7 @@ tests/
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
                                  sign-in page, its limit, the hash slots, the owner check, the
                                  admin shell, signing out and the Security tab
+  e2e/recovery.test.ts           recovery's token and warnings on restarted built servers
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the

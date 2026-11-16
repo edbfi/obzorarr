@@ -3,6 +3,7 @@ import type { AddressHeaderEnv } from "#lib/server/config/address-header.ts";
 import type { DatabasePathEnv } from "#lib/server/config/database-path.ts";
 import type { LogDebugEnv } from "#lib/server/config/log-debug.ts";
 import type { OriginEnv } from "#lib/server/config/origin.ts";
+import type { RecoveryEnv } from "#lib/server/config/recovery.ts";
 import type { SecretKeyVariable } from "#lib/server/config/secret-key.ts";
 
 // Optional and never throwing: SvelteKit's own validation would otherwise print its own message
@@ -31,6 +32,11 @@ export const variables = defineEnvVars({
 		schema: optional,
 		description: "The address browsers use, such as https://obzorarr.example; optional.",
 	},
+	OBZORARR_RECOVERY: {
+		schema: optional,
+		description:
+			"Whether a recovery token is printed at startup, to set a new owner password: true or false; off if unset.",
+	},
 	ADDRESS_HEADER: {
 		schema: optional,
 		description:
@@ -41,6 +47,7 @@ export const variables = defineEnvVars({
 	| keyof DatabasePathEnv
 	| keyof LogDebugEnv
 	| keyof OriginEnv
-	| keyof AddressHeaderEnv,
+	| keyof AddressHeaderEnv
+	| keyof RecoveryEnv,
 	EnvVarConfig<string | undefined>
 >);

@@ -1,4 +1,5 @@
 <script lang="ts">
+import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
@@ -79,6 +80,10 @@ const signOutElsewhere: SubmitFunction = () => {
 	};
 };
 
+/** The recovery warning with `OBZORARR_RECOVERY` set as code, like the variable it names. */
+const VARIABLE = "\u0001";
+const recoveryWarning = m.security_recovery_on({ variable: VARIABLE }).split(VARIABLE);
+
 const section = css({ display: "flex", flexDirection: "column", gap: "lg" });
 /** A heading that takes focus after its section's action, without a ring: it isn't a control. */
 const heading = css({ textStyle: "h2", textWrap: "balance", _focus: { outlineStyle: "none" } });
@@ -115,6 +120,29 @@ const button = css({
 		},
 	})}
 >
+	{#if data.recoveryOn}
+		<!-- The one thing to do once recovery has been used: turn it off. -->
+		<p
+			class={css({
+				display: "flex",
+				alignItems: "flex-start",
+				gap: "sm",
+				padding: "lg",
+				color: "text",
+				bg: "surface",
+				borderWidth: "1px",
+				borderStyle: "solid",
+				borderColor: "warning",
+				borderRadius: "panel",
+				"& svg": { flex: "none", color: "warning", marginBlockStart: "[2px]" },
+			})}
+		>
+			<TriangleAlertIcon size={20} aria-hidden="true" />
+			<!-- biome-ignore format: one line, so no whitespace lands between the code and its punctuation -->
+			<span>{#each recoveryWarning as part, at (at)}{#if at > 0}<code class={css({ fontFamily: "mono", fontSize: "code", overflowWrap: "anywhere" })}>OBZORARR_RECOVERY</code>{/if}{part}{/each}</span>
+		</p>
+	{/if}
+
 	<section id="password-section" class={section} aria-labelledby="password-heading">
 		<h2 class={heading} id="password-heading" tabindex="-1">{m.security_password_heading()}</h2>
 		<form

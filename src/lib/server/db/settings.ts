@@ -31,3 +31,8 @@ export async function writeSetting(
 		.values({ key, value, updatedAt: now })
 		.onConflictDoUpdate({ target: settings.key, set: { value, updatedAt: now } });
 }
+
+/** Deletes the value stored under `key`, if there is one. */
+export async function deleteSetting(db: Executor, key: string): Promise<void> {
+	await db.delete(settings).where(eq(settings.key, key));
+}

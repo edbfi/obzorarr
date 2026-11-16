@@ -6,7 +6,7 @@ import {
 	isTokenValid,
 	TOKEN_LIFETIME_MS,
 	tokenMatches,
-} from "./bootstrap-token.ts";
+} from "./console-token.ts";
 
 describe("drawToken", () => {
 	it("draws 12 lowercase letters and digits", () => {

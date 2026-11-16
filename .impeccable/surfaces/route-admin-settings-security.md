@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-The shell and the tab's frame built in `sign-in`'s task 10 (2026-11-16), code-led, with no mockup; the Password and Sessions sections in task 11, the same way. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+The shell and the tab's frame built in `sign-in`'s task 10 (2026-11-16), code-led, with no mockup; the Password and Sessions sections in task 11 and the recovery warning in task 12, the same way. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
 
 ## Purpose and composition
 
@@ -54,4 +54,4 @@ FIRST VIEWPORT: from 1024px, the 224px sidebar (logo and wordmark, Settings, the
 
 FORM: seed: none (pinned) "a 224px sidebar with the logo and wordmark, then the navigation … and a footer"; the rail and drawer from DESIGN.md's layout.
 
-FINISH: checked at 360, 390, 768, 1024 and 1440px and at 200% zoom, by keyboard (the sidebar, then the tabs), in English and Danish, with the drawer open and closed and the sign-out confirmation open; no horizontal overflow at any width; the Password and Sessions sections in every state of Required content, the field to fix taking focus. The recovery warning arrives with task 13.
+FINISH: checked at 360, 390, 768, 1024 and 1440px and at 200% zoom, by keyboard (the sidebar, then the tabs), in English and Danish, with the drawer open and closed and the sign-out confirmation open; no horizontal overflow at any width; the Password and Sessions sections in every state of Required content, the field to fix taking focus; and the recovery warning, on and off, in task 12.

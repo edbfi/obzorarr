@@ -181,6 +181,29 @@ common password or, as a whole, a simple pattern such as `abcabcabcabcabc` or `a
   and back to the page afterwards.
 - **Signing out:** Sign out, at the foot of the admin's sidebar, asks first, then ends the session.
 
+## Recovery
+
+If you forget the owner's password, set `OBZORARR_RECOVERY=true` and restart Obzorarr. It prints a
+recovery token to the console, as it prints the setup token:
+
+```text
+Recovery token: xxxx-xxxx-xxxx (valid for 15 minutes). Open /recovery to set a new owner password.
+```
+
+Open `/recovery`, enter the token and choose a new password; the username stays as it is. Then
+remove `OBZORARR_RECOVERY` and restart: until you do, the logs and the admin's Security tab warn
+that recovery is on.
+
+- **The token** lasts 15 minutes, and each restart prints a new one. Once one is used, none is
+  printed again while the setting stays on, also after a restart.
+- **Before the claim,** the setting is ignored, with a warning: use `/setup`.
+- **Who can recover:** anyone who can set the environment and read the console, as anyone who can
+  read it can claim a fresh instance.
+
+| Variable | Holds | Default |
+| --- | --- | --- |
+| `OBZORARR_RECOVERY` | `true` to print a recovery token at startup, or `false` | `false` |
+
 ## Logs
 
 Obzorarr writes its log to standard output, one JSON entry per line, where your container runtime

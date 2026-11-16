@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const changePassword = vi.fn();
 const countOtherSessions = vi.fn();
 const endOtherSessions = vi.fn();
+const recovery = vi.hoisted(() => ({ on: false }));
+vi.mock("#lib/server/services/sign-in/recovery.ts", () => ({ isRecoveryOn: () => recovery.on }));
 vi.mock("#lib/server/services/sign-in/password-change.ts", () => ({ changePassword }));
 vi.mock("#lib/server/services/sign-in/sessions.ts", () => ({
 	countOtherSessions,
@@ -60,12 +62,14 @@ beforeEach(() => {
 });
 
 describe("the Security tab's load", () => {
-	it("counts the other browsers signed in", async () => {
+	it("counts the other browsers signed in, and says whether recovery is on", async () => {
 		countOtherSessions.mockResolvedValue(2);
-		const data = await load({
-			cookies: { get: () => "tok" },
-		} as unknown as Parameters<typeof load>[0]);
-		expect(data).toEqual({ otherSessions: 2 });
+		const loaded = () =>
+			load({ cookies: { get: () => "tok" } } as unknown as Parameters<typeof load>[0]);
+		expect(await loaded()).toEqual({ otherSessions: 2, recoveryOn: false });
+		recovery.on = true;
+		expect(await loaded()).toEqual({ otherSessions: 2, recoveryOn: true });
+		recovery.on = false;
 		expect(countOtherSessions.mock.calls[0]?.[1]).toBe("tok");
 	});
 });

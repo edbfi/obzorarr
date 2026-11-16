@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
-import { readSetting, writeSetting } from "./settings.ts";
+import { deleteSetting, readSetting, writeSetting } from "./settings.ts";
 
 let root: string;
 let db: Database;
@@ -23,6 +23,13 @@ afterAll(async () => {
 describe("settings", () => {
 	it("reads nothing for a key never written", async () => {
 		expect(await readSetting(db, "never.written")).toBeUndefined();
+	});
+
+	it("deletes a key, and deleting one never written does nothing", async () => {
+		await writeSetting(db, "setup.deleted", "value", new Date(1000));
+		await deleteSetting(db, "setup.deleted");
+		expect(await readSetting(db, "setup.deleted")).toBeUndefined();
+		await deleteSetting(db, "setup.deleted");
 	});
 
 	it("writes a key, then replaces its value", async () => {
