@@ -319,7 +319,8 @@ src/
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, then
                                  the setup gate; `handleError`: an unexpected error as one
-                                 redacted log entry, answered with the viewer's message
+                                 redacted log entry, and every error's message in the viewer's
+                                 language
   hooks.client.ts                the browser keeps the language the server chose for the page
   routes/
     +layout.svelte               loads app.css, the bundled fonts and the favicon; marks

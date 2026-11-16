@@ -1,3 +1,4 @@
+import { error, isHttpError } from "@sveltejs/kit";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { paraglideMiddleware } from "#lib/paraglide/server.js";
 import { handleError } from "./hooks.server.ts";
@@ -20,6 +21,16 @@ beforeEach(() => {
 afterEach(() => {
 	vi.restoreAllMocks();
 });
+
+/** The body SvelteKit gives `error(status)` raised without a message. */
+function raisedWithoutMessage(status: number): unknown {
+	try {
+		error(status);
+	} catch (raised) {
+		if (isHttpError(raised)) return raised.body;
+	}
+	throw new Error("error() didn't throw an HttpError");
+}
 
 /** `handleError` for a request from a browser that prefers `language`. */
 async function handle(kind: Input["kind"], error: unknown, language = "en") {
@@ -63,8 +74,8 @@ it.each([
 ])(
 	"gives an error raised without a message, and the framework's own, the status's description (%s)",
 	async (language, message) => {
-		// `error(404)` without a message gets SvelteKit's "Error: 404".
-		expect(await handle("app", { status: 404, message: "Error: 404" }, language)).toEqual({
+		// What SvelteKit itself gives `error(404)` raised without a message.
+		expect(await handle("app", raisedWithoutMessage(404), language)).toEqual({
 			message,
 		});
 		expect(await handle("framework", { status: 404, message: "Not Found" }, language)).toEqual({
