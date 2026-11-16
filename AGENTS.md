@@ -501,7 +501,8 @@ panda.config.ts                  every design token; components use them through
 vite.config.ts                   SvelteKit (all its configuration, exported as `kit`: the CSP,
                                  and SvelteKit's own form check off), Panda, Paraglide and Vitest,
                                  and the version the shell shows (`appVersion`, at build time)
-vite.config.test.ts              SvelteKit's form check and remote functions stay off; the version
+vite.config.test.ts              SvelteKit's form check and remote functions stay off, and the
+                                 version is `OBZORARR_VERSION` at build time or `dev`
 playwright.config.ts  tsconfig.json  package.json  bun.lock
 ```
 

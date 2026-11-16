@@ -949,16 +949,15 @@ export const GET: RequestHandler = () => healthResponse();
     sends the owner to `/admin`; the check's own answers (its redirect, the data request's JSON
     redirect and its refusal) keep the security headers and clear a stale session cookie, while
     signing in over one keeps the new session; and `/` links to sign in. In the admin shell, a GET
-    to `/admin/sign-out` signs nobody out; Sign out asks first, closes on Escape giving focus
-    back, and makes the page and the sidebar inert while open, then ends the session and lands on
-    sign-in; a sign-out POST without a session only clears the cookie, and one with `Origin`
-    stripped gets the 403; below 768px the menu's drawer traps focus, makes the page inert and
-    closes on Escape, and the confirmation opened from it makes it inert too, and cancelling it
-    gives focus back to the drawer's Sign out; the drawer closes when the window widens past 768px,
-    with focus moving into the sidebar, and a confirmation cancelled after narrowing below 768px
-    gives focus to Menu; the rail keeps every control's name; without JavaScript, the sidebar
-    shows above the page on a phone and beside it from 768px, and Sign out still signs out; and
-    the shell shows its heading,
+    to `/admin/sign-out` signs nobody out; Sign out asks first, closes on Escape giving focus back,
+    and makes the page and the sidebar inert while open, then ends the session and lands on sign-in;
+    a sign-out POST without a session only clears the cookie, and one with `Origin` stripped gets
+    the 403; below 768px the menu's drawer traps focus, makes the page inert and closes on Escape,
+    and the confirmation opened from it makes it inert too, and cancelling it gives focus back to
+    the drawer's Sign out; the drawer closes when the window widens past 768px, with focus moving
+    into the sidebar, and a confirmation cancelled after narrowing below 768px gives focus to Menu;
+    the rail keeps every control's name; without JavaScript, the sidebar shows above the page on a
+    phone and beside it from 768px, and Sign out still signs out; and the shell shows its heading,
     the owner, Sign out and the version in English and Danish with no console error or CSP
     violation.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
