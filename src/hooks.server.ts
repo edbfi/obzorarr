@@ -108,6 +108,7 @@ const rateLimits: Handle = ({ event, resolve }) => {
 	const address = readClientAddress(event.getClientAddress, event.request);
 	if (address.kind === "refused") return accessDenied(event.request, "not-through-proxy");
 	if (address.kind === "unknown") return resolve(event);
+	event.locals.clientAddress = address.key;
 	const decision = generalLimit.hit(address.key);
 	return decision.allowed ? resolve(event) : tooManyRequests(event.request, decision);
 };

@@ -30,7 +30,8 @@ Heading 'Claim this Obzorarr'. One line: 'Enter the setup token printed in the s
 - The token field takes the token with or without dashes and in any case; it is not a password field, so the person can check what they typed.
 - No other viewer, server or Plex detail appears.
 - Test keyboard focus, visible labels, disabled behavior and 200% zoom; target 360, 390, 768 and 1440px viewports. Translated text wraps without hiding the primary action.
-- States: initial, field errors, token refused, submitting. After success the browser leaves the page.
+- Too many attempts (5 per 5 minutes from one address, or the server busy hashing): 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.', beside the button, in an assertive live region; the token stays usable.
+- States: initial, field errors, token refused, too many attempts, submitting. After success the browser leaves the page.
 
 ## Handoff prompt
 

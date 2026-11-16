@@ -371,8 +371,9 @@ src/
                                  unclaimed: printed to standard output, renewed every 15 minutes,
                                  held back while a claim is in progress, used up by a claim;
                                  and the gate's decision for a path
-      services/setup/claim.ts    the claim: the fields, then the token, then the hash, then one
-                                 transaction for the owner and the step pointer
+      services/setup/claim.ts    the claim: its limit of 5 per 5 minutes, the fields, a hash slot,
+                                 then the token, then the hash, then one transaction for the
+                                 owner and the step pointer
       security/bootstrap-token.ts
                                  the token: drawn without bias, formatted, compared in constant
                                  time, valid for 15 minutes
@@ -386,6 +387,7 @@ src/
       security/client-address.ts the rate limits' key: IPv4, IPv6 per /64, refused without the
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
+      security/hash-slots.ts     at most 4 password hashes or verifications at once
       security/refusal-page.ts   the pages `handle` builds itself, "Access denied" and "Too many
                                  requests", with their own policy and Panda's token declarations
                                  inline, or a JSON error

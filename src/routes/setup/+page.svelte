@@ -339,6 +339,11 @@ const control = css({
 			{#if form?.failed}
 				<p class={error} role="alert">{m.setup_failed()}</p>
 			{/if}
+			{#if form?.retryAfterSeconds}
+				<p class={error} role="alert">
+					{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
+				</p>
+			{/if}
 
 			<button
 				type="submit"
