@@ -35,8 +35,16 @@ export type ClaimResult =
 	| { status: "invalid"; username?: UsernameError; password?: PasswordError }
 	/** A wrong or expired token: one answer for both. */
 	| { status: "token" }
-	/** The claim's limit, or every hash slot busy: when to try again, and the headers saying so. */
-	| { status: "too-many"; retryAfterSeconds: number; headers: Record<string, string> }
+	/**
+	 * Refused for now, with when to try again and the headers saying so: the address used up the
+	 * claim's limit, or every hash slot was busy.
+	 */
+	| {
+			status: "too-many";
+			reason: "limit" | "busy";
+			retryAfterSeconds: number;
+			headers: Record<string, string>;
+	  }
 	| { status: "failed" };
 
 const log = createLogger("setup");
@@ -46,6 +54,7 @@ const claimLimit = createRateLimiter({ limit: 5, windowMs: 5 * 60_000 });
 
 const SLOTS_BUSY: ClaimResult = {
 	status: "too-many",
+	reason: "busy",
 	retryAfterSeconds: HASH_SLOT_RETRY_SECONDS,
 	headers: { "retry-after": String(HASH_SLOT_RETRY_SECONDS) },
 };
@@ -68,6 +77,7 @@ export async function claimInstance(db: Database, input: ClaimInput): Promise<Cl
 		if (!decision.allowed) {
 			return {
 				status: "too-many",
+				reason: "limit",
 				retryAfterSeconds: decision.retryAfterSeconds,
 				headers: rateLimitHeaders(decision),
 			};
@@ -93,7 +103,13 @@ export async function claimInstance(db: Database, input: ClaimInput): Promise<Cl
 			return { status: "token" };
 		}
 		try {
-			const passwordHash = await hashPassword(password.password).finally(releaseSlot);
+			let passwordHash: string;
+			try {
+				passwordHash = await hashPassword(password.password);
+			} finally {
+				// Freed however the hash ends, a throw before it returns a promise included.
+				releaseSlot();
+			}
 			const now = new Date();
 			await db.transaction(async (tx) => {
 				await insertOwner(tx, { username: username.username, passwordHash, createdAt: now });

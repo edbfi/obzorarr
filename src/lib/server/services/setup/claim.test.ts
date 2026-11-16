@@ -194,7 +194,12 @@ describe("claimInstance's limits", () => {
 					password: PASSWORD,
 					clientAddress: "198.51.100.1",
 				}),
-			).toEqual({ status: "too-many", retryAfterSeconds: 5, headers: { "retry-after": "5" } });
+			).toEqual({
+				status: "too-many",
+				reason: "busy",
+				retryAfterSeconds: 5,
+				headers: { "retry-after": "5" },
+			});
 		} finally {
 			for (const release of taken) release?.();
 		}
@@ -227,7 +232,7 @@ describe("claimInstance's limits", () => {
 			password: PASSWORD,
 			clientAddress: address,
 		});
-		expect(refused).toMatchObject({ status: "too-many" });
+		expect(refused).toMatchObject({ status: "too-many", reason: "limit" });
 		if (refused.status !== "too-many") throw new Error("not refused");
 		expect(refused.retryAfterSeconds).toBeGreaterThan(0);
 		expect(refused.headers["x-ratelimit-limit"]).toBe("5");
@@ -240,6 +245,29 @@ describe("claimInstance's limits", () => {
 				password: PASSWORD,
 				clientAddress: "198.51.100.3",
 			}),
+		).toEqual({ status: "claimed" });
+	});
+
+	it.each([
+		[
+			"throws",
+			() => {
+				throw new Error("no memory");
+			},
+		],
+		["rejects", () => Promise.reject(new Error("no memory"))],
+	])("frees its hash slot when the hash %s", async (_how, fail) => {
+		const { db, token } = await freshInstance();
+		vi.spyOn(Bun.password, "hash").mockImplementationOnce(fail as typeof Bun.password.hash);
+		expect(
+			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
+		).toEqual({ status: "failed" });
+		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
+		expect(taken.every((release) => typeof release === "function")).toBe(true);
+		for (const release of taken) release?.();
+		// A new token was printed, and claims.
+		expect(
+			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
 		).toEqual({ status: "claimed" });
 	});
 

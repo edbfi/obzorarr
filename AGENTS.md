@@ -285,8 +285,9 @@ state-changing request from another site gets "Access denied". Until it is claim
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
 which creates the owner account. The owner can't sign in yet: module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
-so far, errors and refusals show branded pages, and each client address is limited to 60
-requests a minute, with requests that bypass a configured proxy refused.
+so far, errors and refusals show branded pages, each client address is limited to 60 requests a
+minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
+and password hashing to 4 at once.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -319,7 +320,8 @@ src/
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, the
-                                 client address and the general rate limit, then the setup gate;
+                                 client address (kept in `locals.clientAddress` for the actions'
+                                 own limits) and the general rate limit, then the setup gate;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page

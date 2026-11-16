@@ -34,7 +34,12 @@ describe("the claim action", () => {
 
 	it("turns a refused claim into the form's 429, with when to try again in its headers", async () => {
 		const headers = { "retry-after": "240", "x-ratelimit-limit": "5" };
-		claimInstance.mockResolvedValue({ status: "too-many", retryAfterSeconds: 240, headers });
+		claimInstance.mockResolvedValue({
+			status: "too-many",
+			reason: "limit",
+			retryAfterSeconds: 240,
+			headers,
+		});
 		const { result, setHeaders } = await post("198.51.100.9");
 		expect(result).toMatchObject({
 			status: 429,
@@ -43,14 +48,16 @@ describe("the claim action", () => {
 		expect(setHeaders).toHaveBeenCalledWith(headers);
 	});
 
-	it("does the same for busy hash slots", async () => {
+	it("says the server is busy when every hash slot is, which no wait in minutes describes", async () => {
 		claimInstance.mockResolvedValue({
 			status: "too-many",
+			reason: "busy",
 			retryAfterSeconds: 5,
 			headers: { "retry-after": "5" },
 		});
 		const { result, setHeaders } = await post(undefined);
-		expect(result).toMatchObject({ status: 429, data: { retryAfterSeconds: 5 } });
+		expect(result).toMatchObject({ status: 429, data: { busy: true } });
+		expect((result as { data: object }).data).not.toHaveProperty("retryAfterSeconds");
 		expect(setHeaders).toHaveBeenCalledWith({ "retry-after": "5" });
 	});
 });

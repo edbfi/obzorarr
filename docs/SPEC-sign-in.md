@@ -164,7 +164,9 @@ opens it goes to `/admin`; before the claim, the setup gate sends it to `/setup`
   username is kept in the form; the password isn't.
 - **At most 4 password hashes or verifications run at once,** across the claim, sign-in, recovery
   and the password change; a fifth is refused at once as "Too many requests" with `Retry-After: 5`,
-  so a spread-out attack can't stall a small server. The claim and recovery take their slot before
+  so a spread-out attack can't stall a small server. A form shows it beside its button as "Obzorarr
+  is busy checking other passwords. Try again in a few seconds.", not as too many attempts, since
+  the person made none and no wait in minutes applies. The claim and recovery take their slot before
   they check and use up a console token, so a refused slot never burns the token.
 - **On success,** the session starts (`two-factor` later puts its challenge between the password and
   the session), and the browser goes to the return path, or to `/admin`.

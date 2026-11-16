@@ -13,8 +13,10 @@ export type ClaimFailure = {
 	passwordError?: Invalid["password"];
 	tokenRefused?: boolean;
 	failed?: boolean;
-	/** Too many attempts: how long to wait before trying again. */
+	/** Too many attempts from this address: how long to wait before trying again. */
 	retryAfterSeconds?: number;
+	/** Every hash slot was busy: try again in a few seconds. */
+	busy?: boolean;
 };
 
 // The claim is first run's first step; once first run is complete it no longer exists (D20).
@@ -53,7 +55,12 @@ export const actions: Actions = {
 				return failure(500, { failed: true });
 			case "too-many":
 				setHeaders(result.headers);
-				return failure(429, { retryAfterSeconds: result.retryAfterSeconds });
+				return failure(
+					429,
+					result.reason === "busy"
+						? { busy: true }
+						: { retryAfterSeconds: result.retryAfterSeconds },
+				);
 		}
 	},
 };
