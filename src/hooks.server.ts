@@ -12,7 +12,7 @@ import { clientAddressReader } from "#lib/server/security/client-address.ts";
 import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
 import { createRateLimiter } from "#lib/server/security/rate-limit.ts";
-import { accessDenied, tooManyRequests } from "#lib/server/security/refusal-page.ts";
+import { accessDenied, sessionEnded, tooManyRequests } from "#lib/server/security/refusal-page.ts";
 import { SESSION_COOKIE, SESSION_COOKIE_DELETION } from "#lib/server/security/session-cookie.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import {
@@ -21,6 +21,7 @@ import {
 	currentOrigin,
 	startUp,
 } from "#lib/server/services/setup/startup.ts";
+import { ownerCheck } from "#lib/server/services/sign-in/owner-check.ts";
 import { lookUpSession } from "#lib/server/services/sign-in/sessions.ts";
 import { building, dev } from "$app/env";
 import * as env from "$app/env/private";
@@ -134,7 +135,7 @@ const session: Handle = async ({ event, resolve }) => {
 };
 
 /**
- * The setup gate, the last stage: until first run is complete, every request but its current step
+ * The setup gate: until first run is complete, every request but its current step
  * and `/healthz` gets a 303 to that step, returned so it keeps the headers.
  */
 const setupGate: Handle = ({ event, resolve }) => {
@@ -144,4 +145,41 @@ const setupGate: Handle = ({ event, resolve }) => {
 		: new Response(null, { status: 303, headers: { location: step } });
 };
 
-export const handle = sequence(language, headers, crossOrigin, rateLimits, session, setupGate);
+/**
+ * The owner check, the last stage (SPEC-sign-in.md, "Owner-only pages"): a `handle` stage rather
+ * than a layout `load`, since SvelteKit runs a form action before any `load`. Its redirects are
+ * returned as 303s, which SvelteKit turns into its JSON redirect for a data request; its refusal is
+ * returned too, so both keep the headers. What it lets through to the owner is `no-store`.
+ */
+const ownerOnly: Handle = async ({ event, resolve }) => {
+	const decision = ownerCheck({
+		path: event.url.pathname,
+		method: event.request.method,
+		signedIn: event.locals.owner !== undefined,
+	});
+	switch (decision.action) {
+		case "redirect":
+			return new Response(null, {
+				status: 303,
+				headers: { location: decision.location, "cache-control": "no-store" },
+			});
+		case "refuse":
+			return sessionEnded(event.request, decision.returnTo);
+		case "pass": {
+			const response = await resolve(event);
+			return decision.noStore
+				? withSecurityHeaders(response, { "cache-control": "no-store" })
+				: response;
+		}
+	}
+};
+
+export const handle = sequence(
+	language,
+	headers,
+	crossOrigin,
+	rateLimits,
+	session,
+	setupGate,
+	ownerOnly,
+);

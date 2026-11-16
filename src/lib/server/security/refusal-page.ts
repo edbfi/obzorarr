@@ -45,26 +45,47 @@ export function tooManyRequests(request: Request, decision: RateLimitDecision): 
 		429,
 		m.error_too_many_requests_title(),
 		m.error_too_many_requests_description(),
-		rateLimitHeaders(decision),
+		{ headers: rateLimitHeaders(decision) },
 	);
+}
+
+/**
+ * The 403 for a request to an owner-only page without a session that a redirect can't answer, a
+ * form action or any other method (SPEC-sign-in.md, "Owner-only pages"): "Your session ended.
+ * Sign in again." on the "Access denied" page, with a link to sign in that returns to `returnTo`,
+ * or as a JSON error. What was sent is never replayed.
+ */
+export function sessionEnded(request: Request, returnTo: string): Response {
+	return refusal(request, 403, m.error_access_denied_title(), m.error_session_ended_description(), {
+		signIn: `/admin/sign-in?next=${encodeURIComponent(returnTo)}`,
+	});
 }
 
 /**
  * A refusal `handle` builds itself (SPEC-sign-in.md, "Errors and error pages"): the error page's
  * look, from Panda's token declarations inline, since the policy loads no stylesheet; its text in
- * the system fallbacks of the fonts, since it loads no font either; and only a link home, since
- * Go back and the language switcher need script.
+ * the system fallbacks of the fonts, since it loads no font either; and only links, to sign in
+ * where it applies and home, since Go back and the language switcher need script. A form enhanced
+ * with JavaScript gets SvelteKit's own action error, so SvelteKit shows its error page with the
+ * message; any other caller that wants JSON gets `{ message }`.
  */
 function refusal(
 	request: Request,
 	status: number,
 	title: string,
 	description: string,
-	headers: Record<string, string> = {},
+	{ headers = {}, signIn }: { headers?: Record<string, string>; signIn?: string } = {},
 ): Response {
+	if (request.headers.get("x-sveltekit-action") === "true") {
+		return Response.json({ type: "error", error: { message: description } }, { status, headers });
+	}
 	if (wantsJson(request)) {
 		return Response.json({ message: description }, { status, headers });
 	}
+	const signInLink =
+		signIn === undefined
+			? ""
+			: `<a class="primary" href="${escapeHtml(signIn)}">${escapeHtml(m.error_sign_in())}</a>\n`;
 	const html = `<!doctype html>
 <html lang="${escapeHtml(getLocale())}" class="dark">
 <head>
@@ -80,7 +101,7 @@ function refusal(
 <main>
 <h1>${escapeHtml(title)}</h1>
 <p>${escapeHtml(description)}</p>
-<a href="/">${escapeHtml(m.error_home())}</a>
+<nav>${signInLink}<a href="/">${escapeHtml(m.error_home())}</a></nav>
 </main>
 </div>
 </body>
@@ -139,11 +160,16 @@ h1 {
 	text-wrap: balance;
 }
 p { margin: ${token("spacing.sm")} 0 0; color: ${token("colors.muted")}; }
+nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: ${token("spacing.md")};
+	margin-block-start: ${token("spacing.xl")};
+}
 a {
 	display: inline-flex;
 	align-items: center;
 	min-height: ${token("sizes.controlHeight")};
-	margin-block-start: ${token("spacing.xl")};
 	padding-inline: ${token("spacing.lg")};
 	color: ${token("colors.text")};
 	font-size: ${token("fontSizes.label")};
@@ -153,6 +179,12 @@ a {
 	border-radius: ${token("radii.control")};
 }
 a:hover { border-color: ${token("colors.muted")}; }
+a.primary {
+	background: ${token("colors.primary")};
+	color: ${token("colors.background")};
+	border-color: ${token("colors.primary")};
+}
+a.primary:hover { background: ${token("colors.secondary")}; border-color: ${token("colors.secondary")}; }
 a:focus-visible { outline: 2px solid ${token("colors.secondary")}; outline-offset: 2px; }
 @media (min-width: ${token("breakpoints.tablet")}) {
 	.page { padding: ${token("spacing.section")} ${token("spacing.tabletGutter")}; }

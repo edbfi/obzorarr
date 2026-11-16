@@ -839,10 +839,14 @@ export const GET: RequestHandler = () => healthResponse();
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/refusal-page.test.ts`, the "Access denied"
-  and "Too many requests" pages and their JSON forms in both languages, styled from the inline
-  token declarations, with only a link home; `security/bootstrap-token.test.ts`, the token's format,
-  alphabet, unbiased draw, expiry and comparison; `security/password.test.ts`, the credential
-  rules at their limits, NFC and case included, the list, patterns and an argon2id round trip;
+  and "Too many requests" pages and their JSON forms in both languages, styled from the inline token
+  declarations, with only a link home, the session-ended page with its link to sign in, and
+  SvelteKit's action error for an enhanced form; `services/sign-in/owner-check.test.ts`, which paths
+  need the owner, the redirect with `next`, the refusal, the open sign-in and sign-out, the path
+  decoded as SvelteKit matches it, and a signed-in owner sent away from sign-in;
+  `security/bootstrap-token.test.ts`, the token's format, alphabet, unbiased draw, expiry and
+  comparison; `security/password.test.ts`, the credential rules at their limits, NFC and case
+  included, the list, patterns and an argon2id round trip;
   `db/owner.test.ts`; `db/settings.test.ts`; `services/setup/first-run.test.ts`, the token
   printed, renewed, held back during a claim, stopped, never printed once claimed, the gate's
   decision for each path before and after the claim, and a restart after the claim;
@@ -924,7 +928,12 @@ export const GET: RequestHandler = () => healthResponse();
     while signing in, the button says so and the username keeps what was typed; a POST with
     `Origin` stripped gets the 403 that says so; of 20 sign-ins at once, every answer is a wrong
     password or the form's 429 with `Retry-After: 5`, with some of each; and the page and its
-    recovery steps show in English and Danish with no console error or CSP violation.
+    recovery steps show in English and Danish with no console error or CSP violation. Without a
+    session, an admin page gets a `no-store` 303 to sign in with `next`, its `__data.json` gets
+    SvelteKit's JSON redirect, and the browser signs in and comes back; an owner-only POST gets
+    "Your session ended" as a page with a link to sign in, as SvelteKit's action error and as
+    JSON; signed in, `/admin` and `/admin/settings` answer their 307 and the Security tab is
+    `no-store`, and the sign-in page sends the owner to `/admin`; and `/` links to sign in.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

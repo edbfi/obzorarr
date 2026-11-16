@@ -389,3 +389,117 @@ test.describe("owner sign-in", () => {
 		});
 	}
 });
+
+/** The session cookie a claim's response set, as a `cookie` header. */
+const sessionCookie = (response: Response) =>
+	(response.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+
+test.describe("the owner check", () => {
+	test("sends a signed-out browser to sign in and back, and a data request gets SvelteKit's JSON redirect", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const page_ = await fetch(`${server.url}/admin/settings/security`, { redirect: "manual" });
+			expect(page_.status).toBe(303);
+			expect(page_.headers.get("location")).toBe(
+				"/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity",
+			);
+			expect(page_.headers.get("cache-control")).toBe("no-store");
+			const data = await fetch(`${server.url}/admin/settings/security/__data.json`, {
+				redirect: "manual",
+			});
+			expect(await data.json()).toMatchObject({
+				type: "redirect",
+				location: "/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity",
+			});
+
+			await page.goto(`${server.url}/admin/settings`);
+			await page.waitForURL(`${server.url}/admin/sign-in?next=%2Fadmin%2Fsettings`);
+			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			await signIn(page, "owner", PASSWORD);
+			await page.waitForURL(`${server.url}/admin/settings/security`);
+			await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("refuses an owner-only POST without a session, as a page, as SvelteKit's error and as JSON", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const post = (headers: Record<string, string>) =>
+				fetch(`${server.url}/admin/settings/security`, {
+					method: "POST",
+					headers: {
+						origin: server.url,
+						"content-type": "application/x-www-form-urlencoded",
+						...headers,
+					},
+					body: "a=1",
+					redirect: "manual",
+				});
+			const message = "Your session ended. Sign in again.";
+			const asPage = await post({ accept: "text/html" });
+			expect(asPage.status).toBe(403);
+			const html = await asPage.text();
+			expect(html).toContain(message);
+			expect(html).toContain('href="/admin/sign-in?next=%2Fadmin%2Fsettings%2Fsecurity"');
+			const enhanced = await post({ accept: "application/json", "x-sveltekit-action": "true" });
+			expect(enhanced.status).toBe(403);
+			expect(await enhanced.json()).toEqual({ type: "error", error: { message } });
+			const asJson = await post({ accept: "application/json" });
+			expect(asJson.status).toBe(403);
+			expect(await asJson.json()).toEqual({ message });
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("lets the signed-in owner in, out of every cache, past /admin's redirects and away from sign-in", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			const cookie = sessionCookie(await claim(server));
+			const get = (path: string) =>
+				fetch(`${server.url}${path}`, { headers: { cookie }, redirect: "manual" });
+			for (const path of ["/admin", "/admin/settings"]) {
+				const response = await get(path);
+				expect(response.status, path).toBe(307);
+				expect(response.headers.get("location"), path).toBe("/admin/settings/security");
+				expect(response.headers.get("cache-control"), path).toBe("no-store");
+			}
+			const tab = await get("/admin/settings/security");
+			expect(tab.status).toBe(200);
+			expect(tab.headers.get("cache-control")).toBe("no-store");
+			const signInPage = await get("/admin/sign-in");
+			expect(signInPage.status).toBe(303);
+			expect(signInPage.headers.get("location")).toBe("/admin");
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("/ links to the owner's sign-in", async ({ page }) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			await page.goto(`${server.url}/`);
+			await expect(page.getByRole("link", { name: "Owner sign-in" })).toHaveAttribute(
+				"href",
+				"/admin/sign-in",
+			);
+		} finally {
+			await server.stop();
+		}
+	});
+});

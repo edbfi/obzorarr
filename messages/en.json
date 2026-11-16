@@ -54,5 +54,8 @@
 	"sign_in_forgot": "Forgot your password?",
 	"sign_in_forgot_restart": "Set {{variable}} in the environment and restart Obzorarr.",
 	"sign_in_forgot_token": "Copy the recovery token printed in the server console.",
-	"sign_in_forgot_recovery": "Open {{path}} and set a new password."
+	"sign_in_forgot_recovery": "Open {{path}} and set a new password.",
+	"error_session_ended_description": "Your session ended. Sign in again.",
+	"error_sign_in": "Sign in",
+	"landing_owner_sign_in": "Owner sign-in"
 }
