@@ -4,6 +4,10 @@ import { defineConfig } from "drizzle-kit";
 // file in `db/` is listed here when it is added.
 export default defineConfig({
 	dialect: "sqlite",
-	schema: ["./src/lib/server/db/settings.ts", "./src/lib/server/db/owner.ts"],
+	schema: [
+		"./src/lib/server/db/settings.ts",
+		"./src/lib/server/db/owner.ts",
+		"./src/lib/server/db/owner-session.ts",
+	],
 	out: "./drizzle",
 });

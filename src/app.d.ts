@@ -8,6 +8,8 @@ declare global {
 			 * undefined when the request has no known address, or skipped that stage.
 			 */
 			clientAddress?: string;
+			/** The owner the request's session signs in, which the session stage sets. */
+			owner?: { username: string };
 		}
 		// interface PageData {}
 		// interface PageState {}

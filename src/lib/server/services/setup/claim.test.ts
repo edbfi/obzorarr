@@ -5,9 +5,12 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest
 import { type Database, openDatabase } from "#lib/server/db/client.ts";
 import { migrateDatabase } from "#lib/server/db/migrate.ts";
 import { insertOwner, owner } from "#lib/server/db/owner.ts";
+import { ownerSession } from "#lib/server/db/owner-session.ts";
 import { readSetting } from "#lib/server/db/settings.ts";
 import { hashSlots } from "#lib/server/security/hash-slots.ts";
 import { verifyPassword } from "#lib/server/security/password.ts";
+import { hashSessionToken } from "#lib/server/security/session-token.ts";
+import { SESSION_MAX_MS } from "#lib/server/services/sign-in/sessions.ts";
 import { claimInstance } from "./claim.ts";
 import {
 	FIRST_RUN_STEP_KEY,
@@ -62,7 +65,7 @@ describe("claimInstance", () => {
 			username: "  Owner  ",
 			password: PASSWORD,
 		});
-		expect(result).toEqual({ status: "claimed" });
+		expect(result).toMatchObject({ status: "claimed" });
 		const rows = await db.select().from(owner);
 		expect(rows).toHaveLength(1);
 		expect(rows[0]?.username).toBe("Owner");
@@ -92,7 +95,7 @@ describe("claimInstance", () => {
 		hash.mockRestore();
 		expect(
 			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
-		).toEqual({ status: "claimed" });
+		).toMatchObject({ status: "claimed" });
 	});
 
 	it("refuses a wrong token without ever reaching the hash", async () => {
@@ -179,6 +182,22 @@ describe("claimInstance", () => {
 		expect(printed).toHaveLength(2);
 		expect(token()).not.toBe(used);
 		expect(await readSetting(db, FIRST_RUN_STEP_KEY)).toBeUndefined();
+		expect(await db.select().from(ownerSession)).toEqual([]);
+	});
+
+	it("starts the owner's session in its transaction, and gives its token", async () => {
+		const { db, token } = await freshInstance();
+		const before = Date.now();
+		const result = await claimInstance(db, {
+			token: token(),
+			username: "owner",
+			password: PASSWORD,
+		});
+		if (result.status !== "claimed") throw new Error(`not claimed: ${result.status}`);
+		const sessions = await db.select().from(ownerSession);
+		expect(sessions).toHaveLength(1);
+		expect(sessions[0]?.tokenHash).toBe(hashSessionToken(result.session.token));
+		expect(result.session.expiresAt.getTime()).toBeGreaterThanOrEqual(before + SESSION_MAX_MS);
 	});
 });
 
@@ -210,7 +229,7 @@ describe("claimInstance's limits", () => {
 				password: PASSWORD,
 				clientAddress: "198.51.100.1",
 			}),
-		).toEqual({ status: "claimed" });
+		).toMatchObject({ status: "claimed" });
 	});
 
 	it("refuses the sixth claim from one address within 5 minutes, before the token", async () => {
@@ -245,7 +264,7 @@ describe("claimInstance's limits", () => {
 				password: PASSWORD,
 				clientAddress: "198.51.100.3",
 			}),
-		).toEqual({ status: "claimed" });
+		).toMatchObject({ status: "claimed" });
 	});
 
 	it.each([
@@ -268,7 +287,7 @@ describe("claimInstance's limits", () => {
 		// A new token was printed, and claims.
 		expect(
 			await claimInstance(db, { token: token(), username: "owner", password: PASSWORD }),
-		).toEqual({ status: "claimed" });
+		).toMatchObject({ status: "claimed" });
 	});
 
 	it("skips the limit for a request with no known address", async () => {
