@@ -55,9 +55,20 @@ describe("findSession", () => {
 });
 
 describe("touchSession and deleteSession", () => {
+	it("moves the last use only once it is as old as the cutoff, so lookups at once write once", async () => {
+		await insertSessionForPassword(db, row("cutoff"), "hash-1");
+		expect(await touchSession(db, "cutoff", at(500), at(-1))).toBe(false);
+		expect((await findSession(db, "cutoff"))?.lastUsedAt).toEqual(at(0));
+		const writes = await Promise.all(
+			Array.from({ length: 8 }, () => touchSession(db, "cutoff", at(500), at(0))),
+		);
+		expect(writes.filter(Boolean)).toHaveLength(1);
+		expect((await findSession(db, "cutoff"))?.lastUsedAt).toEqual(at(500));
+	});
+
 	it("moves the last use, and removes the session", async () => {
 		await insertSessionForPassword(db, row("touch"), "hash-1");
-		await touchSession(db, "touch", at(500));
+		await touchSession(db, "touch", at(500), at(0));
 		expect((await findSession(db, "touch"))?.lastUsedAt).toEqual(at(500));
 		await deleteSession(db, "touch");
 		expect(await findSession(db, "touch")).toBeUndefined();

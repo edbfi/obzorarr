@@ -120,6 +120,8 @@ const rateLimits: Handle = ({ event, resolve }) => {
  * The session (SPEC-sign-in.md, "The request stages"): the owner a live session cookie signs in,
  * in `event.locals.owner`. It refuses nothing; a cookie whose session has ended or never existed
  * is cleared, with `secure: false`, since the browser's address isn't known on every request.
+ * The clearing reaches the browser only on responses that pass through `resolve`, not on the
+ * setup gate's own redirect.
  */
 const session: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get(SESSION_COOKIE);

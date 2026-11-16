@@ -160,10 +160,10 @@ async function runSteps(env: StartupEnv): Promise<void> {
 	});
 	await migrateDatabase(db);
 	database = db;
-	// 4. Each module's startup work: `setup` prints the bootstrap token while unclaimed, and
-	// `sign-in` deletes the sessions that ended while the app was down.
-	await startFirstRun({ db, origin });
+	// 4. Each module's startup work: `sign-in` deletes the sessions that ended while the app was
+	// down, then `setup` prints the bootstrap token while unclaimed.
 	await deleteExpiredSessions(db, new Date());
+	await startFirstRun({ db, origin });
 }
 
 /**

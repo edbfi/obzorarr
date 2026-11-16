@@ -42,6 +42,28 @@ test.describe("the claim's session", () => {
 		}
 	});
 
+	test("clears a cookie whose session doesn't exist, without Secure", async () => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claim(server);
+			const response = await fetch(`${server.url}/`, {
+				headers: { cookie: "obzorarr_session=made-up" },
+			});
+			expect(response.status).toBe(200);
+			const attributes = (response.headers.get("set-cookie") ?? "")
+				.split(";")
+				.map((part) => part.trim().toLowerCase());
+			expect(attributes[0]).toBe("obzorarr_session=");
+			expect(attributes).toContain("max-age=0");
+			expect(attributes).toContain("path=/");
+			expect(attributes).not.toContain("secure");
+		} finally {
+			await server.stop();
+		}
+	});
+
 	test("is not Secure on a plain-HTTP host name that isn't loopback either", async () => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),

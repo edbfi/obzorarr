@@ -71,7 +71,7 @@ const SLOTS_BUSY: ClaimResult = {
  * 6. one transaction that creates the owner, moves the step pointer and starts the owner's
  *    session, so the new owner is signed in (D20).
  * If anything after the token fails while the instance is still unclaimed, first run prints a
- * new token. The claim stores nothing but the owner row and the pointer.
+ * new token. The claim stores nothing but the owner row, the pointer and the session.
  */
 export async function claimInstance(db: Database, input: ClaimInput): Promise<ClaimResult> {
 	if (isClaimed()) return { status: "not-found" };

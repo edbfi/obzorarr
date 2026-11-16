@@ -5,8 +5,16 @@ import { join } from "node:path";
 import { Database } from "@tursodatabase/database";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigError } from "#lib/server/config/config-error.ts";
+import { insertOwner } from "#lib/server/db/owner.ts";
+import { insertSessionForPassword, ownerSession } from "#lib/server/db/owner-session.ts";
 import { createLogger } from "#lib/server/logging/logger.ts";
-import { closeServices, handleShutdown, type ShutdownTarget, startUp } from "./startup.ts";
+import {
+	closeServices,
+	currentDatabase,
+	handleShutdown,
+	type ShutdownTarget,
+	startUp,
+} from "./startup.ts";
 
 let root: string;
 
@@ -59,6 +67,30 @@ describe("startUp", () => {
 		const path = join(root, "data", "app.db");
 		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
 		expect(await Bun.file(path).exists()).toBe(true);
+	});
+
+	it("deletes the sessions that ended while the app was down", async () => {
+		const path = join(root, "sessions", "app.db");
+		const env = { OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path };
+		await startUp(env, { dev: true });
+		const db = currentDatabase();
+		const long = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+		await insertOwner(db, { username: "owner", passwordHash: "h", createdAt: long });
+		const ended = { createdAt: long, lastUsedAt: long, expiresAt: new Date(long.getTime() + 1) };
+		const live = {
+			createdAt: new Date(),
+			lastUsedAt: new Date(),
+			expiresAt: new Date(Date.now() + 60_000),
+		};
+		await insertSessionForPassword(db, { tokenHash: "ended", ...ended }, "h");
+		await insertSessionForPassword(db, { tokenHash: "live", ...live }, "h");
+		await closeServices();
+		await startUp(env, { dev: true });
+		const left = await currentDatabase()
+			.select({ tokenHash: ownerSession.tokenHash })
+			.from(ownerSession);
+		expect(left).toEqual([{ tokenHash: "live" }]);
+		await closeServices();
 	});
 
 	// Turso's own messages hold the path, so startup replaces them.

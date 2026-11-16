@@ -15,7 +15,10 @@ const DAY_MS = 24 * HOUR_MS;
 export const SESSION_IDLE_MS = 7 * DAY_MS;
 /** A session ends 30 days after it started, however recently it was used (D28). */
 export const SESSION_MAX_MS = 30 * DAY_MS;
-/** How often a session's last use is written: at most once an hour. */
+/**
+ * How often a session's last use is written: at most once an hour. The 7 idle days count from
+ * the last use written, so a session can end up to an hour before 7 days pass without any use.
+ */
 export const SESSION_TOUCH_MS = HOUR_MS;
 
 /** A started session: the token for the cookie, and when it ends. */
@@ -58,7 +61,9 @@ export async function lookUpSession(
 		await deleteSession(db, hash);
 		return undefined;
 	}
-	if (at - session.lastUsedAt.getTime() >= SESSION_TOUCH_MS) await touchSession(db, hash, now);
+	if (at - session.lastUsedAt.getTime() >= SESSION_TOUCH_MS) {
+		await touchSession(db, hash, now, new Date(at - SESSION_TOUCH_MS));
+	}
 	return { username: session.username };
 }
 

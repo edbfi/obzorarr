@@ -1,4 +1,4 @@
-import { eq, lte, or, sql } from "drizzle-orm";
+import { and, eq, lte, or, sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { Executor } from "./client.ts";
 import { owner } from "./owner.ts";
@@ -55,12 +55,22 @@ export async function findSession(
 	return rows[0];
 }
 
-/** Records that the session was used at `at`. */
-export async function touchSession(db: Executor, tokenHash: string, at: Date): Promise<void> {
-	await db
+/**
+ * Records that the session was used at `at`, only if its last use is at or before `cutoff`, so
+ * lookups that arrive together write it once. Whether it was written.
+ */
+export async function touchSession(
+	db: Executor,
+	tokenHash: string,
+	at: Date,
+	cutoff: Date,
+): Promise<boolean> {
+	const touched = await db
 		.update(ownerSession)
 		.set({ lastUsedAt: at })
-		.where(eq(ownerSession.tokenHash, tokenHash));
+		.where(and(eq(ownerSession.tokenHash, tokenHash), lte(ownerSession.lastUsedAt, cutoff)))
+		.returning({ tokenHash: ownerSession.tokenHash });
+	return touched.length > 0;
 }
 
 /** Ends one session. */
