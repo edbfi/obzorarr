@@ -765,7 +765,7 @@ Setup facts for this stack:
 | `bun run --bun preview` | runs the built server (`bun ./build`; `PORT`, default 3000, and `HOST`); without a valid key it exits before listening |
 | `bun run --bun check` | `svelte-kit sync`, the message compile, Panda codegen and token CSS, then `svelte-check` failing on any error or warning |
 | `bun run --bun test` | Vitest unit tests (`src/**/*.test.ts` and `vite.config.test.ts`), once (no watch) |
-| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests, the error-page tests, the rate-limit tests and the sign-in tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
+| `bun run --bun smoke` | Playwright e2e: the browser smoke test, the language tests, the key tests, the setup tests, the error-page tests, the rate-limit tests, the sign-in tests and the recovery tests, with a key and a temporary database it generates, never a developer's `.env` or exported key; it starts the built server, so `build` comes first, and Chromium comes from `bunx --bun playwright install chromium` |
 | `bun run --bun lint` | `biome ci`, read-only; `biome.json` lists the file extensions Biome checks |
 | `bun run --bun db:generate` | Drizzle Kit generates a migration in `drizzle/` from the schema, then Biome formats it; review it before committing |
 | `prek run --all-files --hook-stage manual` | everything CI's `checks` job runs |
@@ -849,7 +849,7 @@ export const GET: RequestHandler = () => healthResponse();
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/refusal-page.test.ts`, the "Access denied"
   and "Too many requests" pages and their JSON forms in both languages, styled from the inline token
   declarations, with only a link home, the session-ended page with its link to sign in, and
-  SvelteKit's action error for an enhanced form; `services/sign-in/owner-check.test.ts`, which paths
+  SvelteKit's action error for an enhanced form, with its status; `services/sign-in/owner-check.test.ts`, which paths
   need the owner, the redirect with `next`, the refusal, the open sign-in and sign-out, the path
   decoded as SvelteKit matches it, and a signed-in owner sent away from sign-in;
   `security/console-token.test.ts`, the token's format, alphabet, unbiased draw, expiry and
@@ -861,7 +861,18 @@ export const GET: RequestHandler = () => healthResponse();
   `services/setup/claim.test.ts`, the claim's success, its field errors, wrong and expired tokens
   that never reach the hash, a second claim, two at once, a failed transaction printing a new
   token, and its limit and a refused hash slot leaving the token unused;
-  `security/hash-slots.test.ts`, the fifth refused and a slot freed once),
+  `security/hash-slots.test.ts`, the fifth refused and a slot freed once;
+  `services/sign-in/password-change.test.ts`, the change ending every other session with a new
+  token, a wrong current password counted as a failed sign-in up to the wait, the window shared
+  with signing in, the rules against the stored username before any hash, a busy hash slot, this
+  session ending or the password changing during the check, a sign-in with the old password that
+  ends after the change starting no session, and the logs; `services/sign-in/sessions.test.ts` also
+  counts and ends the other live sessions, ending nothing for a caller whose own session ended;
+  `config/recovery.test.ts`; `services/sign-in/recovery.test.ts`, the recovery token printed or not
+  for each state of the setting, the record of a used token and the claim, that record cleared
+  while the setting is off, and the warnings, the token never in a log entry;
+  `services/setup/startup.test.ts` also refuses a bad `OBZORARR_RECOVERY` and prints the recovery
+  token on a claimed instance and none on an unclaimed one),
   `src/routes/setup/token-format.test.ts` (the token field's dashes),
   `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers, its 403 for a
   browser that stripped `Origin` and a claimed instance's 404 before it, `no-store`, and the
@@ -873,6 +884,10 @@ export const GET: RequestHandler = () => healthResponse();
   `src/routes/(admin)/admin/sign-out/page.server.test.ts` (a GET signs nobody out; the POST ends
   the session and deletes the cookie, `Secure` over https, or only clears the cookie, and refuses
   a browser that stripped `Origin` first),
+  `src/routes/(admin)/admin/(shell)/settings/security/page.server.test.ts` (the other browsers
+  counted and whether recovery is on; the password change's cookie and answers; "Sign out
+  everywhere else"; the 403 without the browser's address; and "Your session ended" for a stale
+  caller or one without the cookie),
   `vite.config.test.ts` (SvelteKit's own form check and remote functions are off, and the version
   is `OBZORARR_VERSION` at build time or `dev`), and in
   `src/lib/shared/i18n/`:
@@ -961,7 +976,15 @@ export const GET: RequestHandler = () => healthResponse();
     the rail keeps every control's name; without JavaScript, the sidebar shows above the page on a
     phone and beside it from 768px, and Sign out still signs out; and the shell shows its heading,
     the owner, Sign out and the version in English and Danish with no console error or CSP
-    violation.
+    violation. On the Security tab, the password change ends a second browser's session, keeps
+    this one with focus on the section's heading, and lets only the new password sign in; "Sign out
+    everywhere else" ends two and says so, with no button when there are none; the enhanced form,
+    after its session ended elsewhere, shows "Access denied" with "Your session ended"; a wrong
+    current password is announced and its field focused; a change with `Origin` stripped gets the
+    403; and both sections show in English and Danish with no console error or CSP violation.
+  - `recovery.test.ts` checks that a claimed server restarted with `OBZORARR_RECOVERY` on prints the
+    recovery token to the console, in no log entry or response, and that the Security tab warns;
+    and that an unclaimed one prints none and warns.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

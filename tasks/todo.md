@@ -410,7 +410,9 @@ first; its limit of 5 per 5 minutes; the checks in the claim's order (the rules,
 token used up with no `await` between, the hash); one transaction that replaces the hash, ends
 every session, starts this one and records the key; and the landing on the Security tab.
 `TokenField` and `token-format.ts` move to `lib/components/credentials/`, shared with the claim.
-The README gets the recovery steps.
+A message with code inside it (the sign-in page's recovery steps, the Security tab's recovery
+warning, and `/recovery`'s) gets one component in `lib/components/`, and SPEC-i18n.md's "Markup
+inside a message" says how. The README's recovery steps came with task 12.
 
 **Acceptance criteria:**
 - [ ] `server/services/sign-in/recovery.test.ts` gains: the order of the checks; a wrong and an
@@ -425,14 +427,14 @@ The README gets the recovery steps.
 - [ ] The page follows its brief in every state it names, at each width, zoom, keyboard and reduced
   motion, in English and Danish, with screenshots in the PR body.
 
-**Verification:** the gates; the brief's checks; the README's recovery steps.
+**Verification:** the gates; the brief's checks; the README's recovery steps still match.
 
 **Dependencies:** task 12.
 
 **Files:** `server/services/sign-in/recovery.ts` (+ test), `src/routes/recovery/`,
 `src/lib/components/credentials/` (`TokenField.svelte`, `token-format.ts` + test, moved from
 `src/routes/setup/`), `src/routes/setup/+page.svelte`, `messages/`, `tests/e2e/recovery.test.ts`,
-`README.md`, `.impeccable/surfaces/route-recovery.md` (its direction contract).
+`.impeccable/surfaces/route-recovery.md` (its direction contract).
 
 **Size:** L.
 

@@ -162,6 +162,17 @@ describe("startUp", () => {
 		await closeServices();
 	});
 
+	it("prints no recovery token on an unclaimed instance with OBZORARR_RECOVERY on, only the setup token", async () => {
+		const path = join(root, "recovery-unclaimed", "app.db");
+		await startUp(
+			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path, OBZORARR_RECOVERY: "true" },
+			{ dev: true },
+		);
+		expect(lines.some((line) => line.startsWith("Recovery token: "))).toBe(false);
+		expect(lines.filter((line) => line.startsWith("Setup token: "))).toHaveLength(1);
+		await closeServices();
+	});
+
 	it("refuses a bad ORIGIN before the database opens", async () => {
 		const path = join(root, "origin-never-created", "app.db");
 		const error = await startUp(

@@ -15,7 +15,7 @@ export type RecoveryOptions = {
 	readonly db: Database;
 	/** `OBZORARR_RECOVERY`, read at startup. */
 	readonly enabled: boolean;
-	/** Whether the instance has an owner: recovery is ignored until it has. */
+	/** Whether the instance had an owner at startup: until it had, the setting is ignored. */
 	readonly claimed: boolean;
 	/** `ORIGIN`, parsed, so the printed line can give the full address. */
 	readonly origin: string | undefined;
