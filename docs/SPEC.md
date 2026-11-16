@@ -815,8 +815,10 @@ export const GET: RequestHandler = () => healthResponse();
   fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged
   before it is thrown, and shutdown: the work stopped on the signal, `SIGHUP` passed on as
   `SIGTERM`, the cleanup's exit codes and its 5-second deadline, and no handlers in `dev`;
-  `logging/redact.test.ts`, each redaction rule and nested; `logging/logger.test.ts`, with
-  `flushLogs` against a slow shell pipe; `logging/request-error.test.ts`, an unexpected error as
+  `logging/redact.test.ts`, each redaction rule and nested, argon2 hashes and a failed query's
+  values included; `db/client.test.ts`, also that a failed query's error carries no values;
+  `logging/logger.test.ts`, with `flushLogs` against a slow shell pipe;
+  `logging/request-error.test.ts`, an unexpected error as
   one redacted entry without the query, its cause, no entry for app or framework errors, and never
   throwing; `src/hooks.server.test.ts`, the `handleError` hook writing through it and answering
   with the viewer's message;

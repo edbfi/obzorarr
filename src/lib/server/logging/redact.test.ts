@@ -1,3 +1,4 @@
+import { DrizzleQueryError } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { Secret } from "#lib/server/security/secrets/secret.ts";
 import { redact } from "./redact.ts";
@@ -300,6 +301,85 @@ describe("redact", () => {
 				z: null,
 				big: "10",
 			});
+		});
+	});
+
+	describe("database errors and password hashes", () => {
+		const HASH =
+			"$argon2id$v=19$m=65536,t=2,p=1$/seEFvW4OSZIjbIuRmn3B5Qo57VWz2sgfKL0ipDNHQs$NkKmoFBaJSLdYTbzOZHz7diXfC6Zi+WSdO2WpLgqMx4";
+
+		it("hides an argon2 hash wherever it appears in text", () => {
+			expect(redact(`stored ${HASH} for the owner`)).toBe(`stored ${R} for the owner`);
+			expect(redact(`"${HASH}",1700000000000`)).toBe(`"${R}",1700000000000`);
+			expect(redact("$argon2i$v=19$m=4096,t=3,p=1$c2FsdA$aGFzaA")).toBe(R);
+		});
+
+		it("drops a failed query's parameters from its message, stack and fields, keeping the query", () => {
+			const query = 'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)';
+			const cause = new Error("UNIQUE constraint failed: owner.id");
+			// A value with a line break carries the rest of the values onto the following lines.
+			const failed = new DrizzleQueryError(query, [1, "Gunnhild\nØstergaard", HASH], cause);
+			expect(failed.message).toContain("Østergaard");
+			const logged = redact(failed) as Record<string, unknown>;
+			const text = JSON.stringify(logged);
+			expect(text).not.toContain("Gunnhild");
+			expect(text).not.toContain("Østergaard");
+			expect(text).not.toContain("argon2");
+			expect(logged.params).toBe(R);
+			expect(logged.query).toBe(query);
+			expect(logged.message).toBe(`Failed query: ${query}\nparams: ${R}`);
+			// The stack keeps its frames after the hidden values.
+			expect(logged.stack).toMatch(/params: \[redacted\]\n\s+at /);
+			expect(text).toContain("UNIQUE constraint failed: owner.id");
+		});
+
+		it("isn't fooled by a value that looks like a stack frame", () => {
+			const query = 'update "settings" set "value" = ? where "key" = ?';
+			const failed = new DrizzleQueryError(
+				query,
+				["before\n\tat sensitive\nafter", "k"],
+				new Error("x"),
+			);
+			const logged = redact(failed) as Record<string, unknown>;
+			const text = JSON.stringify(logged);
+			expect(text).not.toContain("sensitive");
+			expect(text).not.toContain("after");
+			expect(logged.message).toBe(`Failed query: ${query}\nparams: ${R}`);
+			// The real frames are still there.
+			expect(logged.stack).toMatch(
+				/^DrizzleQueryError: Failed query: [^\n]*\nparams: \[redacted\]\n\s+at /,
+			);
+		});
+
+		it("cleans the whole stack as text when its header isn't the error's message", () => {
+			// The stack was built before the message was shortened.
+			const shortened = new Error("q\nparams: a\nSECRET");
+			void shortened.stack;
+			shortened.message = "q\nparams: a";
+			const custom = Object.assign(new Error("boom"), {
+				stack: "Custom: header\nparams: a\nSECRET\n    at frame (file.ts:1:1)",
+			});
+			for (const error of [shortened, custom]) {
+				const text = JSON.stringify(redact(error));
+				expect(text).not.toContain("SECRET");
+				expect(text).not.toContain("frame (file.ts");
+			}
+		});
+
+		it("stays fast on text built to slow the parameters' rule down", () => {
+			const started = performance.now();
+			redact(`\nparams: ${"\n ".repeat(200_000)}x`);
+			redact(`\nparams: a${"\nparams: a".repeat(100_000)}`);
+			expect(performance.now() - started).toBeLessThan(1000);
+		});
+
+		it("hides a hash written in base64url or with JSON's escaped slashes", () => {
+			expect(redact("$argon2id$v=19$m=65536,t=2,p=1$c2_x-dA$aG_Fz-aA")).toBe(R);
+			expect(redact(String.raw`"$argon2id$v=19$m=65536,t=2,p=1$ab\/cd$ef\/gh"`)).toBe(`"${R}"`);
+			// Another escape ends it, so the text after it stays.
+			expect(redact(String.raw`"$argon2id$v=19$m=65536,t=2,p=1$abcd$efgh\nnext line"`)).toBe(
+				String.raw`"${R}\nnext line"`,
+			);
 		});
 	});
 });

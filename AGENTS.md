@@ -373,10 +373,12 @@ src/
       config/log-debug.ts        `OBZORARR_LOG_DEBUG`: whether debug entries are written
       config/origin.ts           `ORIGIN`, parsed and checked: a bare http or https origin
       config/address-header.ts   `ADDRESS_HEADER`: whether a proxy names the client's address
-      db/                        client.ts: opens the database; migrate.ts: applies the bundled
-                                 migrations; one file per aggregate with its tables (settings.ts,
-                                 owner.ts, owner-session.ts) and, from their first caller, its
-                                 named operations: reading and writing a setting, whether an owner
+      db/                        client.ts: opens the database, its failed queries never carrying
+                                 their values, and `queryFailure`, what a log keeps of one;
+                                 migrate.ts: applies the bundled migrations; one file per
+                                 aggregate with its tables (settings.ts, owner.ts,
+                                 owner-session.ts) and, from their first caller, its named
+                                 operations: reading and writing a setting, whether an owner
                                  exists, reading and creating the owner, storing, finding,
                                  renewing and ending sessions; client.ts names the transaction and
                                  executor types

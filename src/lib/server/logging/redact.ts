@@ -87,8 +87,25 @@ const DECODE_ROUNDS = 3;
 /** A run of `%XX` escapes, decoded run by run so a stray `%` doesn't stop the rest. */
 const ESCAPES = /(%[0-9A-Fa-f]{2})+/g;
 
+/** An argon2 password hash in its PHC form: `$argon2id$v=19$m=…,t=…,p=…$salt$hash`. */
+const ARGON2_HASH =
+	/\$argon2(?:id|i|d)(?:\$v=\d+)?\$m=\d+,t=\d+,p=\d+(?:\$(?:\\\/|[A-Za-z0-9+/=._-])*){1,2}/g;
+
+/**
+ * What a failed query's message adds after its text when it carries the values bound to it
+ * (Drizzle's `DrizzleQueryError`): `params:` and everything after it, since a value can hold line
+ * breaks, even ones that look like a stack frame. It applies to every string an entry logs, so
+ * any text with a line that starts with `params: ` loses the rest of that line and everything
+ * after it. An error's stack keeps its frames when they can be told apart (`cleanStack`).
+ */
+const QUERY_PARAMS = /(\nparams: )[\s\S]*/g;
+
 function cleanText(text: string, lookInside = true): string {
-	return cleanParameters(text.replace(URL_CREDENTIALS, `://${REDACTED}@`), lookInside);
+	const cleaned = text
+		.replace(ARGON2_HASH, REDACTED)
+		.replace(QUERY_PARAMS, `$1${REDACTED}`)
+		.replace(URL_CREDENTIALS, `://${REDACTED}@`);
+	return cleanParameters(cleaned, lookInside);
 }
 
 /**
@@ -159,7 +176,8 @@ function decodeName(name: string): string {
  * credentials and token-like query parameters, any key that looks like a credential is replaced
  * at any depth, headers included, and a value with `toJSON` (a `Secret`, a date) is logged as its
  * JSON form. Errors keep their name, message, stack, own fields, cause and errors, each redacted;
- * a circular reference becomes a marker.
+ * a failed query's bound values (`params`) and anything shaped like an argon2 password hash are
+ * hidden too, wherever the error came from. A circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
 	return walk(value, new Set());
@@ -196,12 +214,33 @@ function walkEntries(entries: [string, unknown][], path: Set<object>): Record<st
  * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value.
  */
 function walkError(error: Error, path: Set<object>): Record<string, unknown> {
+	// A failed query's values can be a password's hash or a username: only its text is kept.
+	const fields = Object.entries(error).map(([key, item]): [string, unknown] =>
+		key === "params" && "query" in error ? [key, REDACTED] : [key, item],
+	);
 	return {
 		name: error.name,
 		message: cleanText(error.message),
-		stack: error.stack === undefined ? undefined : cleanText(error.stack),
-		...walkEntries(Object.entries(error), path),
+		stack: error.stack === undefined ? undefined : cleanStack(error),
+		...walkEntries(fields, path),
 		...(error.cause === undefined ? {} : { cause: walk(error.cause, path) }),
 		...(error instanceof AggregateError ? { errors: walk(error.errors, path) } : {}),
 	};
+}
+
+/** The rest of a stack after its header, when it is stack frames and nothing else. */
+const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
+
+/**
+ * An error's stack, its header (`Name: message`) cleaned as the message is and its frames after
+ * it on their own, so a value in the message can't pass for a frame. A stack in any other shape,
+ * such as one made before its message changed, is cleaned as text, which hides everything after a
+ * `params:` line, its frames included.
+ */
+function cleanStack(error: Error): string {
+	const stack = error.stack ?? "";
+	const header = `${error.name}: ${error.message}`;
+	const frames = stack.slice(header.length);
+	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
+	return `${error.name}: ${cleanText(error.message)}${cleanText(frames)}`;
 }
