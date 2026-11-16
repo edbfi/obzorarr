@@ -849,9 +849,10 @@ export const GET: RequestHandler = () => healthResponse();
   `Sec-Fetch-Site`, `Host` and `ORIGIN` values; `security/refusal-page.test.ts`, the "Access denied"
   and "Too many requests" pages and their JSON forms in both languages, styled from the inline token
   declarations, with only a link home, the session-ended page with its link to sign in, and
-  SvelteKit's action error for an enhanced form, with its status; `services/sign-in/owner-check.test.ts`, which paths
-  need the owner, the redirect with `next`, the refusal, the open sign-in and sign-out, the path
-  decoded as SvelteKit matches it, and a signed-in owner sent away from sign-in;
+  SvelteKit's action error for an enhanced form, with its status;
+  `services/sign-in/owner-check.test.ts`, which paths need the owner, the redirect with `next`, the
+  refusal, the open sign-in and sign-out, the path decoded as SvelteKit matches it, and a signed-in
+  owner sent away from sign-in;
   `security/console-token.test.ts`, the token's format, alphabet, unbiased draw, expiry and
   comparison; `security/password.test.ts`, the credential rules at their limits, NFC and case
   included, the list, patterns and an argon2id round trip;
