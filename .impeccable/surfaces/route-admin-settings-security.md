@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Proposed brief for review, with no mockup yet. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+The shell and the tab's frame built in `sign-in`'s task 10 (2026-11-16), code-led, with no mockup; the Password and Sessions sections come with task 11. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
 
 ## Purpose and composition
 
@@ -41,3 +41,17 @@ Page heading 'Settings', tab bar with 'Security' (the only tab for now). While `
 ## Handoff prompt
 
 > Implement only this surface and the admin shell in Obzorarr's existing application. Read PRODUCT.md, DESIGN.md, docs/SPEC-sign-in.md and this brief first. Reuse existing Panda CSS tokens and Ark UI's Dialog for the drawer and the confirmation. Keep it quiet: this is an operational screen. Do not add navigation links or tabs for pages that don't exist yet.
+
+## Direction contract
+
+THESIS: a quiet operator's frame. The sidebar holds where you are and who you are; the page holds one task at a time under its heading and tabs. Nothing in the shell asks for attention except the page's own content.
+
+OWN-WORLD: After Hours at its flattest: `background` page, the sidebar on `surface` with a 1px `border` edge, the current page and hover on `raised`, `muted` labels that brighten to `text`, the active tab underlined in `primary`. The sign-out confirmation is the one floating sheet, on the `scrim` with the `dialog` shadow and radius. No beam, no imagery.
+
+STORY: the owner sees Settings and Security as the only places that exist yet; their own initial and name sit at the foot, linking back here; Sign out asks once before it ends the session; on a phone the same sidebar slides in from the menu and gives focus back when it closes.
+
+FIRST VIEWPORT: from 1024px, the 224px sidebar (logo and wordmark, Settings, then the owner, Sign out, the languages and the version at its foot) beside the page: `h1` Settings, the tab bar with Security, within 672px. From 768px the sidebar is a 96px rail of icons, the initial and the stacked languages. Below 768px, a 64px top bar with the wordmark and Menu.
+
+FORM: seed: none (pinned) "a 224px sidebar with the logo and wordmark, then the navigation … and a footer"; the rail and drawer from DESIGN.md's layout.
+
+FINISH: checked at 360, 390, 768, 1024 and 1440px and at 200% zoom, by keyboard (the sidebar, then the tabs), in English and Danish, with the drawer open and closed and the sign-out confirmation open; no horizontal overflow at any width. The recovery warning and the Password and Sessions states arrive with tasks 11 and 13.

@@ -9,6 +9,7 @@ import { findSession, ownerSession } from "#lib/server/db/owner-session.ts";
 import { hashSessionToken } from "#lib/server/security/session-token.ts";
 import {
 	deleteExpiredSessions,
+	endSession,
 	lookUpSession,
 	SESSION_IDLE_MS,
 	SESSION_MAX_MS,
@@ -119,5 +120,18 @@ describe("deleteExpiredSessions", () => {
 		const left = await db.select({ tokenHash: ownerSession.tokenHash }).from(ownerSession);
 		expect(left).toEqual([{ tokenHash: hashSessionToken(fresh?.token ?? "") }]);
 		expect(left).not.toContainEqual({ tokenHash: hashSessionToken(ending.token) });
+	});
+});
+
+describe("endSession", () => {
+	it("ends the session the token names, and only that one", async () => {
+		const first = await started();
+		const second = await started();
+		await endSession(db, first.token);
+		expect(await lookUpSession(db, first.token, T0)).toBeUndefined();
+		expect(await lookUpSession(db, second.token, T0)).toEqual({ username: "Owner" });
+		// A token that names no session ends nothing.
+		await endSession(db, "made-up");
+		expect(await lookUpSession(db, second.token, T0)).toEqual({ username: "Owner" });
 	});
 });

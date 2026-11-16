@@ -94,6 +94,8 @@ export default defineConfig({
 			},
 			sizes: {
 				sidebar: { value: "224px" },
+				// The sidebar collapsed to its icons, from 1024px down (DESIGN.md, "Layout").
+				rail: { value: "96px" },
 				topbar: { value: "64px" },
 				formMax: { value: "672px" },
 				readingMax: { value: "680px" },
@@ -139,6 +141,12 @@ export default defineConfig({
 				success: { value: { _dark: "#9CDDBD" } },
 				warning: { value: { _dark: "#F0C680" } },
 				danger: { value: { _dark: "#FFACB5" } },
+				// Behind a modal or a drawer: `background` at 48% (DESIGN.md, "Elevation & Depth").
+				scrim: { value: { _dark: "rgba(11, 24, 40, 0.48)" } },
+			},
+			shadows: {
+				// The one broad, soft shadow, for a modal or a floating sheet.
+				dialog: { value: { _dark: "0 24px 64px rgba(0, 0, 0, 0.45)" } },
 			},
 			gradients: {
 				// The recap's projector light on the cinema screen: `primary` fading to transparent

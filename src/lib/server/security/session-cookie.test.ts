@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { SESSION_COOKIE, SESSION_COOKIE_DELETION, sessionCookieOptions } from "./session-cookie.ts";
+import {
+	SESSION_COOKIE,
+	SESSION_COOKIE_DELETION,
+	sessionCookieDeletion,
+	sessionCookieOptions,
+} from "./session-cookie.ts";
 
 describe("the session cookie", () => {
 	it("is named after the app, so apps on one address don't sign each other out", () => {
@@ -39,5 +44,15 @@ describe("the session cookie", () => {
 			sameSite: "lax",
 			secure: false,
 		});
+	});
+});
+
+describe("sessionCookieDeletion", () => {
+	it("deletes the cookie with Secure exactly when the browser's address is https", () => {
+		expect(sessionCookieDeletion("https://obzorarr.example")).toEqual({
+			...SESSION_COOKIE_DELETION,
+			secure: true,
+		});
+		expect(sessionCookieDeletion("http://192.168.1.20:3000")).toEqual(SESSION_COOKIE_DELETION);
 	});
 });
