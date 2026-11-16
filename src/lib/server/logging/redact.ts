@@ -89,13 +89,16 @@ const ESCAPES = /(%[0-9A-Fa-f]{2})+/g;
 
 /** An argon2 password hash in its PHC form: `$argon2id$v=19$m=…,t=…,p=…$salt$hash`. */
 const ARGON2_HASH =
-	/\$argon2(?:id|i|d)(?:\$v=\d+)?\$m=\d+,t=\d+,p=\d+(?:\$[A-Za-z0-9+/=.-]*){1,2}/g;
+	/\$argon2(?:id|i|d)(?:\$v=\d+)?\$m=\d+,t=\d+,p=\d+(?:\$[A-Za-z0-9+/=._\\-]*){1,2}/g;
 
 /**
- * What a failed query's message adds after its text when it carries the values bound to it:
- * `params:` and the rest of that line (Drizzle's `DrizzleQueryError`).
+ * What a failed query's message adds after its text when it carries the values bound to it
+ * (Drizzle's `DrizzleQueryError`): `params:` and everything after it, up to the first stack frame
+ * or the end of the text, since a value with a line break carries the rest onto later lines. A
+ * frame's indent is spaces or tabs only: `\s` would also take line breaks, and its backing off at
+ * every line made the match quadratic.
  */
-const QUERY_PARAMS = /(\nparams: )[^\n]*/g;
+const QUERY_PARAMS = /(\nparams: )[\s\S]*?(?=\n[ \t]+at |$)/g;
 
 function cleanText(text: string, lookInside = true): string {
 	const cleaned = text

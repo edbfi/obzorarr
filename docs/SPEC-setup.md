@@ -100,9 +100,10 @@ it comes.
 - a `Secret` (`secrets`) is already `[redacted]`;
 - anything shaped like an argon2 password hash, wherever it appears;
 - a failed query's bound values, which can be the owner's username and password hash: the database
-  is opened with Drizzle's `paramsInErrors` off, a failed claim logs only the query and the
-  database's own message, and the values (`params`) are hidden in any error that still carries
-  them.
+  is opened with Drizzle's `paramsInErrors` off, and a failed claim logs only the query and the
+  database's own error (`queryFailure`); should values still appear, everything after `params:` in
+  a message or stack, up to the stack's frames, and the `params` field of an error that also has a
+  `query` are hidden.
 
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its

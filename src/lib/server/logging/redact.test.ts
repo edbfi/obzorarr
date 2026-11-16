@@ -1,3 +1,4 @@
+import { DrizzleQueryError } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { Secret } from "#lib/server/security/secrets/secret.ts";
 import { redact } from "./redact.ts";
@@ -314,30 +315,34 @@ describe("redact", () => {
 		});
 
 		it("drops a failed query's parameters from its message, stack and fields, keeping the query", () => {
+			const query = 'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)';
 			const cause = new Error("UNIQUE constraint failed: owner.id");
-			const failed = Object.assign(
-				new Error(
-					`Failed query: insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)\nparams: 1,Gunnhild,${HASH}`,
-				),
-				{
-					name: "DrizzleQueryError",
-					query: 'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)',
-					params: [1, "Gunnhild", HASH],
-					cause,
-				},
-			);
+			// A value with a line break carries the rest of the values onto the following lines.
+			const failed = new DrizzleQueryError(query, [1, "Gunnhild\nØstergaard", HASH], cause);
+			expect(failed.message).toContain("Østergaard");
 			const logged = redact(failed) as Record<string, unknown>;
 			const text = JSON.stringify(logged);
 			expect(text).not.toContain("Gunnhild");
+			expect(text).not.toContain("Østergaard");
 			expect(text).not.toContain("argon2");
 			expect(logged.params).toBe(R);
-			expect(logged.query).toBe(
-				'insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)',
-			);
-			expect(logged.message).toBe(
-				`Failed query: insert into "owner" ("id", "username", "password_hash") values (?, ?, ?)\nparams: ${R}`,
-			);
+			expect(logged.query).toBe(query);
+			expect(logged.message).toBe(`Failed query: ${query}\nparams: ${R}`);
+			// The stack keeps its frames after the hidden values.
+			expect(logged.stack).toMatch(/params: \[redacted\]\n\s+at /);
 			expect(text).toContain("UNIQUE constraint failed: owner.id");
+		});
+
+		it("stays fast on text built to slow the parameters' rule down", () => {
+			const started = performance.now();
+			redact(`\nparams: ${"\n ".repeat(200_000)}x`);
+			redact(`\nparams: a${"\nparams: a".repeat(100_000)}`);
+			expect(performance.now() - started).toBeLessThan(1000);
+		});
+
+		it("hides a hash written in base64url or with JSON's escaped slashes", () => {
+			expect(redact("$argon2id$v=19$m=65536,t=2,p=1$c2_x-dA$aG_Fz-aA")).toBe(R);
+			expect(redact(String.raw`"$argon2id$v=19$m=65536,t=2,p=1$ab\/cd$ef\/gh"`)).toBe(`"${R}"`);
 		});
 	});
 });

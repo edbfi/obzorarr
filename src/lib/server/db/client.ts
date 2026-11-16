@@ -1,4 +1,5 @@
 import { connect } from "@tursodatabase/database";
+import { DrizzleQueryError } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/tursodatabase/database";
 
 /**
@@ -12,14 +13,14 @@ export async function openDatabase(path: string) {
 }
 
 /**
- * What a log entry keeps of a failed query: its text, with placeholders for its values, and the
- * database's own error, never Drizzle's wrapper, whose message can repeat the values. Anything
- * else is returned as it is.
+ * What a log entry keeps of a failed query: its name, its text, with placeholders for its values,
+ * and the database's own error, never Drizzle's message or stack, which can repeat the values.
+ * Anything else is returned as it is. A layer of its own, so a caller that logs a failed write of
+ * credentials stays safe whatever `paramsInErrors` and `redact` do.
  */
 export function queryFailure(error: unknown): unknown {
-	if (!(error instanceof Error) || error.name !== "DrizzleQueryError") return error;
-	const { query } = error as Error & { query?: unknown };
-	return { query: typeof query === "string" ? query : undefined, cause: error.cause };
+	if (!(error instanceof DrizzleQueryError)) return error;
+	return { name: error.name, query: error.query, cause: error.cause };
 }
 
 export type Database = Awaited<ReturnType<typeof openDatabase>>;

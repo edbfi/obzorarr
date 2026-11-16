@@ -1,9 +1,9 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sql } from "drizzle-orm";
+import { DrizzleQueryError, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type Database, openDatabase } from "./client.ts";
+import { type Database, openDatabase, queryFailure } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
 import { settings } from "./settings.ts";
 
@@ -80,5 +80,30 @@ describe("a failed query's error", () => {
 		expect(error.params).toBeUndefined();
 		expect(error.message).not.toContain("a-secret-value");
 		expect(error.query).toContain("insert into");
+	});
+});
+
+describe("queryFailure", () => {
+	it("keeps a failed query's text and the database's own error, never its values", () => {
+		const cause = new Error("UNIQUE constraint failed: owner.id");
+		const failed = new DrizzleQueryError(
+			'insert into "owner" ("username", "password_hash") values (?, ?)',
+			["Gunnhild", "$argon2id$v=19$m=65536,t=2,p=1$c2FsdA$aGFzaA"],
+			cause,
+		);
+		expect(failed.message).toContain("Gunnhild");
+		const kept = queryFailure(failed);
+		expect(kept).toEqual({
+			name: "DrizzleQueryError",
+			query: 'insert into "owner" ("username", "password_hash") values (?, ?)',
+			cause,
+		});
+		expect(JSON.stringify(kept)).not.toContain("Gunnhild");
+	});
+
+	it("returns any other error as it is", () => {
+		const other = new Error("hashing failed");
+		expect(queryFailure(other)).toBe(other);
+		expect(queryFailure("text")).toBe("text");
 	});
 });
