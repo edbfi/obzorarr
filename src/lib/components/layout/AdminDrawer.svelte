@@ -4,7 +4,7 @@ import { Portal } from "@ark-ui/svelte/portal";
 import MenuIcon from "@lucide/svelte/icons/menu";
 import XIcon from "@lucide/svelte/icons/x";
 import AdminSidebar from "#lib/components/layout/AdminSidebar.svelte";
-import { firstVisible } from "#lib/components/layout/focus-fallback.ts";
+import { firstVisible, refocusIfLost } from "#lib/components/layout/focus-fallback.ts";
 import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -31,6 +31,11 @@ const focusAfter = () =>
 
 afterNavigate(() => {
 	open = false;
+});
+
+// When the drawer closes, focus is never left on the page's body.
+$effect(() => {
+	if (open) return () => refocusIfLost(focusAfter);
 });
 
 $effect(() => {

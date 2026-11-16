@@ -12,3 +12,16 @@ export function firstVisible(...candidates: (Element | null | undefined)[]): HTM
 	}
 	return null;
 }
+
+/**
+ * After a dialog closes: if focus fell to the page's body, as when the control it would go back to
+ * was still inert or had just been hidden, move it to `pick()`'s control a frame later, once the
+ * shell has lifted `inert`.
+ */
+export function refocusIfLost(pick: () => HTMLElement | null): void {
+	requestAnimationFrame(() => {
+		const active = document.activeElement;
+		if (active !== null && active !== document.body) return;
+		pick()?.focus();
+	});
+}

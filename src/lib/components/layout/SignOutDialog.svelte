@@ -2,7 +2,7 @@
 import { Dialog } from "@ark-ui/svelte/dialog";
 import { Portal } from "@ark-ui/svelte/portal";
 import LogOutIcon from "@lucide/svelte/icons/log-out";
-import { firstVisible } from "#lib/components/layout/focus-fallback.ts";
+import { firstVisible, refocusIfLost } from "#lib/components/layout/focus-fallback.ts";
 import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -26,6 +26,10 @@ let trigger = $state<HTMLButtonElement>();
 const modals = shellModals();
 $effect(() => {
 	if (open && modals) return modals.hold();
+});
+// When the confirmation closes, focus is never left on the page's body.
+$effect(() => {
+	if (open) return () => refocusIfLost(focusAfter);
 });
 
 /** Focus goes back to this Sign out, or, once it is hidden, to one the page shows, or to Menu. */
