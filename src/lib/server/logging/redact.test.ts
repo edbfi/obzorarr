@@ -118,6 +118,8 @@ describe("redact", () => {
 			// A value that is itself a chain of assignments.
 			expect(redact("/r?a=1;u=v%3Dtoken%3Dabc&y=2")).toBe(`/r?a=${R}&y=2`);
 			expect(redact("/r?u=v%3Dw%3Dx%3Dpassword%3Dabc&y=2")).toBe(`/r?u=${R}&y=2`);
+			// A chain whose credential is encoded once more.
+			expect(redact("/r?a=1;u=v%3Dtoken%253Dabc")).toBe(`/r?a=${R}`);
 		});
 
 		it("still finds a hash or a URL's password encoded in a value, behind a semicolon too", () => {
@@ -134,6 +136,10 @@ describe("redact", () => {
 				"/login?next=%2Flibrary%3Ftype%3D1&lang=da",
 			);
 			expect(redact("/search?q=100%25%20sure%")).toBe("/search?q=100%25%20sure%");
+			// A chained value in base64, whose padding is a run of `=`.
+			expect(redact("/login?next=%2Fa%3Fid%3DYWJjZA%3D%3D")).toBe(
+				"/login?next=%2Fa%3Fid%3DYWJjZA%3D%3D",
+			);
 		});
 
 		it("leaves a text without URLs as it is", () => {
