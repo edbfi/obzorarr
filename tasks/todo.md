@@ -221,17 +221,17 @@ without the username, the return path (`security/return-path.ts`) and "Forgot yo
 yet, a signed-in owner lands on `/admin` as after the claim.
 
 **Acceptance criteria:**
-- [ ] Unit tests first fail, then pass: `return-path` (each rule at its limits),
+- [x] Unit tests first fail, then pass: `return-path` (each rule at its limits),
   `services/sign-in/sign-in` (right and wrong credentials, the username's case and trim, the dummy
   verification, the logs, an old-password check that ends after the hash changed starting no
   session), `db/owner` (reading the owner).
-- [ ] `tests/e2e/sign-in.test.ts` gains, on a fresh server: a wrong password is refused with the
+- [x] `tests/e2e/sign-in.test.ts` gains, on a fresh server: a wrong password is refused with the
   username kept; the right one signs in and returns to `next`; an unsafe `next` is dropped; a POST
   with `Origin` stripped gets the 403 that says so; with several sign-ins in flight at once, no
   more than 4 hash and the rest get the form's 429 with `Retry-After: 5` (asserted on the set of
   answers, not on which request is refused); the page logs no console error or CSP violation, in
   both languages.
-- [ ] The page follows its brief in every state it names but too many attempts (task 9), at each
+- [x] The page follows its brief in every state it names but too many attempts (task 9), at each
   width, zoom, keyboard and reduced motion, in English and Danish, with screenshots in the PR body.
 
 **Verification:** the gates; the brief's checks.

@@ -173,6 +173,8 @@ common password or, as a whole, a simple pattern such as `abcabcabcabcabc` or `a
 - **The claim signs you in** and opens the admin's Settings, with an `obzorarr_session` cookie
   that lasts until 7 days pass without use, and 30 days at most. It is marked `Secure` only when
   your browser reaches Obzorarr over HTTPS, so a plain-HTTP install at home works too.
+- **Signing in again:** open `/admin/sign-in` and use the owner's username, in any case, and
+  password.
 
 ## Logs
 

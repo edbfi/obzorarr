@@ -828,6 +828,11 @@ export const GET: RequestHandler = () => healthResponse();
   `security/session-token.test.ts` and `security/session-cookie.test.ts`, the token, its hash
   and the cookie's options; `db/owner-session.test.ts`; `services/sign-in/sessions.test.ts`, both
   session limits at their edges, the hourly write, expiry and the current-password check;
+  `services/sign-in/sign-in.test.ts`, right and wrong credentials with one answer, the username's
+  case and spaces, the dummy verification for a wrong username, a busy hash slot, the slot freed
+  however the check ends, ended sessions deleted, the logs without the typed username, and a check
+  that ends after the password changed starting no session; `security/return-path.test.ts`, each
+  rule at its limits; `db/owner.test.ts`, also reading the owner;
   `security/browser-address.test.ts`, `ORIGIN`, a validated `Origin` and a stripped one, and the
   search that keeps the request URL's origin and protocol out of app code, however it is written;
   `security/cross-origin.test.ts`, the check against methods, content types and `Origin`,
@@ -848,6 +853,9 @@ export const GET: RequestHandler = () => healthResponse();
   browser that stripped `Origin` and a claimed instance's 404 before it, `no-store`, and the
   session cookie with the redirect to `/admin`), `src/routes/(admin)/admin/(shell)/` (`/admin`
   and `/admin/settings` open the Security tab),
+  `src/routes/(admin)/admin/sign-in/page.server.test.ts` (the cookie, a safe `next` kept to its
+  path and an unsafe one dropped, one answer, busy with its headers, the 403 for a browser that
+  stripped `Origin` before any check, and `no-store`),
   `vite.config.test.ts` (SvelteKit's own form check and remote functions are off), and in
   `src/lib/shared/i18n/`:
   - `format.test.ts` runs the formatters inside `paraglideMiddleware` with a request for each
@@ -883,7 +891,8 @@ export const GET: RequestHandler = () => healthResponse();
     server prints its bootstrap token before it listens, in no log entry or response; the sixth
     claim from one address within 5 minutes gets the form's 429 with `Retry-After`; a claim with
     `Origin` stripped gets the 403 that says so, in Danish too and as JSON to an enhanced form, and
-    leaves the token usable, and `/setup` is `no-store`; and the claim
+    leaves the token usable, and `/setup` is `no-store`; while a claim is being sent, the button
+    says "Claiming…" and can't be pressed, and the fields keep what was typed; and the claim
     refuses a wrong token, keeping the username and clearing the token and password, claims with the
     right one, and answers 404 at `/setup` afterwards, also after a restart, which serves `/`
     without a redirect, with neither the token nor the password in any log entry or response.
@@ -902,7 +911,14 @@ export const GET: RequestHandler = () => healthResponse();
   - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in and lands on the
     Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only,
     about 30 days long and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't
-    loopback, and that a cookie naming no session is cleared, also without `Secure`.
+    loopback, and that a cookie naming no session is cleared, also without `Secure`. On
+    `/admin/sign-in`, a wrong password gets one message, keeping the username and putting the
+    cursor back in the emptied password field; the right one signs in, with the username in any case
+    and spaces, and returns to `next` without its query string; an unsafe `next` goes to the admin;
+    while signing in, the button says so and the username keeps what was typed; a POST with
+    `Origin` stripped gets the 403 that says so; of 20 sign-ins at once, every answer is a wrong
+    password or the form's 429 with `Retry-After: 5`, with some of each; and the page and its
+    recovery steps show in English and Danish with no console error or CSP violation.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

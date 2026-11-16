@@ -20,6 +20,17 @@ export async function ownerExists(db: Executor): Promise<boolean> {
 	return rows.length > 0;
 }
 
+/** The owner's username and password hash, or undefined before the claim. */
+export async function findOwner(
+	db: Executor,
+): Promise<{ username: string; passwordHash: string } | undefined> {
+	const rows = await db
+		.select({ username: owner.username, passwordHash: owner.passwordHash })
+		.from(owner)
+		.limit(1);
+	return rows[0];
+}
+
 /**
  * Creates the owner under the fixed id, so it fails when an owner exists already; the claim runs
  * it inside its transaction.
