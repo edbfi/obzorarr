@@ -10,7 +10,15 @@ async function skip(page: Page, name: string) {
 	await page.keyboard.press("Tab");
 	const link = page.getByRole("link", { name });
 	await expect(link).toBeFocused();
-	await expect(link).toBeVisible();
+	// Shown in full and inside the viewport: `toBeVisible` alone passes for the 1px hidden box.
+	const box = await link.evaluate((element) => {
+		const { left, top, right, bottom, width } = element.getBoundingClientRect();
+		return { left, top, right, bottom, width, viewport: window.innerWidth };
+	});
+	expect(box.width).toBeGreaterThan(40);
+	expect(box.left).toBeGreaterThanOrEqual(0);
+	expect(box.top).toBeGreaterThanOrEqual(0);
+	expect(box.right).toBeLessThanOrEqual(box.viewport);
 	await page.keyboard.press("Enter");
 	// Focus lands on the main content, so the next Tab reaches its first field.
 	await expect(page.getByRole("main")).toBeFocused();

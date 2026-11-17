@@ -534,7 +534,8 @@ tests/
                                  and `/recovery`
   e2e/error-summary.test.ts      failed submits without and with JavaScript, and with a late script:
                                  the title, the summary, its links and where focus goes
-  e2e/skip-link.test.ts          the one-task pages' skip link, with and without JavaScript
+  e2e/skip-link.test.ts          the one-task pages' skip link, with and without JavaScript and
+                                 in Danish
   e2e/rate-limits.test.ts        the general limit, the refusal without the address header and
                                  the scanner filter
   e2e/fixture.ts                 Playwright's `test` with each test's own client address

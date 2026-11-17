@@ -1016,8 +1016,9 @@ export const GET: RequestHandler = () => healthResponse();
     marks no field, and it fits in Danish at 360px and at 200% zoom; and a submit before a late
     script loads posts natively, and hydration then takes no focus.
   - `skip-link.test.ts` checks, on the sign-in page, that the first Tab shows "Skip to main
-    content", which takes no room until then, and that following it moves focus to the main content,
-    whose next Tab reaches the first field, without JavaScript too and in Danish.
+    content", which takes no room until then and then shows in full inside the viewport, and that
+    following it moves focus to the main content, whose next Tab reaches the first field, without
+    JavaScript too and in Danish.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None
