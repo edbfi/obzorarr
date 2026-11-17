@@ -686,6 +686,50 @@ describe("a value too large to walk", () => {
 	});
 });
 
+describe("each value read once", () => {
+	/** A getter that answers once and throws after, counting its reads. */
+	function once(value: unknown) {
+		const getter = {
+			reads: 0,
+			get: () => (++getter.reads > 1 ? throwing() : value),
+			enumerable: true,
+		};
+		return getter;
+	}
+	function throwing(): never {
+		throw new Error("read twice");
+	}
+
+	it("reads an error's name, message and stack once, enumerable or not", () => {
+		const error = new Error("boom");
+		const stack = error.stack as string;
+		const name = once("Error");
+		const message = once("boom");
+		const frames = once(stack);
+		Object.defineProperties(error, { name, message, stack: frames });
+		const walked = redact(error) as Record<string, unknown>;
+		expect(walked).toMatchObject({ name: "Error", message: "boom" });
+		expect(walked.stack).toMatch(/^Error: boom\n/);
+		expect([name.reads, message.reads, frames.reads]).toEqual([1, 1, 1]);
+	});
+
+	it("reads a toJSON once, and calls it on its object", () => {
+		const getter = once(function (this: { value: string }) {
+			return this.value;
+		});
+		const value = Object.defineProperties({ value: "json" }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: "json" });
+		expect(getter.reads).toBe(1);
+	});
+
+	it("reads a toJSON that isn't a function once, and logs it as a field", () => {
+		const getter = once(5);
+		const value = Object.defineProperties({ other: 1 }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: { other: 1, toJSON: 5 } });
+		expect(getter.reads).toBe(1);
+	});
+});
+
 describe("an error's message", () => {
 	it("keeps the stack when the message isn't text", () => {
 		const error = new Error("42");

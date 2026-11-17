@@ -239,11 +239,12 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
 			const fields = Object.fromEntries(value.entries());
 			return walkFields(fields, Object.keys(fields), state, depth);
 		}
-		if ("toJSON" in value && typeof value.toJSON === "function") {
-			return walk(value.toJSON(), state, depth + 1);
-		}
+		// Read once, then called on its object or, when it isn't a function, logged as a field.
+		const toJSON = "toJSON" in value ? read(() => value.toJSON) : undefined;
+		if (typeof toJSON === "function") return walk(toJSON.call(value), state, depth + 1);
 		if (Array.isArray(value)) return walkItems(value, state, depth);
-		return walkFields(value, Object.keys(value), state, depth);
+		const known = new Map(toJSON === undefined ? [] : [["toJSON", toJSON]]);
+		return walkFields(value, Object.keys(value), state, depth, known);
 	} catch {
 		return UNREADABLE;
 	} finally {
@@ -279,17 +280,18 @@ function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
  * a key that looks like a credential is hidden without its value ever being read. Each field
  * counts against the entry's budget; past it, the rest are left out unread, and counted. The
  * entry's own errors, the fields at its top that hold one, are walked first, so a large part
- * beside them can't use the budget up before them; the result keeps the fields' order.
+ * beside them can't use the budget up before them; the result keeps the fields' order. `readFirst`
+ * holds values already read, such as a `toJSON` that isn't a function.
  */
 function walkFields(
 	value: object,
 	keys: string[],
 	state: Walk,
 	depth: number,
+	readFirst = new Map<string, unknown>(),
 ): Record<string, unknown> {
-	// What the pass for errors below read, kept so that no value is read twice: a getter may run
-	// once only, or answer differently the second time.
-	const readFirst = new Map<string, unknown>();
+	// Every value read is kept in `readFirst`, so none is read twice: a getter may run once only,
+	// or answer differently the second time.
 	const field = (key: string) =>
 		readFirst.has(key) ? readFirst.get(key) : read(() => (value as Record<string, unknown>)[key]);
 	const done = new Map<string, unknown>();
@@ -338,10 +340,19 @@ function walkError(error: Error, state: Walk, depth: number): Record<string, unk
 	const aggregate = error instanceof AggregateError;
 	const ownKeys = Object.keys(error);
 	const hidesParams = ownKeys.includes("params") && "query" in error;
+	// An own `name`, `message` or `stack` is read once, below, like `cause`.
 	const keys = ownKeys.filter(
 		(key) =>
-			key !== "cause" && !(key === "errors" && aggregate) && !(key === "params" && hidesParams),
+			!["name", "message", "stack", "cause"].includes(key) &&
+			!(key === "errors" && aggregate) &&
+			!(key === "params" && hidesParams),
 	);
+	// Each read once: the stack is checked against the same name and message that are logged.
+	// `String()`, since a template throws on a symbol name and `cleanText` on a message that isn't
+	// text, either of which would lose the whole stack.
+	const name = read(() => String(error.name)) as string;
+	const message = read(() => String(error.message)) as string;
+	const stack = read(() => error.stack);
 	const cause = read(() => error.cause);
 	const errors = aggregate ? read(() => error.errors) : undefined;
 	// The cause and errors are walked before the fields, so a large field can't use the budget up
@@ -351,9 +362,12 @@ function walkError(error: Error, state: Walk, depth: number): Record<string, unk
 		...(errors === undefined ? {} : { errors: walk(errors, state, depth + 1) }),
 	};
 	return {
-		name: read(() => cleanText(String(error.name))),
-		message: read(() => cleanText(String(error.message))),
-		stack: read(() => (error.stack === undefined ? undefined : cleanStack(error))),
+		name: cleanText(name),
+		message: cleanText(message),
+		stack:
+			typeof stack === "string"
+				? read(() => cleanStack(name, message, stack))
+				: walk(stack, state, depth + 1),
 		...walkFields(error, keys, state, depth),
 		...(hidesParams ? { params: REDACTED } : {}),
 		...causes,
@@ -369,12 +383,7 @@ const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
  * such as one made before its message changed, is cleaned as text, which hides everything after a
  * `params:` line, its frames included.
  */
-function cleanStack(error: Error): string {
-	const stack = error.stack ?? "";
-	// `String()`, since a template throws on a symbol name and `cleanText` on a message that isn't
-	// text, either of which would lose the whole stack.
-	const name = String(error.name);
-	const message = String(error.message);
+function cleanStack(name: string, message: string, stack: string): string {
 	const header = `${name}: ${message}`;
 	const frames = stack.slice(header.length);
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
