@@ -612,12 +612,11 @@ describe("the check", () => {
 		},
 	);
 
-	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me", "a<b and c>d", "<5 minutes (>1 play)"])(
+	// No whole numbers, which a text can't hold: a digit after `<` stays, inside a word.
+	it.each(["x < y and z > y, <- back", "I <3u and > me", "a<b and c>d", "<5min (>1st play)"])(
 		"doesn't take the angle brackets in %s for a tag",
 		(text) => {
-			expect(check(broken(both({ landing_title: text })))).not.toContainEqual(
-				expect.stringContaining("shaped like a tag"),
-			);
+			expect(check(broken(both({ landing_title: text })))).toEqual([]);
 		},
 	);
 
