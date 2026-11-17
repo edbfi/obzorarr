@@ -185,51 +185,93 @@ function decodeName(name: string): string {
  * hidden too, wherever the error came from. A circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
-	return walk(value, new Set());
+	return walk(value, new Set(), 0);
 }
 
-function walk(value: unknown, path: Set<object>): unknown {
+/** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
+const UNREADABLE = "[unreadable]";
+/** How deep a value is walked; deeper, such as a runaway chain of causes, is left out. */
+const MAX_DEPTH = 32;
+
+/** The value `get` reads, or the unreadable marker when reading it throws. */
+function read(get: () => unknown): unknown {
+	try {
+		return get();
+	} catch {
+		return UNREADABLE;
+	}
+}
+
+/**
+ * One value, redacted. It never throws: an object that can't be read becomes the unreadable
+ * marker, and one nested deeper than MAX_DEPTH a marker too, so a log entry is always written.
+ */
+function walk(value: unknown, path: Set<object>, depth: number): unknown {
 	if (typeof value === "string") return cleanText(value);
 	if (typeof value === "bigint") return value.toString();
 	if (typeof value === "function" || typeof value === "symbol") return String(value);
 	if (value === null || typeof value !== "object") return value;
 	if (path.has(value)) return "[circular]";
+	if (depth >= MAX_DEPTH) return "[too deep]";
 	path.add(value);
 	try {
-		if (value instanceof Error) return walkError(value, path);
-		if (value instanceof Headers) return walkEntries([...value.entries()], path);
+		if (value instanceof Error) return walkError(value, path, depth);
+		if (value instanceof Headers) return walkEntries([...value.entries()], path, depth);
 		if ("toJSON" in value && typeof value.toJSON === "function") {
-			return walk(value.toJSON(), path);
+			return walk(value.toJSON(), path, depth + 1);
 		}
-		if (Array.isArray(value)) return value.map((item) => walk(item, path));
-		return walkEntries(Object.entries(value), path);
+		if (Array.isArray(value)) return value.map((item) => walk(item, path, depth + 1));
+		return walkFields(value, Object.keys(value), path, depth);
+	} catch {
+		return UNREADABLE;
 	} finally {
 		path.delete(value);
 	}
 }
 
-function walkEntries(entries: [string, unknown][], path: Set<object>): Record<string, unknown> {
+function walkEntries(
+	entries: [string, unknown][],
+	path: Set<object>,
+	depth: number,
+): Record<string, unknown> {
 	return Object.fromEntries(
-		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, path)]),
+		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, path, depth + 1)]),
 	);
+}
+
+/** An object's `keys`, each read on its own, so one that throws loses only its own value. */
+function walkFields(
+	value: object,
+	keys: string[],
+	path: Set<object>,
+	depth: number,
+): Record<string, unknown> {
+	const entries = keys.map((key): [string, unknown] => [
+		key,
+		read(() => (value as Record<string, unknown>)[key]),
+	]);
+	return walkEntries(entries, path, depth);
 }
 
 /**
  * An error's name, message and stack, which are its own but not enumerable, then its own fields
- * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value.
+ * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value and
+ * each read on its own, so a hostile getter loses only its own part.
  */
-function walkError(error: Error, path: Set<object>): Record<string, unknown> {
+function walkError(error: Error, path: Set<object>, depth: number): Record<string, unknown> {
 	// A failed query's values can be a password's hash or a username: only its text is kept.
-	const fields = Object.entries(error).map(([key, item]): [string, unknown] =>
-		key === "params" && "query" in error ? [key, REDACTED] : [key, item],
-	);
+	const keys = Object.keys(error).filter((key) => !(key === "params" && "query" in error));
+	const hidesParams = Object.keys(error).length !== keys.length;
+	const cause = read(() => error.cause);
+	const errors = error instanceof AggregateError ? read(() => error.errors) : undefined;
 	return {
-		name: error.name,
-		message: cleanText(error.message),
-		stack: error.stack === undefined ? undefined : cleanStack(error),
-		...walkEntries(fields, path),
-		...(error.cause === undefined ? {} : { cause: walk(error.cause, path) }),
-		...(error instanceof AggregateError ? { errors: walk(error.errors, path) } : {}),
+		name: read(() => String(error.name)),
+		message: read(() => cleanText(String(error.message))),
+		stack: read(() => (error.stack === undefined ? undefined : cleanStack(error))),
+		...walkFields(error, keys, path, depth),
+		...(hidesParams ? { params: REDACTED } : {}),
+		...(cause === undefined ? {} : { cause: walk(cause, path, depth + 1) }),
+		...(errors === undefined ? {} : { errors: walk(errors, path, depth + 1) }),
 	};
 }
 

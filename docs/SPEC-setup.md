@@ -105,6 +105,10 @@ it comes.
   any text is hidden, an error's stack keeping its frames, and so is the `params` field of an
   error that also has a `query`.
 
+Redacting never throws, so an entry is always written: a value that throws as it is read (a getter,
+`toJSON` or a proxy) is logged as `[unreadable]`, losing only its own part, and one nested more than
+32 levels deep, such as a runaway chain of causes, as `[too deep]`.
+
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its
 query; SvelteKit's default would write its stack to the console unredacted. Errors the app raises

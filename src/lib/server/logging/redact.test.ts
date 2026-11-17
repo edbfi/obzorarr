@@ -404,3 +404,65 @@ describe("redact", () => {
 		});
 	});
 });
+
+describe("a value that can't be read", () => {
+	it("marks a throwing toJSON as unreadable, keeping what is around it", () => {
+		const broken = {
+			toJSON() {
+				throw new Error("no JSON for you");
+			},
+		};
+		expect(redact({ before: 1, broken, after: "kept" })).toEqual({
+			before: 1,
+			broken: "[unreadable]",
+			after: "kept",
+		});
+	});
+
+	it("marks only a throwing getter's field as unreadable", () => {
+		const value = {
+			kept: "yes",
+			get broken() {
+				throw new Error("no value for you");
+			},
+		};
+		expect(redact(value)).toEqual({ kept: "yes", broken: "[unreadable]" });
+	});
+
+	it("keeps an error's name and message when its stack can't be read", () => {
+		const hostile = new Error("boom");
+		Object.defineProperty(hostile, "stack", {
+			get() {
+				throw new Error("no stack for you");
+			},
+		});
+		expect(redact(hostile)).toMatchObject({
+			name: "Error",
+			message: "boom",
+			stack: "[unreadable]",
+		});
+	});
+
+	it("marks an object whose keys can't be listed as unreadable", () => {
+		const proxy = new Proxy(
+			{},
+			{
+				ownKeys() {
+					throw new Error("no keys for you");
+				},
+			},
+		);
+		expect(redact({ proxy })).toEqual({ proxy: "[unreadable]" });
+	});
+
+	it("stops a chain of causes too deep to walk, without overflowing the stack", () => {
+		let error = new Error("the bottom");
+		for (let i = 0; i < 20_000; i++) error = new Error(`level ${i}`, { cause: error });
+		let text = "";
+		expect(() => {
+			text = JSON.stringify(redact(error));
+		}).not.toThrow();
+		expect(text).toContain("[too deep]");
+		expect(text).not.toContain("the bottom");
+	});
+});
