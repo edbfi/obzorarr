@@ -305,9 +305,12 @@ describe("recover", () => {
 		hashing.fails = true;
 		expect(await recover(db, { token, password: NEW_PASSWORD })).toEqual({ status: "failed" });
 		expect((await findOwner(db))?.passwordHash).toBe(ownerHash);
+		expect(isRecoveryWaiting()).toBe(false);
 		expect(logged.map((line) => JSON.parse(line) as Record<string, unknown>)).toContainEqual(
 			expect.objectContaining({ level: "error", message: "the recovery failed" }),
 		);
+		expect(logged.join("")).not.toContain(NEW_PASSWORD);
+		expect(logged.join("")).not.toContain(token);
 		// The hash slot was freed.
 		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
 		expect(taken.every((release) => release !== undefined)).toBe(true);
