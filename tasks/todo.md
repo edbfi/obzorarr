@@ -444,9 +444,9 @@ inside a message" says how. The README's recovery steps came with task 12.
 probe paths get a quiet 404, the scanner user agents a 403, neither logged above debug.
 
 **Acceptance criteria:**
-- [ ] `server/security/scanner-filter.test.ts` first fails, then passes: each kind of path and
+- [x] `server/security/scanner-filter.test.ts` first fails, then passes: each kind of path and
   agent, and no route the app serves matched.
-- [ ] `tests/e2e/rate-limits.test.ts` gains: a probe path gets 404 and a scanner agent 403, and
+- [x] `tests/e2e/rate-limits.test.ts` gains: a probe path gets 404 and a scanner agent 403, and
   neither counts towards the general limit.
 
 **Verification:** the gates.

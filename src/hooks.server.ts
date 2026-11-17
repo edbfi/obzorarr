@@ -14,6 +14,7 @@ import { crossOriginAllowed } from "#lib/server/security/cross-origin.ts";
 import { securityHeaders, withSecurityHeaders } from "#lib/server/security/headers.ts";
 import { createRateLimiter } from "#lib/server/security/rate-limit.ts";
 import { accessDenied, sessionEnded, tooManyRequests } from "#lib/server/security/refusal-page.ts";
+import { scannerVerdict } from "#lib/server/security/scanner-filter.ts";
 import { SESSION_COOKIE, SESSION_COOKIE_DELETION } from "#lib/server/security/session-cookie.ts";
 import { firstRunRedirect } from "#lib/server/services/setup/first-run.ts";
 import {
@@ -93,6 +94,23 @@ const crossOrigin: Handle = ({ event, resolve }) =>
 		: accessDenied(event.request);
 
 const rateLimitLog = createLogger("rate-limits");
+const scannerFilterLog = createLogger("scanner-filter");
+
+/**
+ * The scanner filter (SPEC-sign-in.md, "The scanner filter"), before the rate limits, so probes
+ * don't use up a real visitor's allowance: a probe path gets a plain "Not found", a known scanner
+ * a plain "Forbidden", and neither is logged above debug.
+ */
+const scannerFilter: Handle = ({ event, resolve }) => {
+	const verdict = scannerVerdict(event.url.pathname, event.request.headers.get("user-agent"));
+	if (verdict === undefined) return resolve(event);
+	scannerFilterLog.debug("a scanner's request was turned away", { verdict });
+	const [status, text] = verdict === "probe" ? [404, "Not found"] : [403, "Forbidden"];
+	return new Response(text, {
+		status,
+		headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+	});
+};
 const readClientAddress = clientAddressReader({
 	addressHeader: currentAddressHeader,
 	warn: (message) => rateLimitLog.warn(message),
@@ -217,6 +235,7 @@ export const handle = sequence(
 	language,
 	headers,
 	crossOrigin,
+	scannerFilter,
 	rateLimits,
 	session,
 	setupGate,

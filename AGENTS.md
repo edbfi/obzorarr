@@ -295,7 +295,8 @@ shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind i
 the language switcher and the version. The Security tab changes the owner's password, signing
 every other browser out, and has "Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup
 prints a recovery token for the owner and warns, the owner sets a new password with it at
-`/recovery`, and the Security tab says to turn it off.
+`/recovery`, and the Security tab says to turn it off. Probe paths and known scanners are turned
+away before the rate limits.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -329,9 +330,10 @@ src/
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, the
-                                 client address (kept in `locals.clientAddress` for the actions'
-                                 own limits) and the general rate limit, the session (the owner in
-                                 `locals.owner`), the setup gate, then the owner check;
+                                 scanner filter, the client address (kept in
+                                 `locals.clientAddress` for the actions' own limits) and the
+                                 general rate limit, the session (the owner in `locals.owner`),
+                                 the setup gate, then the owner check;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page
@@ -452,6 +454,7 @@ src/
       security/client-address.ts the rate limits' key: IPv4, IPv6 per /64, refused without the
                                  configured header, or unknown
       security/rate-limit.ts     fixed windows per address, swept and capped, and their headers
+      security/scanner-filter.ts the probe paths and scanner agents turned away before the limits
       security/hash-slots.ts     at most 4 password hashes or verifications at once
       security/failed-sign-ins.ts
                                  failed sign-ins per address: the wait after 10 in a row,
@@ -520,7 +523,8 @@ tests/
                                  admin shell, signing out and the Security tab
   e2e/recovery.test.ts           recovery on restarted built servers: the token and warnings,
                                  and `/recovery`
-  e2e/rate-limits.test.ts        the general limit and the refusal without the address header
+  e2e/rate-limits.test.ts        the general limit, the refusal without the address header and
+                                 the scanner filter
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the
                                  claim through its form action
