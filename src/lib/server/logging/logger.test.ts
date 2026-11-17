@@ -82,6 +82,28 @@ describe("createLogger", () => {
 	});
 });
 
+describe("a write that throws", () => {
+	const throwOnWrite = () =>
+		vi.mocked(process.stdout.write).mockImplementation(() => {
+			throw new Error("EPIPE: broken pipe");
+		});
+
+	it("never throws out of a log call, so the caller carries on", () => {
+		throwOnWrite();
+		expect(() => createLogger("test").error("something went wrong")).not.toThrow();
+	});
+
+	it("isn't counted as waiting, so flushLogs still resolves", async () => {
+		throwOnWrite();
+		createLogger("test").info("lost");
+		const resolved = await Promise.race([
+			flushLogs().then(() => true),
+			new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 200)),
+		]);
+		expect(resolved).toBe(true);
+	});
+});
+
 describe("flushLogs against a slow reader", () => {
 	// A real child process writing into a real shell pipe whose reader waits a second: Bun's own
 	// spawn pipes are read eagerly, and the stdout mock above can't show a queued write either.

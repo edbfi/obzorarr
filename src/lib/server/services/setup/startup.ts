@@ -104,8 +104,8 @@ export function handleShutdown(
 	target.on("SIGHUP", () => target.kill(target.pid, "SIGTERM"));
 	for (const signal of ["SIGTERM", "SIGINT"]) {
 		target.on(signal, () => {
-			log.info("stopping", { signal });
 			stopWork();
+			quietly(() => log.info("stopping", { signal }));
 		});
 	}
 	target.once("sveltekit:shutdown", () => {
@@ -115,14 +115,14 @@ export function handleShutdown(
 		const deadline = new Promise<number>((resolve) => {
 			timer = setTimeout(() => {
 				late = true;
-				log.error("shutdown didn't finish in time", { deadlineMs });
+				quietly(() => log.error("shutdown didn't finish in time", { deadlineMs }));
 				void flushWithin(DEADLINE_FLUSH_MS).then(() => resolve(1));
 			}, deadlineMs);
 		});
 		const finished = cleanup().then(
 			() => 0,
 			async (error: unknown) => {
-				log.error("shutdown failed", { error });
+				quietly(() => log.error("shutdown failed", { error }));
 				await flushLogs();
 				return 1;
 			},
@@ -196,4 +196,16 @@ function flushWithin(ms: number): Promise<void> {
 		timer = setTimeout(done, ms);
 	});
 	return Promise.race([flushLogs(), bound]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Runs a shutdown step's log call, so a value that can't be logged never keeps the process from
+ * stopping its work or exiting.
+ */
+function quietly(logCall: () => void): void {
+	try {
+		logCall();
+	} catch {
+		// The exit matters more than the entry.
+	}
 }

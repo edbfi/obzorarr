@@ -17,12 +17,19 @@ const whenWritten: (() => void)[] = [];
 
 function write(line: string): void {
 	writing++;
-	// The callback runs once the entry has left the process, or with an error; either way it no
-	// longer waits.
-	process.stdout.write(line, () => {
+	const done = () => {
 		writing--;
 		if (writing === 0) for (const resolve of whenWritten.splice(0)) resolve();
-	});
+	};
+	// The callback runs once the entry has left the process, or with an error; either way it no
+	// longer waits. A write that throws, such as to a closed pipe, never calls it, so it is done
+	// at once, and the entry is lost: a count left raised would hold every later flush, and
+	// shutdown, forever, and a log call that threw would stop its caller.
+	try {
+		process.stdout.write(line, done);
+	} catch {
+		done();
+	}
 }
 
 /**
