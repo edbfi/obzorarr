@@ -94,6 +94,20 @@ describe("tokenMatches", () => {
 		vi.mocked(timingSafeEqual).mockReturnValueOnce(false);
 		expect(tokenMatches(token, token)).toBe(false);
 	});
+
+	it.each(["xbcd-1234-wxyz", "abcd-1x34-wxyz", "abcd-1234-wxyx"])(
+		"hands the wrong but well-formed %j to the constant-time comparison, rejecting nothing first",
+		(entry) => {
+			vi.mocked(timingSafeEqual).mockClear();
+			// Answering yes shows that nothing before it said no.
+			vi.mocked(timingSafeEqual).mockReturnValueOnce(true);
+			expect(tokenMatches(token, entry)).toBe(true);
+			expect(timingSafeEqual).toHaveBeenCalledExactlyOnceWith(
+				Buffer.from(entry.replaceAll("-", "")),
+				Buffer.from(token),
+			);
+		},
+	);
 });
 
 describe("issueToken and isTokenValid", () => {
