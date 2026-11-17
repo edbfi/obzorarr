@@ -236,14 +236,19 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
 	try {
 		if (value instanceof Error) return walkError(value, state, depth);
 		if (value instanceof Headers) {
-			const fields = Object.fromEntries(value.entries());
+			// Their own list, through the native method: an own `entries` could run forever. The list
+			// is finite and already in memory, like an object's keys; the budget applies to the fields.
+			const fields = Object.fromEntries(Reflect.apply(Headers.prototype.entries, value, []));
 			return walkFields(fields, Object.keys(fields), state, depth);
 		}
 		// Read once, then called on its object or, when it isn't a function, logged as a field.
-		const toJSON = "toJSON" in value ? read(() => value.toJSON) : undefined;
-		if (typeof toJSON === "function") return walk(toJSON.call(value), state, depth + 1);
+		// `Reflect.apply`, since a function's own `call` can be overridden too.
+		const hasToJSON = "toJSON" in value;
+		const toJSON = hasToJSON ? read(() => value.toJSON) : undefined;
+		if (typeof toJSON === "function")
+			return walk(Reflect.apply(toJSON, value, []), state, depth + 1);
 		if (Array.isArray(value)) return walkItems(value, state, depth);
-		const known = new Map(toJSON === undefined ? [] : [["toJSON", toJSON]]);
+		const known = new Map(hasToJSON ? [["toJSON", toJSON]] : []);
 		return walkFields(value, Object.keys(value), state, depth, known);
 	} catch {
 		return UNREADABLE;
@@ -258,7 +263,9 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
  */
 function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
 	const walked: unknown[] = [];
-	for (let index = 0; index < items.length; index++) {
+	// Read once: a proxy's length may answer differently, or throw, the second time.
+	const length = items.length;
+	for (let index = 0; index < length; index++) {
 		if (state.left <= 0) {
 			walked.push(TOO_LARGE);
 			break;

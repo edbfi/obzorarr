@@ -728,6 +728,41 @@ describe("each value read once", () => {
 		expect(redact({ value })).toEqual({ value: { other: 1, toJSON: 5 } });
 		expect(getter.reads).toBe(1);
 	});
+
+	it("reads a toJSON that reads as undefined once", () => {
+		const getter = once(undefined);
+		const value = Object.defineProperties({ other: 1 }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: { other: 1 } });
+		expect(getter.reads).toBe(1);
+	});
+
+	it("calls a toJSON on its object even when its own call is overridden", () => {
+		const toJSON = () => "json";
+		Object.defineProperty(toJSON, "call", { value: throwing });
+		expect(redact({ value: { toJSON } })).toEqual({ value: "json" });
+	});
+
+	it("reads an array's length once", () => {
+		let reads = 0;
+		const items = new Proxy([1, 2, 3], {
+			get: (target, key) => {
+				if (key === "length" && ++reads > 1) throwing();
+				return Reflect.get(target, key);
+			},
+		});
+		expect(redact(items)).toEqual([1, 2, 3]);
+		expect(reads).toBe(1);
+	});
+
+	it("reads headers through their own list, never an entries that could run forever", () => {
+		const headers = new Headers({ accept: "text/html" });
+		Object.defineProperty(headers, "entries", {
+			value: function* () {
+				while (true) yield ["x", "y"];
+			},
+		});
+		expect(redact(headers)).toEqual({ accept: "text/html" });
+	});
 });
 
 describe("an error's message", () => {
