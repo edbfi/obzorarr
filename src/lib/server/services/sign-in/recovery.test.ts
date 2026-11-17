@@ -228,6 +228,23 @@ describe("recover", () => {
 		});
 	});
 
+	it("answers the username rule only to someone with the token, so it can't test a username", async () => {
+		const token = await printedToken();
+		// Without the token, a password holding the username gets the token's answer, as any other.
+		expect(
+			await recover(db, { token: "aaaa-bbbb-cccc", password: "gunnhild's new passphrase" }),
+		).toEqual({ status: "token" });
+		// With it, the rule answers, and the token stays usable.
+		expect(await recover(db, { token, password: "gunnhild's new passphrase" })).toEqual({
+			status: "invalid",
+			error: "username",
+		});
+		expect(isRecoveryWaiting()).toBe(true);
+		expect(await recover(db, { token, password: NEW_PASSWORD })).toMatchObject({
+			status: "recovered",
+		});
+	});
+
 	it("refuses a wrong token and an expired one with one answer, never reaching the hash", async () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		const token = await printedToken();

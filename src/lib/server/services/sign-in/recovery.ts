@@ -109,10 +109,11 @@ const recoveryLimit = createRateLimiter({ limit: 5, windowMs: 5 * 60_000 });
 
 /**
  * Sets a new owner password with the recovery token (SPEC-sign-in.md, "Recovery"), in the claim's
- * order: the address's limit; the password against `setup`'s rules and the stored username; a hash
- * slot; the token, checked and used up with nothing awaited in between, so a wrong guess costs no
- * hash; the hash; then one transaction that sets it, ends every session, starts this browser's and
- * records that recovery was used, so no new token is printed while the setting stays on.
+ * order: the address's limit; the password against `setup`'s rules; a hash slot; the token, then
+ * the rule against the stored username, then the token used up, with nothing awaited in between,
+ * so a wrong guess costs no hash and learns nothing of the username; the hash; then one
+ * transaction that sets it, ends every session, starts this browser's and records that recovery
+ * was used, so no new token is printed while the setting stays on.
  */
 export async function recover(
 	db: Database,
@@ -134,16 +135,26 @@ export async function recover(
 	}
 	const found = await findOwner(db);
 	if (found === undefined) return { status: "not-found" };
-	const rules = checkPassword(input.password, found.username);
+	// Every rule but the username's: that one would tell someone without the token whether a
+	// string is the owner's username, which signing in never does, so it waits for the token.
+	const rules = checkPassword(input.password, "");
 	if (!rules.ok) return { status: "invalid", error: rules.error };
 	const releaseSlot = hashSlots.take();
 	if (releaseSlot === undefined) return SLOTS_BUSY;
-	if (!useToken(input.token, now.getTime())) {
+	if (!tokenAccepted(input.token, now.getTime())) {
 		releaseSlot();
 		log.warn("a recovery token was refused", { clientAddress: address });
 		return { status: "token" };
 	}
-	// From here the token is used up, so any failure answers "failed": a restart prints a new one.
+	const named = checkPassword(input.password, found.username);
+	if (!named.ok) {
+		// The token stays, so the owner can try again with another password.
+		releaseSlot();
+		return { status: "invalid", error: named.error };
+	}
+	// The token is used up with nothing awaited since it was accepted, so two tries can't both use
+	// it. From here any failure answers "failed": a restart prints a new one.
+	token = undefined;
 	let session: StartedSession;
 	try {
 		let passwordHash: string;
@@ -171,13 +182,9 @@ export async function recover(
 }
 
 /**
- * Whether what someone typed is the recovery token, still valid; if it is, it is used up, with
- * nothing awaited in between, so two tries can't both use it. An expired token stays, so
+ * Whether what someone typed is the recovery token, still valid. An expired token stays, so
  * `/recovery` still answers, naming the console.
  */
-function useToken(entry: string, now: number): boolean {
-	if (token === undefined || !isTokenValid(token, now)) return false;
-	if (!tokenMatches(token.value, entry)) return false;
-	token = undefined;
-	return true;
+function tokenAccepted(entry: string, now: number): boolean {
+	return token !== undefined && isTokenValid(token, now) && tokenMatches(token.value, entry);
 }
