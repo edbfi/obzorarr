@@ -76,6 +76,17 @@ outstanding.
 
 D5, D6 and D15 hold the engine, the access rules and the validated versions.
 
+**Migrations only go forward.** Before applying anything, startup reads the migrations the
+database has recorded; one this build doesn't bundle stops startup with "The database was migrated
+by a newer Obzorarr: run that version again, or restore the backup taken with this one"
+(`NewerDatabaseError`), naming neither the path nor the migration. An older build would otherwise
+run on a schema it doesn't know. A migrations table from before Drizzle 1.0, with no names, is what
+obzorarr 0.1.x left on the same default path: startup refuses it with "The database was made by an
+earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version
+with OBZORARR_DATABASE_PATH naming a new database file" (`LegacyDatabaseError`); so does a record
+with no name, which only a half-upgraded table from before 1.0 holds. How such an install upgrades
+is decided with the image.
+
 **Tables:**
 - **`settings`:** one value per key. `setup` stores first run's step pointer here; later modules
   add their own keys.

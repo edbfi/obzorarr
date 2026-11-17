@@ -108,6 +108,33 @@ test.describe("the database", () => {
 			"ConfigError: OBZORARR_DATABASE_PATH names a file that can't be opened as a database (I/O error (open): is a directory)",
 		]);
 	});
+
+	test("the built server refuses a database a newer Obzorarr migrated, without echoing it", async () => {
+		const path = join(root, "newer", "obzorarr.db");
+		const server = await startServer(root, { OBZORARR_DATABASE_PATH: path });
+		await server.stop();
+		const db = await connect(path);
+		try {
+			await (
+				await db.prepare(
+					"INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES ('', 4102444800000, '21000101000000_from_a_newer_build', '2100-01-01T00:00:00.000Z')",
+				)
+			).run();
+		} finally {
+			db.close();
+		}
+
+		const { exitCode, output } = await runToExit(root, { OBZORARR_DATABASE_PATH: path });
+
+		expect(output.includes(root), "output holds the path").toBe(false);
+		expect(output).not.toContain("from_a_newer_build");
+		expect(exitCode).toBe(1);
+		expect(output).not.toContain("Listening on");
+		expect(output).toContain("NewerDatabaseError");
+		expect(output).toContain(
+			"The database was migrated by a newer Obzorarr: run that version again, or restore the backup taken with this one",
+		);
+	});
 });
 
 test.describe("logging", () => {
