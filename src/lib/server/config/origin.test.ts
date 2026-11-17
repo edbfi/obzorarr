@@ -46,6 +46,31 @@ describe("readOrigin", () => {
 		["https://obzorarr.example\\app\\..", "ORIGIN must not have a path"],
 		["https://obzorarr.example\\..", "ORIGIN must not have a path"],
 		["https://obzorarr.example\\", "ORIGIN must not have a path"],
+		// The parser reads a host after a scheme with no "//" too, so the raw text must have one.
+		[
+			"https:obzorarr.example//..",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:/obzorarr.example//..",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:\\\\obzorarr.example//..",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:\\/obzorarr.example//..",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:/\t/obzorarr.example//..",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:\\\\obzorarr.example",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
 		["https://obzorarr.example/?x=1", "ORIGIN must not have a query"],
 		["https://obzorarr.example?", "ORIGIN must not have a query"],
 		["https://obzorarr.example/#top", "ORIGIN must not have a fragment"],

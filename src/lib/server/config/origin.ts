@@ -26,7 +26,13 @@ export function readOrigin(env: OriginEnv): string | undefined {
 	// The raw text is checked as well: the parser drops an empty `@`, `?` or `#`, reads a backslash
 	// as a slash, and removes dot segments, so `https://host/app/..` and `https://host\app\..` would
 	// parse to a bare origin.
-	const rest = value.slice(value.indexOf("//") + 2);
+	// The parser also reads a host after a scheme with no "//" (`https:host`, `https:\\host`), so
+	// the raw text must start with it before the authority can be found after it.
+	const scheme = /^https?:\/\//i.exec(value);
+	if (scheme === null) {
+		throw refusal("ORIGIN is not a URL; set it to an origin such as https://obzorarr.example");
+	}
+	const rest = value.slice(scheme[0].length);
 	const authority = rest.split(/[/\\?#]/, 1)[0] ?? "";
 	const rawPath = rest.slice(authority.length).split(/[?#]/, 1)[0] ?? "";
 	if (url.username !== "" || url.password !== "" || authority.includes("@")) {
