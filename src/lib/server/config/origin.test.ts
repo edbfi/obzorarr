@@ -42,6 +42,10 @@ describe("readOrigin", () => {
 		["https://obzorarr.example/app/..", "ORIGIN must not have a path"],
 		["https://obzorarr.example/%2e", "ORIGIN must not have a path"],
 		["https://obzorarr.example/.", "ORIGIN must not have a path"],
+		// The parser reads a backslash as a slash, and resolves the dot segments after it.
+		["https://obzorarr.example\\app\\..", "ORIGIN must not have a path"],
+		["https://obzorarr.example\\..", "ORIGIN must not have a path"],
+		["https://obzorarr.example\\", "ORIGIN must not have a path"],
 		["https://obzorarr.example/?x=1", "ORIGIN must not have a query"],
 		["https://obzorarr.example?", "ORIGIN must not have a query"],
 		["https://obzorarr.example/#top", "ORIGIN must not have a fragment"],
