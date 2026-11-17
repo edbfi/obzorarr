@@ -118,8 +118,8 @@ describe("migrateDatabase", () => {
 		expect((await recorded(db)).map((row) => row.name)).toEqual(Object.keys(BOTH));
 	});
 
-	// SPEC-setup.md, "The database": migrations only go forward, so an older build never runs on a schema
-	// a newer one wrote.
+	// SPEC-setup.md, "The database": migrations only go forward, so an older build never runs on
+	// a schema a newer one wrote.
 	it("refuses a database a newer build migrated, before applying anything", async () => {
 		const db = await newDatabase("newer.db");
 		await migrateDatabase(db, FIRST);
