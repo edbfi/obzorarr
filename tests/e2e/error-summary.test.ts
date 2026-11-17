@@ -238,10 +238,19 @@ test.describe("with JavaScript", () => {
 				await expect(summary).toBeFocused();
 				await expect(page).toHaveTitle("Fejl: Tag Obzorarr i brug");
 				await expect(summary.getByRole("link")).toHaveCount(2);
-				const overflow = await page.evaluate(
-					() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-				);
-				expect(overflow).toBe(0);
+				const overflow = () =>
+					page.evaluate(
+						() => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+					);
+				expect(await overflow()).toBe(0);
+
+				// The token's refusal starts with a long word, "Opsætningskoden", that must wrap too.
+				await page.locator("#token").fill("aaaa-bbbb-cccc");
+				await page.locator("#username").fill("Ejer");
+				await page.locator("#password").fill("violet harbour lanterns");
+				await page.getByRole("button", { name: "Tag i brug og opret ejer" }).click();
+				await expect(summary.getByRole("link")).toHaveText([/^Opsætningskoden/]);
+				expect(await overflow()).toBe(0);
 			} finally {
 				await context.close();
 			}

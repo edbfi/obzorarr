@@ -49,6 +49,9 @@ export function focus(): void {
 			borderStyle: "solid",
 			borderColor: "danger",
 			borderRadius: "control",
+			// A long word, such as Danish's "Opsætningskoden", wraps rather than scrolling the page at
+			// 200% zoom.
+			overflowWrap: "anywhere",
 			// Focus arrives here by script after a failure, which `:focus-visible` may not match.
 			_focus: {
 				outlineStyle: "solid",
