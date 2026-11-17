@@ -120,6 +120,49 @@ describe("startUp", () => {
 		expect(lines[0]).not.toContain(root);
 	});
 
+	describe("a failed start's error entry", () => {
+		/** Writes whose completion the test holds back, released after each test either way. */
+		const held: (() => void)[] = [];
+		const holdWrites = () =>
+			vi.mocked(process.stdout.write).mockImplementation((chunk, ...rest: unknown[]) => {
+				lines.push(String(chunk));
+				const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+				if (done) held.push(done);
+				return true;
+			});
+		afterEach(() => {
+			for (const done of held.splice(0)) done();
+		});
+		const failingStart = (file: string) =>
+			startUp(
+				{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, file), ORIGIN: "nope" },
+				{ dev: true },
+			);
+
+		it("leaves the process before startup throws, so an exit right after doesn't lose it", async () => {
+			holdWrites();
+			let settled = false;
+			const started = failingStart("held.db").catch((error: unknown) => {
+				settled = true;
+				return error;
+			});
+			await new Promise((resolve) => setTimeout(resolve, 50));
+			expect(lines).toHaveLength(1);
+			expect(settled).toBe(false);
+			for (const done of held.splice(0)) done();
+			expect(await started).toBeInstanceOf(ConfigError);
+		});
+
+		it("can't hold startup's failure back for long when it never leaves", async () => {
+			holdWrites();
+			const begun = Date.now();
+			expect(await failingStart("stuck.db").catch((error: unknown) => error)).toBeInstanceOf(
+				ConfigError,
+			);
+			expect(Date.now() - begun).toBeLessThan(2000);
+		});
+	});
+
 	it("refuses an OBZORARR_LOG_DEBUG that isn't true or false, before the database opens", async () => {
 		const path = join(root, "never-created", "app.db");
 		const error = await startUp(

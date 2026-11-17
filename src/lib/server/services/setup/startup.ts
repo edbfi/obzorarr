@@ -39,7 +39,7 @@ const log = createLogger("startup");
 /** How long shutdown's cleanup may take after adapter-bun has drained the requests. */
 const CLEANUP_DEADLINE_MS = 5000;
 
-/** How long the deadline waits for its own log entry to leave, in case stdout is what's stuck. */
+/** How long an exit waits for its last log entry to leave, in case stdout is what's stuck. */
 const DEADLINE_FLUSH_MS = 250;
 
 let database: Database | undefined;
@@ -57,6 +57,8 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 		await runSteps(env);
 	} catch (error) {
 		log.error("startup failed", { error });
+		// The process exits once this throws, so the entry must leave it first.
+		await flushWithin(DEADLINE_FLUSH_MS);
 		throw error;
 	}
 	// adapter-bun registers its own `SIGTERM` and `SIGINT` handlers synchronously once `init`
@@ -114,8 +116,7 @@ export function handleShutdown(
 			timer = setTimeout(() => {
 				late = true;
 				log.error("shutdown didn't finish in time", { deadlineMs });
-				const bounded = new Promise((done) => setTimeout(done, DEADLINE_FLUSH_MS));
-				void Promise.race([flushLogs(), bounded]).then(() => resolve(1));
+				void flushWithin(DEADLINE_FLUSH_MS).then(() => resolve(1));
 			}, deadlineMs);
 		});
 		const finished = cleanup().then(
@@ -186,4 +187,9 @@ function openError(error: unknown, path: string, subject: string): ConfigError {
 			reason === "" || reason.includes(path) ? "unknown error" : reason
 		})`,
 	);
+}
+
+/** Waits for the log entries written so far to leave the process, for at most `ms`. */
+function flushWithin(ms: number): Promise<void> {
+	return Promise.race([flushLogs(), new Promise<void>((done) => setTimeout(done, ms))]);
 }
