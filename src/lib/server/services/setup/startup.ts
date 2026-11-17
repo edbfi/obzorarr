@@ -56,7 +56,8 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 	try {
 		await runSteps(env);
 	} catch (error) {
-		log.error("startup failed", { error });
+		// An error that can't be logged must not take the place of the one that stopped startup.
+		quietly(() => log.error("startup failed", { error }));
 		// The process exits once this throws, so the entry must leave it first.
 		await flushWithin(DEADLINE_FLUSH_MS);
 		throw error;
@@ -145,7 +146,7 @@ export async function closeServices(): Promise<void> {
 	try {
 		await db?.$client.close();
 	} catch (error) {
-		log.error("closing the database failed", { error });
+		quietly(() => log.error("closing the database failed", { error }));
 	}
 	await flushLogs();
 }
@@ -199,8 +200,9 @@ function flushWithin(ms: number): Promise<void> {
 }
 
 /**
- * Runs a shutdown step's log call, so a value that can't be logged never keeps the process from
- * stopping its work or exiting.
+ * Runs a log call on a path that must finish, startup's failure and every shutdown step, so a
+ * value that can't be logged never replaces the real error, stops the work or keeps the process
+ * from exiting.
  */
 function quietly(logCall: () => void): void {
 	try {

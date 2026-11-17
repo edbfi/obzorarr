@@ -479,6 +479,19 @@ describe("startUp's shutdown", () => {
 		});
 	});
 
+	it("closeServices still finishes when the failed close's error can't be logged", async () => {
+		const hostile = new Error("disk went away");
+		Object.defineProperty(hostile, "stack", {
+			get() {
+				throw new Error("no stack for you");
+			},
+		});
+		vi.spyOn(Database.prototype, "close").mockRejectedValueOnce(hostile);
+		const path = join(root, "close-fails-hostile", "app.db");
+		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
+		await expect(closeServices()).resolves.toBeUndefined();
+	});
+
 	it("closeServices finishes the close before it flushes, and the flush before it returns", async () => {
 		const path = join(root, "order", "app.db");
 		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
