@@ -5,6 +5,12 @@ import { passwordMessages } from "#lib/components/credentials/password-messages.
 import TokenField from "#lib/components/credentials/TokenField.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
+import {
+	CONSOLE_TOKEN_MINUTES,
+	PASSWORD_MIN_LENGTH,
+	USERNAME_MAX_LENGTH,
+} from "#lib/shared/credential-limits.ts";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
 import type { PageProps, SubmitFunction } from "./$types";
@@ -20,9 +26,9 @@ let tokenInput = $state<HTMLInputElement>();
 let passwordInput = $state<HTMLInputElement>();
 
 const usernameMessages = {
-	empty: m.setup_username_empty,
-	"too-long": m.setup_username_too_long,
-	control: m.setup_username_control,
+	empty: () => m.setup_username_empty(),
+	"too-long": () => m.setup_username_too_long({ count: USERNAME_MAX_LENGTH }),
+	control: () => m.setup_username_control(),
 };
 
 const tokenError = $derived(
@@ -34,7 +40,7 @@ const usernameError = $derived(
 const passwordError = $derived(
 	form?.passwordError && !edited.password ? passwordMessages[form.passwordError]() : undefined,
 );
-// "Use at least 15 characters." already says what the helper says.
+// The too-short answer already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
 /** Each field's description: its error, when it has one, then its helper. */
@@ -93,11 +99,11 @@ const control = css({
 </script>
 
 <svelte:head>
-	<title>{m.setup_page_title()}</title>
+	<title>{m.setup_page_title({ name: APP_NAME })}</title>
 </svelte:head>
 
 <PanelPage>
-	<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{m.setup_title()}</h1>
+	<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{m.setup_title({ name: APP_NAME })}</h1>
 	<p class={css({ marginBlockStart: "sm", color: "muted" })}>
 		{m.setup_intro()}
 	</p>
@@ -118,7 +124,7 @@ const control = css({
 			id="token"
 			label={m.setup_token_label()}
 			error={tokenError}
-			help={(format) => m.setup_token_help({ format })}
+			help={(format) => m.setup_token_help({ count: CONSOLE_TOKEN_MINUTES, format })}
 			oninput={() => (edited.token = true)}
 		/>
 
@@ -152,15 +158,15 @@ const control = css({
 			label={m.setup_password_label()}
 			autocomplete="new-password"
 			error={passwordError}
-			help={passwordHelp ? m.setup_password_help() : undefined}
+			help={passwordHelp ? m.setup_password_help({ count: PASSWORD_MIN_LENGTH }) : undefined}
 			oninput={() => (edited.password = true)}
 		/>
 
 		{#if form?.failed}
-			<p class={error} role="alert">{m.setup_failed()}</p>
+			<p class={error} role="alert">{m.setup_failed({ name: APP_NAME })}</p>
 		{/if}
 		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy()}</p>
+			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
 		{/if}
 		{#if form?.retryAfterSeconds}
 			<p class={error} role="alert">

@@ -56,7 +56,10 @@ Paraglide's escaped names and the `m["a.b"]()` form of nested keys never appear.
   whatever machine runs it. Dates are formatted with `formatDateTime` (below) and passed in as text.
 - A number in a message that states how the app behaves (a limit, a duration, a count) is passed in
   from the constant the logic uses, never written into the text, so the copy can't drift from the
-  behaviour.
+  behaviour. The owner's credential limits and a console token's lifetime are in
+  `lib/shared/credential-limits.ts`, where both the rules and the pages read them.
+- The app's name is `{{name}}`, filled from `APP_NAME` (`lib/shared/app-name.ts`), never written
+  into a message.
 
 **Plurals** are `<name>_one` and `<name>_other`, chosen by `count`: English and Danish both have
 exactly these two categories (`Intl.PluralRules`). Danish uses `one` for every number below 2 except
@@ -73,7 +76,7 @@ filled with a name can't inject markup.
   `MessageWithCode.svelte` replaces with the code, set as code (`sign-in`).
 
 **Not translated through the messages:**
-- the name Obzorarr;
+- the name Obzorarr, which comes in as `{{name}}`;
 - text the owner writes (D21);
 - log entries and console output, which are for operators and stay in English;
 - the switcher's language names (below).
@@ -87,7 +90,8 @@ finds every problem in `messages/*.json` against the rules above: one file for e
 project's languages and no other; flat, non-empty string values; names, `_ordinal_` and one key or
 plural forms; the same messages in every language; the same placeholders, names and formats in
 every form; `number` as the only format; exactly the plural forms `Intl.PluralRules` gives each
-language, each with `{{count, number}}`; no brace outside a placeholder; and no tags.
+language, each with `{{count, number}}`; no brace outside a placeholder; no tags; and, outside a
+placeholder, no digit and not the app's name.
 
 ## The toolchain
 

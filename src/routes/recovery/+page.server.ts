@@ -5,6 +5,7 @@ import type { PasswordError } from "#lib/server/security/password.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "#lib/server/security/session-cookie.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
 import { isRecoveryWaiting, recover } from "#lib/server/services/sign-in/recovery.ts";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 /** What a failed recovery sends back: what went wrong, never the token or the password. */
@@ -41,7 +42,7 @@ export const actions: Actions = {
 		// Recovery signs the owner in, setting a cookie whose Secure flag follows the browser's
 		// address, so that comes next, before the limit counts the try or the token can be used up.
 		const address = browserAddress(request, currentOrigin());
-		if (address === undefined) error(403, m.error_no_browser_address());
+		if (address === undefined) error(403, m.error_no_browser_address({ name: APP_NAME }));
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {

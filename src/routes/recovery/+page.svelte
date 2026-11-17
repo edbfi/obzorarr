@@ -5,6 +5,8 @@ import { passwordMessages } from "#lib/components/credentials/password-messages.
 import TokenField from "#lib/components/credentials/TokenField.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
+import { PASSWORD_MIN_LENGTH } from "#lib/shared/credential-limits.ts";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
 import type { PageProps, SubmitFunction } from "./$types";
@@ -23,12 +25,12 @@ let tokenInput = $state<HTMLInputElement>();
 let passwordInput = $state<HTMLInputElement>();
 
 const tokenError = $derived(
-	form?.tokenRefused && !edited.token ? m.recovery_token_refused() : undefined,
+	form?.tokenRefused && !edited.token ? m.recovery_token_refused({ name: APP_NAME }) : undefined,
 );
 const passwordError = $derived(
 	form?.passwordError && !edited.password ? passwordMessages[form.passwordError]() : undefined,
 );
-// "Use at least 15 characters." already says what the helper says.
+// The too-short answer already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
 /**
@@ -76,7 +78,7 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			id="token"
 			label={m.recovery_token_label()}
 			error={tokenError}
-			help={(format) => m.recovery_token_help({ format })}
+			help={(format) => m.recovery_token_help({ name: APP_NAME, format })}
 			oninput={() => (edited.token = true)}
 		/>
 
@@ -87,15 +89,15 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			label={m.recovery_password_label()}
 			autocomplete="new-password"
 			error={passwordError}
-			help={passwordHelp ? m.setup_password_help() : undefined}
+			help={passwordHelp ? m.setup_password_help({ count: PASSWORD_MIN_LENGTH }) : undefined}
 			oninput={() => (edited.password = true)}
 		/>
 
 		{#if form?.failed}
-			<p class={error} role="alert">{m.recovery_failed()}</p>
+			<p class={error} role="alert">{m.recovery_failed({ name: APP_NAME })}</p>
 		{/if}
 		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy()}</p>
+			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
 		{/if}
 		{#if form?.retryAfterSeconds}
 			<p class={error} role="alert">

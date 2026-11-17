@@ -5,6 +5,7 @@ import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import MessageWithCode, { CODE } from "#lib/components/i18n/MessageWithCode.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
 import type { PageProps, SubmitFunction } from "./$types";
@@ -39,7 +40,10 @@ const submit: SubmitFunction = () => {
 
 /** The recovery steps, each variable or path set as code, like the console they point to. */
 const steps = [
-	{ message: m.sign_in_forgot_restart({ variable: CODE }), code: "OBZORARR_RECOVERY=true" },
+	{
+		message: m.sign_in_forgot_restart({ name: APP_NAME, variable: CODE }),
+		code: "OBZORARR_RECOVERY=true",
+	},
 	{ message: m.sign_in_forgot_token() },
 	{ message: m.sign_in_forgot_recovery({ path: CODE }), code: "/recovery" },
 ];
@@ -66,7 +70,9 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 </svelte:head>
 
 <PanelPage>
-	<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>{m.sign_in_title()}</h1>
+	<h1 class={css({ textStyle: "h1", textWrap: "balance" })}>
+		{m.sign_in_title({ name: APP_NAME })}
+	</h1>
 
 	<form
 		method="post"
@@ -105,7 +111,7 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			<p class={error} role="alert">{m.sign_in_wrong()}</p>
 		{/if}
 		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy()}</p>
+			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
 		{/if}
 		{#if form?.retryAfterSeconds}
 			<p class={error} role="alert">
