@@ -1071,6 +1071,8 @@ test.describe("the Security tab", () => {
 			await expect(page.locator("#current")).toHaveAttribute("aria-invalid", "true");
 			await expect(page.locator("#current-error")).toHaveText("The current password is wrong.");
 			await expect(page.locator("#password-section [role=alert]")).toHaveCount(0);
+			// One level below the section's heading, so the fields stay under "Password".
+			await expect(summary.getByRole("heading", { level: 3 })).toHaveText("There is a problem");
 
 			// Without JavaScript the same answer shows the summary and focuses nothing.
 			const context = await browser.newContext({ javaScriptEnabled: false });
@@ -1081,12 +1083,56 @@ test.describe("the Security tab", () => {
 				await plain.locator("#current").fill("not the password at all");
 				await plain.locator("#next").fill(NEW_PASSWORD);
 				await plain.getByRole("button", { name: "Change password" }).click();
-				await expect(plain.getByRole("region", { name: "There is a problem" })).toBeVisible();
+				const plainSummary = plain.getByRole("region", { name: "There is a problem" });
+				await expect(plainSummary).toBeVisible();
+				await expect(plainSummary.getByRole("link")).toHaveAttribute("href", "#current");
 				await expect(plain).toHaveTitle("Error: Settings");
 				expect(await plain.evaluate(() => document.activeElement === document.body)).toBe(true);
 			} finally {
 				await context.close();
 			}
+		} finally {
+			await server.stop();
+		}
+	});
+
+	test("a busy answer to a password change is text in the focused summary, keeping both passwords", async ({
+		page,
+	}) => {
+		const server = await startServer(root, {
+			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
+		});
+		try {
+			await claimInBrowser(page, server);
+			// Every hash slot busy, as SvelteKit answers an enhanced form when the action fails.
+			await page.route(
+				(url) => url.pathname === "/admin/settings/security" && url.search === "?/password",
+				(route) =>
+					route.request().method() === "POST"
+						? route.fulfill({
+								status: 429,
+								contentType: "application/json",
+								headers: { "retry-after": "5" },
+								body: JSON.stringify({
+									type: "failure",
+									status: 429,
+									data: JSON.stringify([{ password: 1 }, { busy: 2 }, true]),
+								}),
+							})
+						: route.continue(),
+			);
+			await page.locator("#current").fill(PASSWORD);
+			await page.locator("#next").fill(NEW_PASSWORD);
+			await page.getByRole("button", { name: "Change password" }).click();
+			const summary = page.getByRole("region", { name: "There is a problem" });
+			await expect(summary).toBeFocused();
+			await expect(summary.getByRole("listitem")).toHaveText([
+				"Obzorarr is busy checking other passwords. Try again in a few seconds.",
+			]);
+			await expect(summary.getByRole("link")).toHaveCount(0);
+			await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+			await expect(page.locator("#current")).toHaveValue(PASSWORD);
+			await expect(page.locator("#next")).toHaveValue(NEW_PASSWORD);
 		} finally {
 			await server.stop();
 		}

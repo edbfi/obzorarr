@@ -170,7 +170,8 @@ const button = css({
 			use:enhance={savePassword}
 			class={css({ display: "flex", flexDirection: "column", gap: "xl" })}
 		>
-			<ErrorSummary bind:this={summary} {problems} />
+			<!-- Inside the Password section, so its heading is one level below the section's. -->
+			<ErrorSummary bind:this={summary} {problems} level={3} />
 
 			<PasswordField
 				bind:input={currentInput}
