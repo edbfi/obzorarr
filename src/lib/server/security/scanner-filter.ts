@@ -35,17 +35,35 @@ const SCANNER_AGENTS = [
 ];
 
 /**
+ * A path segment as a server would read it: percent-decoded once, keeping the raw text when its
+ * escapes don't decode; cut at a `;` parameter or a NUL; without trailing dots; in lower case.
+ */
+function segmentAsRead(raw: string): string {
+	let segment: string;
+	try {
+		segment = decodeURIComponent(raw);
+	} catch {
+		segment = raw;
+	}
+	return segment
+		.replace(/[;\0].*$/s, "")
+		.replace(/\.+$/, "")
+		.toLowerCase();
+}
+
+/**
  * What the filter does with a request: a probe path gets "Not found", a known scanner
- * "Forbidden", and anything else passes. The path is matched as sent, ignoring case.
+ * "Forbidden", and anything else passes. The path is matched segment by segment, as a server
+ * would read it, so an encoded or padded name is caught too.
  */
 export function scannerVerdict(
 	path: string,
 	userAgent: string | null,
 ): "probe" | "scanner" | undefined {
 	const segments = path
-		.toLowerCase()
 		.split("/")
-		.filter((segment) => segment !== "");
+		.filter((segment) => segment !== "")
+		.map(segmentAsRead);
 	const first = segments[0] ?? "";
 	const last = segments.at(-1) ?? "";
 	if (

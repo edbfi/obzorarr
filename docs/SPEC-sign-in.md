@@ -341,7 +341,10 @@ D20 fixes the mechanism; here is what the owner does.
 - **Known scanner user agents** (such as sqlmap, Nikto, Nuclei, WPScan, masscan, ZGrab) get a plain
   "Forbidden" (403).
 - Neither is logged above debug. The lists live in `security/scanner-filter.ts`, with a test for
-  each kind, and never match a path the app serves.
+  each kind, and never match a path the app serves. A path is matched as a server reads it:
+  percent-decoded once, each segment cut at `;` or a NUL and without trailing dots. A later module
+  whose paths carry an identifier (obzorarr: `sharing`'s recap links) keeps it from ending in
+  `.php` or starting with `.env`.
 
 ## The admin shell
 

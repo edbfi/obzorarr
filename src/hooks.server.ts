@@ -94,6 +94,7 @@ const crossOrigin: Handle = ({ event, resolve }) =>
 		: accessDenied(event.request);
 
 const rateLimitLog = createLogger("rate-limits");
+const scannerFilterLog = createLogger("scanner-filter");
 
 /**
  * The scanner filter (SPEC-sign-in.md, "The scanner filter"), before the rate limits, so probes
@@ -103,7 +104,7 @@ const rateLimitLog = createLogger("rate-limits");
 const scannerFilter: Handle = ({ event, resolve }) => {
 	const verdict = scannerVerdict(event.url.pathname, event.request.headers.get("user-agent"));
 	if (verdict === undefined) return resolve(event);
-	rateLimitLog.debug("a scanner's request was turned away", { verdict });
+	scannerFilterLog.debug("a scanner's request was turned away", { verdict });
 	const [status, text] = verdict === "probe" ? [404, "Not found"] : [403, "Forbidden"];
 	return new Response(text, {
 		status,
