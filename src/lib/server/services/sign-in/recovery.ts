@@ -104,7 +104,7 @@ export type RecoveryResult =
 	/** The token was used, but the change didn't commit: a restart prints a new one. */
 	| { status: "failed" };
 
-/** Recovery: 5 tries per 5 minutes from one address (SPEC-sign-in.md, "Rate limits"). */
+/** Recovery: 5 tries per 5 minutes from one address (SPEC-sign-in.md, "Rate limits and failed sign-ins"). */
 const recoveryLimit = createRateLimiter({ limit: 5, windowMs: 5 * 60_000 });
 
 /**

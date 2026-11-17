@@ -1,6 +1,6 @@
 /**
  * The owner's session cookie, named after the app: cookies ignore ports, so apps on one address
- * would otherwise sign each other out (SPEC-sign-in.md, "Cookies").
+ * would otherwise sign each other out (SPEC-sign-in.md, "The browser's address and cookies").
  */
 export const SESSION_COOKIE = "obzorarr_session";
 

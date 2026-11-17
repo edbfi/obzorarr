@@ -176,9 +176,8 @@ framing and the CSP don't apply to them, and Bun sends each file with its real c
 
 **The setup gate** is the last `setup` stage in `handle`. Until first run is complete, every request
 except the current first-run step, `/healthz` and the responses produced before `handle` gets a 303
-to that step. Sign-in and first run's own helpers join the exceptions when their modules add them.
-It reads first run's state from memory, which startup loads and the claim updates (one process,
-D17).
+to that step. A later first-run step's own helpers join the exceptions when its module adds them. It
+reads first run's state from memory, which startup loads and the claim updates (one process, D17).
 
 **The step pointer.** The server keeps one current-step pointer in `settings`. The browser can't
 skip ahead: each step's action checks that it is the current step, a step that offers Previous only
