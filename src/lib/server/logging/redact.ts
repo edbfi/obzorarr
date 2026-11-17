@@ -209,7 +209,11 @@ function read(get: () => unknown): unknown {
 function walk(value: unknown, path: Set<object>, depth: number): unknown {
 	if (typeof value === "string") return cleanText(value);
 	if (typeof value === "bigint") return value.toString();
-	if (typeof value === "function" || typeof value === "symbol") return String(value);
+	if (typeof value === "function" || typeof value === "symbol") {
+		// A function's text is its own code, which may throw or hold anything; cleaned like any text.
+		const text = read(() => String(value));
+		return typeof text === "string" ? cleanText(text) : UNREADABLE;
+	}
 	if (value === null || typeof value !== "object") return value;
 	if (path.has(value)) return "[circular]";
 	if (depth >= MAX_DEPTH) return "[too deep]";
@@ -220,7 +224,16 @@ function walk(value: unknown, path: Set<object>, depth: number): unknown {
 		if ("toJSON" in value && typeof value.toJSON === "function") {
 			return walk(value.toJSON(), path, depth + 1);
 		}
-		if (Array.isArray(value)) return value.map((item) => walk(item, path, depth + 1));
+		if (Array.isArray(value)) {
+			// Each element read on its own, so one whose getter throws loses only itself.
+			return Array.from({ length: value.length }, (_, index) =>
+				walk(
+					read(() => value[index]),
+					path,
+					depth + 1,
+				),
+			);
+		}
 		return walkFields(value, Object.keys(value), path, depth);
 	} catch {
 		return UNREADABLE;
@@ -239,18 +252,28 @@ function walkEntries(
 	);
 }
 
-/** An object's `keys`, each read on its own, so one that throws loses only its own value. */
+/**
+ * An object's `keys`, each read on its own, so one that throws loses only its own value; a key
+ * that looks like a credential is hidden without its value ever being read.
+ */
 function walkFields(
 	value: object,
 	keys: string[],
 	path: Set<object>,
 	depth: number,
 ): Record<string, unknown> {
-	const entries = keys.map((key): [string, unknown] => [
-		key,
-		read(() => (value as Record<string, unknown>)[key]),
-	]);
-	return walkEntries(entries, path, depth);
+	return Object.fromEntries(
+		keys.map((key) => [
+			key,
+			sensitive(key)
+				? REDACTED
+				: walk(
+						read(() => (value as Record<string, unknown>)[key]),
+						path,
+						depth + 1,
+					),
+		]),
+	);
 }
 
 /**
@@ -259,13 +282,20 @@ function walkFields(
  * each read on its own, so a hostile getter loses only its own part.
  */
 function walkError(error: Error, path: Set<object>, depth: number): Record<string, unknown> {
-	// A failed query's values can be a password's hash or a username: only its text is kept.
-	const keys = Object.keys(error).filter((key) => !(key === "params" && "query" in error));
-	const hidesParams = Object.keys(error).length !== keys.length;
+	// A failed query's values can be a password's hash or a username: only its text is kept. An
+	// own `cause` (Drizzle's errors assign one), or an `AggregateError`'s own `errors`, is walked
+	// once, below, not twice: twice at every level of a chain grows without bound.
+	const aggregate = error instanceof AggregateError;
+	const ownKeys = Object.keys(error);
+	const hidesParams = ownKeys.includes("params") && "query" in error;
+	const keys = ownKeys.filter(
+		(key) =>
+			key !== "cause" && !(key === "errors" && aggregate) && !(key === "params" && hidesParams),
+	);
 	const cause = read(() => error.cause);
-	const errors = error instanceof AggregateError ? read(() => error.errors) : undefined;
+	const errors = aggregate ? read(() => error.errors) : undefined;
 	return {
-		name: read(() => String(error.name)),
+		name: read(() => cleanText(String(error.name))),
 		message: read(() => cleanText(String(error.message))),
 		stack: read(() => (error.stack === undefined ? undefined : cleanStack(error))),
 		...walkFields(error, keys, path, depth),
@@ -289,5 +319,5 @@ function cleanStack(error: Error): string {
 	const header = `${error.name}: ${error.message}`;
 	const frames = stack.slice(header.length);
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
-	return `${error.name}: ${cleanText(error.message)}${cleanText(frames)}`;
+	return `${cleanText(error.name)}: ${cleanText(error.message)}${cleanText(frames)}`;
 }

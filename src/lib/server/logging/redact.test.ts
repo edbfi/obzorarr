@@ -466,3 +466,83 @@ describe("a value that can't be read", () => {
 		expect(text).not.toContain("the bottom");
 	});
 });
+
+describe("a value that can't be read, more ways", () => {
+	const throwingFunction = () => {
+		const fn = () => {};
+		fn.toString = () => {
+			throw new Error("no text for you");
+		};
+		return fn;
+	};
+
+	it("marks a function whose text can't be read, alone and beside readable fields", () => {
+		expect(redact(throwingFunction())).toBe("[unreadable]");
+		expect(redact({ keep: 1, fn: throwingFunction() })).toEqual({ keep: 1, fn: "[unreadable]" });
+	});
+
+	it("cleans a function's text like any other", () => {
+		const fn = () => {};
+		fn.toString = () => "https://u:hunter2@host/?token=abc";
+		expect(JSON.stringify(redact({ fn }))).not.toContain("hunter2");
+		expect(JSON.stringify(redact({ fn }))).not.toContain("abc");
+	});
+
+	it("marks a revoked proxy, a callable one included, beside readable fields", () => {
+		const object = Proxy.revocable({}, {});
+		const callable = Proxy.revocable(() => {}, {});
+		object.revoke();
+		callable.revoke();
+		expect(redact({ keep: 1, object: object.proxy, callable: callable.proxy })).toEqual({
+			keep: 1,
+			object: "[unreadable]",
+			callable: "[unreadable]",
+		});
+	});
+
+	it("marks only an array's element whose getter throws", () => {
+		const list = [1, 2, 3];
+		Object.defineProperty(list, 1, {
+			get() {
+				throw new Error("no element for you");
+			},
+		});
+		expect(redact(list)).toEqual([1, "[unreadable]", 3]);
+	});
+
+	it("never runs a getter on a key it hides anyway", () => {
+		let read = false;
+		const value = {
+			get password() {
+				read = true;
+				return "hunter2";
+			},
+		};
+		expect(redact(value)).toEqual({ password: "[redacted]" });
+		expect(read).toBe(false);
+	});
+
+	it("cleans an error's name, in its own field and in its stack", () => {
+		const error = new Error("boom");
+		error.name = "Bad https://u:hunter2@host";
+		expect(JSON.stringify(redact(error))).not.toContain("hunter2");
+	});
+
+	it("keeps an own errors field on an error that isn't an AggregateError", () => {
+		const error = Object.assign(new Error("invalid"), { errors: ["name is required"] });
+		expect(redact(error)).toMatchObject({ errors: ["name is required"] });
+	});
+
+	it("walks an enumerable cause once, so a long chain of them stays quick", () => {
+		let error = new Error("the bottom");
+		for (let i = 0; i < 30; i++) {
+			const next = new Error(`level ${i}`);
+			// As Drizzle's query errors do: an own, enumerable `cause`.
+			Object.assign(next, { cause: error });
+			error = next;
+		}
+		const started = performance.now();
+		expect(JSON.stringify(redact(error))).toContain("the bottom");
+		expect(performance.now() - started).toBeLessThan(1000);
+	});
+});
