@@ -277,25 +277,25 @@ and ready for consumers. Nothing stores a secret yet. Module 2, `i18n`
 language switcher, number and date formatters, and a check of the message files. Module 3,
 `recap-spike` ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19 with the
 owner's verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts
-what the verdict keeps through its own spec. Module 4, `setup` ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)),
-is built: startup opens the database and applies its migrations, the app writes redacted JSON logs,
-it shuts down cleanly, every page carries the security headers and a nonce-based CSP, and a
-state-changing request from another site gets "Access denied". Until it is claimed, an instance
-sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
-which creates the owner account. Module 5, `sign-in`
+what the verdict keeps through its own spec. Module 4, `setup`
+([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is built: startup opens the database and applies its
+migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
+security headers and a nonce-based CSP, and a state-changing request from another site gets "Access
+denied". Until it is claimed, an instance sends every page to `/setup` and prints its bootstrap
+token to the console; it is claimed there, which creates the owner account. Module 5, `sign-in`
 ([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is built, so the owner can sign in: errors and
-refusals show branded pages, each client address is limited to 60 requests a
-minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
-and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
-on, signs the new owner in with a session and lands on the admin's Settings; and the owner signs
-in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from one address, with a wait after
-10 failures in a row. Everything else under `/admin` needs the owner's session, inside the admin
-shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind its confirmation,
-the language switcher and the version. The Security tab changes the owner's password, signing
-every other browser out, and has "Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup
-prints a recovery token for the owner and warns, the owner sets a new password with it at
-`/recovery`, and the Security tab says to turn it off. Probe paths and known scanners are turned
-away before the rate limits. Module 6, `two-factor`, comes next, through its own spec.
+refusals show branded pages, each client address is limited to 60 requests a minute, with requests
+that bypass a configured proxy refused, the claim to 5 tries per 5 minutes, and password hashing to
+4 at once; the claim refuses a browser that didn't say which address it is on, signs the new owner
+in with a session and lands on the admin's Settings; and the owner signs in at `/admin/sign-in`,
+linked from `/`, 10 times per 5 minutes from one address, with a wait after 10 failures in a row.
+Everything else under `/admin` needs the owner's session, inside the admin shell: a sidebar, a rail
+or a drawer by width, with the owner, Sign out behind its confirmation, the language switcher and
+the version. The Security tab changes the owner's password, signing every other browser out, and has
+"Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup prints a recovery token for the
+owner and warns, the owner sets a new password with it at `/recovery`, and the Security tab says to
+turn it off. Probe paths and known scanners are turned away before the rate limits. Module 6,
+`two-factor`, comes next, through its own spec.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
