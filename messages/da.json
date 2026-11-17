@@ -4,6 +4,7 @@
 	"language_switcher_label": "Sprog",
 	"error_page_title": "Fejl: {{title}}",
 	"error_summary_title": "Der er et problem",
+	"skip_to_main": "Gå til hovedindholdet",
 	"error_access_denied_title": "Adgang nægtet",
 	"error_access_denied_description": "Anmodningen blev afvist, fordi den ikke kom fra dette websted.",
 	"error_access_denied_proxy_description": "Anmodningen kom ikke gennem den proxy, {{name}} forventer.",
