@@ -434,21 +434,34 @@ describe("handleShutdown", () => {
 describe("startUp's shutdown", () => {
 	const watched = ["SIGHUP", "SIGTERM", "SIGINT", "sveltekit:shutdown"] as const;
 	const counts = () => watched.map((event) => process.listenerCount(event));
+	const listeners = () => watched.map((event) => process.listeners(event));
+	/** Takes away the handlers a test's startup added, and closes what it opened. */
+	async function cleanUp(before: ReturnType<typeof listeners>) {
+		watched.forEach((event, index) => {
+			for (const listener of process.listeners(event)) {
+				if (!before[index]?.includes(listener)) process.removeListener(event, listener);
+			}
+		});
+		await closeServices();
+	}
 
 	it("installs no handler in dev, where Ctrl+C must still end the dev server", async () => {
-		const before = counts();
+		const before = listeners();
 		await startUp(
 			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, "dev", "app.db") },
 			{ dev: true },
 		);
-		// The built server's handlers come a turn after startup, so wait one before looking.
-		await new Promise((resolve) => setImmediate(resolve));
-		expect(counts()).toEqual(before);
-		await closeServices();
+		try {
+			// The built server's handlers come a turn after startup, so wait one before looking.
+			await new Promise((resolve) => setImmediate(resolve));
+			expect(counts()).toEqual(before.map((listeners) => listeners.length));
+		} finally {
+			await cleanUp(before);
+		}
 	});
 
 	it("installs the handlers in the built server, after adapter-bun's own", async () => {
-		const before = watched.map((event) => process.listeners(event));
+		const before = listeners();
 		await startUp(
 			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, "built", "app.db") },
 			{ dev: false },
@@ -460,12 +473,7 @@ describe("startUp's shutdown", () => {
 			await new Promise((resolve) => setImmediate(resolve));
 			expect(counts()).toEqual(before.map((listeners) => listeners.length + 1));
 		} finally {
-			watched.forEach((event, index) => {
-				for (const listener of process.listeners(event)) {
-					if (!before[index]?.includes(listener)) process.removeListener(event, listener);
-				}
-			});
-			await closeServices();
+			await cleanUp(before);
 		}
 	});
 
