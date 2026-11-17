@@ -481,7 +481,9 @@ src/
       layout/LanguageSwitcher.svelte
                                  one native button per language, named in that language
       layout/PanelPage.svelte    a one-task page outside the admin shell, the claim's and
-                                 sign-in's: logo, wordmark and language switcher above one panel
+                                 sign-in's: a skip link to the main content, shown only while it
+                                 has focus, then logo, wordmark and language switcher above one
+                                 panel
       layout/AdminSidebar.svelte the shell's sidebar: logo, navigation and the owner's footer,
                                  collapsing to a rail from 1024px down
       layout/AdminDrawer.svelte  the shell below 768px: the menu button and the sidebar as a
@@ -532,6 +534,8 @@ tests/
                                  and `/recovery`
   e2e/error-summary.test.ts      failed submits without and with JavaScript, and with a late script:
                                  the title, the summary, its links and where focus goes
+  e2e/skip-link.test.ts          the one-task pages' skip link, with and without JavaScript and
+                                 in Danish
   e2e/rate-limits.test.ts        the general limit, the refusal without the address header and
                                  the scanner filter
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
