@@ -406,8 +406,8 @@ src/lib/components/credentials/                  the owner's credential fields, 
                                                  TokenField.svelte and token-format.ts, moved
                                                  from routes/setup/
 drizzle/                                         + the owner_session migration
-tests/e2e/sign-in.test.ts                        sign-in, sessions, limits and recovery on the
-                                                 built server
+tests/e2e/sign-in.test.ts                        sign-in, sessions and limits on the built server
+tests/e2e/recovery.test.ts                       recovery on restarted built servers
 tests/e2e/                                       + the fixture with each test's own address, used
                                                  by global-setup.ts, smoke.test.ts and
                                                  i18n.test.ts; setup.test.ts's claim expects
@@ -464,7 +464,7 @@ is already installed for the confirmation and the drawer.
     without the configured header gets "Access denied" while `/healthz` still answers;
   - the password change ends a second browser's session and keeps this one; "Sign out everywhere
     else" does the same and says how many;
-  - with `OBZORARR_RECOVERY=true` on its own server, the token is printed in no log entry or
+  - in `recovery.test.ts`, with `OBZORARR_RECOVERY=true` on its own server, the token is printed in no log entry or
     response, `/recovery` sets a new password and signs in, the old password and sessions no longer
     work, and after a restart with the setting still on no new token is printed;
   - a probe path gets a 404 and a scanner agent a 403; an unknown page shows "Page not found"

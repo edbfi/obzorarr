@@ -40,7 +40,7 @@ const submit: SubmitFunction = () => {
 /** The recovery steps, each variable or path set as code, like the console they point to. */
 const steps = [
 	{ message: m.sign_in_forgot_restart({ variable: CODE }), code: "OBZORARR_RECOVERY=true" },
-	{ message: m.sign_in_forgot_token(), code: "" },
+	{ message: m.sign_in_forgot_token() },
 	{ message: m.sign_in_forgot_recovery({ path: CODE }), code: "/recovery" },
 ];
 
@@ -180,7 +180,7 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			})}
 		>
 			{#each steps as step, index (index)}
-				<li><MessageWithCode message={step.message} code={step.code} /></li>
+				<li><MessageWithCode {...step} /></li>
 			{/each}
 		</ol>
 	</details>

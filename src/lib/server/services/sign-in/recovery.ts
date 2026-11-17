@@ -138,20 +138,21 @@ export async function recover(
 	if (!rules.ok) return { status: "invalid", error: rules.error };
 	const releaseSlot = hashSlots.take();
 	if (releaseSlot === undefined) return SLOTS_BUSY;
-	if (!useToken(input.token)) {
+	if (!useToken(input.token, now.getTime())) {
 		releaseSlot();
 		log.warn("a recovery token was refused", { clientAddress: address });
 		return { status: "token" };
 	}
-	let passwordHash: string;
-	try {
-		passwordHash = await hashPassword(rules.password);
-	} finally {
-		// Freed however the hash ends, a throw before it returns a promise included.
-		releaseSlot();
-	}
+	// From here the token is used up, so any failure answers "failed": a restart prints a new one.
 	let session: StartedSession;
 	try {
+		let passwordHash: string;
+		try {
+			passwordHash = await hashPassword(rules.password);
+		} finally {
+			// Freed however the hash ends, a throw before it returns a promise included.
+			releaseSlot();
+		}
 		session = await db.transaction(async (tx) => {
 			await writePasswordHash(tx, passwordHash);
 			await deleteAllSessions(tx);
@@ -174,8 +175,8 @@ export async function recover(
  * nothing awaited in between, so two tries can't both use it. An expired token stays, so
  * `/recovery` still answers, naming the console.
  */
-function useToken(entry: string): boolean {
-	if (token === undefined || !isTokenValid(token, Date.now())) return false;
+function useToken(entry: string, now: number): boolean {
+	if (token === undefined || !isTokenValid(token, now)) return false;
 	if (!tokenMatches(token.value, entry)) return false;
 	token = undefined;
 	return true;

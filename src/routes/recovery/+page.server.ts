@@ -29,7 +29,9 @@ export const load: PageServerLoad = ({ request, setHeaders }) => {
 	// The action sets it on every POST, and SvelteKit runs the load after the action on a native
 	// form post; setting a header twice throws.
 	if (request.method !== "POST") setHeaders(NO_STORE);
-	if (!isRecoveryWaiting()) error(404);
+	// Without JavaScript, SvelteKit runs this after the action: a try that used the token and
+	// failed must still show its answer, so only a GET is sent away once no token waits.
+	if (request.method !== "POST" && !isRecoveryWaiting()) error(404);
 };
 
 export const actions: Actions = {

@@ -14,7 +14,7 @@ import { css } from "#styled-system/css";
  * text"): the message is plain text, and the code is set as code where its placeholder was. It
  * renders inline, inside whatever element holds the message.
  */
-let { message, code }: { message: string; code: string } = $props();
+let { message, code = "" }: { message: string; code?: string } = $props();
 
 const parts = $derived(message.split(CODE));
 const codeStyle = css({ fontFamily: "mono", fontSize: "code", overflowWrap: "anywhere" });

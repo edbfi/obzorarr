@@ -68,6 +68,16 @@ describe("the recovery page's load", () => {
 		}
 		expect(isHttpError(thrown, 404)).toBe(true);
 	});
+
+	it("keeps a failed POST's answer without JavaScript, where it runs after the action used the token", () => {
+		waiting.value = false;
+		expect(() =>
+			load({
+				request: new Request("http://app.test/recovery", { method: "POST" }),
+				setHeaders: vi.fn(),
+			} as unknown as Parameters<typeof load>[0]),
+		).not.toThrow();
+	});
 });
 
 describe("the recovery action", () => {

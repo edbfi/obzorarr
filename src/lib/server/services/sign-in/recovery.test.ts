@@ -13,6 +13,10 @@ import { hashSessionToken } from "#lib/server/security/session-token.ts";
 const hashing = vi.hoisted(() => ({
 	/** How many hashes started. */
 	calls: 0,
+	/** Whether the next hash fails. */
+	fails: false,
+	/** Whether the next settings write fails, inside recovery's transaction. */
+	settingFails: false,
 	/** Runs while a verification is in flight, before it answers. */
 	during: undefined as (() => Promise<void>) | undefined,
 }));
@@ -23,6 +27,10 @@ vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
 		...original,
 		hashPassword: (password: string) => {
 			hashing.calls++;
+			if (hashing.fails) {
+				hashing.fails = false;
+				return Promise.reject(new Error("out of memory"));
+			}
 			return original.hashPassword(password);
 		},
 		verifyPassword: async (password: string, hash: string) => {
@@ -31,6 +39,20 @@ vi.mock("#lib/server/security/password.ts", async (importOriginal) => {
 			hashing.during = undefined;
 			await during?.();
 			return answer;
+		},
+	};
+});
+
+vi.mock("#lib/server/db/settings.ts", async (importOriginal) => {
+	const original = await importOriginal<typeof import("#lib/server/db/settings.ts")>();
+	return {
+		...original,
+		writeSetting: (...args: Parameters<typeof original.writeSetting>) => {
+			if (hashing.settingFails) {
+				hashing.settingFails = false;
+				return Promise.reject(new Error("disk I/O error"));
+			}
+			return original.writeSetting(...args);
 		},
 	};
 });
@@ -254,6 +276,42 @@ describe("recover", () => {
 		expect(
 			await recover(db, { token, password: NEW_PASSWORD, clientAddress: "203.0.113.61" }),
 		).toMatchObject({ status: "recovered" });
+	});
+
+	it("fails as a whole when the transaction fails, leaving the old password and sessions, and the token used", async () => {
+		const token = await printedToken();
+		logged = [];
+		hashing.settingFails = true;
+		expect(await recover(db, { token, password: NEW_PASSWORD })).toEqual({ status: "failed" });
+		expect((await findOwner(db))?.passwordHash).toBe(ownerHash);
+		expect((await db.select().from(ownerSession)).map((row) => row.tokenHash).sort()).toEqual([
+			"old-0",
+			"old-1",
+		]);
+		expect(await readSetting(db, RECOVERY_USED_KEY)).toBeUndefined();
+		// The token is used up, and a restart prints a new one, since nothing recorded its use.
+		expect(isRecoveryWaiting()).toBe(false);
+		const entries = logged.map((line) => JSON.parse(line) as Record<string, unknown>);
+		expect(entries).toContainEqual(
+			expect.objectContaining({ level: "error", message: "the recovery failed" }),
+		);
+		expect(logged.join("")).not.toContain(NEW_PASSWORD);
+		expect(logged.join("")).not.toContain(token);
+	});
+
+	it("fails, logged, when hashing the new password fails after the token was used", async () => {
+		const token = await printedToken();
+		logged = [];
+		hashing.fails = true;
+		expect(await recover(db, { token, password: NEW_PASSWORD })).toEqual({ status: "failed" });
+		expect((await findOwner(db))?.passwordHash).toBe(ownerHash);
+		expect(logged.map((line) => JSON.parse(line) as Record<string, unknown>)).toContainEqual(
+			expect.objectContaining({ level: "error", message: "the recovery failed" }),
+		);
+		// The hash slot was freed.
+		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
+		expect(taken.every((release) => release !== undefined)).toBe(true);
+		for (const release of taken) release?.();
 	});
 
 	it("answers not found while recovery is off or the instance unclaimed", async () => {

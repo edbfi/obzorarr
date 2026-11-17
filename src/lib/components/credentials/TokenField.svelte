@@ -55,6 +55,7 @@ function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
 	const next = deleteAcrossDash(field.value, caret, direction);
 	if (next === undefined) return;
 	event.preventDefault();
+	oninput?.();
 	field.value = next.value;
 	field.setSelectionRange(next.caret, next.caret);
 }
