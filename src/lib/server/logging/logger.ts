@@ -17,12 +17,24 @@ const whenWritten: (() => void)[] = [];
 
 function write(line: string): void {
 	writing++;
-	// The callback runs once the entry has left the process, or with an error; either way it no
-	// longer waits.
-	process.stdout.write(line, () => {
+	let settled = false;
+	const done = () => {
+		// Once only: a count taken below zero would hold every later flush as surely as one left
+		// raised.
+		if (settled) return;
+		settled = true;
 		writing--;
 		if (writing === 0) for (const resolve of whenWritten.splice(0)) resolve();
-	});
+	};
+	// The callback runs once the entry has left the process, or with an error; either way it no
+	// longer waits. Bun reports a closed pipe through the callback, but a write that throws may
+	// never call it, so it is done at once, and the entry is lost: a count left raised would hold
+	// every later flush, and shutdown, forever, and a log call that threw would stop its caller.
+	try {
+		process.stdout.write(line, done);
+	} catch {
+		done();
+	}
 }
 
 /**

@@ -82,6 +82,53 @@ describe("createLogger", () => {
 	});
 });
 
+describe("a write that throws", () => {
+	const throwOnWrite = () =>
+		vi.mocked(process.stdout.write).mockImplementation(() => {
+			throw new Error("EPIPE: broken pipe");
+		});
+
+	it("never throws out of a log call, so the caller carries on", () => {
+		throwOnWrite();
+		expect(() => createLogger("test").error("something went wrong")).not.toThrow();
+	});
+
+	it("is done once even when it calls back before it throws, so flushLogs still resolves", async () => {
+		vi.mocked(process.stdout.write).mockImplementation((_chunk, ...rest: unknown[]) => {
+			const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+			done?.();
+			throw new Error("EPIPE: broken pipe");
+		});
+		createLogger("test").info("lost");
+		// A second entry that is still waiting must hold flushLogs, and its write release it.
+		let release = () => {};
+		vi.mocked(process.stdout.write).mockImplementation((_chunk, ...rest: unknown[]) => {
+			release = rest.find((arg) => typeof arg === "function") as () => void;
+			return true;
+		});
+		createLogger("test").info("waiting");
+		let flushed = false;
+		const flushing = flushLogs().then(() => {
+			flushed = true;
+		});
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		expect(flushed).toBe(false);
+		release();
+		await flushing;
+		expect(flushed).toBe(true);
+	});
+
+	it("isn't counted as waiting, so flushLogs still resolves", async () => {
+		throwOnWrite();
+		createLogger("test").info("lost");
+		const resolved = await Promise.race([
+			flushLogs().then(() => true),
+			new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 200)),
+		]);
+		expect(resolved).toBe(true);
+	});
+});
+
 describe("flushLogs against a slow reader", () => {
 	// A real child process writing into a real shell pipe whose reader waits a second: Bun's own
 	// spawn pipes are read eagerly, and the stdout mock above can't show a queued write either.

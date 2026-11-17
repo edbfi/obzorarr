@@ -56,7 +56,8 @@ export async function startUp(env: StartupEnv, options: { dev: boolean }): Promi
 	try {
 		await runSteps(env);
 	} catch (error) {
-		log.error("startup failed", { error });
+		// An error that can't be logged must not take the place of the one that stopped startup.
+		quietly(() => log.error("startup failed", { error }));
 		// The process exits once this throws, so the entry must leave it first.
 		await flushWithin(DEADLINE_FLUSH_MS);
 		throw error;
@@ -104,8 +105,8 @@ export function handleShutdown(
 	target.on("SIGHUP", () => target.kill(target.pid, "SIGTERM"));
 	for (const signal of ["SIGTERM", "SIGINT"]) {
 		target.on(signal, () => {
-			log.info("stopping", { signal });
 			stopWork();
+			quietly(() => log.info("stopping", { signal }));
 		});
 	}
 	target.once("sveltekit:shutdown", () => {
@@ -115,14 +116,14 @@ export function handleShutdown(
 		const deadline = new Promise<number>((resolve) => {
 			timer = setTimeout(() => {
 				late = true;
-				log.error("shutdown didn't finish in time", { deadlineMs });
+				quietly(() => log.error("shutdown didn't finish in time", { deadlineMs }));
 				void flushWithin(DEADLINE_FLUSH_MS).then(() => resolve(1));
 			}, deadlineMs);
 		});
 		const finished = cleanup().then(
 			() => 0,
 			async (error: unknown) => {
-				log.error("shutdown failed", { error });
+				quietly(() => log.error("shutdown failed", { error }));
 				await flushLogs();
 				return 1;
 			},
@@ -145,7 +146,7 @@ export async function closeServices(): Promise<void> {
 	try {
 		await db?.$client.close();
 	} catch (error) {
-		log.error("closing the database failed", { error });
+		quietly(() => log.error("closing the database failed", { error }));
 	}
 	await flushLogs();
 }
@@ -196,4 +197,17 @@ function flushWithin(ms: number): Promise<void> {
 		timer = setTimeout(done, ms);
 	});
 	return Promise.race([flushLogs(), bound]).finally(() => clearTimeout(timer));
+}
+
+/**
+ * Runs a log call on a path that must finish, startup's failure and every shutdown step, so a
+ * value that can't be logged never replaces the real error, stops the work or keeps the process
+ * from exiting.
+ */
+function quietly(logCall: () => void): void {
+	try {
+		logCall();
+	} catch {
+		// The exit matters more than the entry.
+	}
 }

@@ -374,6 +374,52 @@ describe("handleShutdown", () => {
 		}
 	});
 
+	describe("with standard output broken, so every log call's write throws", () => {
+		beforeEach(() => {
+			vi.mocked(process.stdout.write).mockImplementation(() => {
+				throw new Error("EPIPE: broken pipe");
+			});
+		});
+
+		it("still stops the work on SIGTERM", () => {
+			const fake = fakeProcess();
+			const stopped: string[] = [];
+			handleShutdown(fake.target, async () => {}, { stopWork: () => stopped.push("stopped") });
+			fake.events.emit("SIGTERM");
+			expect(stopped).toEqual(["stopped"]);
+		});
+
+		it("still exits 1 when the cleanup fails, and when it never finishes", async () => {
+			const failed = fakeProcess();
+			handleShutdown(failed.target, async () => {
+				throw new Error("close failed");
+			});
+			failed.events.emit("sveltekit:shutdown", "SIGTERM");
+			const stuck = fakeProcess();
+			handleShutdown(stuck.target, () => new Promise(() => {}), { deadlineMs: 50 });
+			stuck.events.emit("sveltekit:shutdown", "SIGTERM");
+			await settle(500);
+			expect(failed.exitCode()).toBe(1);
+			expect(stuck.exitCode()).toBe(1);
+		});
+	});
+
+	it("still exits 1 when the cleanup fails with an error that can't be logged", async () => {
+		const hostile = new Error("close failed");
+		Object.defineProperty(hostile, "stack", {
+			get() {
+				throw new Error("no stack for you");
+			},
+		});
+		const fake = fakeProcess();
+		handleShutdown(fake.target, async () => {
+			throw hostile;
+		});
+		fake.events.emit("sveltekit:shutdown", "SIGTERM");
+		await settle(100);
+		expect(fake.exitCode()).toBe(1);
+	});
+
 	it("exits non-zero when the cleanup fails", async () => {
 		const fake = fakeProcess();
 		handleShutdown(fake.target, async () => {
@@ -431,6 +477,19 @@ describe("startUp's shutdown", () => {
 			level: "error",
 			metadata: { error: { message: "disk went away" } },
 		});
+	});
+
+	it("closeServices still finishes when the failed close's error can't be logged", async () => {
+		const hostile = new Error("disk went away");
+		Object.defineProperty(hostile, "stack", {
+			get() {
+				throw new Error("no stack for you");
+			},
+		});
+		vi.spyOn(Database.prototype, "close").mockRejectedValueOnce(hostile);
+		const path = join(root, "close-fails-hostile", "app.db");
+		await startUp({ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: path }, { dev: true });
+		await expect(closeServices()).resolves.toBeUndefined();
 	});
 
 	it("closeServices finishes the close before it flushes, and the flush before it returns", async () => {
