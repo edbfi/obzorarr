@@ -151,7 +151,9 @@ test.describe("with JavaScript", () => {
 			}
 			await route.continue();
 		});
+		const posted = page.waitForRequest((request) => request.method() === "POST");
 		await claimShort();
+		await posted;
 		await expect(page.getByRole("button", { name: "Claiming…" })).toBeDisabled();
 		await expect(summary).toBeVisible();
 		await expect(page).toHaveTitle("Error: Claim this Obzorarr");
@@ -174,6 +176,7 @@ test.describe("with JavaScript", () => {
 		const summary = summaryOf(page);
 		await expect(summary).toBeFocused();
 		const top = await page.locator("#username").boundingBox();
+		expect(top).not.toBeNull();
 
 		// Fixing both fields leaves the summary where it is, so nothing moves under the caret.
 		await page.locator("#username").fill("Owner");

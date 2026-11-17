@@ -478,7 +478,9 @@ pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`) and every l
 - **Not used:** `action="#…"` fragment tricks, native validation (forms keep `novalidate`) and form
   libraries.
 
-The same in every edbfi app, with obzorarr's component, tests and wording the reference.
+The same in every edbfi app, with obzorarr's component, tests and wording the reference. One form
+was built before it: the Security tab's password change still focuses the field to fix and
+announces it in an assertive region, until a follow-up converts it.
 
 Why: focusing the first invalid field skipped the page's heading and the reason it failed, and a
 page-level failure has no field to focus. Without JavaScript, `autofocus` was the only way to move
