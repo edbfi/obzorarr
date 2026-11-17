@@ -544,6 +544,12 @@ test.describe("the claim", () => {
 			});
 			await page.goto(`${server.url}/setup`);
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+			// Typed exactly: no autocorrect, capitals or spelling marks on the token or username.
+			for (const field of ["#token", "#username"]) {
+				await expect(page.locator(field)).toHaveAttribute("autocorrect", "off");
+				await expect(page.locator(field)).toHaveAttribute("autocapitalize", "none");
+				await expect(page.locator(field)).toHaveAttribute("spellcheck", "false");
+			}
 			await page.locator("#token").fill("aaaa-bbbb-cccc");
 			await page.locator("#username").fill("Owner");
 			await page.locator("#password").fill("violet harbour lanterns");

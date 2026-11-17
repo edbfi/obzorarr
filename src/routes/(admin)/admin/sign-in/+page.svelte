@@ -87,6 +87,7 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 				type="text"
 				autocomplete="username"
 				autocapitalize="none"
+				autocorrect="off"
 				spellcheck="false"
 				defaultValue={form?.username ?? ""}
 			>

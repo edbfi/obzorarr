@@ -88,6 +88,9 @@ const describedBy = $derived(
 			size="1"
 			type={shown ? "text" : "password"}
 			{autocomplete}
+			autocapitalize="none"
+			autocorrect="off"
+			spellcheck="false"
 			aria-invalid={error ? "true" : undefined}
 			aria-describedby={describedBy}
 			{oninput}

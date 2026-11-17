@@ -166,6 +166,17 @@ test.describe("owner sign-in", () => {
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 			await expect(page).toHaveTitle("Sign in");
 			await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
+			// Typed exactly: no autocorrect, capitals or spelling marks on the username, nor on the
+			// password once Show makes it plain text.
+			await page.getByRole("button", { name: "Show password" }).click();
+			await expect(page.locator("#password")).toHaveAttribute("type", "text");
+			for (const field of ["#username", "#password"]) {
+				await expect(page.locator(field)).toHaveAttribute("autocorrect", "off");
+				await expect(page.locator(field)).toHaveAttribute("autocapitalize", "none");
+				await expect(page.locator(field)).toHaveAttribute("spellcheck", "false");
+			}
+			await page.getByRole("button", { name: "Hide password" }).click();
+			await expect(page.locator("#password")).toHaveAttribute("type", "password");
 
 			await signIn(page, "owner", "not the right password");
 			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
