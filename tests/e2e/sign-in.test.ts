@@ -1050,8 +1050,9 @@ test.describe("the Security tab", () => {
 		}
 	});
 
-	test("a wrong current password is announced at once and its field takes focus", async ({
+	test("a wrong current password shows the error summary, focused, without JavaScript too", async ({
 		page,
+		browser,
 	}) => {
 		const server = await startServer(root, {
 			OBZORARR_DATABASE_PATH: join(root, "data", "obzorarr.db"),
@@ -1061,14 +1062,31 @@ test.describe("the Security tab", () => {
 			await page.locator("#current").fill("not the password at all");
 			await page.locator("#next").fill(NEW_PASSWORD);
 			await page.getByRole("button", { name: "Change password" }).click();
-			await expect(page.locator("#current")).toBeFocused();
+			// The error summary (D29): first in the form, focused, linking to the field.
+			const summary = page.getByRole("region", { name: "There is a problem" });
+			await expect(summary).toBeFocused();
+			await expect(summary.getByRole("link")).toHaveText(["The current password is wrong."]);
+			await expect(summary.getByRole("link")).toHaveAttribute("href", "#current");
+			await expect(page).toHaveTitle("Error: Settings");
 			await expect(page.locator("#current")).toHaveAttribute("aria-invalid", "true");
 			await expect(page.locator("#current-error")).toHaveText("The current password is wrong.");
-			await expect(
-				page.locator("#password-section [role=alert]").filter({
-					hasText: "The current password is wrong.",
-				}),
-			).toHaveCount(1);
+			await expect(page.locator("#password-section [role=alert]")).toHaveCount(0);
+
+			// Without JavaScript the same answer shows the summary and focuses nothing.
+			const context = await browser.newContext({ javaScriptEnabled: false });
+			try {
+				await context.addCookies(await page.context().cookies());
+				const plain = await context.newPage();
+				await plain.goto(`${server.url}/admin/settings/security`);
+				await plain.locator("#current").fill("not the password at all");
+				await plain.locator("#next").fill(NEW_PASSWORD);
+				await plain.getByRole("button", { name: "Change password" }).click();
+				await expect(plain.getByRole("region", { name: "There is a problem" })).toBeVisible();
+				await expect(plain).toHaveTitle("Error: Settings");
+				expect(await plain.evaluate(() => document.activeElement === document.body)).toBe(true);
+			} finally {
+				await context.close();
+			}
 		} finally {
 			await server.stop();
 		}

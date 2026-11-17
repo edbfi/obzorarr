@@ -997,9 +997,9 @@ export const GET: RequestHandler = () => healthResponse();
     a second browser's session, keeps this one with focus on the section's heading, and lets only
     the new password sign in; "Sign out everywhere else" ends two and says so, with no button when
     there are none; the enhanced form, after its session ended elsewhere, shows "Access denied" with
-    "Your session ended"; a wrong current password is announced and its field focused; a change with
-    `Origin` stripped gets the 403; and both sections show in English and Danish with no console
-    error or CSP violation.
+    "Your session ended"; a wrong current password is in the focused error summary, linked to its
+    field, and without JavaScript too, with nothing focused; a change with `Origin` stripped gets
+    the 403; and both sections show in English and Danish with no console error or CSP violation.
   - `recovery.test.ts` checks that a claimed server restarted with `OBZORARR_RECOVERY` on prints the
     recovery token to the console, in no log entry or response, and that the Security tab warns;
     that an unclaimed one prints none and warns; that `/recovery` is `no-store`, answers a wrong

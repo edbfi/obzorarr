@@ -33,7 +33,7 @@ Page heading 'Settings', tab bar with 'Security' (the only tab for now). While `
 
 - Only the owner sees the shell and this page. Nothing about members, Plex or the server shows here yet.
 - Field errors use the claim's messages for the new password and 'The current password is wrong.' for the current one; the current-password field has `autocomplete="current-password"`, the new one `new-password`.
-- Status and saved messages go to a polite live region; errors to an assertive one. Nothing reports success before the change is stored.
+- Status and saved messages go to a polite live region. A failed change titles the page 'Error: Settings' and shows the error summary (D29) first in the password form: a wrong current password or a broken rule links to its field, too many attempts or a busy server is text. With JavaScript, focus moves to the summary after each failure; without it, nothing is focused. Nothing reports success before the change is stored.
 - The sign-out dialog and the drawer trap focus, close on Escape and restore focus to the control that opened them.
 - Test keyboard focus, visible labels, disabled behavior and 200% zoom; target 360, 390, 768 and 1440px viewports, in English and Danish. Long translated labels wrap without hiding the actions.
 - States: the recovery warning on and off; password initial, field errors, too many attempts, saving, saved; sessions with none, one and several others, signing out, done; the drawer open and closed; the sign-out dialog.

@@ -222,12 +222,12 @@ D20 fixes the mechanism; here is what the owner does.
 
 ## Errors and error pages
 
-- **A failed submit** on the claim, sign-in and recovery, and on every later form (the Security
-  tab's password change, built before, converts in a follow-up), answers with the "Error: " title
-  and the error summary first in the form (D29): its field problems link to their fields, its
-  page-level ones (a wrong username or password, busy, too many attempts, a server failure) mark no
-  field. It keeps the last answer until the next, while a field's own message clears as it is
-  edited. With JavaScript it takes focus after each failure; without, nothing is focused.
+- **A failed submit** on the claim, sign-in, recovery and the Security tab's password change, and on
+  every later form, answers with the "Error: " title and the error summary first in the form (D29):
+  its field problems link to their fields, its page-level ones (a wrong username or password, busy,
+  too many attempts, a server failure) mark no field. It keeps the last answer until the next, while
+  a field's own message clears as it is edited. With JavaScript it takes focus after each failure;
+  without, nothing is focused.
 
 - **Stack traces never reach the browser:** an unexpected error says "Something went wrong. Try
   again." in the viewer's language, and an expected error (`error()`) passes its own message
