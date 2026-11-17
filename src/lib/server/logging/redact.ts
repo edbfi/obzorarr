@@ -185,21 +185,30 @@ function decodeName(name: string): string {
  * hidden too, wherever the error came from. A circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
-	return walk(value, { path: new Set(), left: MAX_VALUES }, 0);
+	return walk(value, { path: new Set(), left: MAX_VALUES, errorsLeft: MAX_LATE_ERRORS }, 0);
 }
 
-/** One redaction's state: the objects on the way down to this one, and how much more it may walk. */
-type Walk = { readonly path: Set<object>; left: number };
+/**
+ * One redaction's state: the objects on the way down to this one, how much more it may walk, and
+ * how many more errors it may still keep past that.
+ */
+type Walk = { readonly path: Set<object>; left: number; errorsLeft: number };
 
 /** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
 const UNREADABLE = "[unreadable]";
 /** How deep a value is walked; deeper, such as a runaway chain of causes, is left out. */
 const MAX_DEPTH = 32;
 /**
- * How many objects and array elements one entry may walk. A shared object is walked once for every
- * path to it, so a few nested ones can stand for millions; past this, a value is left out.
+ * How many objects, array elements and fields one entry may walk. A shared object is walked once
+ * for every path to it, so a few nested ones can stand for millions; past this, a value is left
+ * out, except an error's name, message and stack, which an entry is most often written for.
  */
 const MAX_VALUES = 10_000;
+/**
+ * How many errors past MAX_VALUES one entry still keeps, each with its name, message, stack and
+ * cause, but no fields; bounded, since errors can share each other as fields too.
+ */
+const MAX_LATE_ERRORS = 100;
 const TOO_LARGE = "[too large]";
 
 /** The value `get` reads, or the unreadable marker when reading it throws. */
@@ -228,12 +237,17 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
 	const { path } = state;
 	if (path.has(value)) return "[circular]";
 	if (depth >= MAX_DEPTH) return "[too deep]";
-	if (state.left <= 0) return TOO_LARGE;
-	state.left--;
+	const isError = read(() => value instanceof Error) === true;
+	if (state.left > 0) state.left--;
+	else if (isError && state.errorsLeft > 0) state.errorsLeft--;
+	else return TOO_LARGE;
 	path.add(value);
 	try {
-		if (value instanceof Error) return walkError(value, state, depth);
-		if (value instanceof Headers) return walkEntries([...value.entries()], state, depth);
+		if (isError) return walkError(value as Error, state, depth);
+		if (value instanceof Headers) {
+			const fields = Object.fromEntries(value.entries());
+			return walkFields(fields, Object.keys(fields), state, depth);
+		}
 		if ("toJSON" in value && typeof value.toJSON === "function") {
 			return walk(value.toJSON(), state, depth + 1);
 		}
@@ -269,19 +283,11 @@ function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
 	return walked;
 }
 
-function walkEntries(
-	entries: [string, unknown][],
-	state: Walk,
-	depth: number,
-): Record<string, unknown> {
-	return Object.fromEntries(
-		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, state, depth + 1)]),
-	);
-}
-
 /**
  * An object's `keys`, each read on its own, so one that throws loses only its own value; a key
- * that looks like a credential is hidden without its value ever being read.
+ * that looks like a credential is hidden without its value ever being read. Each field counts
+ * against the entry's budget; past it, only a field holding an error is kept, and a marker says
+ * how many others were left out.
  */
 function walkFields(
 	value: object,
@@ -289,18 +295,23 @@ function walkFields(
 	state: Walk,
 	depth: number,
 ): Record<string, unknown> {
-	return Object.fromEntries(
-		keys.map((key) => [
-			key,
-			sensitive(key)
-				? REDACTED
-				: walk(
-						read(() => (value as Record<string, unknown>)[key]),
-						state,
-						depth + 1,
-					),
-		]),
-	);
+	const field = (key: string) => read(() => (value as Record<string, unknown>)[key]);
+	const walked: [string, unknown][] = [];
+	let leftOut = 0;
+	for (const key of keys) {
+		if (state.left > 0) {
+			state.left--;
+			walked.push([key, sensitive(key) ? REDACTED : walk(field(key), state, depth + 1)]);
+			continue;
+		}
+		const item = sensitive(key) || state.errorsLeft <= 0 ? undefined : field(key);
+		if (read(() => item instanceof Error) === true)
+			walked.push([key, walk(item, state, depth + 1)]);
+		else leftOut++;
+	}
+	if (leftOut > 0) walked.push([TOO_LARGE, `${leftOut} more`]);
+	// `fromEntries`, so a `__proto__` key is a field, never the result's prototype.
+	return Object.fromEntries(walked);
 }
 
 /**
@@ -321,14 +332,19 @@ function walkError(error: Error, state: Walk, depth: number): Record<string, unk
 	);
 	const cause = read(() => error.cause);
 	const errors = aggregate ? read(() => error.errors) : undefined;
+	// The cause and errors are walked before the fields, so a large field can't use the budget up
+	// before them; the entry still lists the fields first.
+	const causes = {
+		...(cause === undefined ? {} : { cause: walk(cause, state, depth + 1) }),
+		...(errors === undefined ? {} : { errors: walk(errors, state, depth + 1) }),
+	};
 	return {
 		name: read(() => cleanText(String(error.name))),
 		message: read(() => cleanText(String(error.message))),
 		stack: read(() => (error.stack === undefined ? undefined : cleanStack(error))),
 		...walkFields(error, keys, state, depth),
 		...(hidesParams ? { params: REDACTED } : {}),
-		...(cause === undefined ? {} : { cause: walk(cause, state, depth + 1) }),
-		...(errors === undefined ? {} : { errors: walk(errors, state, depth + 1) }),
+		...causes,
 	};
 }
 
@@ -343,9 +359,12 @@ const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
  */
 function cleanStack(error: Error): string {
 	const stack = error.stack ?? "";
-	// `String()`, since a template throws on a symbol name, which would lose the whole stack.
-	const header = `${String(error.name)}: ${error.message}`;
+	// `String()`, since a template throws on a symbol name and `cleanText` on a message that isn't
+	// text, either of which would lose the whole stack.
+	const name = String(error.name);
+	const message = String(error.message);
+	const header = `${name}: ${message}`;
 	const frames = stack.slice(header.length);
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
-	return `${cleanText(String(error.name))}: ${cleanText(error.message)}${cleanText(frames)}`;
+	return `${cleanText(name)}: ${cleanText(message)}${cleanText(frames)}`;
 }

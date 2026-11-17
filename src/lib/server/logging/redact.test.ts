@@ -573,6 +573,70 @@ describe("a value too large to walk", () => {
 		const value = { list: Array.from({ length: 100 }, (_, index) => ({ index })) };
 		expect(redact(value)).toEqual(value);
 	});
+
+	it("counts an object's plain fields, and ends a wide one with a marker", () => {
+		const wide = Object.fromEntries(
+			Array.from({ length: 50_000 }, (_, index) => [`k${index}`, index]),
+		);
+		const walked = redact(wide) as Record<string, unknown>;
+		expect(Object.keys(walked).length).toBeLessThan(10_100);
+		expect(walked["[too large]"]).toBe("40001 more");
+		expect(walked.k0).toBe(0);
+	});
+
+	it("stops a shared wide object reached by many paths, quickly", () => {
+		let shared: object = Object.fromEntries(
+			Array.from({ length: 1000 }, (_, index) => [`k${index}`, index]),
+		);
+		for (let i = 0; i < 30; i++) shared = { left: shared, right: shared };
+		const started = performance.now();
+		const text = JSON.stringify(redact(shared));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("counts a request's headers, and ends a huge set with a marker", () => {
+		const headers = new Headers(
+			Array.from({ length: 20_000 }, (_, index): [string, string] => [`x-h${index}`, "v"]),
+		);
+		const walked = redact(headers) as Record<string, unknown>;
+		expect(Object.keys(walked).length).toBeLessThan(10_100);
+		expect(walked["[too large]"]).toMatch(/^\d+ more$/);
+	});
+
+	it("keeps an error's name, message and stack after a large part used the budget up", () => {
+		const request = Array.from({ length: 20_000 }, () => ({}));
+		const walked = redact({ request, error: new Error("boom") }) as { error: unknown };
+		expect(walked.error).toMatchObject({ name: "Error", message: "boom" });
+		expect((walked.error as { stack: string }).stack).toMatch(/^Error: boom\n/);
+	});
+
+	it("stops errors that share each other as fields, past the budget too", () => {
+		let shared = new Error("leaf");
+		for (let i = 0; i < 30; i++)
+			shared = Object.assign(new Error(`level ${i}`), { a: shared, b: shared });
+		const started = performance.now();
+		const text = JSON.stringify(redact({ big: Array(20_000).fill(0), error: shared }));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text).toContain("level 29");
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("walks an error's cause before its own fields, so a large field can't hide it", () => {
+		const error = new Error("outer", { cause: new Error("root") });
+		Object.assign(error, { diagnostics: Array(20_000).fill(0) });
+		expect(redact(error)).toMatchObject({ cause: { message: "root" } });
+	});
+});
+
+describe("an error's message", () => {
+	it("keeps the stack when the message isn't text", () => {
+		const error = new Error("42");
+		Object.defineProperty(error, "message", { value: 42 });
+		const walked = redact(error) as { message: unknown; stack: unknown };
+		expect(walked.message).toBe("42");
+		expect(walked.stack).toMatch(/^Error: 42\n/);
+	});
 });
 
 describe("an error's name", () => {

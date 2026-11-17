@@ -108,8 +108,9 @@ it comes.
 Redacting never throws, so an entry is always written, and quickly: a value that throws as it is
 read (a getter, `toJSON` or a proxy) is logged as `[unreadable]`, losing only its own part; one
 nested more than 32 levels deep, such as a runaway chain of causes, as `[too deep]`; and past 10,000
-objects and array elements in one entry, such as a shared object reached by many paths or a huge
-array, the rest as `[too large]`.
+objects, array elements and fields in one entry, such as a shared object reached by many paths or a
+huge array, the rest as `[too large]`, except that up to 100 more errors keep their name, message,
+stack and cause, and an error's cause is walked before its own fields.
 
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its
