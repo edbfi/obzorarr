@@ -441,6 +441,8 @@ describe("startUp's shutdown", () => {
 			{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, "dev", "app.db") },
 			{ dev: true },
 		);
+		// The built server's handlers come a turn after startup, so wait one before looking.
+		await new Promise((resolve) => setImmediate(resolve));
 		expect(counts()).toEqual(before);
 		await closeServices();
 	});
