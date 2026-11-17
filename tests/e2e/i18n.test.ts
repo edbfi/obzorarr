@@ -126,3 +126,43 @@ test.describe("a browser whose header and navigator.languages disagree", () => {
 		expect(errors).toEqual([]);
 	});
 });
+
+test.describe("the switcher before the page has script", () => {
+	/** The switcher's buttons, and the box the switcher keeps in the page while hidden. */
+	const switcher = (page: Page) => page.getByRole("group", { name: "Language" });
+
+	test.describe("without JavaScript", () => {
+		test.use({ javaScriptEnabled: false });
+
+		test("is hidden, keeping its place, and Tab never reaches its buttons", async ({ page }) => {
+			await page.goto("/");
+			await expect(page.locator("fieldset").first()).toBeHidden();
+			const box = await page.locator("fieldset").first().boundingBox();
+			expect(box?.width ?? 0).toBeGreaterThan(40);
+			for (let i = 0; i < 8; i++) {
+				await page.keyboard.press("Tab");
+				expect(await page.evaluate(() => document.activeElement?.closest("fieldset"))).toBeNull();
+			}
+		});
+	});
+
+	test("appears once the page hydrates, in the place it kept", async ({ page }) => {
+		let release = () => {};
+		const released = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		await page.route("**/_app/immutable/**/*.js", async (route) => {
+			await released;
+			await route.continue();
+		});
+		await page.goto("/", { waitUntil: "commit" });
+		await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+		await expect(page.locator("fieldset").first()).toBeHidden();
+		const before = await page.locator("fieldset").first().boundingBox();
+
+		release();
+		await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+		await expect(switcher(page).getByRole("button", { name: "Dansk" })).toBeVisible();
+		expect(await page.locator("fieldset").first().boundingBox()).toEqual(before);
+	});
+});
