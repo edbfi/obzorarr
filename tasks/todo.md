@@ -415,16 +415,16 @@ warning, and `/recovery`'s) gets one component in `lib/components/`, and SPEC-i1
 inside a message" says how. The README's recovery steps came with task 12.
 
 **Acceptance criteria:**
-- [ ] `server/services/sign-in/recovery.test.ts` gains: the order of the checks; a wrong and an
+- [x] `server/services/sign-in/recovery.test.ts` gains: the order of the checks; a wrong and an
   expired token never reaching the hash; a refused slot and the sixth try within 5 minutes leaving
   the token unused; every session ended; the key recorded; a sign-in check with the old password
   that ends after the recovery starting no session.
-- [ ] `tests/e2e/recovery.test.ts` gains: `/recovery` sets a new password and lands on the Security
+- [x] `tests/e2e/recovery.test.ts` gains: `/recovery` sets a new password and lands on the Security
   tab, signed in; the old password and the other sessions no longer work; a POST with `Origin`
   stripped gets the 403 that says so; after a restart with the setting on, no new token and
   `/recovery` is not found; the page is `no-store` and logs no console error or CSP violation, in
   both languages.
-- [ ] The page follows its brief in every state it names, at each width, zoom, keyboard and reduced
+- [x] The page follows its brief in every state it names, at each width, zoom, keyboard and reduced
   motion, in English and Danish, with screenshots in the PR body.
 
 **Verification:** the gates; the brief's checks; the README's recovery steps still match.

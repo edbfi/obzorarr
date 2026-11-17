@@ -82,5 +82,15 @@
 	"security_sessions_ending": "Signing out…",
 	"security_sessions_ended_one": "Signed out of {{count, number}} other browser.",
 	"security_sessions_ended_other": "Signed out of {{count, number}} other browsers.",
-	"security_recovery_on": "Recovery is on. Remove {{variable}} from the environment and restart Obzorarr."
+	"security_recovery_on": "Recovery is on. Remove {{variable}} from the environment and restart Obzorarr.",
+	"recovery_page_title": "Recover the owner account",
+	"recovery_title": "Recover the owner account",
+	"recovery_intro": "Enter the recovery token printed in the server console, then set a new password. Every session ends.",
+	"recovery_token_label": "Recovery token",
+	"recovery_token_help": "Shown as {{format}}. Restart Obzorarr for a new one.",
+	"recovery_token_refused": "That recovery token isn't valid. Use the one printed in the server console, or restart Obzorarr for a new one.",
+	"recovery_password_label": "New password",
+	"recovery_submit": "Set new password",
+	"recovery_submitting": "Saving…",
+	"recovery_failed": "Obzorarr couldn't set the new password. Restart it for a new recovery token, then try again."
 }

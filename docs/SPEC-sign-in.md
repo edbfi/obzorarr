@@ -285,11 +285,13 @@ D20 fixes the mechanism; here is what the owner does.
 3. **`/recovery`** takes the token and a new password, and follows its brief,
    [`route-recovery.md`](../.impeccable/surfaces/route-recovery.md). The username stays as it is:
    forgetting it doesn't call for a new one, and the shell shows it right after.
-4. **On success,** in this order and as the claim does it (the password rules first, then a hash
-   slot, then the token, used up with no `await` between checking and using it, then the hash), one
-   transaction replaces the hash, ends every session, starts this browser's and records that
-   recovery was used (`two-factor` adds turning itself off). The browser lands on the Security tab,
-   which shows the warning to turn recovery off.
+4. **On success,** in this order and as the claim does it (`setup`'s password rules first, then a
+   hash slot, then the token, used up with no `await` between checking and using it, then the
+   hash), one transaction replaces the hash, ends every session, starts this browser's and records
+   that recovery was used (`two-factor` adds turning itself off). The rule against the stored
+   username alone waits for the token, still before it is used up, so a broken rule leaves the token
+   usable and someone without it can't learn whether a string is the owner's username. The browser
+   lands on the Security tab, which shows the warning to turn recovery off.
 
 **Around it:**
 - **`/recovery` answers "not found"** while recovery is off, once its token has been used, or while
@@ -406,8 +408,8 @@ src/lib/components/credentials/                  the owner's credential fields, 
                                                  TokenField.svelte and token-format.ts, moved
                                                  from routes/setup/
 drizzle/                                         + the owner_session migration
-tests/e2e/sign-in.test.ts                        sign-in, sessions, limits and recovery on the
-                                                 built server
+tests/e2e/sign-in.test.ts                        sign-in, sessions and limits on the built server
+tests/e2e/recovery.test.ts                       recovery on restarted built servers
 tests/e2e/                                       + the fixture with each test's own address, used
                                                  by global-setup.ts, smoke.test.ts and
                                                  i18n.test.ts; setup.test.ts's claim expects
@@ -464,9 +466,9 @@ is already installed for the confirmation and the drawer.
     without the configured header gets "Access denied" while `/healthz` still answers;
   - the password change ends a second browser's session and keeps this one; "Sign out everywhere
     else" does the same and says how many;
-  - with `OBZORARR_RECOVERY=true` on its own server, the token is printed in no log entry or
-    response, `/recovery` sets a new password and signs in, the old password and sessions no longer
-    work, and after a restart with the setting still on no new token is printed;
+  - in `recovery.test.ts`, with `OBZORARR_RECOVERY=true` on its own server, the token is printed
+    in no log entry or response, `/recovery` sets a new password and signs in, the old password and
+    sessions no longer work, and after a restart with the setting still on no new token is printed;
   - a probe path gets a 404 and a scanner agent a 403; an unknown page shows "Page not found"
     without its number; a refusal page `handle` builds shows the tokens' colours; the sign-in page,
     the shell, the Security tab and the error page log no console error and pass the CSP, in

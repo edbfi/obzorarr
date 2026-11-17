@@ -871,10 +871,19 @@ export const GET: RequestHandler = () => healthResponse();
   counts and ends the other live sessions, ending nothing for a caller whose own session ended;
   `config/recovery.test.ts`; `services/sign-in/recovery.test.ts`, the recovery token printed or not
   for each state of the setting, the record of a used token and the claim, that record cleared
-  while the setting is off, and the warnings, the token never in a log entry;
+  while the setting is off, and the warnings, the token never in a log entry; and recovering: the
+  new password set, every session ended, this one started and the record written, `setup`'s rules
+  and a busy hash slot before the token, the rule against the stored username after it, leaving the
+  token usable, a wrong and an expired token
+  with one answer and no hash, the sixth try in 5 minutes refused before the token, not found
+  while off, a sign-in with the old password that ends after it starting no session, and the
+  logs;
   `services/setup/startup.test.ts` also refuses a bad `OBZORARR_RECOVERY` and prints the recovery
   token on a claimed instance and none on an unclaimed one),
-  `src/routes/setup/token-format.test.ts` (the token field's dashes),
+  `src/lib/components/credentials/token-format.test.ts` (the token field's dashes),
+  `src/routes/recovery/page.server.test.ts` (not found unless a token is waiting, before the 403
+  for a browser that stripped `Origin`; the cookie and the landing on the Security tab; each
+  answer without the token or the password; the 429 and its headers; and `no-store`),
   `src/routes/setup/page.server.test.ts` (the claim action's 429 and its headers, its 403 for a
   browser that stripped `Origin` and a claimed instance's 404 before it, `no-store`, and the
   session cookie with the redirect to `/admin`), `src/routes/(admin)/admin/(shell)/` (`/admin`
@@ -985,7 +994,12 @@ export const GET: RequestHandler = () => healthResponse();
     403; and both sections show in English and Danish with no console error or CSP violation.
   - `recovery.test.ts` checks that a claimed server restarted with `OBZORARR_RECOVERY` on prints the
     recovery token to the console, in no log entry or response, and that the Security tab warns;
-    and that an unclaimed one prints none and warns.
+    that an unclaimed one prints none and warns; that `/recovery` is `no-store`, answers a wrong
+    token naming the console, keeping neither field, then sets the new password and lands on the
+    Security tab, after which the old password and the claim's session no longer work and
+    `/recovery` is not found, also after a restart, which prints no token; that a POST with
+    `Origin` stripped gets the 403 and leaves the token usable; and that the page shows in English
+    and Danish with no console error or CSP violation.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

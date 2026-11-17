@@ -2,6 +2,7 @@
 import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
+import MessageWithCode, { CODE } from "#lib/components/i18n/MessageWithCode.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
@@ -36,14 +37,12 @@ const submit: SubmitFunction = () => {
 	};
 };
 
-/** A recovery step with its variable or path set as code, like the console it points to. */
-const CODE = "\u0001";
+/** The recovery steps, each variable or path set as code, like the console they point to. */
 const steps = [
-	m.sign_in_forgot_restart({ variable: CODE }).split(CODE),
-	[m.sign_in_forgot_token()],
-	m.sign_in_forgot_recovery({ path: CODE }).split(CODE),
+	{ message: m.sign_in_forgot_restart({ variable: CODE }), code: "OBZORARR_RECOVERY=true" },
+	{ message: m.sign_in_forgot_token() },
+	{ message: m.sign_in_forgot_recovery({ path: CODE }), code: "/recovery" },
 ];
-const codes = ["OBZORARR_RECOVERY=true", undefined, "/recovery"];
 
 const control = css({
 	minHeight: "controlHeight",
@@ -60,7 +59,6 @@ const control = css({
 	_hover: { borderColor: "muted" },
 });
 const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold" });
-const code = css({ fontFamily: "mono", fontSize: "code", overflowWrap: "anywhere" });
 </script>
 
 <svelte:head>
@@ -181,9 +179,8 @@ const code = css({ fontFamily: "mono", fontSize: "code", overflowWrap: "anywhere
 				"& ::marker": { color: "muted", fontVariantNumeric: "tabular-nums" },
 			})}
 		>
-			{#each steps as parts, index (index)}
-				<!-- biome-ignore format: one line, so no whitespace lands between the code and its punctuation -->
-				<li>{#each parts as part, at (at)}{#if at > 0}<code class={code}>{codes[index]}</code>{/if}{part}{/each}</li>
+			{#each steps as step, index (index)}
+				<li><MessageWithCode {...step} /></li>
 			{/each}
 		</ol>
 	</details>

@@ -294,8 +294,8 @@ in at `/admin/sign-in`, linked from `/`, 10 times per 5 minutes from one address
 shell: a sidebar, a rail or a drawer by width, with the owner, Sign out behind its confirmation,
 the language switcher and the version. The Security tab changes the owner's password, signing
 every other browser out, and has "Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup
-prints a recovery token for the owner and warns, and the Security tab says to turn it off;
-`/recovery`, where the token is used, comes next.
+prints a recovery token for the owner and warns, the owner sets a new password with it at
+`/recovery`, and the Security tab says to turn it off.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
@@ -347,8 +347,10 @@ src/
     healthz/+server.ts           `/healthz`: public one-word status
     setup/                       `/setup`: the claim. +page.svelte: the form (surface brief
                                  `route-setup.md`); +page.server.ts: its load and the claim
-                                 action, "not found" once claimed; token-format.ts: the token
-                                 field's dashes as it is typed
+                                 action, "not found" once claimed
+    recovery/                    `/recovery`: +page.svelte, the form (surface brief
+                                 `route-recovery.md`); +page.server.ts: its load and the recovery
+                                 action, "not found" unless a recovery token is waiting
     (admin)/admin/sign-in/       `/admin/sign-in`: +page.svelte, the form (surface brief
                                  `route-admin-sign-in.md`); +page.server.ts: the sign-in action,
                                  the cookie and the return path
@@ -387,8 +389,9 @@ src/
                                  aggregate with its tables (settings.ts, owner.ts,
                                  owner-session.ts) and, from their first caller, its named
                                  operations: reading, writing and deleting a setting, whether an owner
-                                 exists, reading and creating the owner and replacing its hash,
-                                 storing, finding, renewing, counting and ending sessions;
+                                 exists, reading and creating the owner, replacing and writing
+                                 its hash, storing, finding, renewing, counting and ending
+                                 sessions;
                                  client.ts names the transaction and executor types
       logging/                   logger.ts: one JSON line per entry on standard output, and
                                  flushing it; redact.ts: the rules every entry passes before it
@@ -422,9 +425,12 @@ src/
                                  username, a hash slot, then the session; the typed username is
                                  never logged
       services/sign-in/recovery.ts
-                                 recovery at startup: the token printed while `OBZORARR_RECOVERY`
-                                 is on, the instance claimed and no token used since; the record
-                                 of a used token cleared while it is off; the warnings
+                                 recovery: at startup, the token printed while `OBZORARR_RECOVERY`
+                                 is on, the instance claimed and no token used since, the record
+                                 of a used token cleared while it is off, and the warnings; then
+                                 its limit of 5 per 5 minutes, the claim's order, and one
+                                 transaction for the new hash, every session ended, this one's
+                                 and the record
       services/sign-in/password-checks.ts
                                  what signing in and the password change share: the limit of 10
                                  per 5 minutes, the failed checks and their waits, and the busy
@@ -488,10 +494,16 @@ src/
                                  hidden past the 768px breakpoint
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
-                                 the claim, sign-in and the password change
+                                 the claim, sign-in, the password change and recovery
       credentials/password-messages.ts
-                                 what each password rule says, shared by the claim and the
-                                 password change
+                                 what each password rule says, shared by the claim, the password
+                                 change and recovery
+      credentials/TokenField.svelte
+                                 a console token's field, the claim's and recovery's; with
+                                 token-format.ts, the dashes as it is typed
+      i18n/MessageWithCode.svelte
+                                 a message with code where its placeholder was, such as a
+                                 variable or a path
     shared/                      browser-safe shared code
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
@@ -506,7 +518,8 @@ tests/
   e2e/sign-in.test.ts            signing in on fresh built servers: the session cookie, the
                                  sign-in page, its limit, the hash slots, the owner check, the
                                  admin shell, signing out and the Security tab
-  e2e/recovery.test.ts           recovery's token and warnings on restarted built servers
+  e2e/recovery.test.ts           recovery on restarted built servers: the token and warnings,
+                                 and `/recovery`
   e2e/rate-limits.test.ts        the general limit and the refusal without the address header
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
   e2e/server.ts                  fresh built servers for the tests that need their own, and the

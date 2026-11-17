@@ -126,3 +126,8 @@ export async function deleteExpiredSessions(
 			),
 		);
 }
+
+/** Ends every session, as recovery does. */
+export async function deleteAllSessions(db: Executor): Promise<void> {
+	await db.delete(ownerSession);
+}

@@ -58,3 +58,8 @@ export async function replacePasswordHash(
 		.returning({ id: owner.id });
 	return replaced.length > 0;
 }
+
+/** Sets the owner's password hash, whatever it was: recovery replaces a password nobody knows. */
+export async function writePasswordHash(db: Executor, hash: string): Promise<void> {
+	await db.update(owner).set({ passwordHash: hash });
+}

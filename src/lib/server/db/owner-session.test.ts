@@ -7,6 +7,7 @@ import { migrateDatabase } from "./migrate.ts";
 import { insertOwner } from "./owner.ts";
 import {
 	countOtherSessions,
+	deleteAllSessions,
 	deleteExpiredSessions,
 	deleteOtherSessions,
 	deleteSession,
@@ -118,5 +119,14 @@ describe("countOtherSessions and deleteOtherSessions", () => {
 		const left = await db.select({ tokenHash: ownerSession.tokenHash }).from(ownerSession);
 		expect(left).toEqual([{ tokenHash: "mine" }]);
 		expect(await countOtherSessions(db, "mine", now, 300)).toBe(0);
+	});
+});
+
+describe("deleteAllSessions", () => {
+	it("ends every session", async () => {
+		await insertSessionForPassword(db, row("one"), "hash-1");
+		await insertSessionForPassword(db, row("two"), "hash-1");
+		await deleteAllSessions(db);
+		expect(await db.select().from(ownerSession)).toEqual([]);
 	});
 });

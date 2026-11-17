@@ -69,7 +69,8 @@ filled with a name can't inject markup.
   and Paraglide drops it from the text without a warning: `ORIGIN=<address>` renders as `ORIGIN=`. A
   value to fill in is a placeholder (`ORIGIN={{address}}`).
 - **Markup inside a message,** such as a link in a sentence, is left to the first module that needs
-  it.
+  it. Code inside one, such as a variable or a path, is its placeholder filled with a marker that
+  `MessageWithCode.svelte` replaces with the code, set as code (`sign-in`).
 
 **Not translated through the messages:**
 - the name Obzorarr;

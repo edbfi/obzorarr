@@ -4,7 +4,14 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
 import { migrateDatabase } from "./migrate.ts";
-import { findOwner, insertOwner, owner, ownerExists, replacePasswordHash } from "./owner.ts";
+import {
+	findOwner,
+	insertOwner,
+	owner,
+	ownerExists,
+	replacePasswordHash,
+	writePasswordHash,
+} from "./owner.ts";
 
 let root: string;
 let db: Database;
@@ -77,5 +84,13 @@ describe("replacePasswordHash", () => {
 		expect(await replacePasswordHash(db, "hash", "hash-2")).toBe(true);
 		expect((await findOwner(db))?.passwordHash).toBe("hash-2");
 		await replacePasswordHash(db, "hash-2", "hash");
+	});
+});
+
+describe("writePasswordHash", () => {
+	it("sets the owner's hash whatever it was, as recovery does", async () => {
+		await writePasswordHash(db, "hash-3");
+		expect((await findOwner(db))?.passwordHash).toBe("hash-3");
+		await writePasswordHash(db, "hash");
 	});
 });
