@@ -185,13 +185,22 @@ function decodeName(name: string): string {
  * hidden too, wherever the error came from. A circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
-	return walk(value, new Set(), 0);
+	return walk(value, { path: new Set(), left: MAX_VALUES }, 0);
 }
+
+/** One redaction's state: the objects on the way down to this one, and how much more it may walk. */
+type Walk = { readonly path: Set<object>; left: number };
 
 /** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
 const UNREADABLE = "[unreadable]";
 /** How deep a value is walked; deeper, such as a runaway chain of causes, is left out. */
 const MAX_DEPTH = 32;
+/**
+ * How many objects and array elements one entry may walk. A shared object is walked once for every
+ * path to it, so a few nested ones can stand for millions; past this, a value is left out.
+ */
+const MAX_VALUES = 10_000;
+const TOO_LARGE = "[too large]";
 
 /** The value `get` reads, or the unreadable marker when reading it throws. */
 function read(get: () => unknown): unknown {
@@ -204,9 +213,10 @@ function read(get: () => unknown): unknown {
 
 /**
  * One value, redacted. It never throws: an object that can't be read becomes the unreadable
- * marker, and one nested deeper than MAX_DEPTH a marker too, so a log entry is always written.
+ * marker, and one nested deeper than MAX_DEPTH, or past the entry's MAX_VALUES, a marker too, so a
+ * log entry is always written, and quickly.
  */
-function walk(value: unknown, path: Set<object>, depth: number): unknown {
+function walk(value: unknown, state: Walk, depth: number): unknown {
 	if (typeof value === "string") return cleanText(value);
 	if (typeof value === "bigint") return value.toString();
 	if (typeof value === "function" || typeof value === "symbol") {
@@ -215,26 +225,20 @@ function walk(value: unknown, path: Set<object>, depth: number): unknown {
 		return typeof text === "string" ? cleanText(text) : UNREADABLE;
 	}
 	if (value === null || typeof value !== "object") return value;
+	const { path } = state;
 	if (path.has(value)) return "[circular]";
 	if (depth >= MAX_DEPTH) return "[too deep]";
+	if (state.left <= 0) return TOO_LARGE;
+	state.left--;
 	path.add(value);
 	try {
-		if (value instanceof Error) return walkError(value, path, depth);
-		if (value instanceof Headers) return walkEntries([...value.entries()], path, depth);
+		if (value instanceof Error) return walkError(value, state, depth);
+		if (value instanceof Headers) return walkEntries([...value.entries()], state, depth);
 		if ("toJSON" in value && typeof value.toJSON === "function") {
-			return walk(value.toJSON(), path, depth + 1);
+			return walk(value.toJSON(), state, depth + 1);
 		}
-		if (Array.isArray(value)) {
-			// Each element read on its own, so one whose getter throws loses only itself.
-			return Array.from({ length: value.length }, (_, index) =>
-				walk(
-					read(() => value[index]),
-					path,
-					depth + 1,
-				),
-			);
-		}
-		return walkFields(value, Object.keys(value), path, depth);
+		if (Array.isArray(value)) return walkItems(value, state, depth);
+		return walkFields(value, Object.keys(value), state, depth);
 	} catch {
 		return UNREADABLE;
 	} finally {
@@ -242,13 +246,36 @@ function walk(value: unknown, path: Set<object>, depth: number): unknown {
 	}
 }
 
+/**
+ * An array's elements, each read on its own, so one whose getter throws loses only itself, and
+ * each counted against the entry's budget, so a huge or sparse array ends with a marker.
+ */
+function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
+	const walked: unknown[] = [];
+	for (let index = 0; index < items.length; index++) {
+		if (state.left <= 0) {
+			walked.push(TOO_LARGE);
+			break;
+		}
+		state.left--;
+		walked.push(
+			walk(
+				read(() => items[index]),
+				state,
+				depth + 1,
+			),
+		);
+	}
+	return walked;
+}
+
 function walkEntries(
 	entries: [string, unknown][],
-	path: Set<object>,
+	state: Walk,
 	depth: number,
 ): Record<string, unknown> {
 	return Object.fromEntries(
-		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, path, depth + 1)]),
+		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, state, depth + 1)]),
 	);
 }
 
@@ -259,7 +286,7 @@ function walkEntries(
 function walkFields(
 	value: object,
 	keys: string[],
-	path: Set<object>,
+	state: Walk,
 	depth: number,
 ): Record<string, unknown> {
 	return Object.fromEntries(
@@ -269,7 +296,7 @@ function walkFields(
 				? REDACTED
 				: walk(
 						read(() => (value as Record<string, unknown>)[key]),
-						path,
+						state,
 						depth + 1,
 					),
 		]),
@@ -281,7 +308,7 @@ function walkFields(
  * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value and
  * each read on its own, so a hostile getter loses only its own part.
  */
-function walkError(error: Error, path: Set<object>, depth: number): Record<string, unknown> {
+function walkError(error: Error, state: Walk, depth: number): Record<string, unknown> {
 	// A failed query's values can be a password's hash or a username: only its text is kept. An
 	// own `cause` (Drizzle's errors assign one), or an `AggregateError`'s own `errors`, is walked
 	// once, below, not twice: twice at every level of a chain grows without bound.
@@ -298,10 +325,10 @@ function walkError(error: Error, path: Set<object>, depth: number): Record<strin
 		name: read(() => cleanText(String(error.name))),
 		message: read(() => cleanText(String(error.message))),
 		stack: read(() => (error.stack === undefined ? undefined : cleanStack(error))),
-		...walkFields(error, keys, path, depth),
+		...walkFields(error, keys, state, depth),
 		...(hidesParams ? { params: REDACTED } : {}),
-		...(cause === undefined ? {} : { cause: walk(cause, path, depth + 1) }),
-		...(errors === undefined ? {} : { errors: walk(errors, path, depth + 1) }),
+		...(cause === undefined ? {} : { cause: walk(cause, state, depth + 1) }),
+		...(errors === undefined ? {} : { errors: walk(errors, state, depth + 1) }),
 	};
 }
 
@@ -316,8 +343,9 @@ const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
  */
 function cleanStack(error: Error): string {
 	const stack = error.stack ?? "";
-	const header = `${error.name}: ${error.message}`;
+	// `String()`, since a template throws on a symbol name, which would lose the whole stack.
+	const header = `${String(error.name)}: ${error.message}`;
 	const frames = stack.slice(header.length);
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
-	return `${cleanText(error.name)}: ${cleanText(error.message)}${cleanText(frames)}`;
+	return `${cleanText(String(error.name))}: ${cleanText(error.message)}${cleanText(frames)}`;
 }

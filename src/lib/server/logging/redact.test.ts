@@ -546,3 +546,49 @@ describe("a value that can't be read, more ways", () => {
 		expect(performance.now() - started).toBeLessThan(1000);
 	});
 });
+
+describe("a value too large to walk", () => {
+	it("stops a shared object reached by many paths, quickly and with a marker", () => {
+		let shared: object = { leaf: true };
+		for (let i = 0; i < 30; i++) shared = { left: shared, right: shared };
+		const started = performance.now();
+		const text = JSON.stringify(redact(shared));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text).toContain("[too large]");
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("walks a huge sparse array without allocating its length", () => {
+		const sparse: unknown[] = [];
+		sparse.length = 2 ** 32 - 1;
+		sparse[0] = "first";
+		const started = performance.now();
+		const walked = redact(sparse) as unknown[];
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(walked[0]).toBe("first");
+		expect(walked.at(-1)).toBe("[too large]");
+	});
+
+	it("keeps small values whole", () => {
+		const value = { list: Array.from({ length: 100 }, (_, index) => ({ index })) };
+		expect(redact(value)).toEqual(value);
+	});
+});
+
+describe("an error's name", () => {
+	it("is cleaned when it comes from the error's class", () => {
+		class Bad extends Error {}
+		Object.defineProperty(Bad.prototype, "name", { value: "Bad https://u:hunter2@host" });
+		expect(JSON.stringify(redact(new Bad("boom")))).not.toContain("hunter2");
+	});
+
+	it("is logged when it is a symbol, whose stack Bun itself can't build", () => {
+		const error = new Error("boom");
+		Object.defineProperty(error, "name", { value: Symbol("odd") });
+		expect(redact(error)).toMatchObject({
+			name: "Symbol(odd)",
+			message: "boom",
+			stack: "[unreadable]",
+		});
+	});
+});
