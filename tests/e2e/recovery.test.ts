@@ -153,7 +153,13 @@ test("/recovery sets a new password and lands on the Security tab; the old passw
 		await expect(page.locator("#token-error")).toContainText("server console");
 		await expect(page.locator("#token")).toHaveValue("");
 		await expect(page.locator("#password")).toHaveValue("");
-		await expect(page.locator("#token")).toBeFocused();
+		// The error summary takes focus and links to the token; the field keeps its description.
+		const summary = page.getByRole("region", { name: "There is a problem" });
+		await expect(summary).toBeFocused();
+		await expect(summary.getByRole("link")).toHaveText([/server console/]);
+		await expect(page.locator("#token")).toHaveAttribute("aria-invalid", "true");
+		await expect(page.locator("#token")).toHaveAccessibleDescription(/server console/);
+		await expect(page).toHaveTitle(/^Error: /);
 
 		await page.locator("#token").fill(token.toUpperCase());
 		await page.locator("#password").fill(NEW_PASSWORD);
@@ -210,6 +216,31 @@ test("a recovery POST with Origin stripped gets the 403 that says so, leaving th
 		);
 		expect((await fetch(`${server.url}/recovery`)).status).toBe(200);
 	} finally {
+		await server.stop();
+	}
+});
+
+test("without JavaScript, a refused token titles the page and links the summary to the token, focusing nothing", async ({
+	browser,
+}) => {
+	const { server } = await recovering();
+	const context = await browser.newContext({ javaScriptEnabled: false });
+	try {
+		const page = await context.newPage();
+		await page.goto(`${server.url}/recovery`);
+		await expect(page).toHaveTitle("Recover the owner account");
+		await expect(page.locator("[autofocus]")).toHaveCount(0);
+		await page.locator("#token").fill("aaaa-bbbb-cccc");
+		await page.locator("#password").fill(NEW_PASSWORD);
+		await page.getByRole("button", { name: "Set new password" }).click();
+		await expect(page).toHaveTitle("Error: Recover the owner account");
+		const summary = page.getByRole("region", { name: "There is a problem" });
+		await expect(summary.getByRole("link")).toHaveText([/server console/]);
+		await expect(summary.getByRole("link")).toHaveAttribute("href", "#token");
+		await expect(page.locator("[autofocus]")).toHaveCount(0);
+		expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+	} finally {
+		await context.close();
 		await server.stop();
 	}
 });

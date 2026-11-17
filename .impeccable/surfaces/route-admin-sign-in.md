@@ -25,8 +25,9 @@ Heading 'Sign in to Obzorarr'. Fields: 'Username', 'Password' (with the claim's 
 
 ## Acceptance criteria
 
-- A wrong username or password gets one message, 'Username or password is wrong.', in an assertive live region, never saying which; the username is kept and the password cleared.
-- Too many attempts: 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.', beside the button, which stays usable once the wait is over.
+- After a failed submit the title starts with 'Error: ', and the error summary (D29) is first in the form, with 'There is a problem' and the reason as text, marking no field. With JavaScript, focus moves to the summary after each failure; without it, nothing is focused.
+- A wrong username or password gets one message, 'Username or password is wrong.', in the summary, never saying which; the username is kept and the password cleared.
+- Too many attempts: 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.', in the summary; the button stays usable once the wait is over.
 - A browser that stripped its address gets the 'Access denied' page that names `ORIGIN` (the spec's wording).
 - The password field is a real password field with `autocomplete="current-password"`; the username has `autocomplete="username"`, so password managers fill both.
 - Later modules add below the form: `oidc-sign-in` its button, `public-address` its address hint. Leave room without placeholders for them.

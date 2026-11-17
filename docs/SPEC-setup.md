@@ -215,7 +215,8 @@ address. A new one is printed every 15 minutes until the claim, and none after i
 then hashes the password, then creates the owner and moves the step pointer in one transaction,
 which (`sign-in`) also starts the owner's first session. The cheap checks come first so a wrong
 guess never costs a hash, and a field error leaves the token unused. The claim stores no address,
-and nothing but the owner row, the pointer and that session. After it, the claim no longer exists:
+and nothing but the owner row, the pointer and that session. A failed claim answers with the error
+summary (`sign-in`'s "Errors and error pages", D29). After it, the claim no longer exists:
 `/setup` answers "not found" once first run is complete (D20), and the claim action answers it
 whenever the instance is claimed.
 

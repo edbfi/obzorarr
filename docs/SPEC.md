@@ -941,11 +941,12 @@ export const GET: RequestHandler = () => healthResponse();
     claim from one address within 5 minutes gets the form's 429 with `Retry-After`; a claim with
     `Origin` stripped gets the 403 that says so, in Danish too and as JSON to an enhanced form, and
     leaves the token usable, and `/setup` is `no-store`; while a claim is being sent, the button
-    says "Claiming…" and can't be pressed, and the fields keep what was typed; each refusal puts a
-    new alert in the page; and the claim
-    refuses a wrong token, keeping the username and clearing the token and password, claims with the
-    right one, and answers 404 at `/setup` afterwards, also after a restart, which serves `/`
-    without a redirect, with neither the token nor the password in any log entry or response.
+    says "Claiming…" and can't be pressed, and the fields keep what was typed; each refusal, an
+    identical one too, moves focus to the error summary, marking no field for a page-level one; and
+    the claim refuses a wrong token, keeping the username and clearing the token and password,
+    claims with the right one, and answers 404 at `/setup` afterwards, also after a restart, which
+    serves `/` without a redirect, with neither the token nor the password in any log entry or
+    response.
   - `i18n.test.ts` checks that a Danish browser gets `/` in Danish with `<html lang="da">` and
     `Vary: Cookie, Accept-Language`; that pressing "English" in the switcher reloads `/` in English,
     writes `PARAGLIDE_LOCALE=en` with `SameSite=Lax` and without `Secure` over plain HTTP, and keeps
@@ -963,49 +964,57 @@ export const GET: RequestHandler = () => healthResponse();
     Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only,
     about 30 days long and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't
     loopback, and that a cookie naming no session is cleared, also without `Secure`. On
-    `/admin/sign-in`, a wrong password gets one message, keeping the username and putting the cursor
-    back in the emptied password field, and a second gets a new alert, so it is announced again; a
-    busy answer keeps the password; the right one signs in, with the username in any case and
-    spaces, and returns to `next` without its query string; an unsafe `next` goes to the admin, and
-    without JavaScript a `next` with characters outside ASCII is percent-encoded and one with dot
-    segments that resolve to two leading slashes goes to the admin; while signing in, the button
-    says so and the username keeps what was typed; a POST with `Origin` stripped gets the 403 that
-    says so; of 20 sign-ins at once, every answer is a wrong password or the form's 429 with
-    `Retry-After: 5`, with some of each, each from an address of its own; after 10 successful
-    sign-ins from one address, the 11th within 5 minutes shows the too-many-attempts message beside
-    the button, with `Retry-After`, keeping the password; and the page and its recovery steps show
-    in English and Danish with no console error or CSP violation. Without a session, an admin page
-    gets a `no-store` 303 to sign in with `next`, its `__data.json` gets SvelteKit's JSON redirect,
-    and the browser signs in and comes back; an owner-only POST gets "Your session ended" as a page
-    with a link to sign in, as SvelteKit's action error and as JSON; signed in, `/admin` and
-    `/admin/settings` answer their 307 and the Security tab is `no-store`, and the sign-in page
-    sends the owner to `/admin`; the check's own answers (its redirect, the data request's JSON
-    redirect and its refusal) keep the security headers and clear a stale session cookie, while
-    signing in over one keeps the new session; and `/` links to sign in. In the admin shell, a GET
-    to `/admin/sign-out` signs nobody out; Sign out asks first, closes on Escape giving focus back,
-    and makes the page and the sidebar inert while open, then ends the session and lands on sign-in;
-    a sign-out POST without a session only clears the cookie, and one with `Origin` stripped gets
-    the 403; below 768px the menu's drawer traps focus, makes the page inert and closes on Escape,
-    and the confirmation opened from it makes it inert too, and cancelling it gives focus back to
-    the drawer's Sign out; the drawer closes when the window widens past 768px, with focus moving
-    into the sidebar, and a confirmation cancelled after narrowing below 768px gives focus to Menu;
-    the rail keeps every control's name; without JavaScript, the sidebar shows above the page on a
-    phone and beside it from 768px, and Sign out still signs out; and the shell shows its heading,
-    the owner, Sign out and the version in English and Danish with no console error or CSP
-    violation. On the Security tab, the password change ends a second browser's session, keeps
-    this one with focus on the section's heading, and lets only the new password sign in; "Sign out
-    everywhere else" ends two and says so, with no button when there are none; the enhanced form,
-    after its session ended elsewhere, shows "Access denied" with "Your session ended"; a wrong
-    current password is announced and its field focused; a change with `Origin` stripped gets the
-    403; and both sections show in English and Danish with no console error or CSP violation.
+    `/admin/sign-in`, a wrong password gets one message in the error summary, marking no field,
+    titling the page "Error: Sign in", keeping the username and emptying the password, with focus on
+    the summary, again after a second; a busy answer keeps the password; the right one signs in,
+    with the username in any case and spaces, and returns to `next` without its query string; an
+    unsafe `next` goes to the admin, and without JavaScript a `next` with characters outside ASCII
+    is percent-encoded and one with dot segments that resolve to two leading slashes goes to the
+    admin; while signing in, the button says so and the username keeps what was typed; a POST with
+    `Origin` stripped gets the 403 that says so; of 20 sign-ins at once, every answer is a wrong
+    password or the form's 429 with `Retry-After: 5`, with some of each, each from an address of its
+    own; after 10 successful sign-ins from one address, the 11th within 5 minutes shows the
+    too-many-attempts message in the error summary, with `Retry-After`, keeping the password; and
+    the page and its recovery steps show in English and Danish with no console error or CSP
+    violation. Without a session, an admin page gets a `no-store` 303 to sign in with `next`, its
+    `__data.json` gets SvelteKit's JSON redirect, and the browser signs in and comes back; an
+    owner-only POST gets "Your session ended" as a page with a link to sign in, as SvelteKit's
+    action error and as JSON; signed in, `/admin` and `/admin/settings` answer their 307 and the
+    Security tab is `no-store`, and the sign-in page sends the owner to `/admin`; the check's own
+    answers (its redirect, the data request's JSON redirect and its refusal) keep the security
+    headers and clear a stale session cookie, while signing in over one keeps the new session; and
+    `/` links to sign in. In the admin shell, a GET to `/admin/sign-out` signs nobody out; Sign out
+    asks first, closes on Escape giving focus back, and makes the page and the sidebar inert while
+    open, then ends the session and lands on sign-in; a sign-out POST without a session only clears
+    the cookie, and one with `Origin` stripped gets the 403; below 768px the menu's drawer traps
+    focus, makes the page inert and closes on Escape, and the confirmation opened from it makes it
+    inert too, and cancelling it gives focus back to the drawer's Sign out; the drawer closes when
+    the window widens past 768px, with focus moving into the sidebar, and a confirmation cancelled
+    after narrowing below 768px gives focus to Menu; the rail keeps every control's name; without
+    JavaScript, the sidebar shows above the page on a phone and beside it from 768px, and Sign out
+    still signs out; and the shell shows its heading, the owner, Sign out and the version in English
+    and Danish with no console error or CSP violation. On the Security tab, the password change ends
+    a second browser's session, keeps this one with focus on the section's heading, and lets only
+    the new password sign in; "Sign out everywhere else" ends two and says so, with no button when
+    there are none; the enhanced form, after its session ended elsewhere, shows "Access denied" with
+    "Your session ended"; a wrong current password is announced and its field focused; a change with
+    `Origin` stripped gets the 403; and both sections show in English and Danish with no console
+    error or CSP violation.
   - `recovery.test.ts` checks that a claimed server restarted with `OBZORARR_RECOVERY` on prints the
     recovery token to the console, in no log entry or response, and that the Security tab warns;
     that an unclaimed one prints none and warns; that `/recovery` is `no-store`, answers a wrong
-    token naming the console, keeping neither field, then sets the new password and lands on the
+    token naming the console, keeping neither field and focusing the summary, whose link names the
+    token, without JavaScript too, focusing nothing, then sets the new password and lands on the
     Security tab, after which the old password and the claim's session no longer work and
     `/recovery` is not found, also after a restart, which prints no token; that a POST with
     `Origin` stripped gets the 403 and leaves the token usable; and that the page shows in English
     and Danish with no console error or CSP violation.
+  - `error-summary.test.ts` checks the failed submits (D29): without JavaScript, a first visit has
+    no summary and nothing focused, and a refusal titles the page "Error: …" and lists the problems,
+    a field's as a link that Tab and Enter follow into the field; with JavaScript, the summary takes
+    focus after a failure and an identical repeat, a link puts focus in its field, a server failure
+    marks no field, and it fits in Danish at 360px and at 200% zoom; and a submit before a late
+    script loads posts natively, and hydration then takes no focus.
   - `errors.test.ts` checks that an unknown page is "Page not found" in English and Danish,
     without its number, styled and hydrated, with Go back and Home; that Go back returns to the
     page before; and that a cross-site POST's "Access denied" page shows the tokens' colours. None

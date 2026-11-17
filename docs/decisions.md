@@ -454,6 +454,37 @@ at these rates; a reused password falls to one or two tries, which no lockout st
 `two-factor` does. Keeping no browser details stores nothing personal for a list one person with a
 few sessions hardly needs. A council of three models agreed on all three.
 
+### D29. A failed submit answers with an error summary, not field focus
+
+A failed submit follows the GOV.UK error-summary pattern (WCAG techniques G139 and G83), on the
+pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`) and every later form:
+- **The title** starts with "Error: ", through one message for the whole template
+  (`error_page_title`, "Error: {{title}}", Danish "Fejl: {{title}}"), so the word order can be
+  translated.
+- **The summary,** `components/forms/ErrorSummary.svelte`, is the first thing in the form: the
+  heading "There is a problem", then the problems in field order. A field's problem links to its
+  field (`#token`); a page-level one (wrong credentials, busy, too many attempts, a server failure)
+  is text, without a link, and marks no field invalid. Nothing failed, nothing rendered. Its links
+  are `danger`, not `secondary`, as the pattern's are.
+- **Field messages** stay beside their fields, with `aria-invalid` and `aria-describedby`.
+  Page-level messages are only in the summary, with no `role="alert"`.
+- **With JavaScript,** the enhance callback applies the answer (`reset: false` and each page's rules
+  for clearing credentials), waits a tick, then focuses the summary (`tabindex="-1"`), after every
+  failure, an identical repeat too. Nothing takes focus on mount or hydration, so a late script
+  never moves it.
+- **Without JavaScript,** nothing is focused: no `autofocus` anywhere and no lint exception for it.
+- **Not used:** `action="#…"` fragment tricks, native validation (forms keep `novalidate`) and form
+  libraries.
+
+The same in every edbfi app, with obzorarr's component, tests and wording the reference.
+
+Why: focusing the first invalid field skipped the page's heading and the reason it failed, and a
+page-level failure has no field to focus. Without JavaScript, `autofocus` was the only way to move
+focus, and it does the same skipping on every load. An alert already in the page when it loads isn't
+read out, so `role="alert"` did nothing for the no-JavaScript reload. One summary, focused only by
+the enhanced form and found by the "Error: " title and the Tab key otherwise, says every problem
+once, in order, in both cases. The owner approved it on 2026-11-17, after a council review.
+
 ## Open
 
 ### D13. Producing the OpenAPI document

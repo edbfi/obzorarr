@@ -68,6 +68,8 @@ function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
 		class={css({
 			minHeight: "controlHeight",
 			paddingInline: "md",
+			// An error summary's link scrolls here: the label above stays in view (D29).
+			scrollMarginBlockStart: "xxl",
 			bg: "surface",
 			color: "text",
 			caretColor: "primary",

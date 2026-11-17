@@ -179,17 +179,21 @@ test.describe("owner sign-in", () => {
 			await expect(page.locator("#password")).toHaveAttribute("type", "password");
 
 			await signIn(page, "owner", "not the right password");
-			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
+			// The error summary says so, names no field, and takes focus (D29).
+			const summary = page.getByRole("region", { name: "There is a problem" });
+			await expect(summary.getByRole("listitem")).toHaveText(["Username or password is wrong."]);
+			await expect(summary.getByRole("link")).toHaveCount(0);
+			await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+			await expect(page).toHaveTitle("Error: Sign in");
 			await expect(page.locator("#username")).toHaveValue("owner");
 			await expect(page.locator("#password")).toHaveValue("");
-			await expect(page.locator("#password")).toBeFocused();
+			await expect(summary).toBeFocused();
 
-			// A second refusal puts a new alert in the page, so a screen reader announces it again.
-			await page.getByRole("alert").evaluate((alert) => alert.setAttribute("data-seen", ""));
+			// A second, identical refusal moves focus to the summary again, so it is read again.
 			await page.locator("#password").fill("still not the right password");
 			await page.getByRole("button", { name: "Sign in", exact: true }).click();
-			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
-			await expect(page.locator("[role=alert][data-seen]")).toHaveCount(0);
+			await expect(summary).toBeFocused();
+			await expect(summary.getByRole("listitem")).toHaveText(["Username or password is wrong."]);
 
 			// The username's case and the spaces around it don't matter; the query string is dropped.
 			await signIn(page, "  OWNER ", PASSWORD);
@@ -225,7 +229,9 @@ test.describe("owner sign-in", () => {
 			await expect(button).toBeDisabled();
 			await expect(page.locator("#username")).toHaveValue("owner");
 			answer();
-			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
+			await expect(page.getByRole("region", { name: "There is a problem" })).toContainText(
+				"Username or password is wrong.",
+			);
 		} finally {
 			await server.stop();
 		}
@@ -257,9 +263,12 @@ test.describe("owner sign-in", () => {
 			await page.goto(`${server.url}/admin/sign-in`);
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 			await signIn(page, "owner", PASSWORD);
-			await expect(page.getByRole("alert")).toHaveText(
+			const summary = page.getByRole("region", { name: "There is a problem" });
+			await expect(summary.getByRole("listitem")).toHaveText([
 				"Obzorarr is busy checking other passwords. Try again in a few seconds.",
-			);
+			]);
+			await expect(summary).toBeFocused();
+			await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
 			await expect(page.locator("#password")).toHaveValue(PASSWORD);
 		} finally {
 			await server.stop();
@@ -404,9 +413,12 @@ test.describe("owner sign-in", () => {
 			expect(refused.status()).toBe(429);
 			expect(Number(refused.headers()["retry-after"])).toBeGreaterThan(0);
 			expect(refused.headers()["x-ratelimit-limit"]).toBe("10");
-			await expect(page.getByRole("alert")).toHaveText(
+			const summary = page.getByRole("region", { name: "There is a problem" });
+			await expect(summary.getByRole("listitem")).toHaveText([
 				"Too many attempts. Try again in 5 minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.",
-			);
+			]);
+			await expect(summary).toBeFocused();
+			await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
 			// Nothing was checked, so the password stays, and the button can be pressed again.
 			await expect(page.locator("#password")).toHaveValue(PASSWORD);
 			await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();

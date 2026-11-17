@@ -3,6 +3,7 @@ import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
 import TokenField from "#lib/components/credentials/TokenField.svelte";
+import ErrorSummary, { type Problem } from "#lib/components/forms/ErrorSummary.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { APP_NAME } from "#lib/shared/app-name.ts";
@@ -24,6 +25,7 @@ let showPassword = $state(false);
 let edited = $state({ token: false, username: false, password: false });
 let tokenInput = $state<HTMLInputElement>();
 let passwordInput = $state<HTMLInputElement>();
+let summary = $state<ErrorSummary>();
 
 const usernameMessages = {
 	empty: () => m.setup_username_empty(),
@@ -43,6 +45,19 @@ const passwordError = $derived(
 // The too-short answer already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
+/** The summary's problems: the fields' in their order, then the page's (D29). */
+const problems = $derived<Problem[]>([
+	...(tokenError ? [{ message: tokenError, href: "#token" }] : []),
+	...(usernameError ? [{ message: usernameError, href: "#username" }] : []),
+	...(passwordError ? [{ message: passwordError, href: "#password" }] : []),
+	...(form?.failed ? [{ message: m.setup_failed({ name: APP_NAME }) }] : []),
+	...(form?.busy ? [{ message: m.error_server_busy({ name: APP_NAME }) }] : []),
+	...(form?.retryAfterSeconds
+		? [{ message: m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) }) }]
+		: []),
+]);
+const title = $derived(m.setup_page_title({ name: APP_NAME }));
+
 /** Each field's description: its error, when it has one, then its helper. */
 const describedBy = (id: string, error: string | undefined, help: boolean) =>
 	[error ? `${id}-error` : undefined, help ? `${id}-help` : undefined].filter(Boolean).join(" ") ||
@@ -50,7 +65,7 @@ const describedBy = (id: string, error: string | undefined, help: boolean) =>
 
 /**
  * While the claim runs, the button says so and can't be pressed again. A failed claim keeps the
- * username, clears the password, and moves focus to the first field to fix. It clears the token
+ * username, clears the password, and moves focus to the error summary (D29). It clears the token
  * too, unless the claim was only held back (too many attempts, or the server busy), which leaves
  * the token unused and worth keeping.
  */
@@ -71,9 +86,7 @@ const submit: SubmitFunction = () => {
 		if (tokenInput && !heldBack) tokenInput.value = "";
 		if (passwordInput) passwordInput.value = "";
 		await tick();
-		// The first field to fix; otherwise the token: the message asks for it after a server failure,
-		// and a held-back claim kept it.
-		(document.querySelector<HTMLElement>("[aria-invalid='true']") ?? tokenInput)?.focus();
+		if (result.type === "failure") summary?.focus();
 	};
 };
 
@@ -84,6 +97,8 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 const control = css({
 	minHeight: "controlHeight",
 	paddingInline: "md",
+	// An error summary's link scrolls here: the label above stays in view (D29).
+	scrollMarginBlockStart: "xxl",
 	bg: "surface",
 	color: "text",
 	caretColor: "primary",
@@ -99,7 +114,7 @@ const control = css({
 </script>
 
 <svelte:head>
-	<title>{m.setup_page_title({ name: APP_NAME })}</title>
+	<title>{problems.length > 0 ? m.error_page_title({ title }) : title}</title>
 </svelte:head>
 
 <PanelPage>
@@ -119,6 +134,8 @@ const control = css({
 			marginBlockStart: "xl",
 		})}
 	>
+		<ErrorSummary bind:this={summary} {problems} />
+
 		<TokenField
 			bind:input={tokenInput}
 			id="token"
@@ -161,18 +178,6 @@ const control = css({
 			help={passwordHelp ? m.setup_password_help({ count: PASSWORD_MIN_LENGTH }) : undefined}
 			oninput={() => (edited.password = true)}
 		/>
-
-		{#if form?.failed}
-			<p class={error} role="alert">{m.setup_failed({ name: APP_NAME })}</p>
-		{/if}
-		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
-		{/if}
-		{#if form?.retryAfterSeconds}
-			<p class={error} role="alert">
-				{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
-			</p>
-		{/if}
 
 		<button
 			type="submit"
