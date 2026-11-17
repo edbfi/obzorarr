@@ -76,6 +76,12 @@ outstanding.
 
 D5, D6 and D15 hold the engine, the access rules and the validated versions.
 
+**Migrations only go forward.** Before applying anything, startup reads the migrations the
+database has recorded; one this build doesn't bundle stops startup with "The database was migrated
+by a newer Obzorarr: run that version again, or restore the backup taken with this one"
+(`NewerDatabaseError`), naming neither the path nor the migration. An older build would otherwise
+run on a schema it doesn't know.
+
 **Tables:**
 - **`settings`:** one value per key. `setup` stores first run's step pointer here; later modules
   add their own keys.

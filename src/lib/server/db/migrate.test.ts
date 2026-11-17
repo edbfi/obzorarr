@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { migrate as migrateFromFolder } from "drizzle-orm/tursodatabase/migrator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
-import { migrateDatabase, migrations } from "./migrate.ts";
+import { migrateDatabase, migrations, NewerDatabaseError } from "./migrate.ts";
 
 const FOLDER = join(import.meta.dirname, "../../../../drizzle");
 
@@ -40,6 +40,22 @@ const tables = async (db: Database) =>
 			await db.$client.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
 		).all()) as { name: string }[]
 	).map((row) => row.name);
+
+/** Two migrations of a later build, named as Drizzle Kit names its folders. */
+const FIRST = { "20260101000000_first": "CREATE TABLE `first` (`id` integer PRIMARY KEY);" };
+const BOTH = {
+	...FIRST,
+	"20260102000000_second": "CREATE TABLE `second` (`id` integer PRIMARY KEY);",
+};
+
+/** Records a migration this build doesn't bundle, as a newer build's migrator would. */
+async function recordUnknown(db: Database): Promise<void> {
+	await (
+		await db.$client.prepare(
+			"INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES ('', 1767484800000, '20260104000000_from_a_newer_build', '2026-01-04T00:00:00.000Z')",
+		)
+	).run();
+}
 
 describe("the bundled migrations", () => {
 	it("hold every reviewed migration in drizzle/, keyed by its folder", async () => {
@@ -92,5 +108,56 @@ describe("migrateDatabase", () => {
 			),
 		);
 		expect(await tables(bundled)).toEqual(await tables(fromFolder));
+	});
+
+	it("applies a pending migration to a database at an earlier set", async () => {
+		const db = await newDatabase("pending.db");
+		await migrateDatabase(db, FIRST);
+		await migrateDatabase(db, BOTH);
+		expect(await tables(db)).toEqual(expect.arrayContaining(["first", "second"]));
+		expect((await recorded(db)).map((row) => row.name)).toEqual(Object.keys(BOTH));
+	});
+
+	// SPEC-setup.md, "Migrations": they only go forward, so an older build never runs on a schema
+	// a newer one wrote.
+	it("refuses a database a newer build migrated, before applying anything", async () => {
+		const db = await newDatabase("newer.db");
+		await migrateDatabase(db, FIRST);
+		await recordUnknown(db);
+		const before = await recorded(db);
+
+		const refusal = migrateDatabase(db, BOTH);
+		await expect(refusal).rejects.toBeInstanceOf(NewerDatabaseError);
+		await expect(refusal).rejects.toThrow(
+			"The database was migrated by a newer Obzorarr: run that version again, or restore the backup taken with this one",
+		);
+
+		expect(await tables(db)).not.toContain("second");
+		expect(await recorded(db)).toEqual(before);
+	});
+
+	it("refuses a recorded migration with no name, which this build can't match", async () => {
+		const db = await newDatabase("nameless.db");
+		await migrateDatabase(db, FIRST);
+		await (
+			await db.$client.prepare(
+				"INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES ('', 1767484800000, NULL, NULL)",
+			)
+		).run();
+		await expect(migrateDatabase(db, BOTH)).rejects.toBeInstanceOf(NewerDatabaseError);
+		expect(await tables(db)).not.toContain("second");
+	});
+
+	it("names neither the path nor the unknown migration when it refuses", async () => {
+		const db = await newDatabase("newer-quiet.db");
+		await migrateDatabase(db, FIRST);
+		await recordUnknown(db);
+		const error = await migrateDatabase(db, FIRST).then(
+			() => undefined,
+			(error: unknown) => error,
+		);
+		expect(error).toBeInstanceOf(NewerDatabaseError);
+		expect(String(error)).not.toContain(root);
+		expect(String(error)).not.toContain("from_a_newer_build");
 	});
 });
