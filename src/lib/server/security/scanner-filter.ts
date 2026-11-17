@@ -36,7 +36,7 @@ const SCANNER_AGENTS = [
 
 /**
  * A path segment as a server would read it: percent-decoded once, keeping the raw text when its
- * escapes don't decode; split again where a decoded `/` or `\\` stands, as some servers do; each
+ * escapes don't decode; split again where a decoded `/` or `\` stands, as some servers do; each
  * piece cut at a `;` parameter or a NUL, without trailing dots or spaces, in lower case.
  */
 function segmentsAsRead(raw: string): string[] {
