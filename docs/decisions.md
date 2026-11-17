@@ -153,8 +153,9 @@ validation in `setup`, on Linux arm64 and x64 with no `node`, `npm` or `npx` on 
   its own bundle (Vite imports each `migration.sql` as text) through Drizzle's record migrator for
   Turso, `drizzle-orm/tursodatabase/wasm-migrator`, and a second start applies nothing. It records
   each migration's folder name and time as Drizzle Kit's file migrator does, but leaves the `hash`
-  empty; Drizzle reads the hash only to upgrade a migrations table from before 1.0, which no
-  obzorarr database has. `db/migrate.test.ts` compares the two on every run.
+  empty; Drizzle reads the hash only to upgrade a migrations table from before 1.0, which only an
+  obzorarr 0.1.x database has, and startup refuses one before the migrator runs (SPEC-setup.md,
+  "The database"). `db/migrate.test.ts` compares the two on every run.
 - **Type checking** passes with the schema, client and migrator.
 - **The production build** opens the database through Turso's native binding. The binding can't
   be bundled, because Turso's loader finds it with a runtime `require`, so the platform's package

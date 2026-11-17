@@ -16,7 +16,7 @@ export const migrations: Record<string, string> = Object.fromEntries(
 
 /**
  * A newer Obzorarr migrated the database: it records a migration this build doesn't have. The
- * message names neither the path nor the migration (SPEC-setup.md, "Startup").
+ * message names neither the path nor the migration (SPEC-setup.md, "The database").
  */
 export class NewerDatabaseError extends Error {
 	override readonly name = "NewerDatabaseError";
@@ -28,15 +28,32 @@ export class NewerDatabaseError extends Error {
 	}
 }
 
+/**
+ * The database's migrations table is from before Drizzle 1.0, as obzorarr 0.1.x left it on the same
+ * default path: this version can't use it, and how such an install upgrades is decided with the
+ * image (SPEC.md). The message names nothing from the database.
+ */
+export class LegacyDatabaseError extends Error {
+	override readonly name = "LegacyDatabaseError";
+
+	constructor() {
+		super(
+			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version on a new database file",
+		);
+	}
+}
+
 /** The table Drizzle's migrator records each applied migration in. */
 const TABLE = "__drizzle_migrations";
 
-/** The names of the migrations `db` has recorded; none on a new database. */
+/**
+ * The names of the migrations `db` has recorded; none on a new database. A table without names is
+ * from before Drizzle 1.0, and refused.
+ */
 async function recordedNames(db: Database): Promise<(string | null)[]> {
-	const tables = await db.all<{ name: string }>(
-		sql`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ${TABLE}`,
-	);
-	if (tables.length === 0) return [];
+	const columns = await db.all<{ name: string }>(sql`SELECT name FROM pragma_table_info(${TABLE})`);
+	if (columns.length === 0) return [];
+	if (!columns.some((column) => column.name === "name")) throw new LegacyDatabaseError();
 	const rows = await db.all<{ name: string | null }>(
 		sql`SELECT name FROM ${sql.identifier(TABLE)}`,
 	);

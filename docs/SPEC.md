@@ -811,8 +811,8 @@ export const GET: RequestHandler = () => healthResponse();
   `key-text.test.ts`, `keyring.test.ts`, `cipher.test.ts` and `secret.test.ts` in
   `security/secrets/`, under `src/lib/server/`), `setup`'s (under `src/lib/server/`:
   `config/database-path.test.ts`; `db/migrate.test.ts`, the bundled migrations on a temporary
-  file against Drizzle Kit's file migrator, and the refusal of a database a newer build migrated,
-  before anything is applied; `db/client.test.ts`, D5's rollback isolation, which
+  file against Drizzle Kit's file migrator, and the refusal, before anything is applied, of a
+  database a newer build migrated or one whose migrations table is from before Drizzle 1.0; `db/client.test.ts`, D5's rollback isolation, which
   fails on Drizzle `1.0.0-rc.4`; `services/setup/startup.test.ts`, with a failed step logged
   before it is thrown, and shutdown: the work stopped on the signal, `SIGHUP` passed on as
   `SIGTERM`, the cleanup's exit codes and its 5-second deadline, and no handlers in `dev`;
@@ -925,8 +925,8 @@ export const GET: RequestHandler = () => healthResponse();
   - `setup.test.ts` starts its own built servers: one migrates a new database file and applies
     nothing on a second start on it, one uses the default path, and four refuse a database folder
     they can't create, a path they can't open, or a database a newer Obzorarr migrated, without
-    echoing the path and naming the default when the variable is unset; a bad `OBZORARR_LOG_DEBUG` is one JSON log entry, and its value is
-    never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`,
+    echoing the path and naming the default when the variable is unset; a bad `OBZORARR_LOG_DEBUG`
+    is one JSON log entry, and its value is never echoed; `SIGTERM` and `SIGHUP` each stop the server with exit code 0; a page, `/healthz`,
     the gate's redirect and a 404 carry the security headers, with no HSTS over plain HTTP; a page's
     scripts carry its policy's nonce and the browser reports no violation; an `ORIGIN` with
     credentials or a path stops the server without being echoed; a cross-site form POST gets the

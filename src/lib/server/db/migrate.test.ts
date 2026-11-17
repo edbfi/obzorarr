@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { migrate as migrateFromFolder } from "drizzle-orm/tursodatabase/migrator";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { type Database, openDatabase } from "./client.ts";
-import { migrateDatabase, migrations, NewerDatabaseError } from "./migrate.ts";
+import { LegacyDatabaseError, migrateDatabase, migrations, NewerDatabaseError } from "./migrate.ts";
 
 const FOLDER = join(import.meta.dirname, "../../../../drizzle");
 
@@ -159,5 +159,28 @@ describe("migrateDatabase", () => {
 		expect(error).toBeInstanceOf(NewerDatabaseError);
 		expect(String(error)).not.toContain(root);
 		expect(String(error)).not.toContain("from_a_newer_build");
+	});
+
+	// obzorarr 0.1.x used Drizzle before 1.0, whose migrations table has no names, on the same
+	// default path: a deliberate refusal, not a failed query.
+	it("refuses a database whose migrations table is from before Drizzle 1.0, applying nothing", async () => {
+		const db = await newDatabase("legacy.db");
+		await (
+			await db.$client.prepare(
+				"CREATE TABLE __drizzle_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, hash text NOT NULL, created_at numeric)",
+			)
+		).run();
+		await (
+			await db.$client.prepare(
+				"INSERT INTO __drizzle_migrations (hash, created_at) VALUES ('abc', 1700000000000)",
+			)
+		).run();
+
+		const refusal = migrateDatabase(db);
+		await expect(refusal).rejects.toBeInstanceOf(LegacyDatabaseError);
+		await expect(refusal).rejects.toThrow(
+			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version on a new database file",
+		);
+		expect(await tables(db)).not.toContain("owner");
 	});
 });
