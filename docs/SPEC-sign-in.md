@@ -88,8 +88,8 @@ callback address is stored, so OIDC may need registering again after a move, but
 always remains (D20).
 
 **The address hint:** when `ORIGIN` doesn't match the address the browser is on, or, unset, that
-address's host and port don't match the `Host` header, the claim and owner sign-in pages suggest the fix
-(`ORIGIN=<that address>`, removing a wrong `ORIGIN`, or `proxy_set_header Host $http_host`), so
+address's host and port don't match the `Host` header, the claim and owner sign-in pages suggest the
+fix (`ORIGIN=<that address>`, removing a wrong `ORIGIN`, or `proxy_set_header Host $http_host`), so
 someone without a session can recover. (obzorarr) `public-address` adds it, with the check behind
 it.
 
@@ -162,12 +162,13 @@ A request counts towards the general limit and its own.
 
 **Failed sign-ins** (D28), counted per address, also include a wrong current password at the
 password change. After 10 failures in a row the address waits 5 minutes, each further 10 doubling
-the wait up to an hour, until a success or 24 hours without a failure. Only a request whose password was checked can fail: one the limit, a wait or a
-busy hash slot refuses never counts, so retrying during a wait can't make it longer. When the limit
-and a wait both refuse, the answer is whichever ends later, so it never says to try again before
-the address may. Each wait is logged at warn with the address, so an owner whose proxy hides every
-visitor behind one address can see it, and the form's message says how to fix that: set
-`ADDRESS_HEADER`. The waits live in memory, so a restart clears them.
+the wait up to an hour, until a success or 24 hours without a failure. Only a request whose password
+was checked can fail: one the limit, a wait or a busy hash slot refuses never counts, so retrying
+during a wait can't make it longer. When the limit and a wait both refuse, the answer is whichever
+ends later, so it never says to try again before the address may. Each wait is logged at warn with
+the address, so an owner whose proxy hides every visitor behind one address can see it, and the
+form's message says how to fix that: set `ADDRESS_HEADER`. The waits live in memory, so a restart
+clears them.
 
 **Memory stays bounded** with no timer: expired entries are swept on a later request, and each table
 holds at most 10,000 addresses, dropping the oldest first. **When the address is unknown** (a Unix
@@ -229,8 +230,8 @@ D20 fixes the mechanism; here is what the owner does.
   SvelteKit's `error()` and `handle`'s refusals give it.
 - **The pages `handle` builds itself** look like the error page under their own, stricter policy
   ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)), which allows no script, no font and no
-  external stylesheet: their actions are plain links, their text uses the fonts' system fallbacks, and their
-  styles are Panda's token declarations inline, so the `token()` references resolve.
+  external stylesheet: their actions are plain links, their text uses the fonts' system fallbacks,
+  and their styles are Panda's token declarations inline, so the `token()` references resolve.
 - **`src/error.html`,** SvelteKit's last resort when even the error page fails, is in English and
   Danish, since it can't know the viewer's language.
 
