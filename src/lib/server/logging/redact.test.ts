@@ -404,3 +404,391 @@ describe("redact", () => {
 		});
 	});
 });
+
+describe("a value that can't be read", () => {
+	it("marks a throwing toJSON as unreadable, keeping what is around it", () => {
+		const broken = {
+			toJSON() {
+				throw new Error("no JSON for you");
+			},
+		};
+		expect(redact({ before: 1, broken, after: "kept" })).toEqual({
+			before: 1,
+			broken: "[unreadable]",
+			after: "kept",
+		});
+	});
+
+	it("marks only a throwing getter's field as unreadable", () => {
+		const value = {
+			kept: "yes",
+			get broken() {
+				throw new Error("no value for you");
+			},
+		};
+		expect(redact(value)).toEqual({ kept: "yes", broken: "[unreadable]" });
+	});
+
+	it("keeps an error's name and message when its stack can't be read", () => {
+		const hostile = new Error("boom");
+		Object.defineProperty(hostile, "stack", {
+			get() {
+				throw new Error("no stack for you");
+			},
+		});
+		expect(redact(hostile)).toMatchObject({
+			name: "Error",
+			message: "boom",
+			stack: "[unreadable]",
+		});
+	});
+
+	it("marks an object whose keys can't be listed as unreadable", () => {
+		const proxy = new Proxy(
+			{},
+			{
+				ownKeys() {
+					throw new Error("no keys for you");
+				},
+			},
+		);
+		expect(redact({ proxy })).toEqual({ proxy: "[unreadable]" });
+	});
+
+	it("stops a chain of causes too deep to walk, without overflowing the stack", () => {
+		let error = new Error("the bottom");
+		for (let i = 0; i < 20_000; i++) error = new Error(`level ${i}`, { cause: error });
+		let text = "";
+		expect(() => {
+			text = JSON.stringify(redact(error));
+		}).not.toThrow();
+		expect(text).toContain("[too deep]");
+		expect(text).not.toContain("the bottom");
+	});
+});
+
+describe("a value that can't be read, more ways", () => {
+	const throwingFunction = () => {
+		const fn = () => {};
+		fn.toString = () => {
+			throw new Error("no text for you");
+		};
+		return fn;
+	};
+
+	it("marks a function whose text can't be read, alone and beside readable fields", () => {
+		expect(redact(throwingFunction())).toBe("[unreadable]");
+		expect(redact({ keep: 1, fn: throwingFunction() })).toEqual({ keep: 1, fn: "[unreadable]" });
+	});
+
+	it("cleans a function's text like any other", () => {
+		const fn = () => {};
+		fn.toString = () => "https://u:hunter2@host/?token=abc";
+		expect(JSON.stringify(redact({ fn }))).not.toContain("hunter2");
+		expect(JSON.stringify(redact({ fn }))).not.toContain("abc");
+	});
+
+	it("marks a revoked proxy, a callable one included, beside readable fields", () => {
+		const object = Proxy.revocable({}, {});
+		const callable = Proxy.revocable(() => {}, {});
+		object.revoke();
+		callable.revoke();
+		expect(redact({ keep: 1, object: object.proxy, callable: callable.proxy })).toEqual({
+			keep: 1,
+			object: "[unreadable]",
+			callable: "[unreadable]",
+		});
+	});
+
+	it("marks only an array's element whose getter throws", () => {
+		const list = [1, 2, 3];
+		Object.defineProperty(list, 1, {
+			get() {
+				throw new Error("no element for you");
+			},
+		});
+		expect(redact(list)).toEqual([1, "[unreadable]", 3]);
+	});
+
+	it("never runs a getter on a key it hides anyway", () => {
+		let read = false;
+		const value = {
+			get password() {
+				read = true;
+				return "hunter2";
+			},
+		};
+		expect(redact(value)).toEqual({ password: "[redacted]" });
+		expect(read).toBe(false);
+	});
+
+	it("cleans an error's name, in its own field and in its stack", () => {
+		const error = new Error("boom");
+		error.name = "Bad https://u:hunter2@host";
+		expect(JSON.stringify(redact(error))).not.toContain("hunter2");
+	});
+
+	it("keeps an own errors field on an error that isn't an AggregateError", () => {
+		const error = Object.assign(new Error("invalid"), { errors: ["name is required"] });
+		expect(redact(error)).toMatchObject({ errors: ["name is required"] });
+	});
+
+	it("walks an enumerable cause once, so a long chain of them stays quick", () => {
+		let error = new Error("the bottom");
+		for (let i = 0; i < 30; i++) {
+			const next = new Error(`level ${i}`);
+			// As Drizzle's query errors do: an own, enumerable `cause`.
+			Object.assign(next, { cause: error });
+			error = next;
+		}
+		const started = performance.now();
+		expect(JSON.stringify(redact(error))).toContain("the bottom");
+		expect(performance.now() - started).toBeLessThan(1000);
+	});
+});
+
+describe("a value too large to walk", () => {
+	it("stops a shared object reached by many paths, quickly and with a marker", () => {
+		let shared: object = { leaf: true };
+		for (let i = 0; i < 30; i++) shared = { left: shared, right: shared };
+		const started = performance.now();
+		const text = JSON.stringify(redact(shared));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text).toContain("[too large]");
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("walks a huge sparse array without allocating its length", () => {
+		const sparse: unknown[] = [];
+		sparse.length = 2 ** 32 - 1;
+		sparse[0] = "first";
+		const started = performance.now();
+		const walked = redact(sparse) as unknown[];
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(walked[0]).toBe("first");
+		expect(walked.at(-1)).toBe("[too large]");
+	});
+
+	it("keeps small values whole", () => {
+		const value = { list: Array.from({ length: 100 }, (_, index) => ({ index })) };
+		expect(redact(value)).toEqual(value);
+	});
+
+	it("counts an object's plain fields, and ends a wide one with a marker", () => {
+		const wide = Object.fromEntries(
+			Array.from({ length: 50_000 }, (_, index) => [`k${index}`, index]),
+		);
+		const walked = redact(wide) as Record<string, unknown>;
+		expect(Object.keys(walked).length).toBeLessThan(10_100);
+		expect(walked["[too large]"]).toBe("40001 more");
+		expect(walked.k0).toBe(0);
+	});
+
+	it("stops a shared wide object reached by many paths, quickly", () => {
+		let shared: object = Object.fromEntries(
+			Array.from({ length: 1000 }, (_, index) => [`k${index}`, index]),
+		);
+		for (let i = 0; i < 30; i++) shared = { left: shared, right: shared };
+		const started = performance.now();
+		const text = JSON.stringify(redact(shared));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("counts a request's headers, and ends a huge set with a marker", () => {
+		const headers = new Headers(
+			Array.from({ length: 20_000 }, (_, index): [string, string] => [`x-h${index}`, "v"]),
+		);
+		const walked = redact(headers) as Record<string, unknown>;
+		expect(Object.keys(walked).length).toBeLessThan(10_100);
+		expect(walked["[too large]"]).toMatch(/^\d+ more$/);
+	});
+
+	it("walks an entry's own errors first, so a large part beside one can't crowd it out", () => {
+		const request = Array.from({ length: 20_000 }, () => ({}));
+		const walked = redact({ request, error: new Error("boom") }) as Record<string, unknown>;
+		expect(walked.error).toMatchObject({ name: "Error", message: "boom" });
+		expect((walked.error as { stack: string }).stack).toMatch(/^Error: boom\n/);
+		expect(Object.keys(walked)).toEqual(["request", "error"]);
+	});
+
+	it("never reads a field past the budget", () => {
+		let reads = 0;
+		const wide = {};
+		for (let i = 0; i < 20_000; i++) {
+			Object.defineProperty(wide, `k${i}`, { enumerable: true, get: () => ++reads });
+		}
+		const walked = redact({ wide }) as { wide: Record<string, unknown> };
+		expect(reads).toBeLessThan(10_000);
+		expect(walked.wide["[too large]"]).toMatch(/^\d+ more$/);
+		reads = 0;
+		// At the top, the first 10,000 values are read to find its errors, and no more.
+		expect(redact(wide)).toHaveProperty(["[too large]"]);
+		expect(reads).toBe(10_000);
+	});
+
+	it("reads each value at the top once, keeping the first answer", () => {
+		let reads = 0;
+		const entry = {
+			get once() {
+				reads++;
+				if (reads > 1) throw new Error("read twice");
+				return "first value";
+			},
+		};
+		expect(redact(entry)).toEqual({ once: "first value" });
+		expect(reads).toBe(1);
+	});
+
+	it("stays quick on a huge entry, looking for its errors among only as many fields as it walks", () => {
+		const huge = Object.fromEntries(Array.from({ length: 1_000_000 }, (_, i) => [`k${i}`, i]));
+		const started = performance.now();
+		redact(huge);
+		expect(performance.now() - started).toBeLessThan(1000);
+	});
+
+	it("stops errors that share each other as fields, quickly", () => {
+		let shared = new Error("leaf");
+		for (let i = 0; i < 30; i++)
+			shared = Object.assign(new Error(`level ${i}`), { a: shared, b: shared });
+		const started = performance.now();
+		const text = JSON.stringify(redact({ big: Array(20_000).fill(0), error: shared }));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text).toContain("level 29");
+		expect(text).toContain("[too large]");
+	});
+
+	it("counts each field holding an error, even one that is circular", () => {
+		const looped = new Error("looped");
+		for (let i = 0; i < 10_000; i++) Object.assign(looped, { [`f${i}`]: looped });
+		const refs = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`r${i}`, looped]));
+		const started = performance.now();
+		const text = JSON.stringify(redact({ big: Array(20_000).fill(0), ...refs }));
+		expect(performance.now() - started).toBeLessThan(1000);
+		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("counts each field holding an error, even one too deep to walk", () => {
+		const error = new Error("deep");
+		let nested: object = Object.fromEntries(
+			Array.from({ length: 50_000 }, (_, i) => [`e${i}`, error]),
+		);
+		for (let i = 0; i < 31; i++) nested = { nested };
+		const text = JSON.stringify(redact(nested));
+		expect(text.split('"[too deep]"').length - 1).toBeLessThan(10_200);
+		expect(text).toMatch(/"\[too large\]":"\d+ more"/);
+	});
+
+	it("walks an error's cause before its own fields, so a large field can't hide it", () => {
+		const error = new Error("outer", { cause: new Error("root") });
+		Object.assign(error, { diagnostics: Array(20_000).fill(0) });
+		expect(redact(error)).toMatchObject({ cause: { message: "root" } });
+	});
+});
+
+describe("each value read once", () => {
+	/** A getter that answers once and throws after, counting its reads. */
+	function once(value: unknown) {
+		const getter = {
+			reads: 0,
+			get: () => (++getter.reads > 1 ? throwing() : value),
+			enumerable: true,
+		};
+		return getter;
+	}
+	function throwing(): never {
+		throw new Error("read twice");
+	}
+
+	it("reads an error's name, message and stack once, enumerable or not", () => {
+		const error = new Error("boom");
+		const stack = error.stack as string;
+		const name = once("Error");
+		const message = once("boom");
+		const frames = once(stack);
+		Object.defineProperties(error, { name, message, stack: frames });
+		const walked = redact(error) as Record<string, unknown>;
+		expect(walked).toMatchObject({ name: "Error", message: "boom" });
+		expect(walked.stack).toMatch(/^Error: boom\n/);
+		expect([name.reads, message.reads, frames.reads]).toEqual([1, 1, 1]);
+	});
+
+	it("reads a toJSON once, and calls it on its object", () => {
+		const getter = once(function (this: { value: string }) {
+			return this.value;
+		});
+		const value = Object.defineProperties({ value: "json" }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: "json" });
+		expect(getter.reads).toBe(1);
+	});
+
+	it("reads a toJSON that isn't a function once, and logs it as a field", () => {
+		const getter = once(5);
+		const value = Object.defineProperties({ other: 1 }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: { other: 1, toJSON: 5 } });
+		expect(getter.reads).toBe(1);
+	});
+
+	it("reads a toJSON that reads as undefined once", () => {
+		const getter = once(undefined);
+		const value = Object.defineProperties({ other: 1 }, { toJSON: getter });
+		expect(redact({ value })).toEqual({ value: { other: 1 } });
+		expect(getter.reads).toBe(1);
+	});
+
+	it("calls a toJSON on its object even when its own call is overridden", () => {
+		const toJSON = () => "json";
+		Object.defineProperty(toJSON, "call", { value: throwing });
+		expect(redact({ value: { toJSON } })).toEqual({ value: "json" });
+	});
+
+	it("reads an array's length once", () => {
+		let reads = 0;
+		const items = new Proxy([1, 2, 3], {
+			get: (target, key) => {
+				if (key === "length" && ++reads > 1) throwing();
+				return Reflect.get(target, key);
+			},
+		});
+		expect(redact(items)).toEqual([1, 2, 3]);
+		expect(reads).toBe(1);
+	});
+
+	it("reads headers through their own list, never an entries that could run forever", () => {
+		const headers = new Headers({ accept: "text/html" });
+		Object.defineProperty(headers, "entries", {
+			value: function* () {
+				while (true) yield ["x", "y"];
+			},
+		});
+		expect(redact(headers)).toEqual({ accept: "text/html" });
+	});
+});
+
+describe("an error's message", () => {
+	it("keeps the stack when the message isn't text", () => {
+		const error = new Error("42");
+		Object.defineProperty(error, "message", { value: 42 });
+		const walked = redact(error) as { message: unknown; stack: unknown };
+		expect(walked.message).toBe("42");
+		expect(walked.stack).toMatch(/^Error: 42\n/);
+	});
+});
+
+describe("an error's name", () => {
+	it("is cleaned when it comes from the error's class", () => {
+		class Bad extends Error {}
+		Object.defineProperty(Bad.prototype, "name", { value: "Bad https://u:hunter2@host" });
+		expect(JSON.stringify(redact(new Bad("boom")))).not.toContain("hunter2");
+	});
+
+	it("is logged when it is a symbol, whose stack Bun itself can't build", () => {
+		const error = new Error("boom");
+		Object.defineProperty(error, "name", { value: Symbol("odd") });
+		expect(redact(error)).toMatchObject({
+			name: "Symbol(odd)",
+			message: "boom",
+			stack: "[unreadable]",
+		});
+	});
+});

@@ -87,7 +87,7 @@ describe("logRequestError", () => {
 		expect(consoleError).not.toHaveBeenCalled();
 	});
 
-	it("never throws, logging a plain entry when the error itself can't be logged", () => {
+	it("logs an error whose stack can't be read in full, marking only the stack", () => {
 		const hostile = new Error("boom");
 		Object.defineProperty(hostile, "stack", {
 			get() {
@@ -99,13 +99,11 @@ describe("logRequestError", () => {
 			expect.objectContaining({
 				level: "error",
 				source: "request",
-				message: "unexpected error, which couldn't be logged in full",
-				metadata: {
-					method: "POST",
+				message: "unexpected error",
+				metadata: expect.objectContaining({
 					path: "/admin/settings",
-					route: "/admin/settings",
-					thrown: "Error",
-				},
+					error: expect.objectContaining({ name: "Error", message: "boom", stack: "[unreadable]" }),
+				}),
 			}),
 		]);
 	});

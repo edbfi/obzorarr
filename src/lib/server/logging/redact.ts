@@ -182,54 +182,208 @@ function decodeName(name: string): string {
  * at any depth, headers included, and a value with `toJSON` (a `Secret`, a date) is logged as its
  * JSON form. Errors keep their name, message, stack, own fields, cause and errors, each redacted;
  * a failed query's bound values (`params`) and anything shaped like an argon2 password hash are
- * hidden too, wherever the error came from. A circular reference becomes a marker.
+ * hidden too, wherever the error came from. It never throws and always finishes quickly: a
+ * value it can't read, a circular reference, one nested too deep and what lies past the entry's
+ * budget each become a marker (`[unreadable]`, `[circular]`, `[too deep]`, `[too large]`), losing
+ * only their own part.
  */
 export function redact(value: unknown): unknown {
-	return walk(value, new Set());
+	return walk(value, { path: new Set(), left: MAX_VALUES }, 0);
 }
 
-function walk(value: unknown, path: Set<object>): unknown {
+/** One redaction's state: the objects on the way down to this one, and how much more it may walk. */
+type Walk = { readonly path: Set<object>; left: number };
+
+/** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
+const UNREADABLE = "[unreadable]";
+/** What a value already on the way down to it becomes. */
+const CIRCULAR = "[circular]";
+/** How deep a value is walked; deeper, such as a runaway chain of causes, is left out. */
+const MAX_DEPTH = 32;
+const TOO_DEEP = "[too deep]";
+/**
+ * How many objects, array elements and fields one entry may walk. A shared object is walked once
+ * for every path to it, so a few nested ones can stand for millions; past this, nothing more is
+ * read, and what is left out is marked.
+ */
+const MAX_VALUES = 10_000;
+/** What is left out past MAX_VALUES; as an object's last key, its value says how many fields. */
+const TOO_LARGE = "[too large]";
+
+/** The value `get` reads, or the unreadable marker when reading it throws. */
+function read(get: () => unknown): unknown {
+	try {
+		return get();
+	} catch {
+		return UNREADABLE;
+	}
+}
+
+/**
+ * One value, redacted. It never throws: an object that can't be read becomes the unreadable
+ * marker, and one nested deeper than MAX_DEPTH, or past the entry's MAX_VALUES, a marker too, so a
+ * log entry is always written, and quickly.
+ */
+function walk(value: unknown, state: Walk, depth: number): unknown {
 	if (typeof value === "string") return cleanText(value);
 	if (typeof value === "bigint") return value.toString();
-	if (typeof value === "function" || typeof value === "symbol") return String(value);
+	if (typeof value === "function" || typeof value === "symbol") {
+		// A function's text is its own code, which may throw or hold anything; cleaned like any text.
+		const text = read(() => String(value));
+		return typeof text === "string" ? cleanText(text) : UNREADABLE;
+	}
 	if (value === null || typeof value !== "object") return value;
-	if (path.has(value)) return "[circular]";
+	const { path } = state;
+	if (path.has(value)) return CIRCULAR;
+	if (depth >= MAX_DEPTH) return TOO_DEEP;
+	if (state.left <= 0) return TOO_LARGE;
+	state.left--;
 	path.add(value);
 	try {
-		if (value instanceof Error) return walkError(value, path);
-		if (value instanceof Headers) return walkEntries([...value.entries()], path);
-		if ("toJSON" in value && typeof value.toJSON === "function") {
-			return walk(value.toJSON(), path);
+		if (value instanceof Error) return walkError(value, state, depth);
+		if (value instanceof Headers) {
+			// Their own list, through the native method: an own `entries` could run forever. The list
+			// is finite and already in memory, like an object's keys; the budget applies to the fields.
+			const fields = Object.fromEntries(Reflect.apply(Headers.prototype.entries, value, []));
+			return walkFields(fields, Object.keys(fields), state, depth);
 		}
-		if (Array.isArray(value)) return value.map((item) => walk(item, path));
-		return walkEntries(Object.entries(value), path);
+		// Read once, then called on its object or, when it isn't a function, logged as a field.
+		// `Reflect.apply`, since a function's own `call` can be overridden too.
+		const hasToJSON = "toJSON" in value;
+		const toJSON = hasToJSON ? read(() => value.toJSON) : undefined;
+		if (typeof toJSON === "function")
+			return walk(Reflect.apply(toJSON, value, []), state, depth + 1);
+		if (Array.isArray(value)) return walkItems(value, state, depth);
+		const known = new Map(hasToJSON ? [["toJSON", toJSON]] : []);
+		return walkFields(value, Object.keys(value), state, depth, known);
+	} catch {
+		return UNREADABLE;
 	} finally {
 		path.delete(value);
 	}
 }
 
-function walkEntries(entries: [string, unknown][], path: Set<object>): Record<string, unknown> {
-	return Object.fromEntries(
-		entries.map(([key, item]) => [key, sensitive(key) ? REDACTED : walk(item, path)]),
-	);
+/**
+ * An array's elements, each read on its own, so one whose getter throws loses only itself, and
+ * each counted against the entry's budget, so a huge or sparse array ends with a marker.
+ */
+function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
+	const walked: unknown[] = [];
+	// Read once: a proxy's length may answer differently, or throw, the second time.
+	const length = items.length;
+	for (let index = 0; index < length; index++) {
+		if (state.left <= 0) {
+			walked.push(TOO_LARGE);
+			break;
+		}
+		state.left--;
+		walked.push(
+			walk(
+				read(() => items[index]),
+				state,
+				depth + 1,
+			),
+		);
+	}
+	return walked;
+}
+
+/**
+ * An object's `keys`, each read once and on its own, so one that throws loses only its own value;
+ * a key that looks like a credential is hidden without its value ever being read. Each field
+ * counts against the entry's budget; past it, the rest are left out unread, and counted. The
+ * entry's own errors, the fields at its top that hold one, are walked first, so a large part
+ * beside them can't use the budget up before them; the result keeps the fields' order. `readFirst`
+ * holds values already read, such as a `toJSON` that isn't a function.
+ */
+function walkFields(
+	value: object,
+	keys: string[],
+	state: Walk,
+	depth: number,
+	readFirst = new Map<string, unknown>(),
+): Record<string, unknown> {
+	// Every value read is kept in `readFirst`, so none is read twice: a getter may run once only,
+	// or answer differently the second time.
+	const field = (key: string) =>
+		readFirst.has(key) ? readFirst.get(key) : read(() => (value as Record<string, unknown>)[key]);
+	const done = new Map<string, unknown>();
+	const visit = (key: string, item: unknown) => {
+		state.left--;
+		done.set(key, walk(item, state, depth + 1));
+	};
+	if (depth === 0) {
+		// Looked for among as many fields as the budget could ever walk, so a huge one costs no more:
+		// these are the only values read past the budget.
+		for (const key of keys.slice(0, MAX_VALUES)) {
+			if (state.left <= 0) break;
+			if (sensitive(key)) continue;
+			const item = field(key);
+			readFirst.set(key, item);
+			if (read(() => item instanceof Error) === true) visit(key, item);
+		}
+	}
+	let leftOut = 0;
+	for (const key of keys) {
+		if (done.has(key)) continue;
+		if (state.left <= 0) leftOut++;
+		else if (sensitive(key)) {
+			state.left--;
+			done.set(key, REDACTED);
+		} else visit(key, field(key));
+	}
+	// `fromEntries`, so a `__proto__` key is a field, never the result's prototype; an own field
+	// named like the marker is overwritten by it, which can only lose a value, never show one.
+	const walked: [string, unknown][] = keys
+		.filter((key) => done.has(key))
+		.map((key) => [key, done.get(key)]);
+	if (leftOut > 0) walked.push([TOO_LARGE, `${leftOut} more`]);
+	return Object.fromEntries(walked);
 }
 
 /**
  * An error's name, message and stack, which are its own but not enumerable, then its own fields
- * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value.
+ * (such as `code`), its cause and an `AggregateError`'s errors, each redacted like any value and
+ * each read on its own, so a hostile getter loses only its own part.
  */
-function walkError(error: Error, path: Set<object>): Record<string, unknown> {
-	// A failed query's values can be a password's hash or a username: only its text is kept.
-	const fields = Object.entries(error).map(([key, item]): [string, unknown] =>
-		key === "params" && "query" in error ? [key, REDACTED] : [key, item],
+function walkError(error: Error, state: Walk, depth: number): Record<string, unknown> {
+	// A failed query's values can be a password's hash or a username: only its text is kept. An
+	// own `cause` (Drizzle's errors assign one), or an `AggregateError`'s own `errors`, is walked
+	// once, below, not twice: twice at every level of a chain grows without bound.
+	const aggregate = error instanceof AggregateError;
+	const ownKeys = Object.keys(error);
+	const hidesParams = ownKeys.includes("params") && "query" in error;
+	// An own `name`, `message` or `stack` is read once, below, like `cause`.
+	const keys = ownKeys.filter(
+		(key) =>
+			!["name", "message", "stack", "cause"].includes(key) &&
+			!(key === "errors" && aggregate) &&
+			!(key === "params" && hidesParams),
 	);
+	// Each read once: the stack is checked against the same name and message that are logged.
+	// `String()`, since a template throws on a symbol name and `cleanText` on a message that isn't
+	// text, either of which would lose the whole stack.
+	const name = read(() => String(error.name)) as string;
+	const message = read(() => String(error.message)) as string;
+	const stack = read(() => error.stack);
+	const cause = read(() => error.cause);
+	const errors = aggregate ? read(() => error.errors) : undefined;
+	// The cause and errors are walked before the fields, so a large field can't use the budget up
+	// before them; the entry still lists the fields first.
+	const causes = {
+		...(cause === undefined ? {} : { cause: walk(cause, state, depth + 1) }),
+		...(errors === undefined ? {} : { errors: walk(errors, state, depth + 1) }),
+	};
 	return {
-		name: error.name,
-		message: cleanText(error.message),
-		stack: error.stack === undefined ? undefined : cleanStack(error),
-		...walkEntries(fields, path),
-		...(error.cause === undefined ? {} : { cause: walk(error.cause, path) }),
-		...(error instanceof AggregateError ? { errors: walk(error.errors, path) } : {}),
+		name: cleanText(name),
+		message: cleanText(message),
+		stack:
+			typeof stack === "string"
+				? read(() => cleanStack(name, message, stack))
+				: walk(stack, state, depth + 1),
+		...walkFields(error, keys, state, depth),
+		...(hidesParams ? { params: REDACTED } : {}),
+		...causes,
 	};
 }
 
@@ -242,10 +396,9 @@ const ONLY_FRAMES = /^(?:\n[ \t]*at [^\n]*)*\n?$/;
  * such as one made before its message changed, is cleaned as text, which hides everything after a
  * `params:` line, its frames included.
  */
-function cleanStack(error: Error): string {
-	const stack = error.stack ?? "";
-	const header = `${error.name}: ${error.message}`;
+function cleanStack(name: string, message: string, stack: string): string {
+	const header = `${name}: ${message}`;
 	const frames = stack.slice(header.length);
 	if (!stack.startsWith(header) || !ONLY_FRAMES.test(frames)) return cleanText(stack);
-	return `${error.name}: ${cleanText(error.message)}${cleanText(frames)}`;
+	return `${cleanText(name)}: ${cleanText(message)}${cleanText(frames)}`;
 }
