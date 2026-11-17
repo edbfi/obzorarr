@@ -1,4 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// The real comparison, spied on, so a test can see that the constant-time one decides.
+vi.mock("node:crypto", async (original) => {
+	const actual = await original<typeof import("node:crypto")>();
+	return { ...actual, timingSafeEqual: vi.fn(actual.timingSafeEqual) };
+});
+
+const { timingSafeEqual } = await import("node:crypto");
+
 import {
 	drawToken,
 	formatToken,
@@ -56,6 +65,11 @@ describe("formatToken", () => {
 describe("tokenMatches", () => {
 	const token = "abcd1234wxyz";
 
+	// Back to the real comparison, so an answer a failed test queued can't reach the next test.
+	afterEach(() => {
+		vi.mocked(timingSafeEqual).mockReset();
+	});
+
 	it.each([
 		"abcd-1234-wxyz",
 		"abcd1234wxyz",
@@ -76,6 +90,29 @@ describe("tokenMatches", () => {
 	])("refuses %j", (entry) => {
 		expect(tokenMatches(token, entry)).toBe(false);
 	});
+
+	it("lets the constant-time comparison decide, never a plain one", () => {
+		vi.mocked(timingSafeEqual).mockClear();
+		expect(tokenMatches(token, "ABCD-1234-WXYZ")).toBe(true);
+		expect(timingSafeEqual).toHaveBeenCalledOnce();
+		// Its answer is the answer: a plain comparison beside it would still say the token matches.
+		vi.mocked(timingSafeEqual).mockReturnValueOnce(false);
+		expect(tokenMatches(token, token)).toBe(false);
+	});
+
+	it.each(["xbcd-1234-wxyz", "abcd-1x34-wxyz", "abcd-1234-wxyx"])(
+		"hands the wrong but well-formed %j to the constant-time comparison, rejecting nothing first",
+		(entry) => {
+			vi.mocked(timingSafeEqual).mockClear();
+			// Answering yes shows that nothing before it said no.
+			vi.mocked(timingSafeEqual).mockReturnValueOnce(true);
+			expect(tokenMatches(token, entry)).toBe(true);
+			expect(timingSafeEqual).toHaveBeenCalledExactlyOnceWith(
+				Buffer.from(entry.replaceAll("-", "")),
+				Buffer.from(token),
+			);
+		},
+	);
 });
 
 describe("issueToken and isTokenValid", () => {
