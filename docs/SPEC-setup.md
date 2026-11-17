@@ -60,8 +60,9 @@ the configuration, the database (D5: the app is its one migration owner), then e
 startup work in a fixed order, then the jobs. (obzorarr: later modules add deleting shadowed
 settings, advancing the authority epoch when the Plex URL or token changed, `identity`, and marking
 interrupted syncs failed, D7.) A job that fails to start is logged, not fatal. A failure before the
-jobs is logged and thrown from `init`: the built server exits non-zero before it listens, and the
-dev server stays up with every request failing.
+jobs is logged and, once its entry has left the process or a quarter of a second has passed, thrown
+from `init`: the built server exits non-zero before it listens, and the dev server stays up with
+every request failing.
 
 **Shutdown.** adapter-bun drains open requests for `SHUTDOWN_TIMEOUT`, exits at once on a second
 signal, and emits `sveltekit:shutdown` without waiting for its listeners. So the app stops the jobs

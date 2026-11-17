@@ -120,6 +120,63 @@ describe("startUp", () => {
 		expect(lines[0]).not.toContain(root);
 	});
 
+	describe("a failed start's error entry", () => {
+		/** Writes whose completion the test holds back, released after each test either way. */
+		const held: (() => void)[] = [];
+		/** Resolves when the next held write arrives. */
+		let written: Promise<void> = Promise.resolve();
+		const holdWrites = () => {
+			let arrived = () => {};
+			written = new Promise((resolve) => {
+				arrived = resolve;
+			});
+			vi.mocked(process.stdout.write).mockImplementation((chunk, ...rest: unknown[]) => {
+				lines.push(String(chunk));
+				const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
+				if (done) held.push(done);
+				arrived();
+				return true;
+			});
+		};
+		afterEach(() => {
+			for (const done of held.splice(0)) done();
+		});
+		const failingStart = (file: string) =>
+			startUp(
+				{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, file), ORIGIN: "nope" },
+				{ dev: true },
+			);
+		const settledWithin = (promise: Promise<unknown>, ms: number) =>
+			Promise.race([
+				promise.then(() => true),
+				new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms)),
+			]);
+
+		it("leaves the process before startup throws, so an exit right after doesn't lose it", async () => {
+			holdWrites();
+			const started = failingStart("held.db").catch((error: unknown) => error);
+			await written;
+			expect(lines).toHaveLength(1);
+			// Still waiting on the write, well inside the quarter-second bound.
+			expect(await settledWithin(started, 20)).toBe(false);
+			for (const done of held.splice(0)) done();
+			// It throws as soon as the write is done, not when the bound runs out.
+			expect(await settledWithin(started, 100)).toBe(true);
+			expect(await started).toBeInstanceOf(ConfigError);
+		});
+
+		it("throws after a quarter of a second when its entry never leaves", async () => {
+			holdWrites();
+			const begun = performance.now();
+			expect(await failingStart("stuck.db").catch((error: unknown) => error)).toBeInstanceOf(
+				ConfigError,
+			);
+			const waited = performance.now() - begun;
+			expect(waited).toBeGreaterThanOrEqual(240);
+			expect(waited).toBeLessThan(1000);
+		});
+	});
+
 	it("refuses an OBZORARR_LOG_DEBUG that isn't true or false, before the database opens", async () => {
 		const path = join(root, "never-created", "app.db");
 		const error = await startUp(
