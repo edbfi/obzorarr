@@ -185,14 +185,11 @@ function decodeName(name: string): string {
  * hidden too, wherever the error came from. A circular reference becomes a marker.
  */
 export function redact(value: unknown): unknown {
-	return walk(value, { path: new Set(), left: MAX_VALUES, errorsLeft: MAX_LATE_ERRORS }, 0);
+	return walk(value, { path: new Set(), left: MAX_VALUES }, 0);
 }
 
-/**
- * One redaction's state: the objects on the way down to this one, how much more it may walk, and
- * how many more errors it may still keep past that.
- */
-type Walk = { readonly path: Set<object>; left: number; errorsLeft: number };
+/** One redaction's state: the objects on the way down to this one, and how much more it may walk. */
+type Walk = { readonly path: Set<object>; left: number };
 
 /** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
 const UNREADABLE = "[unreadable]";
@@ -200,15 +197,11 @@ const UNREADABLE = "[unreadable]";
 const MAX_DEPTH = 32;
 /**
  * How many objects, array elements and fields one entry may walk. A shared object is walked once
- * for every path to it, so a few nested ones can stand for millions; past this, a value is left
- * out, except an error's name, message and stack, which an entry is most often written for.
+ * for every path to it, so a few nested ones can stand for millions; past this, nothing more is
+ * read, and what is left out is marked.
  */
 const MAX_VALUES = 10_000;
-/**
- * How many errors past MAX_VALUES one entry still keeps, each with its name, message, stack and
- * cause, but no fields; bounded, since errors can share each other as fields too.
- */
-const MAX_LATE_ERRORS = 100;
+/** What is left out past MAX_VALUES; as an object's last key, its value says how many fields. */
 const TOO_LARGE = "[too large]";
 
 /** The value `get` reads, or the unreadable marker when reading it throws. */
@@ -237,13 +230,11 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
 	const { path } = state;
 	if (path.has(value)) return "[circular]";
 	if (depth >= MAX_DEPTH) return "[too deep]";
-	const isError = read(() => value instanceof Error) === true;
-	if (state.left > 0) state.left--;
-	else if (isError && state.errorsLeft > 0) state.errorsLeft--;
-	else return TOO_LARGE;
+	if (state.left <= 0) return TOO_LARGE;
+	state.left--;
 	path.add(value);
 	try {
-		if (isError) return walkError(value as Error, state, depth);
+		if (value instanceof Error) return walkError(value, state, depth);
 		if (value instanceof Headers) {
 			const fields = Object.fromEntries(value.entries());
 			return walkFields(fields, Object.keys(fields), state, depth);
@@ -284,10 +275,11 @@ function walkItems(items: unknown[], state: Walk, depth: number): unknown[] {
 }
 
 /**
- * An object's `keys`, each read on its own, so one that throws loses only its own value; a key
- * that looks like a credential is hidden without its value ever being read. Each field counts
- * against the entry's budget; past it, only a field holding an error is kept, and a marker says
- * how many others were left out.
+ * An object's `keys`, each read once and on its own, so one that throws loses only its own value;
+ * a key that looks like a credential is hidden without its value ever being read. Each field
+ * counts against the entry's budget; past it, the rest are left out unread, and counted. The
+ * entry's own errors, the fields at its top that hold one, are walked first, so a large part
+ * beside them can't use the budget up before them; the result keeps the fields' order.
  */
 function walkFields(
 	value: object,
@@ -296,21 +288,35 @@ function walkFields(
 	depth: number,
 ): Record<string, unknown> {
 	const field = (key: string) => read(() => (value as Record<string, unknown>)[key]);
-	const walked: [string, unknown][] = [];
+	const done = new Map<string, unknown>();
+	const visit = (key: string, item: unknown) => {
+		state.left--;
+		done.set(key, walk(item, state, depth + 1));
+	};
+	if (depth === 0) {
+		// Looked for among as many fields as the budget could ever walk, so a huge one costs no more.
+		for (const key of keys.slice(0, MAX_VALUES)) {
+			if (state.left <= 0) break;
+			if (sensitive(key)) continue;
+			const item = field(key);
+			if (read(() => item instanceof Error) === true) visit(key, item);
+		}
+	}
 	let leftOut = 0;
 	for (const key of keys) {
-		if (state.left > 0) {
+		if (done.has(key)) continue;
+		if (state.left <= 0) leftOut++;
+		else if (sensitive(key)) {
 			state.left--;
-			walked.push([key, sensitive(key) ? REDACTED : walk(field(key), state, depth + 1)]);
-			continue;
-		}
-		const item = sensitive(key) || state.errorsLeft <= 0 ? undefined : field(key);
-		if (read(() => item instanceof Error) === true)
-			walked.push([key, walk(item, state, depth + 1)]);
-		else leftOut++;
+			done.set(key, REDACTED);
+		} else visit(key, field(key));
 	}
+	// `fromEntries`, so a `__proto__` key is a field, never the result's prototype; an own field
+	// named like the marker is overwritten by it, which can only lose a value, never show one.
+	const walked: [string, unknown][] = keys
+		.filter((key) => done.has(key))
+		.map((key) => [key, done.get(key)]);
 	if (leftOut > 0) walked.push([TOO_LARGE, `${leftOut} more`]);
-	// `fromEntries`, so a `__proto__` key is a field, never the result's prototype.
 	return Object.fromEntries(walked);
 }
 

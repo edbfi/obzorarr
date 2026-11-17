@@ -604,14 +604,33 @@ describe("a value too large to walk", () => {
 		expect(walked["[too large]"]).toMatch(/^\d+ more$/);
 	});
 
-	it("keeps an error's name, message and stack after a large part used the budget up", () => {
+	it("walks an entry's own errors first, so a large part beside one can't crowd it out", () => {
 		const request = Array.from({ length: 20_000 }, () => ({}));
-		const walked = redact({ request, error: new Error("boom") }) as { error: unknown };
+		const walked = redact({ request, error: new Error("boom") }) as Record<string, unknown>;
 		expect(walked.error).toMatchObject({ name: "Error", message: "boom" });
 		expect((walked.error as { stack: string }).stack).toMatch(/^Error: boom\n/);
+		expect(Object.keys(walked)).toEqual(["request", "error"]);
 	});
 
-	it("stops errors that share each other as fields, past the budget too", () => {
+	it("never reads a field past the budget", () => {
+		let reads = 0;
+		const wide = {};
+		for (let i = 0; i < 20_000; i++) {
+			Object.defineProperty(wide, `k${i}`, { enumerable: true, get: () => ++reads });
+		}
+		const walked = redact({ wide }) as { wide: Record<string, unknown> };
+		expect(reads).toBeLessThan(10_000);
+		expect(walked.wide["[too large]"]).toMatch(/^\d+ more$/);
+	});
+
+	it("stays quick on a huge entry, looking for its errors among only as many fields as it walks", () => {
+		const huge = Object.fromEntries(Array.from({ length: 1_000_000 }, (_, i) => [`k${i}`, i]));
+		const started = performance.now();
+		redact(huge);
+		expect(performance.now() - started).toBeLessThan(1000);
+	});
+
+	it("stops errors that share each other as fields, quickly", () => {
 		let shared = new Error("leaf");
 		for (let i = 0; i < 30; i++)
 			shared = Object.assign(new Error(`level ${i}`), { a: shared, b: shared });
@@ -619,7 +638,28 @@ describe("a value too large to walk", () => {
 		const text = JSON.stringify(redact({ big: Array(20_000).fill(0), error: shared }));
 		expect(performance.now() - started).toBeLessThan(1000);
 		expect(text).toContain("level 29");
+		expect(text).toContain("[too large]");
+	});
+
+	it("counts each field holding an error, even one that is circular", () => {
+		const looped = new Error("looped");
+		for (let i = 0; i < 10_000; i++) Object.assign(looped, { [`f${i}`]: looped });
+		const refs = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`r${i}`, looped]));
+		const started = performance.now();
+		const text = JSON.stringify(redact({ big: Array(20_000).fill(0), ...refs }));
+		expect(performance.now() - started).toBeLessThan(1000);
 		expect(text.length).toBeLessThan(2_000_000);
+	});
+
+	it("counts each field holding an error, even one too deep to walk", () => {
+		const error = new Error("deep");
+		let nested: object = Object.fromEntries(
+			Array.from({ length: 50_000 }, (_, i) => [`e${i}`, error]),
+		);
+		for (let i = 0; i < 31; i++) nested = { nested };
+		const text = JSON.stringify(redact(nested));
+		expect(text.split('"[too deep]"').length - 1).toBeLessThan(10_200);
+		expect(text).toMatch(/"\[too large\]":"\d+ more"/);
 	});
 
 	it("walks an error's cause before its own fields, so a large field can't hide it", () => {
