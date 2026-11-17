@@ -176,6 +176,7 @@ test.describe("owner sign-in", () => {
 				await expect(page.locator(field)).toHaveAttribute("spellcheck", "false");
 			}
 			await page.getByRole("button", { name: "Hide password" }).click();
+			await expect(page.locator("#password")).toHaveAttribute("type", "password");
 
 			await signIn(page, "owner", "not the right password");
 			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");
