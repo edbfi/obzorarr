@@ -126,3 +126,47 @@ test.describe("a browser whose header and navigator.languages disagree", () => {
 		expect(errors).toEqual([]);
 	});
 });
+
+test.describe("the switcher before the page has script", () => {
+	/** The switcher, once shown, as the group its buttons are in. */
+	const switcher = (page: Page) => page.getByRole("group", { name: "Language" });
+	/** Its box, found by its label: a hidden group isn't exposed to `getByRole`. */
+	const switcherBox = (page: Page) => page.locator('fieldset[aria-label="Language"]');
+
+	test.describe("without JavaScript", () => {
+		test.use({ javaScriptEnabled: false });
+
+		test("is hidden, keeping its place, and Tab never reaches its buttons", async ({ page }) => {
+			await page.goto("/");
+			await expect(switcherBox(page)).toBeHidden();
+			const box = await switcherBox(page).boundingBox();
+			expect(box?.width ?? 0).toBeGreaterThan(40);
+			for (let i = 0; i < 8; i++) {
+				await page.keyboard.press("Tab");
+				expect(await page.evaluate(() => document.activeElement?.closest("fieldset"))).toBeNull();
+			}
+		});
+	});
+
+	test("appears once the page hydrates, in the place it kept", async ({ page }) => {
+		let release = () => {};
+		const released = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		await page.route("**/_app/immutable/**/*.js", async (route) => {
+			await released;
+			await route.continue();
+		});
+		await page.goto("/", { waitUntil: "commit" });
+		await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+		await expect(switcherBox(page)).toBeHidden();
+		// Fonts load apart from the held scripts; measured after they settle, a swap can't move it.
+		await page.evaluate(() => document.fonts.ready.then(() => undefined));
+		const before = await switcherBox(page).boundingBox();
+
+		release();
+		await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+		await expect(switcher(page).getByRole("button", { name: "Dansk" })).toBeVisible();
+		expect(await switcherBox(page).boundingBox()).toEqual(before);
+	});
+});

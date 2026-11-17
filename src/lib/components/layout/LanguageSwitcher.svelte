@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale, type Locale, locales, setLocale } from "#lib/paraglide/runtime.js";
 import { css } from "#styled-system/css";
@@ -11,6 +12,14 @@ const railButton = css({ tabletOnly: { paddingInline: "xs" } });
 // The page keeps one language until it reloads (SPEC-i18n.md, "Choosing the language"), so this
 // is read once.
 const current = getLocale();
+
+// The buttons need script, so until the page has it they are hidden, keeping their place so the
+// header doesn't move when they appear (SPEC-i18n.md, "The language switcher").
+let hydrated = $state(false);
+onMount(() => {
+	hydrated = true;
+});
+const hidden = css({ visibility: "hidden" });
 
 /** A language's name in that language, its first letter upper-cased there ("English", "Dansk"). */
 function ownName(locale: Locale): string {
@@ -26,7 +35,11 @@ function choose(locale: Locale) {
 
 <fieldset
 	aria-label={m.language_switcher_label()}
-	class={[css({ display: "flex", flexWrap: "wrap", gap: "xs" }), rail ? railStack : undefined]}
+	class={[
+		css({ display: "flex", flexWrap: "wrap", gap: "xs" }),
+		rail ? railStack : undefined,
+		hydrated ? undefined : hidden,
+	]}
 >
 	{#each locales as locale (locale)}
 		<button
