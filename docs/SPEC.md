@@ -872,8 +872,9 @@ export const GET: RequestHandler = () => healthResponse();
   `config/recovery.test.ts`; `services/sign-in/recovery.test.ts`, the recovery token printed or not
   for each state of the setting, the record of a used token and the claim, that record cleared
   while the setting is off, and the warnings, the token never in a log entry; and recovering: the
-  new password set, every session ended, this one started and the record written, the rules
-  against the stored username and a busy hash slot before the token, a wrong and an expired token
+  new password set, every session ended, this one started and the record written, `setup`'s rules
+  and a busy hash slot before the token, the rule against the stored username after it, leaving the
+  token usable, a wrong and an expired token
   with one answer and no hash, the sixth try in 5 minutes refused before the token, not found
   while off, a sign-in with the old password that ends after it starting no session, and the
   logs;

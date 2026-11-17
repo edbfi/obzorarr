@@ -212,7 +212,7 @@ describe("recover", () => {
 		expect(await recover(db, { token, password: NEW_PASSWORD })).toEqual({ status: "not-found" });
 	});
 
-	it("checks the new password against setup's rules and the stored username first, leaving the token unused", async () => {
+	it("checks the new password against setup's rules, leaving the token unused", async () => {
 		const token = await printedToken();
 		expect(await recover(db, { token, password: "short" })).toEqual({
 			status: "invalid",
@@ -240,6 +240,11 @@ describe("recover", () => {
 			error: "username",
 		});
 		expect(isRecoveryWaiting()).toBe(true);
+		// Nothing was hashed, and the hash slot was freed.
+		expect(hashing.calls).toBe(0);
+		const taken = [1, 2, 3, 4].map(() => hashSlots.take());
+		expect(taken.every((release) => release !== undefined)).toBe(true);
+		for (const release of taken) release?.();
 		expect(await recover(db, { token, password: NEW_PASSWORD })).toMatchObject({
 			status: "recovered",
 		});

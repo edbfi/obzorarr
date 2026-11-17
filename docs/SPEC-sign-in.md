@@ -285,13 +285,13 @@ D20 fixes the mechanism; here is what the owner does.
 3. **`/recovery`** takes the token and a new password, and follows its brief,
    [`route-recovery.md`](../.impeccable/surfaces/route-recovery.md). The username stays as it is:
    forgetting it doesn't call for a new one, and the shell shows it right after.
-4. **On success,** in this order and as the claim does it (the password rules first, then a hash
-   slot, then the token, used up with no `await` between checking and using it, then the hash), one
-   transaction replaces the hash, ends every session, starts this browser's and records that
-   recovery was used (`two-factor` adds turning itself off). The rule against the stored username
-   alone waits for the token, still before it is used up, so a broken rule leaves the token usable
-   and someone without it can't learn whether a string is the owner's username. The browser lands
-   on the Security tab, which shows the warning to turn recovery off.
+4. **On success,** in this order and as the claim does it (`setup`'s password rules first, then a
+   hash slot, then the token, used up with no `await` between checking and using it, then the
+   hash), one transaction replaces the hash, ends every session, starts this browser's and records
+   that recovery was used (`two-factor` adds turning itself off). The rule against the stored
+   username alone waits for the token, still before it is used up, so a broken rule leaves the token
+   usable and someone without it can't learn whether a string is the owner's username. The browser
+   lands on the Security tab, which shows the warning to turn recovery off.
 
 **Around it:**
 - **`/recovery` answers "not found"** while recovery is off, once its token has been used, or while
