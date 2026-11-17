@@ -83,7 +83,8 @@ by a newer Obzorarr: run that version again, or restore the backup taken with th
 run on a schema it doesn't know. A migrations table from before Drizzle 1.0, with no names, is what
 obzorarr 0.1.x left on the same default path: startup refuses it with "The database was made by an
 earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version
-on a new database file" (`LegacyDatabaseError`). How such an install upgrades is decided with the
+with OBZORARR_DATABASE_PATH naming a new database file" (`LegacyDatabaseError`); so does a record
+with no name, which only a half-upgraded table from before 1.0 holds. How such an install upgrades is decided with the
 image.
 
 **Tables:**

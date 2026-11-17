@@ -136,7 +136,7 @@ describe("migrateDatabase", () => {
 		expect(await recorded(db)).toEqual(before);
 	});
 
-	it("refuses a recorded migration with no name, which this build can't match", async () => {
+	it("refuses a recorded migration with no name as a table from before Drizzle 1.0", async () => {
 		const db = await newDatabase("nameless.db");
 		await migrateDatabase(db, FIRST);
 		await (
@@ -144,7 +144,7 @@ describe("migrateDatabase", () => {
 				"INSERT INTO __drizzle_migrations (hash, created_at, name, applied_at) VALUES ('', 1767484800000, NULL, NULL)",
 			)
 		).run();
-		await expect(migrateDatabase(db, BOTH)).rejects.toBeInstanceOf(NewerDatabaseError);
+		await expect(migrateDatabase(db, BOTH)).rejects.toBeInstanceOf(LegacyDatabaseError);
 		expect(await tables(db)).not.toContain("second");
 	});
 
@@ -179,7 +179,7 @@ describe("migrateDatabase", () => {
 		const refusal = migrateDatabase(db);
 		await expect(refusal).rejects.toBeInstanceOf(LegacyDatabaseError);
 		await expect(refusal).rejects.toThrow(
-			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version on a new database file",
+			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version with OBZORARR_DATABASE_PATH naming a new database file",
 		);
 		expect(await tables(db)).not.toContain("owner");
 	});

@@ -38,7 +38,7 @@ export class LegacyDatabaseError extends Error {
 
 	constructor() {
 		super(
-			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version on a new database file",
+			"The database was made by an earlier Obzorarr (0.1), which this version can't use: keep running 0.1 on it, or start this version with OBZORARR_DATABASE_PATH naming a new database file",
 		);
 	}
 }
@@ -47,23 +47,26 @@ export class LegacyDatabaseError extends Error {
 const TABLE = "__drizzle_migrations";
 
 /**
- * The names of the migrations `db` has recorded; none on a new database. A table without names is
- * from before Drizzle 1.0, and refused.
+ * The names of the migrations `db` has recorded; none on a new database. A table without names,
+ * or with a record that has none, is from before Drizzle 1.0, and refused.
  */
-async function recordedNames(db: Database): Promise<(string | null)[]> {
+async function recordedNames(db: Database): Promise<string[]> {
 	const columns = await db.all<{ name: string }>(sql`SELECT name FROM pragma_table_info(${TABLE})`);
 	if (columns.length === 0) return [];
 	if (!columns.some((column) => column.name === "name")) throw new LegacyDatabaseError();
 	const rows = await db.all<{ name: string | null }>(
 		sql`SELECT name FROM ${sql.identifier(TABLE)}`,
 	);
-	return rows.map((row) => row.name);
+	const names = rows.map((row) => row.name);
+	if (!names.every((name): name is string => name !== null)) throw new LegacyDatabaseError();
+	return names;
 }
 
 /**
  * Applies the migrations `db` hasn't recorded yet, in one transaction, and only forward: a
  * database that records a migration not in `bundled` is refused before anything is applied, so an
- * older build never runs on a schema a newer one wrote. Nothing can record a migration between
+ * older build never runs on a schema a newer one wrote, and so is one obzorarr 0.1 left
+ * (`LegacyDatabaseError`). Nothing can record a migration between
  * the check and the migrator: the app is the database's one migration owner and runs this once at
  * startup, on its one connection (D5, D6).
  */
@@ -72,7 +75,7 @@ export async function migrateDatabase(
 	bundled: Record<string, string> = migrations,
 ): Promise<void> {
 	const known = new Set(Object.keys(bundled));
-	if ((await recordedNames(db)).some((name) => name === null || !known.has(name))) {
+	if ((await recordedNames(db)).some((name) => !known.has(name))) {
 		throw new NewerDatabaseError();
 	}
 	await migrate(db, { migrations: bundled });
