@@ -2,6 +2,8 @@
 	"landing_title": "Your year in stories.",
 	"landing_sign_in_status": "Sign-in with Plex is being rebuilt. Your recap is visible to server members only.",
 	"language_switcher_label": "Language",
+	"error_page_title": "Error: {{title}}",
+	"error_summary_title": "There is a problem",
 	"error_access_denied_title": "Access denied",
 	"error_access_denied_description": "The request was refused because it didn't come from this site.",
 	"error_access_denied_proxy_description": "The request didn't come through the proxy {{name}} expects.",

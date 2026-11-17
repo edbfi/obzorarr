@@ -629,7 +629,7 @@ test.describe("the claim", () => {
 		}
 	});
 
-	test("puts a new alert in the page for each refusal, so a screen reader announces each", async ({
+	test("moves focus to the error summary after each refusal, an identical one too", async ({
 		page,
 	}) => {
 		const server = await startServer(root, {
@@ -651,12 +651,15 @@ test.describe("the claim", () => {
 				await page.locator("#username").fill("Owner");
 				await page.locator("#password").fill("violet harbour lanterns");
 				await page.getByRole("button", { name: "Claim and create owner" }).click();
-				await expect(page.getByRole("alert")).toContainText("Too many attempts.");
+				const summary = page.getByRole("region", { name: "There is a problem" });
+				await expect(summary).toBeFocused();
+				await expect(summary.getByRole("listitem")).toHaveText([/^Too many attempts\./]);
+				// A page-level problem marks no field, and the fields keep their descriptions.
+				await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+				await expect(page.locator("#token")).toHaveAccessibleDescription(/^Shown as/);
 			};
 			await claimOnce();
-			await page.getByRole("alert").evaluate((alert) => alert.setAttribute("data-seen", ""));
 			await claimOnce();
-			await expect(page.locator("[role=alert][data-seen]")).toHaveCount(0);
 		} finally {
 			await server.stop();
 		}

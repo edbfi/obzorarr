@@ -2,6 +2,7 @@
 import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
+import ErrorSummary, { type Problem } from "#lib/components/forms/ErrorSummary.svelte";
 import MessageWithCode, { CODE } from "#lib/components/i18n/MessageWithCode.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
@@ -15,11 +16,21 @@ let { form }: PageProps = $props();
 let submitting = $state(false);
 let showPassword = $state(false);
 let passwordInput = $state<HTMLInputElement>();
+let summary = $state<ErrorSummary>();
+
+/** The summary's problems, all the page's own: none names a field (D29). */
+const problems = $derived<Problem[]>([
+	...(form?.wrong ? [{ message: m.sign_in_wrong() }] : []),
+	...(form?.busy ? [{ message: m.error_server_busy({ name: APP_NAME }) }] : []),
+	...(form?.retryAfterSeconds
+		? [{ message: m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) }) }]
+		: []),
+]);
 
 /**
  * While signing in, the button says so and can't be pressed again. A wrong username or password
- * keeps the username, clears the password and moves focus to it, the field to type again; a busy
- * server, too many attempts or a wait checked nothing, so the password stays.
+ * keeps the username and clears the password; a busy server, too many attempts or a wait checked
+ * nothing, so the password stays. Each failure moves focus to the error summary (D29).
  */
 const submit: SubmitFunction = () => {
 	submitting = true;
@@ -30,11 +41,13 @@ const submit: SubmitFunction = () => {
 		}
 		await update({ reset: false });
 		submitting = false;
-		if (result.type === "failure" && !result.data?.wrong) return;
-		showPassword = false;
-		if (passwordInput) passwordInput.value = "";
+		if (result.type !== "failure") return;
+		if (result.data?.wrong) {
+			showPassword = false;
+			if (passwordInput) passwordInput.value = "";
+		}
 		await tick();
-		passwordInput?.focus();
+		summary?.focus();
 	};
 };
 
@@ -62,11 +75,14 @@ const control = css({
 	transitionDuration: "feedback",
 	_hover: { borderColor: "muted" },
 });
-const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold" });
 </script>
 
 <svelte:head>
-	<title>{m.sign_in_page_title()}</title>
+	<title>
+		{problems.length > 0
+			? m.error_page_title({ title: m.sign_in_page_title() })
+			: m.sign_in_page_title()}
+	</title>
 </svelte:head>
 
 <PanelPage>
@@ -80,6 +96,8 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 		use:enhance={submit}
 		class={css({ display: "flex", flexDirection: "column", gap: "xl", marginBlockStart: "xl" })}
 	>
+		<ErrorSummary bind:this={summary} {problems} />
+
 		<div class={css({ display: "flex", flexDirection: "column", gap: "sm" })}>
 			<label class={css({ textStyle: "label" })} for="username">
 				{m.sign_in_username_label()}
@@ -106,18 +124,6 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			label={m.sign_in_password_label()}
 			autocomplete="current-password"
 		/>
-
-		{#if form?.wrong}
-			<p class={error} role="alert">{m.sign_in_wrong()}</p>
-		{/if}
-		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
-		{/if}
-		{#if form?.retryAfterSeconds}
-			<p class={error} role="alert">
-				{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
-			</p>
-		{/if}
 
 		<button
 			type="submit"

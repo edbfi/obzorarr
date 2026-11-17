@@ -25,12 +25,12 @@ Heading 'Claim this Obzorarr'. One line: 'Enter the setup token printed in the s
 
 ## Acceptance criteria
 
-- Errors sit beside their field with helper/error IDs and `aria-invalid`; a wrong or expired token gets one message that names the console, never which of the two it was.
+- After a failed submit the title starts with 'Error: ', and the error summary (D29) is first in the form: 'There is a problem', then the problems in field order, each field's linking to it, a page-level one as text. Field errors also sit beside their field with helper/error IDs and `aria-invalid`. With JavaScript, focus moves to the summary after each failure; without it, nothing is focused. A wrong or expired token gets one message that names the console, never which of the two it was.
 - After a failed submit, the username is kept; the token and password are not.
 - The token field takes the token with or without dashes and in any case; it is not a password field, so the person can check what they typed.
 - No other viewer, server or Plex detail appears.
 - Test keyboard focus, visible labels, disabled behavior and 200% zoom; target 360, 390, 768 and 1440px viewports. Translated text wraps without hiding the primary action.
-- Too many attempts (5 per 5 minutes from one address): 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.' Busy (the server already checking 4 passwords): 'Obzorarr is busy checking other passwords. Try again in a few seconds.' Each beside the button, in an assertive live region; the token stays in its field, still usable.
+- Too many attempts (5 per 5 minutes from one address): 'Too many attempts. Try again in {minutes} minutes. Behind a reverse proxy, set ADDRESS_HEADER so each visitor is counted apart.' Busy (the server already checking 4 passwords): 'Obzorarr is busy checking other passwords. Try again in a few seconds.' Each in the error summary; the token stays in its field, still usable.
 - States: initial, field errors, token refused, too many attempts, busy, submitting. After success the new owner is signed in and lands on the Security tab of the admin's settings (`route-admin-settings-security.md`).
 
 ## Handoff prompt

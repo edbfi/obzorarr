@@ -75,6 +75,8 @@ const describedBy = $derived(
 			bind:this={input}
 			class={css({
 				flex: "1",
+				// An error summary's link scrolls here: the label above stays in view (D29).
+				scrollMarginBlockStart: "xxl",
 				minHeight: "controlHeight",
 				paddingInline: "md",
 				bg: "transparent",

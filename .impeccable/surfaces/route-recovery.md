@@ -25,7 +25,7 @@ Heading 'Recover the owner account'. One line: 'Enter the recovery token printed
 
 ## Acceptance criteria
 
-- Errors sit beside their field with helper/error IDs and `aria-invalid`; a wrong or expired token gets one message that names the console, never which of the two it was.
+- After a failed submit the title starts with 'Error: ', and the error summary (D29) is first in the form, as on the claim. Field errors also sit beside their field with helper/error IDs and `aria-invalid`. With JavaScript, focus moves to the summary after each failure; without it, nothing is focused. A wrong or expired token gets one message that names the console, never which of the two it was.
 - After a failed submit, neither the token nor the password is kept.
 - The token field behaves as the claim's: dashes inserted as typed, any case accepted, not a password field.
 - The password field has `autocomplete="new-password"`. The username is never shown before the token is accepted; after success, the admin shell shows it.

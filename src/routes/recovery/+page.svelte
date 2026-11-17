@@ -3,6 +3,7 @@ import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
 import TokenField from "#lib/components/credentials/TokenField.svelte";
+import ErrorSummary, { type Problem } from "#lib/components/forms/ErrorSummary.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { APP_NAME } from "#lib/shared/app-name.ts";
@@ -23,19 +24,35 @@ let showPassword = $state(false);
 let edited = $state({ token: false, password: false });
 let tokenInput = $state<HTMLInputElement>();
 let passwordInput = $state<HTMLInputElement>();
+let summary = $state<ErrorSummary>();
 
-const tokenError = $derived(
-	form?.tokenRefused && !edited.token ? m.recovery_token_refused({ name: APP_NAME }) : undefined,
+/** What the last answer said of each field; the summary keeps it until the next answer (D29). */
+const tokenProblem = $derived(
+	form?.tokenRefused ? m.recovery_token_refused({ name: APP_NAME }) : undefined,
 );
-const passwordError = $derived(
-	form?.passwordError && !edited.password ? passwordMessages[form.passwordError]() : undefined,
+const passwordProblem = $derived(
+	form?.passwordError ? passwordMessages[form.passwordError]() : undefined,
 );
+/** What each field shows beside itself, until it is edited. */
+const tokenError = $derived(edited.token ? undefined : tokenProblem);
+const passwordError = $derived(edited.password ? undefined : passwordProblem);
 // The too-short answer already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
+/** The summary's problems: the fields' in their order, then the page's (D29). */
+const problems = $derived<Problem[]>([
+	...(tokenProblem ? [{ message: tokenProblem, href: "#token" }] : []),
+	...(passwordProblem ? [{ message: passwordProblem, href: "#password" }] : []),
+	...(form?.failed ? [{ message: m.recovery_failed({ name: APP_NAME }) }] : []),
+	...(form?.busy ? [{ message: m.error_server_busy({ name: APP_NAME }) }] : []),
+	...(form?.retryAfterSeconds
+		? [{ message: m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) }) }]
+		: []),
+]);
+
 /**
  * While the new password is saved, the button says so and can't be pressed again. A failed try
- * keeps neither the token nor the password, and moves focus to the field to fix, or to the token.
+ * keeps neither the token nor the password, and moves focus to the error summary (D29).
  */
 const submit: SubmitFunction = () => {
 	submitting = true;
@@ -52,15 +69,17 @@ const submit: SubmitFunction = () => {
 		if (tokenInput) tokenInput.value = "";
 		if (passwordInput) passwordInput.value = "";
 		await tick();
-		(document.querySelector<HTMLElement>("[aria-invalid='true']") ?? tokenInput)?.focus();
+		if (result.type === "failure") summary?.focus();
 	};
 };
-
-const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold" });
 </script>
 
 <svelte:head>
-	<title>{m.recovery_page_title()}</title>
+	<title>
+		{problems.length > 0
+			? m.error_page_title({ title: m.recovery_page_title() })
+			: m.recovery_page_title()}
+	</title>
 </svelte:head>
 
 <PanelPage>
@@ -73,6 +92,8 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 		use:enhance={submit}
 		class={css({ display: "flex", flexDirection: "column", gap: "xl", marginBlockStart: "xl" })}
 	>
+		<ErrorSummary bind:this={summary} {problems} />
+
 		<TokenField
 			bind:input={tokenInput}
 			id="token"
@@ -92,18 +113,6 @@ const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold
 			help={passwordHelp ? m.setup_password_help({ count: PASSWORD_MIN_LENGTH }) : undefined}
 			oninput={() => (edited.password = true)}
 		/>
-
-		{#if form?.failed}
-			<p class={error} role="alert">{m.recovery_failed({ name: APP_NAME })}</p>
-		{/if}
-		{#if form?.busy}
-			<p class={error} role="alert">{m.error_server_busy({ name: APP_NAME })}</p>
-		{/if}
-		{#if form?.retryAfterSeconds}
-			<p class={error} role="alert">
-				{m.error_too_many_attempts({ count: Math.ceil(form.retryAfterSeconds / 60) })}
-			</p>
-		{/if}
 
 		<button
 			type="submit"

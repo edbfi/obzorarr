@@ -192,6 +192,7 @@ symmetry.
 | `secrets` | the same design; each app lists its own stored secrets | obzorarr | all |
 | `i18n` | the same rules; each app adds its own context | obzorarr | all |
 | `setup`, `sign-in`, `two-factor`, `oidc-sign-in` | a shared core; each capability map names its app's additions | obzorarr | all |
+| Failed form submits: the "Error: " title and `components/forms/ErrorSummary.svelte`, focused only by the enhanced form, never `autofocus` (D29) | the same, on every form | obzorarr | all |
 | Testing patterns: tests beside their source, the e2e smoke on the built server, environment isolation | the same | obzorarr | all |
 | SSRF-safe outbound HTTP | a shared core; each app sets its address policy | obzorarr | all |
 | Providers behind a contract, validated at the boundary | the same pattern | first to build | all |
@@ -494,6 +495,9 @@ src/
                                  the shell's open confirmations, which make the rest inert
       layout/focus-fallback.ts   where focus goes back when the control that opened a dialog is
                                  hidden past the 768px breakpoint
+      forms/ErrorSummary.svelte  a failed submit's problems, first in its form (D29): field problems
+                                 link to their fields, page-level ones are text; focused by the
+                                 page's enhance callback after each failure, never on mount
       credentials/PasswordField.svelte
                                  the owner's password field with its Show/Hide control, shared by
                                  the claim, sign-in, the password change and recovery
@@ -526,6 +530,8 @@ tests/
                                  admin shell, signing out and the Security tab
   e2e/recovery.test.ts           recovery on restarted built servers: the token and warnings,
                                  and `/recovery`
+  e2e/error-summary.test.ts      failed submits without and with JavaScript, and with a late script:
+                                 the title, the summary, its links and where focus goes
   e2e/rate-limits.test.ts        the general limit, the refusal without the address header and
                                  the scanner filter
   e2e/fixture.ts                 Playwright's `test` with each test's own client address
