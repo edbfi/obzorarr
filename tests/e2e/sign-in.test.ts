@@ -166,6 +166,7 @@ test.describe("owner sign-in", () => {
 			await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
 			await expect(page).toHaveTitle("Sign in");
 			await expect(page.locator("#password")).toHaveAttribute("autocomplete", "current-password");
+			await expect(page.locator("#username")).toHaveAttribute("autocorrect", "off");
 
 			await signIn(page, "owner", "not the right password");
 			await expect(page.getByRole("alert")).toHaveText("Username or password is wrong.");

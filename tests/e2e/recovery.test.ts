@@ -143,6 +143,7 @@ test("/recovery sets a new password and lands on the Security tab; the old passw
 		const opened = await page.goto(`${server.url}/recovery`);
 		expect(opened?.headers()["cache-control"]).toBe("no-store");
 		await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+		await expect(page.locator("#token")).toHaveAttribute("autocorrect", "off");
 		// A wrong token first: one answer naming the console, and neither field kept.
 		await page.locator("#token").fill("aaaabbbbcccc");
 		await page.locator("#password").fill(NEW_PASSWORD);

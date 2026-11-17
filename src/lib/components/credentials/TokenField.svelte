@@ -88,6 +88,7 @@ function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
 		type="text"
 		autocomplete="off"
 		autocapitalize="none"
+		autocorrect="off"
 		spellcheck="false"
 		aria-invalid={error ? "true" : undefined}
 		aria-describedby={describedBy}

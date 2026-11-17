@@ -133,6 +133,7 @@ const control = css({
 				type="text"
 				autocomplete="username"
 				autocapitalize="none"
+				autocorrect="off"
 				spellcheck="false"
 				defaultValue={form?.username ?? ""}
 				aria-invalid={usernameError ? "true" : undefined}
