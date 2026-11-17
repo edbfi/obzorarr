@@ -34,7 +34,7 @@ export function drawToken(): string {
 	return token;
 }
 
-/** A new token issued at `now`, lasting 15 minutes unless `lifetimeMs` says otherwise. */
+/** A new token issued at `now`, lasting TOKEN_LIFETIME_MS unless `lifetimeMs` says otherwise. */
 export function issueToken(now: number, lifetimeMs = TOKEN_LIFETIME_MS): ConsoleToken {
 	return { value: drawToken(), issuedAt: now, lifetimeMs };
 }

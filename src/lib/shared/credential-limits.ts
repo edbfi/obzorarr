@@ -3,7 +3,10 @@
 
 /** The longest username, in code points. */
 export const USERNAME_MAX_LENGTH = 64;
-/** The shortest password, in code points: NIST SP 800-63B-4's minimum for a password that is the only factor. */
+/**
+ * The shortest password, in code points: NIST SP 800-63B-4's minimum for a password that is the
+ * only factor.
+ */
 export const PASSWORD_MIN_LENGTH = 15;
 /** The longest password, in code points. */
 export const PASSWORD_MAX_LENGTH = 128;

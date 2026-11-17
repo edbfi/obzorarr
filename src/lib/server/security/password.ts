@@ -47,7 +47,8 @@ function isPattern(chars: string[]): boolean {
 
 /**
  * The owner's username as it is stored: trimmed and normalised to NFC, case kept, 1 to
- * USERNAME_MAX_LENGTH code points, with no control characters; how the case is compared: SPEC-setup.md, "Owner credentials".
+ * USERNAME_MAX_LENGTH code points, with no control characters; how the case is compared:
+ * SPEC-setup.md, "Owner credentials".
  */
 export function checkUsername(
 	raw: string,

@@ -91,7 +91,8 @@ project's languages and no other; flat, non-empty string values; names, `_ordina
 plural forms; the same messages in every language; the same placeholders, names and formats in
 every form; `number` as the only format; exactly the plural forms `Intl.PluralRules` gives each
 language, each with `{{count, number}}`; no brace outside a placeholder; no tags; and, outside a
-placeholder, no digit and not the app's name.
+placeholder, no whole number (digits inside a word, as in "2FA", are a name) and not the app's
+name.
 
 ## The toolchain
 

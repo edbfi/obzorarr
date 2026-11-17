@@ -24,9 +24,10 @@ const strayBrace = (text: string) =>
 	/\{[^{}]*\}|[{}]/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
 /**
  * A number written into the text rather than passed in: a limit, a duration or a count that
- * would drift from the constant the code uses.
+ * would drift from the constant the code uses. Only a whole number: digits inside a word, as in
+ * "2FA" or "IPv6", are part of a name.
  */
-const writtenNumber = (text: string) => /\d+/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
+const writtenNumber = (text: string) => /\b\d+\b/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
 /** The app's name written into the text rather than passed in as `{{name}}`. */
 const writtenName = (text: string) => /obzorarr/i.test(text.replaceAll(/\{\{[^{}]*\}\}/g, ""));
 
@@ -603,6 +604,13 @@ describe("the check", () => {
 	])("reports $clause", ({ files, problems }) => {
 		expect(check(files)).toEqual(problems);
 	});
+
+	it.each(["Turn on 2FA", "Listen on IPv6", "Sign in with 1Password"])(
+		"doesn't take the digits inside a word in %s for a number",
+		(text) => {
+			expect(check(broken(both({ landing_title: text })))).toEqual([]);
+		},
+	);
 
 	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me", "a<b and c>d", "<5 minutes (>1 play)"])(
 		"doesn't take the angle brackets in %s for a tag",
