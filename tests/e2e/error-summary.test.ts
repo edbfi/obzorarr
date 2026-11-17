@@ -250,6 +250,8 @@ test.describe("with JavaScript", () => {
 				await page.locator("#password").fill("violet harbour lanterns");
 				await page.getByRole("button", { name: "Tag i brug og opret ejer" }).click();
 				await expect(summary.getByRole("link")).toHaveText([/^Opsætningskoden/]);
+				// The field shows the same words below itself, so both must fit.
+				await expect(page.locator("#token-error")).toBeVisible();
 				expect(await overflow()).toBe(0);
 			} finally {
 				await context.close();
