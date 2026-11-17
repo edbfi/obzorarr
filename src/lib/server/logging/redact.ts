@@ -182,7 +182,10 @@ function decodeName(name: string): string {
  * at any depth, headers included, and a value with `toJSON` (a `Secret`, a date) is logged as its
  * JSON form. Errors keep their name, message, stack, own fields, cause and errors, each redacted;
  * a failed query's bound values (`params`) and anything shaped like an argon2 password hash are
- * hidden too, wherever the error came from. A circular reference becomes a marker.
+ * hidden too, wherever the error came from. It never throws and always finishes quickly: a
+ * value it can't read, a circular reference, one nested too deep and what lies past the entry's
+ * budget each become a marker (`[unreadable]`, `[circular]`, `[too deep]`, `[too large]`), losing
+ * only their own part.
  */
 export function redact(value: unknown): unknown {
 	return walk(value, { path: new Set(), left: MAX_VALUES }, 0);
@@ -193,8 +196,11 @@ type Walk = { readonly path: Set<object>; left: number };
 
 /** What a value that throws while it is read becomes: a getter, `toJSON` or proxy trap. */
 const UNREADABLE = "[unreadable]";
+/** What a value already on the way down to it becomes. */
+const CIRCULAR = "[circular]";
 /** How deep a value is walked; deeper, such as a runaway chain of causes, is left out. */
 const MAX_DEPTH = 32;
+const TOO_DEEP = "[too deep]";
 /**
  * How many objects, array elements and fields one entry may walk. A shared object is walked once
  * for every path to it, so a few nested ones can stand for millions; past this, nothing more is
@@ -228,8 +234,8 @@ function walk(value: unknown, state: Walk, depth: number): unknown {
 	}
 	if (value === null || typeof value !== "object") return value;
 	const { path } = state;
-	if (path.has(value)) return "[circular]";
-	if (depth >= MAX_DEPTH) return "[too deep]";
+	if (path.has(value)) return CIRCULAR;
+	if (depth >= MAX_DEPTH) return TOO_DEEP;
 	if (state.left <= 0) return TOO_LARGE;
 	state.left--;
 	path.add(value);
