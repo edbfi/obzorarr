@@ -71,6 +71,19 @@ describe("readOrigin", () => {
 			"https:\\\\obzorarr.example",
 			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
 		],
+		// No host between the "//" and what follows it.
+		[
+			"https://\\obzorarr.example",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		[
+			"https:///obzorarr.example",
+			"ORIGIN is not a URL; set it to an origin such as https://obzorarr.example",
+		],
+		// Whitespace around the value, which the parser would trim.
+		[" https://obzorarr.example", "ORIGIN has spaces around it; remove them"],
+		["https://obzorarr.example ", "ORIGIN has spaces around it; remove them"],
+		["https://obzorarr.example\n", "ORIGIN has spaces around it; remove them"],
 		["https://obzorarr.example/?x=1", "ORIGIN must not have a query"],
 		["https://obzorarr.example?", "ORIGIN must not have a query"],
 		["https://obzorarr.example/#top", "ORIGIN must not have a fragment"],
