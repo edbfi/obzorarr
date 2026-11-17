@@ -132,8 +132,8 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 
 /**
  * Issues a new token, schedules the next, then prints it; never once the instance is claimed. The
- * next is scheduled first, and a print that throws is ignored, so an output that fails once never
- * stops the renewals or throws out of a timer.
+ * next is scheduled first, and a print that throws synchronously is ignored, so an output that
+ * fails once never stops the renewals or throws out of a timer.
  */
 function renewToken(): void {
 	if (settings === undefined || claimed || stopped) return;

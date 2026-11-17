@@ -95,9 +95,12 @@ describe("first run's bootstrap token", () => {
 				lifetimeMs: 60,
 			}),
 		).resolves.toBeUndefined();
-		// The next renewal was scheduled anyway, and prints once the output works again.
-		failing = false;
+		// The next renewal was scheduled anyway, and its print throws from inside the timer too.
 		expect(() => vi.advanceTimersByTime(60)).not.toThrow();
+		expect(printed).toEqual([]);
+		// Renewals still go on, and print once the output works again.
+		failing = false;
+		vi.advanceTimersByTime(60);
 		expect(printed).toHaveLength(1);
 	});
 
