@@ -142,18 +142,19 @@ test.describe("with JavaScript", () => {
 
 		// While the next claim is sent, the summary and title stay as they are, so the button just
 		// pressed doesn't move; the answer then focuses the summary again.
-		let answer = () => {};
+		// `held` resolves with the release once the route handler holds the claim.
+		let holding = (_release: () => void) => {};
+		const held = new Promise<() => void>((resolve) => {
+			holding = resolve;
+		});
 		await page.route(`${server.url}/setup`, async (route) => {
 			if (route.request().method() === "POST") {
-				await new Promise<void>((resolve) => {
-					answer = resolve;
-				});
+				await new Promise<void>((resolve) => holding(resolve));
 			}
 			await route.continue();
 		});
-		const posted = page.waitForRequest((request) => request.method() === "POST");
 		await claimShort();
-		await posted;
+		const answer = await held;
 		await expect(page.getByRole("button", { name: "Claiming…" })).toBeDisabled();
 		await expect(summary).toBeVisible();
 		await expect(page).toHaveTitle("Error: Claim this Obzorarr");
