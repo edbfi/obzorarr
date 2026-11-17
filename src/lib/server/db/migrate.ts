@@ -66,9 +66,9 @@ async function recordedNames(db: Database): Promise<string[]> {
  * Applies the migrations `db` hasn't recorded yet, in one transaction, and only forward: a
  * database that records a migration not in `bundled` is refused before anything is applied, so an
  * older build never runs on a schema a newer one wrote, and so is one obzorarr 0.1 left
- * (`LegacyDatabaseError`). Nothing can record a migration between
- * the check and the migrator: the app is the database's one migration owner and runs this once at
- * startup, on its one connection (D5, D6).
+ * (`LegacyDatabaseError`). Nothing can record a migration between the check and the migrator: the
+ * app is the database's one migration owner and runs this once at startup, on its one connection
+ * (D5, D6).
  */
 export async function migrateDatabase(
 	db: Database,
