@@ -2,12 +2,12 @@
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
+import TokenField from "#lib/components/credentials/TokenField.svelte";
 import PanelPage from "#lib/components/layout/PanelPage.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
 import type { PageProps, SubmitFunction } from "./$types";
-import { deleteAcrossDash, formatTokenInput } from "./token-format.ts";
 
 let { form }: PageProps = $props();
 
@@ -37,42 +37,10 @@ const passwordError = $derived(
 // "Use at least 15 characters." already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
-/** The token helper with its format example set like the console line it describes. */
-const FORMAT = "\u0001";
-const tokenHelp = m.setup_token_help({ format: FORMAT }).split(FORMAT);
-
 /** Each field's description: its error, when it has one, then its helper. */
 const describedBy = (id: string, error: string | undefined, help: boolean) =>
 	[error ? `${id}-error` : undefined, help ? `${id}-help` : undefined].filter(Boolean).join(" ") ||
 	undefined;
-
-/** The token reads like the console line it came from: xxxx-xxxx-xxxx as it is typed. */
-function formatToken(event: Event & { currentTarget: HTMLInputElement }) {
-	edited.token = true;
-	const input = event.currentTarget;
-	const next = formatTokenInput(input.value, input.selectionStart ?? input.value.length);
-	input.value = next.value;
-	if (document.activeElement === input) input.setSelectionRange(next.caret, next.caret);
-}
-
-/** Backspace or Delete next to a dash removes the character beyond it. */
-function stepOverDash(event: InputEvent & { currentTarget: HTMLInputElement }) {
-	const input = event.currentTarget;
-	const caret = input.selectionStart;
-	if (caret === null || caret !== input.selectionEnd) return;
-	const direction =
-		event.inputType === "deleteContentBackward"
-			? "backward"
-			: event.inputType === "deleteContentForward"
-				? "forward"
-				: undefined;
-	if (direction === undefined) return;
-	const next = deleteAcrossDash(input.value, caret, direction);
-	if (next === undefined) return;
-	event.preventDefault();
-	input.value = next.value;
-	input.setSelectionRange(next.caret, next.caret);
-}
 
 /**
  * While the claim runs, the button says so and can't be pressed again. A failed claim keeps the
@@ -145,35 +113,14 @@ const control = css({
 			marginBlockStart: "xl",
 		})}
 	>
-		<div class={field}>
-			<label class={label} for="token">{m.setup_token_label()}</label>
-			<input
-				bind:this={tokenInput}
-				class={[
-					control,
-					css({
-						fontFamily: "mono",
-						fontSize: "body",
-						fontVariantNumeric: "tabular-nums",
-					}),
-				]}
-				id="token"
-				name="token"
-				type="text"
-				autocomplete="off"
-				autocapitalize="none"
-				spellcheck="false"
-				aria-invalid={tokenError ? "true" : undefined}
-				aria-describedby={describedBy("token", tokenError, true)}
-				oninput={formatToken}
-				onbeforeinput={stepOverDash}
-			>
-			{#if tokenError}
-				<p class={error} id="token-error">{tokenError}</p>
-			{/if}
-			<!-- biome-ignore format: one line, so no whitespace lands between the format and its full stop -->
-			<p class={help} id="token-help">{#each tokenHelp as part, index (index)}{#if index > 0}<code class={css({ fontFamily: "mono" })}>xxxx-xxxx-xxxx</code>{/if}{part}{/each}</p>
-		</div>
+		<TokenField
+			bind:input={tokenInput}
+			id="token"
+			label={m.setup_token_label()}
+			error={tokenError}
+			help={(format) => m.setup_token_help({ format })}
+			oninput={() => (edited.token = true)}
+		/>
 
 		<div class={field}>
 			<label class={label} for="username">{m.setup_username_label()}</label>

@@ -97,7 +97,7 @@ what comradarr, zondarr, otpravkarr and zimuarr port. Each task's PR body names 
 - [x] Task 10: the admin shell and signing out
 - [x] Task 11: the password change and "Sign out everywhere else"
 - [x] Task 12: the recovery token at startup
-- [ ] Task 13: `/recovery`
+- [x] Task 13: `/recovery`
 - [ ] Task 14: the scanner filter (obzorarr)
 
 ### Checkpoint: complete
