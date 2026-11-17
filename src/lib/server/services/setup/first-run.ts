@@ -130,19 +130,27 @@ export async function withClaimInProgress<T>(work: () => Promise<T>): Promise<T>
 	}
 }
 
-/** Issues and prints a new token, and schedules the next; never once the instance is claimed. */
+/**
+ * Issues a new token, schedules the next, then prints it; never once the instance is claimed. The
+ * next is scheduled first, and a print that throws is ignored, so an output that fails once never
+ * stops the renewals or throws out of a timer.
+ */
 function renewToken(): void {
 	if (settings === undefined || claimed || stopped) return;
 	clearTimeout(timer);
 	token = issueToken(Date.now(), settings.lifetimeMs);
-	const address = `${settings.origin ?? ""}/setup`;
-	const minutes = Math.round(settings.lifetimeMs / 60_000);
-	settings.print(
-		`Setup token: ${formatToken(token.value)} (valid for ${minutes} minutes). Open ${address} to claim this Obzorarr.`,
-	);
 	timer = setTimeout(() => {
 		if (claimsInProgress > 0) renewalWaiting = true;
 		else renewToken();
 	}, settings.lifetimeMs);
 	timer.unref?.();
+	const address = `${settings.origin ?? ""}/setup`;
+	const minutes = Math.round(settings.lifetimeMs / 60_000);
+	try {
+		settings.print(
+			`Setup token: ${formatToken(token.value)} (valid for ${minutes} minutes). Open ${address} to claim this Obzorarr.`,
+		);
+	} catch {
+		// The next token comes at the next renewal; nowhere is left to say this one wasn't printed.
+	}
 }

@@ -79,6 +79,28 @@ describe("first run's bootstrap token", () => {
 		expect(tokenIn(printed[1])).not.toBe(tokenIn(printed[0]));
 	});
 
+	it("keeps renewing when printing a token throws, without the error escaping", async () => {
+		const printed: string[] = [];
+		let failing = true;
+		const db = await newDatabase();
+		fakeClock();
+		await expect(
+			startFirstRun({
+				db,
+				origin: undefined,
+				print: (line) => {
+					if (failing) throw new Error("EPIPE: broken pipe");
+					printed.push(line);
+				},
+				lifetimeMs: 60,
+			}),
+		).resolves.toBeUndefined();
+		// The next renewal was scheduled anyway, and prints once the output works again.
+		failing = false;
+		expect(() => vi.advanceTimersByTime(60)).not.toThrow();
+		expect(printed).toHaveLength(1);
+	});
+
 	it("names the full address when ORIGIN is set", async () => {
 		const printed: string[] = [];
 		await startFirstRun({
