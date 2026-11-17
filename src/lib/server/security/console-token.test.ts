@@ -1,4 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+
+// The real comparison, spied on, so a test can see that the constant-time one decides.
+vi.mock("node:crypto", async (original) => {
+	const actual = await original<typeof import("node:crypto")>();
+	return { ...actual, timingSafeEqual: vi.fn(actual.timingSafeEqual) };
+});
+
+const { timingSafeEqual } = await import("node:crypto");
+
 import {
 	drawToken,
 	formatToken,
@@ -75,6 +84,15 @@ describe("tokenMatches", () => {
 		"abcd-1234-wxyé",
 	])("refuses %j", (entry) => {
 		expect(tokenMatches(token, entry)).toBe(false);
+	});
+
+	it("lets the constant-time comparison decide, never a plain one", () => {
+		vi.mocked(timingSafeEqual).mockClear();
+		expect(tokenMatches(token, "ABCD-1234-WXYZ")).toBe(true);
+		expect(timingSafeEqual).toHaveBeenCalledOnce();
+		// Its answer is the answer: a plain comparison beside it would still say the token matches.
+		vi.mocked(timingSafeEqual).mockReturnValueOnce(false);
+		expect(tokenMatches(token, token)).toBe(false);
 	});
 });
 
