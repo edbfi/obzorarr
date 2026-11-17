@@ -110,8 +110,9 @@ read (a getter, `toJSON` or a proxy) is logged as `[unreadable]`, losing only it
 nested more than 32 levels deep, such as a runaway chain of causes, as `[too deep]`; and past 10,000
 objects, array elements and fields in one entry, such as a shared object reached by many paths or a
 huge array, the rest is left out unread, as `[too large]`. So that a large part can't crowd out
-what an entry is most often written for, its own errors, the ones at its top, are walked before
-its other fields, and an error's cause and errors before its own fields.
+what an entry is most often written for, its own errors, the ones among the first 10,000 fields at
+its top, are walked before its other fields, and an error's cause and errors before its own fields;
+finding them reads those fields' values, each once.
 
 **An unexpected error** while answering a request is one such entry, written by the
 `handleError` hook (`logging/request-error.ts`) with the request's method and path, never its

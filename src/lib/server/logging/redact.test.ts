@@ -621,6 +621,23 @@ describe("a value too large to walk", () => {
 		const walked = redact({ wide }) as { wide: Record<string, unknown> };
 		expect(reads).toBeLessThan(10_000);
 		expect(walked.wide["[too large]"]).toMatch(/^\d+ more$/);
+		reads = 0;
+		// At the top, the first 10,000 values are read to find its errors, and no more.
+		expect(redact(wide)).toHaveProperty(["[too large]"]);
+		expect(reads).toBe(10_000);
+	});
+
+	it("reads each value at the top once, keeping the first answer", () => {
+		let reads = 0;
+		const entry = {
+			get once() {
+				reads++;
+				if (reads > 1) throw new Error("read twice");
+				return "first value";
+			},
+		};
+		expect(redact(entry)).toEqual({ once: "first value" });
+		expect(reads).toBe(1);
 	});
 
 	it("stays quick on a huge entry, looking for its errors among only as many fields as it walks", () => {

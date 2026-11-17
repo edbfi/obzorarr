@@ -287,18 +287,24 @@ function walkFields(
 	state: Walk,
 	depth: number,
 ): Record<string, unknown> {
-	const field = (key: string) => read(() => (value as Record<string, unknown>)[key]);
+	// What the pass for errors below read, kept so that no value is read twice: a getter may run
+	// once only, or answer differently the second time.
+	const readFirst = new Map<string, unknown>();
+	const field = (key: string) =>
+		readFirst.has(key) ? readFirst.get(key) : read(() => (value as Record<string, unknown>)[key]);
 	const done = new Map<string, unknown>();
 	const visit = (key: string, item: unknown) => {
 		state.left--;
 		done.set(key, walk(item, state, depth + 1));
 	};
 	if (depth === 0) {
-		// Looked for among as many fields as the budget could ever walk, so a huge one costs no more.
+		// Looked for among as many fields as the budget could ever walk, so a huge one costs no more:
+		// these are the only values read past the budget.
 		for (const key of keys.slice(0, MAX_VALUES)) {
 			if (state.left <= 0) break;
 			if (sensitive(key)) continue;
 			const item = field(key);
+			readFirst.set(key, item);
 			if (read(() => item instanceof Error) === true) visit(key, item);
 		}
 	}
