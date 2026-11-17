@@ -123,13 +123,21 @@ describe("startUp", () => {
 	describe("a failed start's error entry", () => {
 		/** Writes whose completion the test holds back, released after each test either way. */
 		const held: (() => void)[] = [];
-		const holdWrites = () =>
+		/** Resolves when the next held write arrives. */
+		let written: Promise<void> = Promise.resolve();
+		const holdWrites = () => {
+			let arrived = () => {};
+			written = new Promise((resolve) => {
+				arrived = resolve;
+			});
 			vi.mocked(process.stdout.write).mockImplementation((chunk, ...rest: unknown[]) => {
 				lines.push(String(chunk));
 				const done = rest.find((arg) => typeof arg === "function") as (() => void) | undefined;
 				if (done) held.push(done);
+				arrived();
 				return true;
 			});
+		};
 		afterEach(() => {
 			for (const done of held.splice(0)) done();
 		});
@@ -138,28 +146,34 @@ describe("startUp", () => {
 				{ OBZORARR_SECRET_KEY: key(), OBZORARR_DATABASE_PATH: join(root, file), ORIGIN: "nope" },
 				{ dev: true },
 			);
+		const settledWithin = (promise: Promise<unknown>, ms: number) =>
+			Promise.race([
+				promise.then(() => true),
+				new Promise<boolean>((resolve) => setTimeout(() => resolve(false), ms)),
+			]);
 
 		it("leaves the process before startup throws, so an exit right after doesn't lose it", async () => {
 			holdWrites();
-			let settled = false;
-			const started = failingStart("held.db").catch((error: unknown) => {
-				settled = true;
-				return error;
-			});
-			await new Promise((resolve) => setTimeout(resolve, 50));
+			const started = failingStart("held.db").catch((error: unknown) => error);
+			await written;
 			expect(lines).toHaveLength(1);
-			expect(settled).toBe(false);
+			// Still waiting on the write, well inside the quarter-second bound.
+			expect(await settledWithin(started, 20)).toBe(false);
 			for (const done of held.splice(0)) done();
+			// It throws as soon as the write is done, not when the bound runs out.
+			expect(await settledWithin(started, 100)).toBe(true);
 			expect(await started).toBeInstanceOf(ConfigError);
 		});
 
-		it("can't hold startup's failure back for long when it never leaves", async () => {
+		it("throws after a quarter of a second when its entry never leaves", async () => {
 			holdWrites();
-			const begun = Date.now();
+			const begun = performance.now();
 			expect(await failingStart("stuck.db").catch((error: unknown) => error)).toBeInstanceOf(
 				ConfigError,
 			);
-			expect(Date.now() - begun).toBeLessThan(2000);
+			const waited = performance.now() - begun;
+			expect(waited).toBeGreaterThanOrEqual(240);
+			expect(waited).toBeLessThan(1000);
 		});
 	});
 

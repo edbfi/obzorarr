@@ -191,5 +191,9 @@ function openError(error: unknown, path: string, subject: string): ConfigError {
 
 /** Waits for the log entries written so far to leave the process, for at most `ms`. */
 function flushWithin(ms: number): Promise<void> {
-	return Promise.race([flushLogs(), new Promise<void>((done) => setTimeout(done, ms))]);
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const bound = new Promise<void>((done) => {
+		timer = setTimeout(done, ms);
+	});
+	return Promise.race([flushLogs(), bound]).finally(() => clearTimeout(timer));
 }
