@@ -5,6 +5,7 @@ import { returnPath } from "#lib/server/security/return-path.ts";
 import { SESSION_COOKIE, sessionCookieOptions } from "#lib/server/security/session-cookie.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
 import { signIn } from "#lib/server/services/sign-in/sign-in.ts";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 /** What a failed sign-in sends back: the typed username and what went wrong, nothing else. */
@@ -33,7 +34,7 @@ export const actions: Actions = {
 		// Signing in sets a cookie, whose Secure flag follows the browser's address, so a browser
 		// that didn't say which address it is on is refused before anything is checked.
 		const address = browserAddress(request, currentOrigin());
-		if (address === undefined) error(403, m.error_no_browser_address());
+		if (address === undefined) error(403, m.error_no_browser_address({ name: APP_NAME }));
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {

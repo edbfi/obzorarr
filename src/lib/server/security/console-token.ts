@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+import { CONSOLE_TOKEN_MINUTES } from "#lib/shared/credential-limits.ts";
 
 // The tokens printed to the console: setup's bootstrap token and sign-in's recovery token
 // (SPEC-setup.md, "The bootstrap token"; SPEC-sign-in.md, "Recovery").
@@ -10,7 +11,7 @@ const LENGTH = 12;
 const UNBIASED_LIMIT = 256 - (256 % ALPHABET.length);
 
 /** How long a token lasts, from when it was printed. */
-export const TOKEN_LIFETIME_MS = 15 * 60 * 1000;
+export const TOKEN_LIFETIME_MS = CONSOLE_TOKEN_MINUTES * 60 * 1000;
 
 /** A token, when it was issued and how long it lasts. Held only in memory. */
 export type ConsoleToken = {
@@ -33,7 +34,7 @@ export function drawToken(): string {
 	return token;
 }
 
-/** A new token issued at `now`, lasting 15 minutes unless `lifetimeMs` says otherwise. */
+/** A new token issued at `now`, lasting TOKEN_LIFETIME_MS unless `lifetimeMs` says otherwise. */
 export function issueToken(now: number, lifetimeMs = TOKEN_LIFETIME_MS): ConsoleToken {
 	return { value: drawToken(), issuedAt: now, lifetimeMs };
 }

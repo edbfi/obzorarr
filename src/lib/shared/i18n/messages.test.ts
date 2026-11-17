@@ -22,6 +22,14 @@ const tagShape = /<\/?[A-Za-z0-9][\w.-]*((\s+[\w:-]+)*\s+[\w:-]+\s*=[^<>]*)?\s*\
  */
 const strayBrace = (text: string) =>
 	/\{[^{}]*\}|[{}]/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
+/**
+ * A number written into the text rather than passed in: a limit, a duration or a count that
+ * would drift from the constant the code uses. Only a whole number: digits inside a word, as in
+ * "2FA" or "IPv6", are part of a name.
+ */
+const writtenNumber = (text: string) => /\b\d+\b/.exec(text.replaceAll(/\{\{[^{}]*\}\}/g, ""))?.[0];
+/** The app's name written into the text rather than passed in as `{{name}}`. */
+const writtenName = (text: string) => /obzorarr/i.test(text.replaceAll(/\{\{[^{}]*\}\}/g, ""));
 
 /** One key of one file; `text` is missing when the value isn't a string. */
 interface Form {
@@ -149,6 +157,19 @@ function checkMessages(
 			if (brace) {
 				problems.push(
 					`${locale}: ${key} has a brace outside a {{placeholder}}, which shows as written: ${brace}`,
+				);
+			}
+		}
+		for (const { key, text } of forms) {
+			const number = writtenNumber(text ?? "");
+			if (number) {
+				problems.push(
+					`${locale}: ${key} writes the number ${number} into its text; pass it in as a {{placeholder}}`,
+				);
+			}
+			if (writtenName(text ?? "")) {
+				problems.push(
+					`${locale}: ${key} writes the app's name into its text; pass it in as {{name}}`,
 				);
 			}
 		}
@@ -555,16 +576,44 @@ describe("the check", () => {
 		].map((tag) => ({
 			clause: `the tag ${tag}`,
 			files: broken(both({ landing_title: `ORIGIN=${tag}` })),
-			problems: [
-				`en: landing_title holds something shaped like a tag: ${tag}`,
-				`da: landing_title holds something shaped like a tag: ${tag}`,
-			],
+			// i18next's numbered tag is also a number written into the text.
+			problems: ["en", "da"].flatMap((locale) => [
+				`${locale}: landing_title holds something shaped like a tag: ${tag}`,
+				...(tag === "<0>"
+					? [
+							`${locale}: landing_title writes the number 0 into its text; pass it in as a {{placeholder}}`,
+						]
+					: []),
+			]),
 		})),
+
+		// No number is written into a text: it comes in through a placeholder.
+		{
+			clause: "a number written into the text",
+			files: broken({ en: { landing_title: "Your year in 12 stories." } }),
+			problems: [
+				"en: landing_title writes the number 12 into its text; pass it in as a {{placeholder}}",
+			],
+		},
+		// The app's name is never written into a text: it comes in as `{{name}}`.
+		{
+			clause: "the app's name written into the text",
+			files: broken({ da: { landing_title: "Dit år i obzorarr." } }),
+			problems: ["da: landing_title writes the app's name into its text; pass it in as {{name}}"],
+		},
 	])("reports $clause", ({ files, problems }) => {
 		expect(check(files)).toEqual(problems);
 	});
 
-	it.each(["1 < 2 and 3 > 2, <- back", "I <3 you and > me", "a<b and c>d", "<5 minutes (>1 play)"])(
+	it.each(["Turn on 2FA", "Listen on IPv6", "Sign in with 1Password"])(
+		"doesn't take the digits inside a word in %s for a number",
+		(text) => {
+			expect(check(broken(both({ landing_title: text })))).toEqual([]);
+		},
+	);
+
+	// No whole numbers, which a text can't hold: a digit after `<` stays, inside a word.
+	it.each(["x < y and z > y, <- back", "I <3u and > me", "a<b and c>d", "<5min (>1st play)"])(
 		"doesn't take the angle brackets in %s for a tag",
 		(text) => {
 			expect(check(broken(both({ landing_title: text })))).toEqual([]);

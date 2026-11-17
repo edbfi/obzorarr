@@ -5,6 +5,8 @@ import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
 import MessageWithCode, { CODE } from "#lib/components/i18n/MessageWithCode.svelte";
 import { m } from "#lib/paraglide/messages.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
+import { PASSWORD_MIN_LENGTH } from "#lib/shared/credential-limits.ts";
 import { css } from "#styled-system/css";
 import { enhance } from "$app/forms";
 import type { PageProps, SubmitFunction } from "./$types";
@@ -37,7 +39,7 @@ const nextError = $derived(
 );
 /** The field error the assertive region announces, while the field shows it below itself. */
 const fieldError = $derived(currentError ?? nextError);
-// "Use at least 15 characters." already says what the helper says.
+// The too-short answer already says what the helper says.
 const nextHelp = $derived(!(nextError && answer?.error === "too-short"));
 
 /**
@@ -137,7 +139,7 @@ const button = css({
 			<TriangleAlertIcon size={20} aria-hidden="true" />
 			<span>
 				<MessageWithCode
-					message={m.security_recovery_on({ variable: CODE })}
+					message={m.security_recovery_on({ name: APP_NAME, variable: CODE })}
 					code="OBZORARR_RECOVERY"
 				/>
 			</span>
@@ -169,7 +171,7 @@ const button = css({
 				label={m.security_password_new_label()}
 				autocomplete="new-password"
 				error={nextError}
-				help={nextHelp ? m.setup_password_help() : undefined}
+				help={nextHelp ? m.setup_password_help({ count: PASSWORD_MIN_LENGTH }) : undefined}
 				oninput={() => (edited.next = true)}
 			/>
 
@@ -180,7 +182,7 @@ const button = css({
 				<div role="alert">
 					{#key form}
 						{#if answer?.busy}
-							<p class={[error, message]}>{m.error_server_busy()}</p>
+							<p class={[error, message]}>{m.error_server_busy({ name: APP_NAME })}</p>
 						{:else if answer?.retryAfterSeconds}
 							<p class={[error, message]}>
 								{m.error_too_many_attempts({ count: Math.ceil(answer.retryAfterSeconds / 60) })}

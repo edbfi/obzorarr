@@ -12,6 +12,7 @@ import { currentDatabase, currentOrigin } from "#lib/server/services/setup/start
 import { changePassword } from "#lib/server/services/sign-in/password-change.ts";
 import { isRecoveryOn } from "#lib/server/services/sign-in/recovery.ts";
 import { countOtherSessions, endOtherSessions } from "#lib/server/services/sign-in/sessions.ts";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 /** What the password change sends back: whether it was changed, or what went wrong. */
@@ -70,7 +71,7 @@ export const actions: Actions = {
 	 */
 	password: async ({ request, locals, setHeaders, cookies }) => {
 		const address = browserAddress(request, currentOrigin());
-		if (address === undefined) error(403, m.error_no_browser_address());
+		if (address === undefined) error(403, m.error_no_browser_address({ name: APP_NAME }));
 		const sessionToken = cookies.get(SESSION_COOKIE);
 		if (sessionToken === undefined) sessionEnded(cookies, address);
 		const form = await request.formData();

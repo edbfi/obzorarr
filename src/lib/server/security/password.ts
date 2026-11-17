@@ -1,3 +1,9 @@
+import { APP_NAME } from "#lib/shared/app-name.ts";
+import {
+	PASSWORD_MAX_LENGTH,
+	PASSWORD_MIN_LENGTH,
+	USERNAME_MAX_LENGTH,
+} from "#lib/shared/credential-limits.ts";
 import commonPasswordList from "./common-passwords.txt?raw";
 
 /**
@@ -9,8 +15,6 @@ import commonPasswordList from "./common-passwords.txt?raw";
  * refuses them already.
  */
 const COMMON_PASSWORDS = new Set(commonPasswordList.split("\n").filter((entry) => entry !== ""));
-
-const APP_NAME = "obzorarr";
 
 export type UsernameError = "empty" | "too-long" | "control";
 export type PasswordError =
@@ -42,24 +46,25 @@ function isPattern(chars: string[]): boolean {
 }
 
 /**
- * The owner's username as it is stored: trimmed and normalised to NFC, case kept, 1–64 code
- * points, with no control characters; how the case is compared: SPEC-setup.md, "Owner credentials".
+ * The owner's username as it is stored: trimmed and normalised to NFC, case kept, 1 to
+ * USERNAME_MAX_LENGTH code points, with no control characters; how the case is compared:
+ * SPEC-setup.md, "Owner credentials".
  */
 export function checkUsername(
 	raw: string,
 ): { ok: true; username: string } | { ok: false; error: UsernameError } {
 	const username = raw.trim().normalize("NFC");
 	if (username === "") return { ok: false, error: "empty" };
-	if (codePoints(username) > 64) return { ok: false, error: "too-long" };
+	if (codePoints(username) > USERNAME_MAX_LENGTH) return { ok: false, error: "too-long" };
 	if (/\p{Cc}/u.test(username)) return { ok: false, error: "control" };
 	return { ok: true, username };
 }
 
 /**
- * The owner's password, normalised to NFC: 15–128 code points of any characters, with no
- * composition rules. Ignoring case, it may not be a pattern (`isPattern`), contain the app's name,
- * or contain the username when it has 4 or more characters, and it may not be on the bundled list.
- * 15 is NIST SP 800-63B-4's minimum for a password that is the only factor.
+ * The owner's password, normalised to NFC: PASSWORD_MIN_LENGTH to PASSWORD_MAX_LENGTH code
+ * points of any characters, with no composition rules. Ignoring case, it may not be a pattern
+ * (`isPattern`), contain the app's name, or contain the username when it has 4 or more
+ * characters, and it may not be on the bundled list.
  */
 export function checkPassword(
 	raw: string,
@@ -67,15 +72,15 @@ export function checkPassword(
 ): { ok: true; password: string } | { ok: false; error: PasswordError } {
 	const password = raw.normalize("NFC");
 	const length = codePoints(password);
-	if (length < 15) return { ok: false, error: "too-short" };
-	if (length > 128) return { ok: false, error: "too-long" };
+	if (length < PASSWORD_MIN_LENGTH) return { ok: false, error: "too-short" };
+	if (length > PASSWORD_MAX_LENGTH) return { ok: false, error: "too-long" };
 	const lower = password.toLowerCase();
 	// Each code point lower-cased on its own: the whole string's lower case can end in a final
 	// "ς" or turn "İ" into two code points, which would hide a repeat.
 	if (isPattern([...password].map((char) => char.toLowerCase()))) {
 		return { ok: false, error: "pattern" };
 	}
-	if (lower.includes(APP_NAME)) return { ok: false, error: "app-name" };
+	if (lower.includes(APP_NAME.toLowerCase())) return { ok: false, error: "app-name" };
 	// The username's length is counted as written: lower-casing can lengthen it ("İ" becomes two).
 	const name = username.normalize("NFC");
 	if (codePoints(name) >= 4 && lower.includes(name.toLowerCase())) {

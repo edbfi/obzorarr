@@ -507,6 +507,10 @@ src/
                                  a message with code where its placeholder was, such as a
                                  variable or a path
     shared/                      browser-safe shared code
+      app-name.ts                `APP_NAME`: the name the messages take as `{{name}}`, and the
+                                 password rule refuses
+      credential-limits.ts       the username and password limits and a console token's minutes:
+                                 the rules' and the messages' one source
       i18n/format.ts             `formatNumber` and `formatDateTime` in the current language;
                                  `formatDateTime` needs a time zone
       i18n/messages.test.ts      the message check: every problem in `messages/*.json`

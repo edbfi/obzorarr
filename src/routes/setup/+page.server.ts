@@ -5,6 +5,7 @@ import { SESSION_COOKIE, sessionCookieOptions } from "#lib/server/security/sessi
 import { type ClaimResult, claimInstance } from "#lib/server/services/setup/claim.ts";
 import { isFirstRunComplete } from "#lib/server/services/setup/first-run.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 type Invalid = Extract<ClaimResult, { status: "invalid" }>;
@@ -41,7 +42,7 @@ export const actions: Actions = {
 		// The claim sets a cookie once it signs the owner in, so it needs the browser's address
 		// next, before its limit counts the attempt and before the token can be used up.
 		const address = browserAddress(request, currentOrigin());
-		if (address === undefined) error(403, m.error_no_browser_address());
+		if (address === undefined) error(403, m.error_no_browser_address({ name: APP_NAME }));
 		const form = await request.formData();
 		// Form fields are external input: anything but text counts as empty.
 		const field = (name: string) => {

@@ -5,6 +5,7 @@ import LogOutIcon from "@lucide/svelte/icons/log-out";
 import { firstVisible, refocusIfLost } from "#lib/components/layout/focus-fallback.ts";
 import { shellModals } from "#lib/components/layout/shell-modals.svelte.ts";
 import { m } from "#lib/paraglide/messages.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import { css } from "#styled-system/css";
 
 /**
@@ -116,7 +117,7 @@ const railLabel = css({ tabletOnly: { srOnly: true } });
 				})}
 			>
 				<Dialog.Title class={css({ textStyle: "h3", textWrap: "balance" })}>
-					{m.admin_sign_out_title()}
+					{m.admin_sign_out_title({ name: APP_NAME })}
 				</Dialog.Title>
 				<form
 					method="post"

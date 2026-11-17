@@ -4,6 +4,7 @@ import { browserAddress } from "#lib/server/security/browser-address.ts";
 import { SESSION_COOKIE, sessionCookieDeletion } from "#lib/server/security/session-cookie.ts";
 import { currentDatabase, currentOrigin } from "#lib/server/services/setup/startup.ts";
 import { endSession } from "#lib/server/services/sign-in/sessions.ts";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import type { Actions, PageServerLoad } from "./$types";
 
 /**
@@ -20,7 +21,7 @@ export const actions: Actions = {
 	 */
 	default: async ({ request, cookies }) => {
 		const address = browserAddress(request, currentOrigin());
-		if (address === undefined) error(403, m.error_no_browser_address());
+		if (address === undefined) error(403, m.error_no_browser_address({ name: APP_NAME }));
 		const token = cookies.get(SESSION_COOKIE);
 		if (token !== undefined) await endSession(currentDatabase(), token);
 		cookies.delete(SESSION_COOKIE, sessionCookieDeletion(address));

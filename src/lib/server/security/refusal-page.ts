@@ -1,6 +1,7 @@
 import logo from "#lib/assets/obzorarr-icon.svg?raw";
 import * as m from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
+import { APP_NAME } from "#lib/shared/app-name.ts";
 import tokenDeclarations from "#styled-system/styles/tokens.css?raw";
 import { token } from "#styled-system/tokens";
 import { type RateLimitDecision, rateLimitHeaders } from "./rate-limit.ts";
@@ -20,8 +21,8 @@ export type AccessDeniedReason =
 	| "not-through-proxy";
 
 const accessDeniedDescriptions: Record<AccessDeniedReason, () => string> = {
-	"cross-site": m.error_access_denied_description,
-	"not-through-proxy": m.error_access_denied_proxy_description,
+	"cross-site": () => m.error_access_denied_description(),
+	"not-through-proxy": () => m.error_access_denied_proxy_description({ name: APP_NAME }),
 };
 
 /**
