@@ -330,9 +330,10 @@ src/
   hooks.server.ts                the `init` hook: runs startup, except while building;
                                  `handle`, in order: each request's language, through Paraglide's
                                  middleware, the security headers, the cross-origin check, the
-                                 scanner filter, the client address (kept in `locals.clientAddress` for the actions'
-                                 own limits) and the general rate limit, the session (the owner in
-                                 `locals.owner`), the setup gate, then the owner check;
+                                 scanner filter, the client address (kept in
+                                 `locals.clientAddress` for the actions' own limits) and the
+                                 general rate limit, the session (the owner in `locals.owner`),
+                                 the setup gate, then the owner check;
                                  `handleError`: an unexpected error as one redacted log entry, and
                                  every error's message in the viewer's language
   hooks.client.ts                the browser keeps the language the server chose for the page

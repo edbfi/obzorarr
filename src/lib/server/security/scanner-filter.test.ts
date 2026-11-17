@@ -39,6 +39,11 @@ describe("scannerVerdict", () => {
 		["/index.php%00"],
 		["/wp-admin."],
 		["/console."],
+		["/index.php%20"],
+		// A decoded slash or backslash, which some servers read as a separator.
+		["/x%2F.env"],
+		["/index.php%2F"],
+		["/.git%5Cconfig"],
 	])("answers the probe path %s as a probe", (path) => {
 		expect(scannerVerdict(path, "Mozilla/5.0")).toBe("probe");
 	});

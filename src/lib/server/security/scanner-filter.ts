@@ -36,19 +36,25 @@ const SCANNER_AGENTS = [
 
 /**
  * A path segment as a server would read it: percent-decoded once, keeping the raw text when its
- * escapes don't decode; cut at a `;` parameter or a NUL; without trailing dots; in lower case.
+ * escapes don't decode; split again where a decoded `/` or `\\` stands, as some servers do; each
+ * piece cut at a `;` parameter or a NUL, without trailing dots or spaces, in lower case.
  */
-function segmentAsRead(raw: string): string {
-	let segment: string;
+function segmentsAsRead(raw: string): string[] {
+	let decoded: string;
 	try {
-		segment = decodeURIComponent(raw);
+		decoded = decodeURIComponent(raw);
 	} catch {
-		segment = raw;
+		decoded = raw;
 	}
-	return segment
-		.replace(/[;\0].*$/s, "")
-		.replace(/\.+$/, "")
-		.toLowerCase();
+	return decoded
+		.split(/[/\\]/)
+		.map((piece) =>
+			piece
+				.replace(/[;\0].*$/s, "")
+				.replace(/[.\s]+$/, "")
+				.toLowerCase(),
+		)
+		.filter((piece) => piece !== "");
 }
 
 /**
@@ -60,10 +66,7 @@ export function scannerVerdict(
 	path: string,
 	userAgent: string | null,
 ): "probe" | "scanner" | undefined {
-	const segments = path
-		.split("/")
-		.filter((segment) => segment !== "")
-		.map(segmentAsRead);
+	const segments = path.split("/").flatMap(segmentsAsRead);
 	const first = segments[0] ?? "";
 	const last = segments.at(-1) ?? "";
 	if (
