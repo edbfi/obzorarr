@@ -51,7 +51,7 @@ export type ClaimResult =
 
 const log = createLogger("setup");
 
-/** The claim: 5 tries per 5 minutes from one address (SPEC-sign-in.md, "Rate limits"). */
+/** The claim: 5 tries per 5 minutes from one address (SPEC-sign-in.md, "Rate limits and failed sign-ins"). */
 const claimLimit = createRateLimiter({ limit: 5, windowMs: 5 * 60_000 });
 
 const SLOTS_BUSY: ClaimResult = {

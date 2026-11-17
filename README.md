@@ -180,6 +180,9 @@ common password or, as a whole, a simple pattern such as `abcabcabcabcabc` or `a
   username, in any case, and password. Every admin page sends you there while you're signed out,
   and back to the page afterwards.
 - **Signing out:** Sign out, at the foot of the admin's sidebar, asks first, then ends the session.
+- **Your password and other browsers:** the Security tab of the admin's Settings changes the
+  password, which signs every other browser out, and "Sign out everywhere else" ends the other
+  sessions without changing it.
 
 ## Recovery
 

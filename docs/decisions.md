@@ -438,7 +438,9 @@ with no setting and no "keep me signed in" choice. Failed sign-ins are slowed pe
 (IPv6 per `/64`): beyond the rate limit, an address that keeps failing waits longer each time, from
 5 minutes up to an hour, until it signs in or stays quiet for 24 hours. There is no account-wide
 lockout. The owner sees no list of sessions, only how many others there are and "Sign out
-everywhere else". [SPEC-sign-in.md](SPEC-sign-in.md) has the details. The same in every edbfi app.
+everywhere else". [SPEC-sign-in.md](SPEC-sign-in.md) has the rules around it, and
+`services/sign-in/sessions.ts` and `security/failed-sign-ins.ts` with their tests the exact
+schedule. The same in every edbfi app.
 
 Why: admin work comes in bursts (a few evenings at year end, a sync problem over a weekend), so a
 fixed 7 days would sign the owner out mid-task and, once `two-factor` is on, ask for a code again

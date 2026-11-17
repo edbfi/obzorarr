@@ -19,7 +19,7 @@ export type TooMany = {
 
 const log = createLogger("sign-in");
 
-/** Signing in: 10 per 5 minutes from one address (SPEC-sign-in.md, "Rate limits"). */
+/** Signing in: 10 per 5 minutes from one address (SPEC-sign-in.md, "Rate limits and failed sign-ins"). */
 const SIGN_IN_LIMIT = 10;
 const signInLimit = createRateLimiter({ limit: SIGN_IN_LIMIT, windowMs: 5 * 60_000 });
 

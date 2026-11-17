@@ -12,7 +12,7 @@ import {
 
 /**
  * The settings key of first run's step pointer. The claim is the only step until `two-factor`
- * adds the next, so the claim moves it straight to `complete` (SPEC-setup.md, "Before sign-in").
+ * adds the next, so the claim moves it straight to `complete` (SPEC-setup.md, "First run").
  */
 export const FIRST_RUN_STEP_KEY = "setup.first-run.step";
 export const FIRST_RUN_COMPLETE = "complete";

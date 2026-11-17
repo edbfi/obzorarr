@@ -23,8 +23,7 @@ visitor to `/setup`, where the bootstrap token printed to the console creates th
 
 **Left out on purpose:** signing the owner in at the claim, sessions, the browser's address, rate
 limits, cookies and the error pages (`sign-in`); the two-factor offer (`two-factor`); every later
-first-run step. Until `sign-in` is built, a claimed instance has no way to sign in, and first run
-ends at the claim ("Before `sign-in`", below).
+first-run step. First run ends at the claim until `two-factor` adds the next step.
 
 ## Configuration and startup checks
 
@@ -177,9 +176,8 @@ framing and the CSP don't apply to them, and Bun sends each file with its real c
 
 **The setup gate** is the last `setup` stage in `handle`. Until first run is complete, every request
 except the current first-run step, `/healthz` and the responses produced before `handle` gets a 303
-to that step. Sign-in and first run's own helpers join the exceptions when their modules add them.
-It reads first run's state from memory, which startup loads and the claim updates (one process,
-D17).
+to that step. A later first-run step's own helpers join the exceptions when its module adds them. It
+reads first run's state from memory, which startup loads and the claim updates (one process, D17).
 
 **The step pointer.** The server keeps one current-step pointer in `settings`. The browser can't
 skip ahead: each step's action checks that it is the current step, a step that offers Previous only
@@ -192,12 +190,13 @@ last step summarises the configuration and the sync status.
 `/setup`, and the full address when `ORIGIN` is set, since the server doesn't otherwise know its
 address. A new one is printed every 15 minutes until the claim, and none after it.
 
-**The claim** checks the fields, then checks and uses up the token with no `await` between the
-two, then hashes the password, then creates the owner and moves the step pointer in one
-transaction. The cheap checks come first so a wrong guess never costs a hash, and a field error
-leaves the token unused. The claim stores no address, and nothing but the owner row and the
-pointer. After it, the claim no longer exists: `/setup` answers "not found" once first run is
-complete (D20), and the claim action answers it whenever the instance is claimed.
+**The claim** checks the fields, then checks and uses up the token with no `await` between the two,
+then hashes the password, then creates the owner and moves the step pointer in one transaction,
+which (`sign-in`) also starts the owner's first session. The cheap checks come first so a wrong
+guess never costs a hash, and a field error leaves the token unused. The claim stores no address,
+and nothing but the owner row, the pointer and that session. After it, the claim no longer exists:
+`/setup` answers "not found" once first run is complete (D20), and the claim action answers it
+whenever the instance is claimed.
 
 **Owner credentials,** in `security/password.ts`, which `sign-in`'s password change and recovery
 reuse:
@@ -216,21 +215,6 @@ reuse:
   confirmation field.
 
 **Trust:** anyone who can read the server console can claim a fresh install.
-
-## Before `sign-in`
-
-`setup` is built before `sign-in`, which brings the rest of the protections. Until then:
-- **Rate limits:** none. The token has 62 bits and lasts 15 minutes, and a wrong token costs no
-  hash, so guessing it isn't practical; `sign-in` adds the claim's limit
-  ([SPEC-sign-in.md](SPEC-sign-in.md#rate-limits-and-failed-sign-ins)).
-- **The browser's address and cookies:** the claim sets no cookie yet, so it needs neither. Once
-  `sign-in` starts the owner's session at the claim, the claim needs the browser's address, and the
-  session follows `sign-in`'s cookies.
-- **First run ends at the claim,** its only step: the claim completes first run. `sign-in` signs
-  the new owner in at the claim and sends the browser to `/admin`, and `two-factor` adds the first
-  step after it, from which on the claim no longer completes first run.
-
-No release is cut between `setup` and `sign-in`.
 
 ## Boundaries
 
