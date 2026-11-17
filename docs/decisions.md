@@ -466,8 +466,10 @@ pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`) and every l
   field (`#token`); a page-level one (wrong credentials, busy, too many attempts, a server failure)
   is text, without a link, and marks no field invalid. Nothing failed, nothing rendered. Its links
   are `danger`, not `secondary`, as the pattern's are.
-- **Field messages** stay beside their fields, with `aria-invalid` and `aria-describedby`.
-  Page-level messages are only in the summary, with no `role="alert"`.
+- **Field messages** stay beside their fields, with `aria-invalid` and `aria-describedby`, and
+  clear as their field is edited. The summary and the title keep the last answer until the next,
+  so nothing moves while someone types or while the form is sent. Page-level messages are only in
+  the summary, with no `role="alert"`.
 - **With JavaScript,** the enhance callback applies the answer (`reset: false` and each page's rules
   for clearing credentials), waits a tick, then focuses the summary (`tabindex="-1"`), after every
   failure, an identical repeat too. Nothing takes focus on mount or hydration, so a late script

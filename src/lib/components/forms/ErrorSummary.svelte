@@ -14,6 +14,8 @@ import { css } from "#styled-system/css";
  * failure, so a late script never moves focus, and without JavaScript nothing is focused.
  */
 let { problems }: { problems: Problem[] } = $props();
+/** The heading's and list's ids, unique to this summary. */
+const id = $props.id();
 
 let summary = $state<HTMLElement>();
 
@@ -28,8 +30,8 @@ export function focus(): void {
 	<section
 		bind:this={summary}
 		tabindex="-1"
-		aria-labelledby="error-summary-title"
-		aria-describedby="error-summary-problems"
+		aria-labelledby="{id}-title"
+		aria-describedby="{id}-problems"
 		class={css({
 			display: "flex",
 			flexDirection: "column",
@@ -49,14 +51,14 @@ export function focus(): void {
 			},
 		})}
 	>
-		<h2 id="error-summary-title" class={css({ textStyle: "h3" })}>
+		<h2 id="{id}-title" class={css({ textStyle: "h3" })}>
 			{m.error_summary_title()}
 		</h2>
 		<ul
-			id="error-summary-problems"
+			id="{id}-problems"
 			class={css({ display: "flex", flexDirection: "column", gap: "xs", color: "danger" })}
 		>
-			{#each problems as problem (problem.message)}
+			{#each problems as problem (problem.href ?? problem.message)}
 				<li class={css({ fontWeight: "semibold" })}>
 					{#if problem.href}
 						<a

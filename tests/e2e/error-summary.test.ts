@@ -137,11 +137,55 @@ test.describe("with JavaScript", () => {
 			"Use at least 15 characters.",
 		);
 
+		// Focus announces the heading, with the problems as the summary's description.
+		await expect(summary).toHaveAccessibleDescription("Use at least 15 characters.");
+
+		// While the next claim is sent, the summary and title stay as they are, so the button just
+		// pressed doesn't move; the answer then focuses the summary again.
+		let answer = () => {};
+		await page.route(`${server.url}/setup`, async (route) => {
+			if (route.request().method() === "POST") {
+				await new Promise<void>((resolve) => {
+					answer = resolve;
+				});
+			}
+			await route.continue();
+		});
 		await claimShort();
+		await expect(page.getByRole("button", { name: "Claiming…" })).toBeDisabled();
+		await expect(summary).toBeVisible();
+		await expect(page).toHaveTitle("Error: Claim this Obzorarr");
+		answer();
+		await expect(page.getByRole("button", { name: "Claim and create owner" })).toBeEnabled();
 		await expect(summary).toBeFocused();
 
 		await summary.getByRole("link").click();
 		await expect(page.locator("#password")).toBeFocused();
+	});
+
+	test("editing a field clears its own message, but the summary and title keep the last answer", async ({
+		page,
+	}) => {
+		await page.goto(`${server.url}/setup`);
+		await page.locator("html[data-hydrated]").waitFor({ state: "attached" });
+		await page.locator("#token").fill("aaaa-bbbb-cccc");
+		await page.locator("#password").fill("short");
+		await page.getByRole("button", { name: "Claim and create owner" }).click();
+		const summary = summaryOf(page);
+		await expect(summary).toBeFocused();
+		const top = await page.locator("#username").boundingBox();
+
+		// Fixing both fields leaves the summary where it is, so nothing moves under the caret.
+		await page.locator("#username").fill("Owner");
+		await page.locator("#password").fill("violet harbour lanterns");
+		await expect(page.locator("#username-error")).toHaveCount(0);
+		await expect(page.locator("#password")).not.toHaveAttribute("aria-invalid", "true");
+		await expect(summary.getByRole("link")).toHaveText([
+			"Enter a username.",
+			"Use at least 15 characters.",
+		]);
+		await expect(page).toHaveTitle("Error: Claim this Obzorarr");
+		expect((await page.locator("#username").boundingBox())?.y).toBe(top?.y);
 	});
 
 	test("a server failure is listed as text and marks no field", async ({ page }) => {

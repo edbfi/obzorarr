@@ -1003,10 +1003,10 @@ export const GET: RequestHandler = () => healthResponse();
   - `recovery.test.ts` checks that a claimed server restarted with `OBZORARR_RECOVERY` on prints the
     recovery token to the console, in no log entry or response, and that the Security tab warns;
     that an unclaimed one prints none and warns; that `/recovery` is `no-store`, answers a wrong
-    token naming the console, keeping neither field and focusing the summary, whose link names the
-    token, without JavaScript too, focusing nothing, then sets the new password and lands on the
-    Security tab, after which the old password and the claim's session no longer work and
-    `/recovery` is not found, also after a restart, which prints no token; that a POST with
+    token naming the console, keeping neither field and focusing the summary, whose link goes to the
+    token (without JavaScript, the same summary, with nothing focused), then sets the new password
+    and lands on the Security tab, after which the old password and the claim's session no longer
+    work and `/recovery` is not found, also after a restart, which prints no token; that a POST with
     `Origin` stripped gets the 403 and leaves the token usable; and that the page shows in English
     and Danish with no console error or CSP violation.
   - `error-summary.test.ts` checks the failed submits (D29): without JavaScript, a first visit has

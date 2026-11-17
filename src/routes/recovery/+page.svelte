@@ -26,19 +26,23 @@ let tokenInput = $state<HTMLInputElement>();
 let passwordInput = $state<HTMLInputElement>();
 let summary = $state<ErrorSummary>();
 
-const tokenError = $derived(
-	form?.tokenRefused && !edited.token ? m.recovery_token_refused({ name: APP_NAME }) : undefined,
+/** What the last answer said of each field; the summary keeps it until the next answer (D29). */
+const tokenProblem = $derived(
+	form?.tokenRefused ? m.recovery_token_refused({ name: APP_NAME }) : undefined,
 );
-const passwordError = $derived(
-	form?.passwordError && !edited.password ? passwordMessages[form.passwordError]() : undefined,
+const passwordProblem = $derived(
+	form?.passwordError ? passwordMessages[form.passwordError]() : undefined,
 );
+/** What each field shows beside itself, until it is edited. */
+const tokenError = $derived(edited.token ? undefined : tokenProblem);
+const passwordError = $derived(edited.password ? undefined : passwordProblem);
 // The too-short answer already says what the helper says.
 const passwordHelp = $derived(!(passwordError && form?.passwordError === "too-short"));
 
 /** The summary's problems: the fields' in their order, then the page's (D29). */
 const problems = $derived<Problem[]>([
-	...(tokenError ? [{ message: tokenError, href: "#token" }] : []),
-	...(passwordError ? [{ message: passwordError, href: "#password" }] : []),
+	...(tokenProblem ? [{ message: tokenProblem, href: "#token" }] : []),
+	...(passwordProblem ? [{ message: passwordProblem, href: "#password" }] : []),
 	...(form?.failed ? [{ message: m.recovery_failed({ name: APP_NAME }) }] : []),
 	...(form?.busy ? [{ message: m.error_server_busy({ name: APP_NAME }) }] : []),
 	...(form?.retryAfterSeconds

@@ -225,7 +225,8 @@ D20 fixes the mechanism; here is what the owner does.
 - **A failed submit** on the claim, sign-in and recovery, and on every later form, answers with the
   "Error: " title and the error summary first in the form (D29): its field problems link to their
   fields, its page-level ones (a wrong username or password, busy, too many attempts, a server
-  failure) mark no field. With JavaScript it takes focus after each failure; without, nothing is
+  failure) mark no field. It keeps the last answer until the next, while a field's own message
+  clears as it is edited. With JavaScript it takes focus after each failure; without, nothing is
   focused.
 
 - **Stack traces never reach the browser:** an unexpected error says "Something went wrong. Try
