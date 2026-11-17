@@ -3,6 +3,7 @@ import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
 import { tick } from "svelte";
 import PasswordField from "#lib/components/credentials/PasswordField.svelte";
 import { passwordMessages } from "#lib/components/credentials/password-messages.ts";
+import ErrorSummary, { type Problem } from "#lib/components/forms/ErrorSummary.svelte";
 import MessageWithCode, { CODE } from "#lib/components/i18n/MessageWithCode.svelte";
 import { m } from "#lib/paraglide/messages.js";
 import { APP_NAME } from "#lib/shared/app-name.ts";
@@ -27,26 +28,37 @@ let showNext = $state(false);
 let edited = $state({ current: false, next: false });
 let currentInput = $state<HTMLInputElement>();
 let nextInput = $state<HTMLInputElement>();
+let summary = $state<ErrorSummary>();
 
 const answer = $derived(form && "password" in form ? form.password : undefined);
 const ended = $derived(form && "sessions" in form ? form.sessions?.ended : undefined);
 
-const currentError = $derived(
-	answer?.wrongCurrent && !edited.current ? m.security_password_wrong_current() : undefined,
+/** What the last answer said of each field; the summary keeps it until the next answer (D29). */
+const currentProblem = $derived(
+	answer?.wrongCurrent ? m.security_password_wrong_current() : undefined,
 );
-const nextError = $derived(
-	answer?.error && !edited.next ? passwordMessages[answer.error]() : undefined,
-);
-/** The field error the assertive region announces, while the field shows it below itself. */
-const fieldError = $derived(currentError ?? nextError);
+const nextProblem = $derived(answer?.error ? passwordMessages[answer.error]() : undefined);
+/** What each field shows beside itself, until it is edited. */
+const currentError = $derived(edited.current ? undefined : currentProblem);
+const nextError = $derived(edited.next ? undefined : nextProblem);
+
+/** The summary's problems: the fields' in their order, then the form's (D29). */
+const problems = $derived<Problem[]>([
+	...(currentProblem ? [{ message: currentProblem, href: "#current" }] : []),
+	...(nextProblem ? [{ message: nextProblem, href: "#next" }] : []),
+	...(answer?.busy ? [{ message: m.error_server_busy({ name: APP_NAME }) }] : []),
+	...(answer?.retryAfterSeconds
+		? [{ message: m.error_too_many_attempts({ count: Math.ceil(answer.retryAfterSeconds / 60) }) }]
+		: []),
+]);
 // The too-short answer already says what the helper says.
 const nextHelp = $derived(!(nextError && answer?.error === "too-short"));
 
 /**
  * While the change is saved, the button says so and can't be pressed again. A change, or a
- * field error, empties both fields and hides what was typed; the field to fix takes focus, or
- * after a change the section's heading, since the disabled button lost it. Too many attempts or
- * a busy server checked nothing, so both passwords stay.
+ * field error, empties both fields and hides what was typed; too many attempts or a busy server
+ * checked nothing, so both passwords stay. A failure moves focus to the error summary (D29); a
+ * change to the section's heading, since the disabled button lost it.
  */
 const savePassword: SubmitFunction = () => {
 	saving = true;
@@ -55,19 +67,19 @@ const savePassword: SubmitFunction = () => {
 		await update({ reset: false });
 		saving = false;
 		edited = { current: false, next: false };
+		if (result.type === "error") return;
 		const heldBack =
 			result.type === "failure" &&
 			(result.data?.password?.busy || result.data?.password?.retryAfterSeconds);
-		if (result.type === "error" || heldBack) return;
-		showCurrent = false;
-		showNext = false;
-		if (currentInput) currentInput.value = "";
-		if (nextInput) nextInput.value = "";
+		if (!heldBack) {
+			showCurrent = false;
+			showNext = false;
+			if (currentInput) currentInput.value = "";
+			if (nextInput) nextInput.value = "";
+		}
 		await tick();
-		(
-			document.querySelector<HTMLElement>("#password-section [aria-invalid='true']") ??
-			document.querySelector<HTMLElement>("#password-heading")
-		)?.focus();
+		if (result.type === "failure") summary?.focus();
+		else document.querySelector<HTMLElement>("#password-heading")?.focus();
 	};
 };
 
@@ -87,7 +99,6 @@ const section = css({ display: "flex", flexDirection: "column", gap: "lg" });
 /** A heading that takes focus after its section's action, without a ring: it isn't a control. */
 const heading = css({ textStyle: "h2", textWrap: "balance", _focus: { outlineStyle: "none" } });
 const status = css({ textStyle: "body", color: "success" });
-const error = css({ textStyle: "caption", color: "danger", fontWeight: "semibold" });
 /** A message above the control it is about. */
 const message = css({ marginBlockEnd: "lg" });
 const button = css({
@@ -103,7 +114,11 @@ const button = css({
 </script>
 
 <svelte:head>
-	<title>{m.admin_settings_title()}</title>
+	<title>
+		{problems.length > 0
+			? m.error_page_title({ title: m.admin_settings_title() })
+			: m.admin_settings_title()}
+	</title>
 </svelte:head>
 
 <div
@@ -155,6 +170,9 @@ const button = css({
 			use:enhance={savePassword}
 			class={css({ display: "flex", flexDirection: "column", gap: "xl" })}
 		>
+			<!-- Inside the Password section, so its heading is one level below the section's. -->
+			<ErrorSummary bind:this={summary} {problems} level={3} />
+
 			<PasswordField
 				bind:input={currentInput}
 				bind:shown={showCurrent}
@@ -175,23 +193,10 @@ const button = css({
 				oninput={() => (edited.next = true)}
 			/>
 
-			<!-- The messages sit with the button, so an empty live region takes no space. Errors are
-			announced at once, a field's too, which it also shows below itself; the saved message waits
-			its turn. Each answer renders its message anew, so the same message is announced again. -->
+			<!-- The saved message sits with the button, so an empty live region takes no space; it
+			waits its turn. Each answer renders it anew, so the same message is announced again.
+			Failures are in the error summary above (D29). -->
 			<div>
-				<div role="alert">
-					{#key form}
-						{#if answer?.busy}
-							<p class={[error, message]}>{m.error_server_busy({ name: APP_NAME })}</p>
-						{:else if answer?.retryAfterSeconds}
-							<p class={[error, message]}>
-								{m.error_too_many_attempts({ count: Math.ceil(answer.retryAfterSeconds / 60) })}
-							</p>
-						{:else if fieldError}
-							<p class={css({ srOnly: true })}>{fieldError}</p>
-						{/if}
-					{/key}
-				</div>
 				<div role="status">
 					{#key form}
 						{#if answer?.changed}

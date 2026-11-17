@@ -13,7 +13,14 @@ import { css } from "#styled-system/css";
  * failed. It never takes focus by itself: the page's enhance callback calls `focus()` after each
  * failure, so a late script never moves focus, and without JavaScript nothing is focused.
  */
-let { problems }: { problems: Problem[] } = $props();
+let {
+	problems,
+	level = 2,
+}: {
+	problems: Problem[];
+	/** The heading's level: 2 on a page of one form, one below its section's heading inside one. */
+	level?: 2 | 3;
+} = $props();
 /** The heading's and list's ids, unique to this summary. */
 const id = $props.id();
 
@@ -51,9 +58,9 @@ export function focus(): void {
 			},
 		})}
 	>
-		<h2 id="{id}-title" class={css({ textStyle: "h3" })}>
+		<svelte:element this={`h${level}`} id="{id}-title" class={css({ textStyle: "h3" })}>
 			{m.error_summary_title()}
-		</h2>
+		</svelte:element>
 		<ul
 			id="{id}-problems"
 			class={css({ display: "flex", flexDirection: "column", gap: "xs", color: "danger" })}

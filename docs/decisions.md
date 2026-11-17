@@ -457,7 +457,8 @@ few sessions hardly needs. A council of three models agreed on all three.
 ### D29. A failed submit answers with an error summary, not field focus
 
 A failed submit follows the GOV.UK error-summary pattern (WCAG techniques G139 and G83), on the
-pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`) and every later form:
+pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`), the Security tab's password
+change and every later form:
 - **The title** starts with "Error: ", through one message for the whole template
   (`error_page_title`, "Error: {{title}}", Danish "Fejl: {{title}}"), so the word order can be
   translated.
@@ -478,9 +479,7 @@ pages shown before sign-in (`/setup`, `/admin/sign-in`, `/recovery`) and every l
 - **Not used:** `action="#…"` fragment tricks, native validation (forms keep `novalidate`) and form
   libraries.
 
-The same in every edbfi app, with obzorarr's component, tests and wording the reference. One form
-was built before it: the Security tab's password change still focuses the field to fix and
-announces it in an assertive region, until a follow-up converts it.
+The same in every edbfi app, with obzorarr's component, tests and wording the reference.
 
 Why: focusing the first invalid field skipped the page's heading and the reason it failed, and a
 page-level failure has no field to focus. Without JavaScript, `autofocus` was the only way to move
