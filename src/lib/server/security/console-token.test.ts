@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // The real comparison, spied on, so a test can see that the constant-time one decides.
 vi.mock("node:crypto", async (original) => {
@@ -64,6 +64,11 @@ describe("formatToken", () => {
 
 describe("tokenMatches", () => {
 	const token = "abcd1234wxyz";
+
+	// Back to the real comparison, so an answer a failed test queued can't reach the next test.
+	afterEach(() => {
+		vi.mocked(timingSafeEqual).mockReset();
+	});
 
 	it.each([
 		"abcd-1234-wxyz",
