@@ -23,8 +23,7 @@ visitor to `/setup`, where the bootstrap token printed to the console creates th
 
 **Left out on purpose:** signing the owner in at the claim, sessions, the browser's address, rate
 limits, cookies and the error pages (`sign-in`); the two-factor offer (`two-factor`); every later
-first-run step. Until `sign-in` is built, a claimed instance has no way to sign in, and first run
-ends at the claim ("Before `sign-in`", below).
+first-run step. First run ends at the claim until `two-factor` adds the next step.
 
 ## Configuration and startup checks
 
@@ -216,21 +215,6 @@ reuse:
   confirmation field.
 
 **Trust:** anyone who can read the server console can claim a fresh install.
-
-## Before `sign-in`
-
-`setup` is built before `sign-in`, which brings the rest of the protections. Until then:
-- **Rate limits:** none. The token has 62 bits and lasts 15 minutes, and a wrong token costs no
-  hash, so guessing it isn't practical; `sign-in` adds the claim's limit
-  ([SPEC-sign-in.md](SPEC-sign-in.md#rate-limits-and-failed-sign-ins)).
-- **The browser's address and cookies:** the claim sets no cookie yet, so it needs neither. Once
-  `sign-in` starts the owner's session at the claim, the claim needs the browser's address, and the
-  session follows `sign-in`'s cookies.
-- **First run ends at the claim,** its only step: the claim completes first run. `sign-in` signs
-  the new owner in at the claim and sends the browser to `/admin`, and `two-factor` adds the first
-  step after it, from which on the claim no longer completes first run.
-
-No release is cut between `setup` and `sign-in`.
 
 ## Boundaries
 

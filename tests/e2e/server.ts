@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { expect } from "@playwright/test";
 
 // Fresh built servers for the tests that need one of their own: unclaimed, restarted, or with an
-// environment of its own (SPEC-sign-in.md, "Testing strategy").
+// environment of its own (SPEC.md, "Testing strategy").
 const BUILD = fileURLToPath(new URL("../../build", import.meta.url));
 
 const randomKey = () => crypto.getRandomValues(new Uint8Array(32)).toBase64();

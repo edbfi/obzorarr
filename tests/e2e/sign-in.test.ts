@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { chromium, expect, type Page, test } from "@playwright/test";
 import { claim, startServer } from "./server.ts";
 
-// Signing in on the built server (SPEC-sign-in.md, "Testing strategy"). Each test starts its own
+// Signing in on the built server (SPEC.md, "Testing strategy"). Each test starts its own
 // server (`server.ts`), with a generated key and a database in its own temporary folder.
 let root: string;
 

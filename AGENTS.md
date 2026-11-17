@@ -284,8 +284,8 @@ it shuts down cleanly, every page carries the security headers and a nonce-based
 state-changing request from another site gets "Access denied". Until it is claimed, an instance
 sends every page to `/setup` and prints its bootstrap token to the console; it is claimed there,
 which creates the owner account. Module 5, `sign-in`
-([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is being built task by task ([`tasks/`](tasks/));
-so far, errors and refusals show branded pages, each client address is limited to 60 requests a
+([`docs/SPEC-sign-in.md`](docs/SPEC-sign-in.md)), is built, so the owner can sign in: errors and
+refusals show branded pages, each client address is limited to 60 requests a
 minute, with requests that bypass a configured proxy refused, the claim to 5 tries per 5 minutes,
 and password hashing to 4 at once; the claim refuses a browser that didn't say which address it is
 on, signs the new owner in with a session and lands on the admin's Settings; and the owner signs
@@ -296,7 +296,7 @@ the language switcher and the version. The Security tab changes the owner's pass
 every other browser out, and has "Sign out everywhere else". With `OBZORARR_RECOVERY` on, startup
 prints a recovery token for the owner and warns, the owner sets a new password with it at
 `/recovery`, and the Security tab says to turn it off. Probe paths and known scanners are turned
-away before the rate limits.
+away before the rate limits. Module 6, `two-factor`, comes next, through its own spec.
 
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
