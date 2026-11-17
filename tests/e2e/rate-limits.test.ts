@@ -32,3 +32,23 @@ test("a request without the configured address header is refused, while /healthz
 	expect(health.status).toBe(200);
 	expect(await health.text()).toBe("ok");
 });
+
+test("a probe path gets a quiet 404 and a scanner agent a 403, and neither counts towards the general limit", async ({
+	request,
+}) => {
+	for (let i = 0; i < 40; i++) {
+		const probe = await request.get(i % 2 === 0 ? "/.env" : "/wp-login.php");
+		expect(probe.status()).toBe(404);
+		expect(probe.headers()["content-type"]).toContain("text/plain");
+		expect(await probe.text()).toBe("Not found");
+		const scanner = await request.get("/", { headers: { "user-agent": "sqlmap/1.8#stable" } });
+		expect(scanner.status()).toBe(403);
+		expect(await scanner.text()).toBe("Forbidden");
+		// The security headers still go on.
+		expect(scanner.headers()["x-frame-options"]).toBe("DENY");
+	}
+	// 80 turned away, and the address still has its whole minute's allowance of 60.
+	for (let i = 0; i < 60; i++) {
+		expect((await request.get("/")).status()).toBe(200);
+	}
+});

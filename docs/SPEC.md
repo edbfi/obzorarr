@@ -827,6 +827,8 @@ export const GET: RequestHandler = () => healthResponse();
   `config/address-header.test.ts`; `security/client-address.test.ts`, each address kind on a
   copied `Request`, the refusal without the configured header and the once-a-process warnings;
   `security/rate-limit.test.ts`, a window at its edges, the sweep, the cap and the headers;
+  `security/scanner-filter.test.ts`, each kind of probe path and scanner agent, lookalikes let
+  through, and no path the app serves matched;
   `security/session-token.test.ts` and `security/session-cookie.test.ts`, the token, its hash
   and the cookie's options and its deletion, `Secure` over https; `db/owner-session.test.ts`;
   `services/sign-in/sessions.test.ts`, both session limits at their edges, the hourly write,
@@ -951,8 +953,9 @@ export const GET: RequestHandler = () => healthResponse();
   - The shared web server runs with `ADDRESS_HEADER=x-forwarded-for`, and `fixture.ts` gives each
     test its own address, so no test's requests count against another's.
   - `rate-limits.test.ts` checks that the 61st request in a minute gets the "Too many requests"
-    page with `Retry-After` and the limit's headers, and that a request without the configured
-    header gets "Access denied" while `/healthz` answers.
+    page with `Retry-After` and the limit's headers, that a request without the configured
+    header gets "Access denied" while `/healthz` answers, and that a probe path gets a plain 404
+    and a scanner agent a 403, with the security headers, neither counting towards the limit.
   - `sign-in.test.ts` checks, on fresh servers, that the claim signs the owner in and lands on the
     Security tab, with an `obzorarr_session` cookie that is `HttpOnly`, `SameSite=Lax`, host-only,
     about 30 days long and not `Secure`, on `127.0.0.1` and on a plain-HTTP host name that isn't
