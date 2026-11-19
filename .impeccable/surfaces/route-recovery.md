@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Built in `sign-in`'s task 13 (2026-11-17), code-led from the claim's page, with no mockup. Mode: **operate**. Audience: **the owner who lost their password**, who can set the environment and read the server console. Route: `/recovery`, which exists only while `OBZORARR_RECOVERY` is on and its token is unused. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+Built in `sign-in`'s task 13 (2026-11-17), code-led from the claim's page. Mode: **operate**. Audience: **the owner who lost their password**, who can set the environment and read the server console. Route: `/recovery`, which exists only while `OBZORARR_RECOVERY` is on and its token is unused. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
 
 ## Purpose and composition
 

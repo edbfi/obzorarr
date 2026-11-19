@@ -103,8 +103,8 @@ The standard level's starting point (D19); durations come from motion tokens, ne
 
 ## Open for `recap`'s spec
 
-- **A frame around the story:** the design boards frame it in a rounded panel and let the room's
-  light reach the top and bottom bars; the spike kept the bars flat.
+- **A frame around the story:** whether to frame it in a rounded panel and let the room's light
+  reach the top and bottom bars; the spike kept the bars flat.
 - **"Tap to continue"** on the first slide: whether the hint itself takes taps.
 - **Hover on touch screens:** gate the bar buttons' hover style on `(hover: hover)`, so it doesn't
   stick after a tap.
