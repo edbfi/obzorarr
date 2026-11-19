@@ -1,12 +1,13 @@
 # Spec: `recap-spike`
 
-**Status:** closed (2026-11-15). Module 3 of the capability map ([docs/SPEC.md](SPEC.md)). The
-owner's verdict closed D19, and the verdict PR deleted the spike's code. `recap` adopts what the
-verdict keeps from git history, naming in its own spec the commit before the verdict PR. This file
-keeps what that code can't say: the rules the spike settled, which `recap`'s spec folds in before it
-deletes this file. The verdict itself is D19, and what `recap` builds from it is in SPEC.md's
-Module notes (`recap`, `slides-admin`, `appearance`). The recap is obzorarr's own, not a shared
-area ([Shared groundwork](../AGENTS.md#shared-groundwork)), so no sibling ports it.
+**Status:** closed (2026-11-15); its look withdrawn (2026-11-19, D19). Module 3 of the capability
+map ([docs/SPEC.md](SPEC.md)). The owner's verdict closed D19, and the verdict PR deleted the
+spike's code. `recap` adopts what the verdict keeps from git history, naming in its own spec the
+commit before the verdict PR. This file keeps what that code can't say: the rules the spike settled,
+which `recap`'s spec folds in before it deletes this file. The verdict itself is D19, and what
+`recap` builds from it is in SPEC.md's Module notes (`recap`, `slides-admin`, `appearance`). The
+recap is obzorarr's own, not a shared area ([Shared groundwork](../AGENTS.md#shared-groundwork)), so
+no sibling ports it.
 
 ## The story shell
 
@@ -43,15 +44,12 @@ Story mode is `recap`'s (Module notes); the spike settled these details of it.
   handles keys only while it holds focus and never Space, Enter or Escape, has no tap zones or
   throttle, and a tall slide in its horizontal track would scroll on both axes.
 
-## The look
+## The slides
 
-- **The cinema screen:** every slide plays on a screen lit by the projector (`gradients.beam`), the
-  light it throws back into the room, and two rows of seats in silhouette along its foot. Light is
-  CSS gradients and the seats an inline SVG, all decorative (`aria-hidden`) and coloured only
-  through tokens. No imagery sits behind text or figures.
-- **Calm colours:** figures are in the projector's white; cyan (`primary`) marks only the total's
-  badge, the busiest month's bar and progress.
-- **The total:** its number at the `poster` size, in a sentence that says what it measures (D23).
+The spike's "Projection" look is not a target (D19); these rules hold for any look.
+- **Decoration** is `aria-hidden` and coloured only through tokens, and no imagery sits behind text
+  or figures.
+- **The total:** its number in a sentence that says what it measures (D23).
 - **The months:** a list labelled by its heading, one row per month with its short name, a bar and
   its hours as a plural message, so a screen reader never reads "Jan 42" as a date. Rows on a phone;
   from a tablet up the same list shows as columns, each showing its count while the rest of its
@@ -75,20 +73,18 @@ Story mode is `recap`'s (Module notes); the spike settled these details of it.
 
 ## Motion
 
-The standard level's starting point (D19); durations come from motion tokens, never literals.
-- **Between slides,** the move dips like a projector changing reels: the leaving slide fades out
-  over the first 30% of `story`, then the new one slides in from the side it comes from and fades
-  in, so the two never show at once. The leaving slide keeps its place and height, so nothing moves
-  up or down. The story clips the slide-in with `overflow-x: clip`, never `overflow: hidden`, which
-  would break the sticky bars.
-- **Entrances,** one per slide: the total and its caption fade and rise and the total's number
-  comes into focus (a short blur clearing); the month bars grow from zero, along the row on a phone
-  and up the column from a tablet; the summary's figures fade in. They are CSS keyframes under
-  `_motionSafe`, each holding its start through the reel change. CSS, because Svelte doesn't play `in:` transitions when a server-rendered page hydrates,
-  so the first slide animates on load and is never hidden waiting for JavaScript.
-- **Progress:** a segment fills over `feedback`, as a CSS transition under `_motionSafe`.
-- **No count-up:** numbers are their final text from the first frame, so a screen reader or a
-  translated layout never meets an intermediate value. Nothing loops or moves on its own.
+What the spike's motion settled; the motion itself is `recap`'s to design (D19). Durations come from
+motion tokens, never literals.
+- **Between slides,** the leaving slide keeps its place and height, so nothing moves up or down.
+  The story clips a slide moving in sideways with `overflow-x: clip`, never `overflow: hidden`,
+  which would break the sticky bars.
+- **Entrances:** the first slide animates on load and is never hidden waiting for JavaScript. The
+  spike used CSS keyframes under `_motionSafe`, each holding its start until the move between
+  slides ended, because Svelte doesn't play `in:` transitions when a server-rendered page hydrates.
+- **Numbers:** a screen reader and a translated layout only ever get a number's final text,
+  whatever it does on screen.
+- **Nothing advances on its own** (Module notes, `recap`): the story moves only when the viewer
+  moves it, which is why its slides can be a polite live region.
 - **Reduced motion** shows each slide's final state at once; the throttle still applies.
 
 ## Tests worth keeping
@@ -103,20 +99,18 @@ The standard level's starting point (D19); durations come from motion tokens, ne
 
 ## Open for `recap`'s spec
 
-- **A frame around the story:** whether to frame it in a rounded panel and let the room's light
-  reach the top and bottom bars; the spike kept the bars flat.
+- **A frame around the story:** whether to frame it in a rounded panel; the spike kept the bars
+  flat.
 - **"Tap to continue"** on the first slide: whether the hint itself takes taps.
 - **Hover on touch screens:** gate the bar buttons' hover style on `(hover: hover)`, so it doesn't
   stick after a tap.
 - **The reduced-motion e2e** passed trivially until animations existed; with real motion levels it
   must prove each level's final state, not only that nothing runs.
 - **Proposals from the advice rounds,** for `recap`'s spec to accept or drop:
-  - **Motion:** standard could swap the total's blur and the bars' clipped growth for cheaper
-    transform and opacity equivalents that look the same on low-end phones. Cinematic's effects
-    (the projector's light, a shared-element move into the summary, a swipe that scrubs the reel
-    change) would each run only where the browser supports them. Reduced motion would be honoured
-    in CSS before hydration as well as in script. `recap`'s spec would set budgets (frame time,
-    script size) and the default level, after measuring on real phones.
+  - **Motion:** prefer transform and opacity over blur and clipping, which cost more on low-end
+    phones. Each of cinematic's effects would run only where the browser supports it. Reduced
+    motion would be honoured in CSS before hydration as well as in script. `recap`'s spec would
+    set budgets (frame time, script size) after measuring on real phones.
   - **Layouts:** the admin preview drawn by the recap's own layout components with the demo
     fixture's figures, so a preview can't drift from the recap; layouts with no motion of their
     own, so motion is tested once on the shared entrance; all five layouts checked at 360 and

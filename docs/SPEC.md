@@ -21,8 +21,10 @@ job is to make the first module spec cheap to build: every later PR adds behavio
 ## Capability map
 
 **Status:** approved by the owner (2026-10-24; shared rows aligned 2026-10-30; rows 5, 6, 11 and 24
-given the one Security tab with `sign-in`'s spec, 2026-11-16). Module ids never change. Each module
-gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is built.
+given the one Security tab with `sign-in`'s spec, 2026-11-16; row 20 given the colour schemes and
+the Wrapped's styles and effects with PRODUCT.md's Product Purpose, 2026-11-19). Module ids never
+change. Each module gets its own `docs/SPEC-<id>.md`, which the owner approves just before it is
+built.
 Sources: [PRODUCT.md](../PRODUCT.md), [decisions.md](decisions.md), the
 [surface briefs](../.impeccable/surfaces/) and the [Module notes](#module-notes) below.
 
@@ -58,7 +60,7 @@ components or services, and dates and numbers formatted for the viewer's languag
 | 17 | `privacy-settings` | The privacy presets, the saved and after-saving exposure previews in the same wording onboarding uses, the individual settings and applying defaults to existing users. Adds its panel to first-run configuration | `sharing` | `/admin/settings/privacy` |
 | 18 | `slides-admin` | Ordering and enabling built-in slides with keyboard controls, custom slides with checked markup and an optional year, and the summary's layout. Adds its panel to first-run configuration | `recap` | `/admin/slides` |
 | 19 | `fun-facts` | Template fun facts as translated, plural-aware messages, and the optional AI text provider (key, https base URL, model, persona, connection test), asked in the viewer's language with templates as the fallback; placement and frequency. Adds its panel to first-run configuration | `recap` | the fun-fact control on `/admin/slides`; the AI form on `/admin/settings/connections` |
-| 20 | `appearance` | The interface and Wrapped theme settings, the logo mode and the recap's motion level. It decides whether more presets than After Hours return (ground-floor choice 4). Adds its panel to first-run configuration | `recap` | the appearance rail on `/admin/settings/connections` |
+| 20 | `appearance` | A few colour schemes, light and dark (ground-floor choice 4); the Wrapped's styles and effects, which go beyond themes and which the owner controls in detail (PRODUCT.md, Product Purpose); the logo mode and the recap's motion level. Adds its panel to first-run configuration | `recap` | the appearance rail on `/admin/settings/connections` |
 | 21 | `users-admin` | The per-year users table: watch time, effective share mode, the per-user control toggle and each recap's link. No delete, ban or roles | `sharing`, `stats` | `/admin/users` (no brief yet) |
 | 22 | `logs` | Stored log entries, the logs page with filters that match on the server, the live view, export, the retention job and the log settings | `sign-in` | `/admin/logs` (no brief yet); the log settings in the System tab |
 | 23 | `data-admin` | Clearing cached statistics and play history per year or wholesale, offering to reset the watermark, and the instance reset, which returns to the claim with a new token | `sync`, `stats` | the Data tab of `/admin/settings` (no brief yet) |
@@ -76,7 +78,9 @@ after `i18n`, so the riskiest design is settled early and its text is translated
 First-run setup grows step by step: `setup` claims the instance and creates the owner account,
 `two-factor` offers itself, `public-address` checks the address, `plex-connection` connects Plex,
 `sync` asks for the time zone and runs the first sync, and `privacy-settings`, `slides-admin`,
-`fun-facts` and `appearance` each add their panel to the configuration step.
+`fun-facts` and `appearance` each add their panel to the configuration step. First run can be left
+and resumed: each module that adds a step keeps the owner's place in it, so a closed browser or a
+restart brings them back to the step they left.
 
 ### Where modules live
 
@@ -474,8 +478,7 @@ these blocks are obzorarr's.
   weekday patterns, content type, decade, series completion, rewatch, marathon, streak, year
   comparison, percentile, binge, first and last. The summary is a page after the slides, not a
   slide.
-- **The slides,** with their empty states; their look is the spike's (D19), and their text is
-  messages (D21).
+- **The slides,** with their empty states; their text is messages (D21).
   - Total time: the hours played (minutes under an hour), with a days or weeks comparison.
   - Top movies and top shows: the top 6 with artwork and play or episode counts; empty: "No
     movies watched this year", "No shows watched this year".
@@ -542,12 +545,12 @@ these blocks are obzorarr's.
   component or a component without a name. Every layout shows each figure's number and word as
   text in reading order, from plural messages; Title card builds its sentence from the three plural
   phrases.
-- **Motion levels** (D19): reduced, standard and cinematic. The owner sets the level
-  (`appearance`), a member may only lower it, and the system's reduced-motion setting always wins.
-  Reduced shows each slide's final state at once; standard is the spike's motion; cinematic adds
-  more on top, which `recap`'s spec chooses. Cinematic steps down to standard for the rest of a
-  recap when its first slide drops frames, and only between slides, so nothing jumps and no
-  content goes missing.
+- **Motion levels** (D19): reduced, standard and cinematic. A fresh instance starts on cinematic,
+  the fullest. The owner sets the level (`appearance`), a member may only lower it, and the
+  system's reduced-motion setting always wins. Reduced shows each slide's final state at once;
+  `recap`'s spec chooses what standard and cinematic play. Cinematic steps down to standard for the
+  rest of a recap when its first slide drops frames, and only between slides, so nothing jumps and
+  no content goes missing.
 - **Voice:** a personal recap says "you" and "your". The server recap speaks as "{server name}
   Community", or "we" and "our" when the server has no name, and always takes plural verbs.
 - **Artwork** goes through the app, so browsers never see the server token, and follows the same
@@ -559,6 +562,7 @@ these blocks are obzorarr's.
 
 #### member-dashboard
 
+- The year picker starts on the current year, counted in the instance time zone (D24).
 - Before the member has history this year, their recap card says "Appears here once you have
   viewing history this year".
 
@@ -662,6 +666,9 @@ these blocks are obzorarr's.
 - First run's panel sets the interface theme and the Wrapped theme.
 - **The logo mode:** always show (the default), always hide, or the member's choice.
 - **The recap's motion level** (`recap`): reduced, standard or cinematic, for every recap.
+- **The Wrapped's styles and effects:** the owner controls them in detail, beyond picking a theme.
+  `recap`'s design names them, and each is its own piece of code, so one can be added or removed
+  without touching the rest.
 - The theme is applied from a cookie read before the first paint, so nothing flashes; that cookie is
   readable by scripts by design.
 
@@ -801,8 +808,7 @@ export const GET: RequestHandler = () => healthResponse();
 - Keyboard focus is one global rule in `globalCss`: DESIGN.md's 2px `secondary` ring with a 2px
   offset on every `:focus-visible` element, so controls don't each restyle it.
 - The placeholder page uses only Panda tokens: no raw colour, size or font values in components.
-  It stays quiet: no projector-light imagery or recap motion, which belong to the landing and recap
-  modules.
+  It stays plain: showcase imagery and motion belong to the landing and recap modules.
 
 ## Testing strategy
 
@@ -1065,9 +1071,9 @@ call for anything different; choices 4 and 5 are obzorarr's own.
    ([SPEC-setup.md](SPEC-setup.md#security-headers-and-csp)), as the first module that serves
    real pages.
 4. **Themes.** The owner picks the admin panel's theme and the recap's theme independently (the
-   connections brief); the legacy app offered five presets, and the design seeds both to
-   After Hours. The skeleton defines After Hours as the only theme, its colours as semantic tokens
-   behind the dark colour-mode condition, and the module that brings back the two theme settings
-   decides whether more presets return and how Panda switches them.
+   connections brief); the legacy app offered five presets. The skeleton defines After Hours as the
+   only theme, its colours as semantic tokens behind the dark colour-mode condition. `appearance`
+   brings a few colour schemes, light and dark (PRODUCT.md, Product Purpose), and decides how Panda
+   switches them.
 5. **CSP and the recap spike.** Closed: no headers needed. The spike served fictional figures,
    stored nothing and was deleted before `setup`, so it never met choice 3's headers.

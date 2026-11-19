@@ -217,7 +217,9 @@ Design work uses Impeccable: `/impeccable` in Claude Code and OpenCode, `$impecc
 - One surface brief at a time. Tokens only through Panda; Ark UI is the only primitive library.
 - Check 360, 390, 768 and 1440 px, keyboard focus, 200% zoom, reduced motion and every state the
   brief names (loading, empty, failure, pending, saved, disabled).
-- Expressive styling only on entry and recap surfaces; operational screens stay quiet.
+- Every screen is beautiful. The app's showcase surfaces, which its own section names, go all in on
+  motion and effects; everywhere else motion is subtle: it makes the interface feel polished, modern
+  and light, and never distracts from the work or decorates for its own sake.
 
 ### Docs
 
@@ -276,9 +278,9 @@ next, in the order of the approved capability map in `docs/SPEC.md`, each throug
 and ready for consumers. Nothing stores a secret yet. Module 2, `i18n`
 ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)), is built: pages are served in English or Danish, with a
 language switcher, number and date formatters, and a check of the message files. Module 3,
-`recap-spike` ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19 with the
-owner's verdict: DESIGN.md's fonts and the icons stay, the spike's code is gone, and `recap` adopts
-what the verdict keeps through its own spec. Module 4, `setup`
+`recap-spike` ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19: the
+spike's code is gone, its look is withdrawn, and `recap` adopts how D19 says the recap is built
+through its own spec. Module 4, `setup`
 ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is built: startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets "Access
@@ -304,6 +306,9 @@ and `preview` need, see the README's [Master key](README.md#master-key).
 **Boundaries.**
 - Never bring code over from `legacy-old/v1`; rebuild from the spec. Published releases up to 0.1.11
   and their tags stay as they are.
+- **Showcase surfaces** ([Design](#design)): the Wrapped and the landing page.
+- **The visual direction is open.** It is designed from PRODUCT.md's Product Purpose; until then
+  [DESIGN.md](DESIGN.md) says what its tokens and the surface briefs still stand for.
 
 **Read next.**
 - Product: [PRODUCT.md](PRODUCT.md).

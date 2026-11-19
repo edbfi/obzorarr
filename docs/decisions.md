@@ -1,6 +1,7 @@
 # Decisions
 
 Each entry is a decision and why it was made. Open entries keep their number when they're settled.
+A settled decision the owner changes is rewritten in place with the date; git keeps the old text.
 The stack entries are the stack every edbfi rewrite app shares
 ([Shared groundwork](../AGENTS.md#shared-groundwork)), cut down to what applies to obzorarr.
 Versions live in `package.json` and `bun.lock`.
@@ -174,16 +175,18 @@ loader, which breaks silently when the chunks move.
 
 The animated recap was the surface most likely to need custom work beyond Panda CSS and Ark UI, so
 three slides were built as a spike (`recap-spike`) before its design was committed. The owner
-reviewed the spike in a browser and gave the verdict on 2026-11-15; `recap` adopts what it keeps.
-- **Keeps:** the story shell; the "Projection" look, where every slide plays on a cinema screen
-  drawn in CSS and SVG, not raster art, in calm colours; the `fontSizes.poster` and
-  `gradients.beam` tokens; and the spike's motion, the reel change between slides and the total
-  coming into focus included, with no count-up. [SPEC-recap-spike.md](SPEC-recap-spike.md) keeps
-  the details.
+reviewed the spike in a browser and gave a verdict on 2026-11-15. On 2026-11-19 the owner withdrew
+the spike's look and set the recap's goal as a spectacle ([PRODUCT.md](../PRODUCT.md), Product
+Purpose). What stands is how the recap is built, not how the spike looked.
+- **Keeps:** the story shell, and the rules the spike settled for it and for its text
+  ([SPEC-recap-spike.md](SPEC-recap-spike.md)).
 - **Changes:** the summary stays a page after the slides, as `recap`'s Module notes say, rather
   than the story's last step. Its three figures come in five layouts the owner chooses between,
   and motion comes in three levels the owner sets (Module notes: `recap`, `slides-admin`,
   `appearance`).
+- **Not a target:** the spike's "Projection" look, its calm colours, its motion and its rule
+  against counting numbers up. `recap`'s design starts from the Product Purpose, and may count
+  numbers up as long as a screen reader and a translated layout only ever get the final text.
 - **Custom work beyond Panda and Ark:** none that needs a library. The story's taps, swipes, keys
   and focus are the app's own code, because Ark UI's Carousel doesn't fit the story (the spike's
   spec says why). Motion starts from CSS, the Web Animations API and Svelte's own motion; an
@@ -193,7 +196,8 @@ reviewed the spike in a browser and gave the verdict on 2026-11-15; `recap` adop
 Why: the owner judged the real thing in English and Danish, at every width, by keyboard and touch,
 rather than a raster. Choosing a layout and how much motion plays is presentation the owner
 controls, so the recap is built around interchangeable layouts and motion levels, not one fixed
-look.
+look. The spike's look was withdrawn so that the recap's design starts free, from the Product
+Purpose.
 
 ### D20. Shared opening modules and owner sign-in, in the same shape in every app
 
