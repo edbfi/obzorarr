@@ -2,7 +2,23 @@
 
 <!-- impeccable:product-schema 1 -->
 
-A private Plex year-in-review for members, with personal/server recaps and owner administration.
+## Product Purpose
+
+obzorarr is a beautiful, modern, stylized "Spotify Wrapped" for Plex: it turns a Plex server's viewing history into a recap of each person's year.
+
+**Above all,** going through your year in review is a first-class experience that looks amazing. There are plenty of year-in-review apps; this one stands out from them through its motion, its animation and its wow effect.
+
+- **A user,** a member of the Plex server, opens a dashboard of their own, like the admin has one, chooses a year (the current year by default) and watches their Wrapped for it. The Wrapped goes all in: animation, transitions, effects, full bells and whistles.
+- **The admin,** the instance's owner, sets up, configures and runs the instance from a full admin dashboard that is nice to use and nice to look at, with granular control over how the Wrapped is presented to users: its styles and effects, which go beyond themes.
+
+It has succeeded when:
+
+- a Wrapped is a spectacle, never restrained or generic;
+- full motion is what everyone gets by default;
+- neither dashboard is an afterthought: both are beautiful, with subtle motion that makes them feel modern and light, never distracting;
+- it is as good on a big screen as on a phone;
+- there are a few colour schemes to choose from, light and dark;
+- the code stays modular and easy to change, and uses the full tech stack, so a whole range of styles and effects can be added or removed.
 
 ## Platform
 
@@ -16,7 +32,7 @@ Member shell: top navigation Overview, My Wrapped, Sharing, account menu (the me
 
 - **Visitor:** Landing and Plex sign-in. Proposed route: `/`.
 - **Member:** Member dashboard. Proposed route: `/dashboard`.
-- **Member:** Portrait story and summary. Proposed route: `/wrapped/2025/me`.
+- **Member:** Story and summary. Proposed route: `/wrapped/2025/me`.
 - **Member:** Member sharing preferences. Proposed route: `/sharing`.
 - **Owner admin:** Owner dashboard. Proposed route: `/admin`.
 - **Owner admin:** Wrapped slide configuration. Proposed route: `/admin/slides`.
@@ -35,7 +51,7 @@ It is private by default and built for a household or friends-and-family server:
 - **Scale:** one owner and tens of viewers, with a few hundred thousand play-history rows at most. There is one admin account, the instance's owner, and no further roles. One process per database is an accepted limit.
 - **Owner's setup ritual:** a fresh install is claimed with a one-time token printed to the server console, which creates the owner account; onboarding then offers two-factor and connects Plex, runs the first sync and sets appearance, privacy, slides and fun facts. Settings supplied by the deployment environment are shown read-only and always win.
 - **Data rhythm:** play history arrives by scheduled sync (default daily at midnight in the configured zone) and by a best-effort background sync when someone opens a recap. Statistics are per calendar year. Members open recaps all year, and use peaks at year end.
-- **Member's experience:** members sign in with their Plex account, open their own recap and the server recap, and share a link to theirs. The recap is a portrait-first story with a summary card, widened for desktop; the owner's admin panel is an operational tool that also works on phones, where its sidebar becomes a drawer.
+- **Member's experience:** members sign in with their Plex account, open their own recap and the server recap, and share a link to theirs. The recap is a story with a summary card, as good on a big screen as on a phone; the owner's admin panel is a full dashboard that also works on phones, where its sidebar becomes a drawer.
 - **Legacy app:** replaced by this rewrite, not ported; current rewrite status lives in `docs/SPEC.md`. Its known limitations are revisited, not carried over: watch time is labelled as the runtime of what was played (D23), and statistics use the instance's time zone instead of UTC (D24).
 - **Language:** English, the default, and Danish, with dates and numbers formatted for each viewer's language (D21). The legacy app was English only.
 
@@ -47,10 +63,6 @@ It is private by default and built for a household or friends-and-family server:
 - Viewing hours are labelled with what they measure: the runtime of everything played (D23). No live now-playing dashboard.
 - Keep admin privacy floors in force; do not offer a public choice when members-only is required.
 - Copy is plain, active and specific. In English: no "please", no em dashes as pauses, no marketing adjectives and no passive voice; other languages keep that intent in their own grammar and punctuation. Obzorarr is named as the actor ("Obzorarr finished syncing your viewing history"), "Wrapped" is always capitalised, a failure names what failed, and an empty state says what to do next ("No sync history yet. Run your first sync to see results here.").
-
-## Confirmed visual direction
-
-After Hours. Cool dark cinema, cyan projector light, crisp geometric typography. Expressive imagery and light beams only on landing/recap surfaces; dashboards use flat ocean-blue surfaces. Header wordmark Obzorarr. The selected direction is confirmed; the surface briefs' layouts and exact token values are a proposed design seed for review.
 
 ## Evidence on Hand
 
@@ -77,4 +89,4 @@ What does not exist, and must not be fabricated:
 
 ## Accessibility and inclusion
 
-Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation. A failed submit titles the page "Error: …" and leads its form with an error summary that takes focus, and a field is marked invalid and linked to its error message only while it has an error; radio groups are named and use a roving tab index; switches expose their switch role and checked state, and toggle buttons their pressed state; dialogs and drawers trap focus, restore it on close and make the page behind them inert; status changes are announced; each settings page has one top-level heading; and every recap slide has an accessible name.
+Keyboard access throughout, visible focus, labelled inputs, text plus icon for status, 44px touch targets, readable text at 200% zoom, and reduced-motion alternatives for anyone whose device asks for less motion; full motion is the default. Target WCAG AA text contrast. Never use color alone to communicate a decision. Bundle fonts locally in the implementation. A failed submit titles the page "Error: …" and leads its form with an error summary that takes focus, and a field is marked invalid and linked to its error message only while it has an error; radio groups are named and use a roving tab index; switches expose their switch role and checked state, and toggle buttons their pressed state; dialogs and drawers trap focus, restore it on close and make the page behind them inert; status changes are announced; each settings page has one top-level heading; and every recap slide has an accessible name.

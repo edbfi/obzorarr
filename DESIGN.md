@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: "Obzorarr After Hours"
-description: "Proposed design seed for review; not extracted from implemented components."
+description: "Tokens of the screens built so far; the visual direction is open (see Overview)."
 colors:
   background: "#0B1828"
   surface: "#142D45"
@@ -99,9 +99,7 @@ components:
 
 ## Overview
 
-After Hours. Cool dark cinema, cyan projector light, crisp geometric typography. Expressive imagery and light beams only on landing/recap surfaces; dashboards use flat ocean-blue surfaces. Header wordmark Obzorarr.
-
-Use this as a proposed implementation target; the tokens remain reviewable design decisions. [Product context](PRODUCT.md) and the [surface briefs](.impeccable/surfaces/) define behavior.
+The visual direction is open: the owner withdrew After Hours, and the next direction is designed from the Product Purpose in [PRODUCT.md](PRODUCT.md). Until it lands, this file records the tokens and rules the screens built so far use, such as setup, sign-in and the admin shell. Nothing in it, tokens or prose, is a target for a surface that isn't built yet, the recap least of all. The same goes for the look the [surface briefs](.impeccable/surfaces/) describe; the behavior they specify still holds, except where PRODUCT.md or [docs/SPEC.md](docs/SPEC.md) says otherwise. Header wordmark Obzorarr.
 
 ## Colors
 
@@ -118,7 +116,7 @@ Use this as a proposed implementation target; the tokens remain reviewable desig
 - **warning:** `#F0C680`.
 - **danger:** `#FFACB5`.
 
-Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. The recap's projector light is the `beam` gradient: primary fading to transparent downwards from where it lands, so it shows no edge. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables.
+Primary fills use background-colored text. Secondary color marks information, links and keyboard focus. Success, warning and danger have fixed semantic roles; danger is for failures and destructive action. Use subdued tinted backgrounds for badges, with readable semantic text. The spike's projector light was the `beam` gradient: primary fading to transparent downwards from where it lands, so it shows no edge. Chart series get text labels and markers. Do not put imagery behind data, text fields or tables.
 
 ## Typography
 
@@ -145,7 +143,7 @@ Use spacing tokens 4, 8, 12, 16, 24, 32, 48 and 64px. Group labels with fields, 
 
 Flat surfaces and a 1px border carry most hierarchy. Reserve a broad soft shadow and 48% dark scrim for a modal or floating detail sheet. No repeated card drop shadows or glowing operational status dots. Public imagery may be covered with a dark readability overlay; operational surfaces remain opaque.
 
-Motion defaults: 100ms press feedback, 160ms status feedback, 200ms sheet transitions, up to 320ms recap story transition. Avoid scale/count-up on operational metrics. Respect reduced motion by showing final content immediately.
+Motion defaults: 100ms press feedback, 160ms status feedback, 200ms sheet transitions; the spike's story transition was 320ms. Avoid scale/count-up on operational metrics. Respect reduced motion by showing final content immediately.
 
 ## Shapes
 
@@ -163,8 +161,8 @@ Tables use 44px standard rows, 36px only for dense desktop operation, 14px label
 
 ## Do’s and Don’ts
 
-- Preserve this app's palette and type hierarchy across every route; do not blend the five applications into one theme.
-- Keep welcome/experience screens expressive and operational controls quiet.
+- Keep one palette and type hierarchy of this app's own across every route; do not blend the five applications into one theme.
+- Motion and effects follow the house rule and this app's showcase surfaces ([AGENTS.md](AGENTS.md#design)).
 - Treat product permissions and status transitions as behavior supplied by the server.
 - Use [demo fixtures](tests/fixtures/demo-fixtures.json) for stable visual tests, then substitute real server data.
 - Use existing project primitives and tokens. This repository's rewrite stack specifies Panda CSS and Ark UI; map these values into those systems without adding a competing component library.
