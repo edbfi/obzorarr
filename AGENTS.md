@@ -279,8 +279,8 @@ and ready for consumers. Nothing stores a secret yet. Module 2, `i18n`
 ([`docs/SPEC-i18n.md`](docs/SPEC-i18n.md)), is built: pages are served in English or Danish, with a
 language switcher, number and date formatters, and a check of the message files. Module 3,
 `recap-spike` ([`docs/SPEC-recap-spike.md`](docs/SPEC-recap-spike.md)), ran and closed D19: the
-spike's code is gone, its look is withdrawn, and `recap` adopts how D19 says the recap is built
-through its own spec. Module 4, `setup`
+spike's code is gone, its look is withdrawn, and `recap` adopts, through its own spec, the way D19
+says the recap is built. Module 4, `setup`
 ([`docs/SPEC-setup.md`](docs/SPEC-setup.md)), is built: startup opens the database and applies its
 migrations, the app writes redacted JSON logs, it shuts down cleanly, every page carries the
 security headers and a nonce-based CSP, and a state-changing request from another site gets "Access
@@ -303,12 +303,13 @@ turn it off. Probe paths and known scanners are turned away before the rate limi
 **Commands:** the table in [docs/SPEC.md](docs/SPEC.md#commands); for the master key that `dev`
 and `preview` need, see the README's [Master key](README.md#master-key).
 
+**Design.** The showcase surfaces are the Wrapped and the landing page. The visual direction is
+open: it is designed from PRODUCT.md's Product Purpose, and until then [DESIGN.md](DESIGN.md) says
+what its tokens and the surface briefs still stand for.
+
 **Boundaries.**
 - Never bring code over from `legacy-old/v1`; rebuild from the spec. Published releases up to 0.1.11
   and their tags stay as they are.
-- **Showcase surfaces** ([Design](#design)): the Wrapped and the landing page.
-- **The visual direction is open.** It is designed from PRODUCT.md's Product Purpose; until then
-  [DESIGN.md](DESIGN.md) says what its tokens and the surface briefs still stand for.
 
 **Read next.**
 - Product: [PRODUCT.md](PRODUCT.md).
