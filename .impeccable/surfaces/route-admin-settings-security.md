@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-The shell and the tab's frame built in `sign-in`'s task 10 (2026-11-16), code-led, with no mockup; the Password and Sessions sections in task 11 and the recovery warning in task 12, the same way. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+The shell and the tab's frame built in `sign-in`'s task 10 (2026-11-16), code-led; the Password and Sessions sections in task 11 and the recovery warning in task 12, the same way. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/settings/security`, the first tab of `/admin/settings` and, until `overview`, where `/admin` lands. It is also the first page in the admin shell, so this brief sets the shell. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
 
 ## Purpose and composition
 
@@ -19,7 +19,7 @@ The one place the owner secures the instance: their password, their other sessio
 
 ## Visual reference
 
-None yet. The shared [design system](../../DESIGN.md); the owner dashboard's mockup (`route-admin.md`) shows the sidebar's look, and the connections mockup (`route-admin-settings-connections.md`) a settings page's.
+None yet. Use the shared [design system](../../DESIGN.md).
 
 ## Required content
 

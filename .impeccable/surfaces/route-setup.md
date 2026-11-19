@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Built in `setup`'s task 7 (2026-11-15), code-led, with no mockup. Mode: **operate**. Audience: **the person installing Obzorarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)).
+Built in `setup`'s task 7 (2026-11-15), code-led. Mode: **operate**. Audience: **the person installing Obzorarr**, who can read the server console. Route: `/setup`. Module: `setup` ([docs/SPEC-setup.md](../../docs/SPEC-setup.md)).
 
 ## Purpose and composition
 

@@ -9,7 +9,7 @@ related_targets: []
 
 ## Status
 
-Built in `sign-in`'s task 7 (2026-11-16), code-led, with no mockup. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/sign-in`. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
+Built in `sign-in`'s task 7 (2026-11-16), code-led. Mode: **operate**. Audience: **the instance's owner**. Route: `/admin/sign-in`. Module: `sign-in` ([docs/SPEC-sign-in.md](../../docs/SPEC-sign-in.md)).
 
 ## Purpose and composition
 

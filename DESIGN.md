@@ -101,7 +101,7 @@ components:
 
 After Hours. Cool dark cinema, cyan projector light, crisp geometric typography. Expressive imagery and light beams only on landing/recap surfaces; dashboards use flat ocean-blue surfaces. Header wordmark Obzorarr.
 
-Use this as a proposed implementation target. The chosen direction comes from the selected references; tokens and expanded screens remain reviewable design decisions. [Product context](PRODUCT.md) and the [surface briefs](.impeccable/surfaces/) define behavior; each brief also records the raster corrections that resolve incidental image text. Generated raster pixels are visual guidance; they do not override named tokens or product requirements.
+Use this as a proposed implementation target; the tokens remain reviewable design decisions. [Product context](PRODUCT.md) and the [surface briefs](.impeccable/surfaces/) define behavior.
 
 ## Colors
 
@@ -133,13 +133,13 @@ Primary fills use background-colored text. Secondary color marks information, li
 - **number:** IBM Plex Mono, 32px/1.2, weight 500.
 - **code:** IBM Plex Mono, 13px/1.5, weight 400.
 
-Keep prose below 70 characters per line. Titles use sentence case. Keep capitals for proper names and short codes. Operational numbers use tabular mono glyphs; a poster-sized recap number may use the display face, at the `poster` size: fluid, from 96px on a 360px screen to 168px at 1440px. Font names indicate intended typefaces; image generation approximates glyphs. Use locally bundled font files and fallbacks, rather than remote font requests.
+Keep prose below 70 characters per line. Titles use sentence case. Keep capitals for proper names and short codes. Operational numbers use tabular mono glyphs; a poster-sized recap number may use the display face, at the `poster` size: fluid, from 96px on a 360px screen to 168px at 1440px. Use locally bundled font files and fallbacks, rather than remote font requests.
 
 ## Layout
 
 A 12-column desktop content grid has 24px gaps and 32px outer gutters. Desktop navigation is 224px wide, top bar 64px. At 1024px collapse navigation to a rail; below 768px use an accessible drawer. Mobile gutters are 16px. Main forms max out at 672px and reading/wizard content at 680px. Operational pages can span 1440px. A detail drawer is 400px on desktop and full width on mobile.
 
-Use spacing tokens 4, 8, 12, 16, 24, 32, 48 and 64px. Group labels with fields, use 24px between form groups and 48px between major sections. Keep one dominant action per task area. Composite boards show alternatives or sequential routes together for review; do not combine them into one implementation screen.
+Use spacing tokens 4, 8, 12, 16, 24, 32, 48 and 64px. Group labels with fields, use 24px between form groups and 48px between major sections. Keep one dominant action per task area.
 
 ## Elevation & Depth
 
@@ -149,7 +149,7 @@ Motion defaults: 100ms press feedback, 160ms status feedback, 200ms sheet transi
 
 ## Shapes
 
-Controls use 8px corners, panels 12px, dialogs 16px. Use pill radius only for small statuses or segmented choices. Icons are a single consistent 20px line family with 1.5–2px stroke. Do not reproduce generated connector logos as assets; use the approved real integration marks or labelled generic icons.
+Controls use 8px corners, panels 12px, dialogs 16px. Use pill radius only for small statuses or segmented choices. Icons are a single consistent 20px line family with 1.5–2px stroke. Do not redraw connector logos as assets; use the approved real integration marks or labelled generic icons.
 
 ## Components
 
@@ -167,5 +167,4 @@ Tables use 44px standard rows, 36px only for dense desktop operation, 14px label
 - Keep welcome/experience screens expressive and operational controls quiet.
 - Treat product permissions and status transitions as behavior supplied by the server.
 - Use [demo fixtures](tests/fixtures/demo-fixtures.json) for stable visual tests, then substitute real server data.
-- Follow each surface brief's raster corrections instead of copying accidental generated labels or extra actions.
 - Use existing project primitives and tokens. This repository's rewrite stack specifies Panda CSS and Ark UI; map these values into those systems without adding a competing component library.

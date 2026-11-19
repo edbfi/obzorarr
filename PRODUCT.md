@@ -50,14 +50,12 @@ It is private by default and built for a household or friends-and-family server:
 
 ## Confirmed visual direction
 
-After Hours. Cool dark cinema, cyan projector light, crisp geometric typography. Expressive imagery and light beams only on landing/recap surfaces; dashboards use flat ocean-blue surfaces. Header wordmark Obzorarr. The selected direction is confirmed; these expanded layouts and exact token values are a proposed design seed for review.
+After Hours. Cool dark cinema, cyan projector light, crisp geometric typography. Expressive imagery and light beams only on landing/recap surfaces; dashboards use flat ocean-blue surfaces. Header wordmark Obzorarr. The selected direction is confirmed; the surface briefs' layouts and exact token values are a proposed design seed for review.
 
 ## Evidence on Hand
 
 What exists:
 - **Logo:** `src/lib/assets/obzorarr-icon.svg`, used by the README and as the favicon.
-- **Design screens:** `docs/design/screens/01-landing.webp` to `10-states-and-components.webp`: generated mockups of the eight proposed routes, a mobile member board and a states board. They are composition references; their text, chart labels and totals are illustrative, and each surface brief lists the raster corrections.
-- **Direction reference:** `docs/design/references/after-hours.webp`, the selected After Hours reference.
 - **Surface briefs:** `.impeccable/surfaces/*.md`, one per proposed route, each with required content and acceptance criteria. All are marked "proposed design seed for review".
 - **Demo fixtures:** `tests/fixtures/demo-fixtures.json`: one fictional member ("Alex") and one fictional server for 2025 (snapshot date 2025-10-15). They are for stable visual tests only; production values come from the server.
 
@@ -65,7 +63,7 @@ What does not exist, and must not be fabricated:
 - No real Plex play history, server names, member names or avatars. Use the fictional fixtures and label them as such.
 - No demo server and no screenshots of the legacy app in use.
 - No testimonials, quotes, user research, adoption numbers, install counts, ratings or press. The app collects no analytics, so there are no usage metrics either.
-- No screenshots of a built rewrite; the mockups are not product screenshots.
+- No screenshots of a built rewrite.
 - No pricing, hosted offering or support commitment.
 - No approved Plex brand mark. Surfaces use a labelled generic icon, never a redrawn logo (DESIGN.md).
 
