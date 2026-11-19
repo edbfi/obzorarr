@@ -4,7 +4,7 @@
 	"license": "AGPL-3.0-or-later",
 	"version": "0.0.1",
 	"type": "module",
-	"packageManager": "bun@1.4.4",
+	"packageManager": "bun@1.4.5",
 	"scripts": {
 		"prepare": "bun --bun svelte-kit sync && bun --bun paraglide-js compile && bun --bun panda codegen && bun --bun panda cssgen --splitting",
 		"dev": "bun --bun vite dev",
