@@ -38,7 +38,7 @@
 		"@sveltejs/kit": "3.4.0",
 		"@sveltejs/vite-plugin-svelte": "7.3.1",
 		"@tursodatabase/database": "0.8.4",
-		"drizzle-kit": "1.0.0-rc.5",
+		"drizzle-kit": "1.0.0-rc.6",
 		"drizzle-orm": "1.0.0-rc.5",
 		"svelte": "5.59.1",
 		"svelte-check": "4.7.8",
